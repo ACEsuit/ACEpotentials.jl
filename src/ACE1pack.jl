@@ -7,6 +7,11 @@ using Reexport
 @reexport using IPFitting
 export JuLIP, ACE1, IPFitting 
 
-# TODO: produce the convenience layers 
+# Convenience Layer 
+
+include("basis.jl")
+
+# - fitting parameters 
+# - preconditioners
 
 end
