@@ -2,11 +2,14 @@
 # ------------------------------------------
 #   ACE Basis  
 
-export basis_params, degree_params, radbasis_params, transform_params
+export rpi_basis_params, pair_basis_params, degree_params, radbasis_params, transform_params
 
+
+# ------------------------------------------
+#  rpi basis 
 
 """
-`basis_params(; kwargs...)` : returns a dictionary containing the 
+`rpi_basis_params(; kwargs...)` : returns a dictionary containing the 
 complete set of parameters required to construct an ACE basis (`RPIBasis`). 
 All parameters are passed as keyword argument. If no default is given then 
 the argument is required. 
@@ -20,7 +23,7 @@ the argument is required.
 * `transform = transform_params(; r0 = r0)` : distance transform parameters; cf `?transform_params()` for details
 * `degreetype = degree_params()` : class of sparse polynomial degree to select the basis; see `?degree_params` for details 
 """
-function basis_params(; 
+function rpi_basis_params(; 
       species = nothing, 
       N::Integer = nothing, 
       maxdeg = nothing, 
@@ -47,22 +50,70 @@ function basis_params(;
          )
 end
 
-function generate_basis(params::Dict)
+function generate_rpi_basis(params::Dict)
    species = _params_to_species(params["species"])
    trans = generate_transform(params["transform"])
    D = generate_degree(params["degree"])
    maxdeg = params["maxdeg"]
-   radbasis = generate_radbasis(params["radbasis"], D, maxdeg, species, trans)
+   radbasis = generate_rpi_radbasis(params["radbasis"], D, maxdeg, species, trans)
    return ACE1.Utils.rpi_basis(; 
             species = species, 
             N = params["N"], 
-            # r0 = r0, 
+            # r0 = r0,    
             trans = trans, 
             D = D, 
             maxdeg = maxdeg, 
             rbasis = radbasis, 
          )
 end
+
+
+# ------------------------------------------
+#  pair basis 
+
+
+"""TODO add documentation"""
+function pair_basis_params(;
+      species = nothing,
+      maxdeg = nothing, 
+      r0 = 2.5,
+      radbasis = radbasis_params(; r0 = r0),
+      transform = transform_params(; r0=r0),
+      )
+      # TODO: replace asserts with something friendlier
+      @assert !isnothing(species)
+      @assert isreal(maxdeg)
+      @assert maxdeg > 0
+      @assert isreal(r0)
+      @assert r0 > 0
+      return Dict(
+            "species" => _species_to_params(species),
+            "maxdeg" => maxdeg,
+            "radbasis" => radbasis,
+            "transform" => transform
+      )
+end
+
+"""TODO add documentation"""
+function generate_pair_basis(params::Dict)
+      species = _params_to_species(params["species"])
+      trans = generate_transform(params["transform"])
+      rb_params = params["radbasis"]
+      radbasis = transformed_jacobi(params["maxdeg"], 
+                                    trans, 
+                                    rb_params["rcut"],
+                                    rb_params["rin"];
+                                    pcut = rb_params["pcut"],
+                                    pin = rb_params["pin"])
+      return ACE1.Utils.pair_basis(;
+            species = species,
+            trans = trans, 
+            rbasis = radbasis,
+      )
+end
+
+
+
 
 _species_to_params(species::Union{Symbol, AbstractString}) = 
       [ string(species), ] 
@@ -76,6 +127,8 @@ _params_to_species(species::AbstractArray{<: AbstractString}) =
 
 # ------------------------------------------
 #  degree 
+
+# ENH: polynomial degree for each correlation order
 
 """
 TODO: needs docs 
@@ -138,7 +191,7 @@ function radbasis_params(;
                )
 end   
 
-function generate_radbasis(params::Dict, D, maxdeg, species, trans)
+function generate_rpi_radbasis(params::Dict, D, maxdeg, species, trans)
    maxn = ACE1.RPI.get_maxn(D, maxdeg, species)
    return transformed_jacobi(maxn, trans, params["rcut"], params["rin"];
                              pcut = params["pcut"], pin = params["pin"] )
@@ -150,6 +203,7 @@ end
 #  this is a little more interesting since there are quite a 
 #  few options. 
 
+# ENH: add multitransform
 
 """
 TODO: needs docs
