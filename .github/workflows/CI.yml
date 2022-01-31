@@ -27,9 +27,6 @@ jobs:
           - x86
     steps:
       - uses: actions/checkout@v2
-      - uses: julia-actions/add-julia-registry@v1
-        with:
-          registry: JuliaMolSim/MolSim
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -44,6 +41,9 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
+      - run: |
+        using Pkg
+        Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
   docs:
