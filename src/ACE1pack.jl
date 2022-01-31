@@ -9,7 +9,7 @@ export JuLIP, ACE1, IPFitting
 
 # Convenience Layer 
 
-include("everything.jl")
+include("fit.jl")
 
 include("data.jl")
 

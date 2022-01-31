@@ -26,8 +26,8 @@ end
 
 """TODO: document this"""
 function read_data(params::Dict)
-    return IPFitting.Data.read_xyz(;
-        params["xyz_filename"],
+    return IPFitting.Data.read_xyz(
+        params["xyz_filename"];
         energy_key = params["energy_key"],
         force_key = params["force_key"],
         virial_key = params["virial_key"])

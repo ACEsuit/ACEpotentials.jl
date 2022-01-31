@@ -2,7 +2,7 @@
 # ------------------------------------------
 #   solver
 
-using IPFitting, ACE1, LinearAlgebra
+using IPFitting, ACE1, LinearAlgebra, JuLIP
 
 export solver_params, precondition_laplacian
 
@@ -16,6 +16,7 @@ function solver_params(;
     ard_tol = 1e-4,
     ard_threshold_lambda = 1e-2 #ard
 )
+    #ENH: maybe use `kwargs...`, similarly to `transform_params`, instead of defining all of the parameters?
 
     # TODO: explain 
     @assert !isnothing(solver)
@@ -45,10 +46,9 @@ _params_to_solver(solver::AbstractString) =
 
 
 """TODO documentation"""
-function generate_solver(params::Dict; basis=nothing)
+function generate_solver(params::Dict)
     params = copy(params)
-    params["solver"] = _params_to_solver(!pop(params, "solver"))
-    apply_preconditioning!(params, basis=basis)
+    params["solver"] = _params_to_solver(pop!(params, "solver"))
     return params
 end
 
@@ -60,10 +60,11 @@ function apply_preconditioning!(params::Dict; basis = nothing)
         @assert !isnothing(basis)
         P = precondition_laplacian(basis, rlap_scal)
         params["P"] = P
+    end
 end
 
 
 """ TODO documentation"""
-function precondition_laplacian(basis::IPSuperBasis, rlap_scal)
-    return Diagonal(vcat(ACE1.scaling.(basis, rlap_scal)...))
+function precondition_laplacian(basis::JuLIP.MLIPs.IPSuperBasis, rlap_scal)
+    return Diagonal(vcat(ACE1.scaling.(basis.BB, rlap_scal)...))
 end
