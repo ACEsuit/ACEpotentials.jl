@@ -42,8 +42,9 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - run: |
-        using Pkg
-        Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
+          using Pkg
+          Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
+        shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
   docs:
