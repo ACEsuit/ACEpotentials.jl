@@ -54,6 +54,11 @@ jobs:
           Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
+      - name: "test-precompile" 
+        run: |
+          using Pkg
+          Pkg.pkg"precompile()"
+        shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-runtest@v1
   docs:
     name: Documentation
