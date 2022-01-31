@@ -1,7 +1,12 @@
 
+@testset "Read data" begin
+
 using ACE1pack
 
-# TODO generate "unittest_training_set.xyz"
-data_dict = data_params(xyz_filename = "unittest_training_set.xyz")
+fit_filename = @__DIR__()*"/files/TiAl_tutorial_DB_tenth.xyz"
 
-ACE1pack.read_data(data_dict)
+@info("Test constructing `data_params` and reading data")
+params = data_params(xyz_filename = fit_filename, energy_key = "energy", force_key = "force", virial_key = "virial")
+data = ACE1pack.read_data(params)
+
+end 

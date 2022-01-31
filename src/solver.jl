@@ -4,7 +4,7 @@
 
 using IPFitting, ACE1, LinearAlgebra, JuLIP
 
-export solver_params, precondition_laplacian
+export solver_params, precondition_laplacian, apply_preconditioning!
 
 """TODO documentation"""
 function solver_params(;
@@ -57,7 +57,7 @@ end
 function apply_preconditioning!(params::Dict; basis = nothing)
     rlap_scal = pop!(params, "rlap_scal", nothing)
     if !isnothing(rlap_scal)
-        @info("Applying preconditioning")
+        @info("Applying preconditioning: `rlap_scal` = $(rlap_scal)")
         @assert !isnothing(basis)
         P = precondition_laplacian(basis, rlap_scal)
         params["P"] = P

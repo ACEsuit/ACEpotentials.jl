@@ -21,7 +21,7 @@ the argument is required.
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
 * `basis1p = basis1p_params(; r0 = r0)` : one-particle basis parameters; cf `?basis1p_params` for details 
 * `transform = transform_params(; r0 = r0)` : distance transform parameters; cf `?transform_params()` for details
-* `degreetype = degree_params()` : class of sparse polynomial degree to select the basis; see `?degree_params` for details 
+* `degree = degree_params()` : class of sparse polynomial degree to select the basis; see `?degree_params` for details 
 """
 function rpi_basis_params(; 
       species = nothing, 
@@ -77,7 +77,7 @@ function pair_basis_params(;
       species = nothing,
       maxdeg = nothing, 
       r0 = 2.5,
-      radbasis = radbasis_params(; r0 = r0),
+      radbasis = radbasis_params(; r0 = r0, pin = 0),
       transform = transform_params(; r0=r0),
       )
       # TODO: replace asserts with something friendlier
