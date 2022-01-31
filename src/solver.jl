@@ -57,6 +57,7 @@ end
 function apply_preconditioning!(params::Dict; basis = nothing)
     rlap_scal = pop!(params, "rlap_scal", nothing)
     if !isnothing(rlap_scal)
+        @info("Applying preconditioning")
         @assert !isnothing(basis)
         P = precondition_laplacian(basis, rlap_scal)
         params["P"] = P
