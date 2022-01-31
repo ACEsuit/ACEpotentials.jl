@@ -57,7 +57,7 @@ jobs:
       - name: "test-precompile" 
         run: |
           using Pkg
-          Pkg.pkg"precompile()"
+          Pkg.precompile()
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-runtest@v1
   docs:
@@ -72,6 +72,12 @@ jobs:
           using Pkg
           Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
         shell: bash -c "julia --color=yes {0}"
+      - uses: actions/setup-python@v2
+        with: 
+          python-version: ${{ matrix.python-version }}
+      - name: install Python packages
+        run: |
+          pip install ase scikit-learn
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:
