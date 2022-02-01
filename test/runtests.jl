@@ -11,4 +11,6 @@ using Test
 
     include("test_fit.jl")
 
+    include("test_read_params.jl")
+
 end

@@ -21,14 +21,15 @@ function solver_params(;
     # TODO: explain 
     @assert !isnothing(solver)
 
-    solver_params = Dict("solver" => _solver_to_params(solver), "rlap_scal" => rlap_scal)
-    if solver == :lsqr
+    solver = _solver_to_params(solver)
+    solver_params = Dict("solver" => solver, "rlap_scal" => rlap_scal)
+    if solver == "lsqr"
         solver_params["lsqr_damp"] = lsqr_damp
         solver_params["lsqr_atol"] = lsqr_atol
-    elseif solver == :rrqr
+    elseif solver == "rrqr"
         solver_params["rrqr_tol"] = rrqr_tol
-    elseif solver == :brr
-    elseif solver == :ard
+    elseif solver == "brr"
+    elseif solver == "ard"
         solver_params["ard_tol"] = ard_tol
         solver_params["ard_threshold_lambda"] = ard_threshold_lambda
     else

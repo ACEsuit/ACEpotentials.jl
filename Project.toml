@@ -10,6 +10,7 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
 ACE1 = "0.9.1"
