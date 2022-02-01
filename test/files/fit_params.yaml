@@ -17,7 +17,7 @@ rpi_basis:
   maxdeg: 6
   r0: 2.88
   radbasis:
-    pcut: 0
+    pin: 2 
     rcut: 5.0
     rin: 1.44
   species:

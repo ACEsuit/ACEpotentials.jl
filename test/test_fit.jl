@@ -17,9 +17,7 @@
     rpi_radbasis = radbasis_params(rcut = 5.5, rin = 0.6 * r0, pin = 2)
     rpi_basis = rpi_basis_params(species = species, N = 3, maxdeg = 6, r0 = r0, radbasis = rpi_radbasis)
 
-    # pair_radbasis = radbasis_params(rcut = 7.0, pcut = 1, pin = 0, rin = 0.0)
-    pair_radbasis = radbasis_params(rcut = 7.0, pcut = 1, pin = 0, rin = 0.5 * r0)
-
+    pair_radbasis = radbasis_params(rcut = 7.0, pcut = 1, pin = 0, rin = 0.0)
     pair_basis = pair_basis_params(species = species, maxdeg = 6, r0 = r0, radbasis = pair_radbasis)
 
     solver = solver_params(solver = :lsqr, rlap_scal = 3.0)
@@ -39,7 +37,8 @@
         pair_basis = pair_basis,
         solver = solver,
         e0 = e0,
-        weights = weights)
+        weights = weights,
+        ACE_fname_stem = false)
 
     IP, lsqinfo = ACE1pack.fit_ace(fit_params)
 
