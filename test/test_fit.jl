@@ -9,7 +9,7 @@
     species = [:Ti, :Al]
     r0 = sum(rnn(sp) for sp in species) / length(species)
 
-    data = data_params(xyz_filename = fit_filename,
+    data = data_params(fname = fit_filename,
         energy_key = "energy",
         force_key = "force",
         virial_key = "virial")

@@ -36,10 +36,10 @@ function fit_ace(params::Dict)
 
     lsqinfo["fit_dict"] = params 
 
-    if !isnothing(params["ACE_filename"])
+    if !isnothing(params["ACE_fname_stem"])
         # ENH: save to yace option
-        @info("Saving fit to $(params["ACE_filename"])")
-        save_dict(params["ACE_filename"], Dict("IP" => write_dict(IP), "info" => lsqinfo))
+        @info("Saving fit to $(params["ACE_fname_stem"] * ".json")")
+        save_dict(params["ACE_fname_stem"] * ".json", Dict("IP" => write_dict(IP), "info" => lsqinfo))
     end
     return IP, lsqinfo
 
@@ -52,7 +52,7 @@ function ace_params(;
     solver = nothing, 
     e0 = nothing, 
     weights = nothing, 
-    ACE_filename = nothing, 
+    ACE_fname_stem = nothing, 
     db_filename = "", 
     )
 
@@ -70,7 +70,7 @@ function ace_params(;
             "solver" => solver,
             "e0" => e0,
             "weights" => weights,
-            "ACE_filename" => ACE_filename,
+            "ACE_fname_stem" => ACE_fname_stem,
             "db_filename" => db_filename,
             )
 end

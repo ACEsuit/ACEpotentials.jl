@@ -1,8 +1,8 @@
-ACE_filename: tial_ace.json
+ACE_fname_stem: tial_ace
 data:
   force_key: force
   virial_key: virial
-  xyz_filename: /Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz
+  fname: /Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz
 e0:
   Al: -105.5954
   Ti: -1586.0195

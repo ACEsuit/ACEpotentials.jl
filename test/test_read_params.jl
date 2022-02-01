@@ -5,7 +5,7 @@ using ACE1pack
 
 data = Dict(
     "energy_key"   => "energy",
-    "xyz_filename" => "/Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz",
+    "fname" => "/Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz",
     "virial_key"   => "virial")
 
 @info("Quick test for filling in missing param entries with defaults")
