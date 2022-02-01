@@ -21,7 +21,7 @@ trans_params = transform_params(r0 = 1.1)
 transform = ACE1pack.generate_transform(trans_params)
 
 @info("Test constructing radial basis parameters and rpi radial basis")
-rad_basis = radbasis_params()
+rad_basis = radbasis_params(rin = 0.0, pin = 0)
 ACE1pack.generate_rpi_radbasis(rad_basis, D, 6, :Si, transform)
 
 end
