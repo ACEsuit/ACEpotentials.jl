@@ -28,7 +28,7 @@ function rpi_basis_params(;
       N::Integer = nothing, 
       maxdeg = nothing, 
       r0 = 2.5, 
-      radbasis = radbasis_params(; r0 = r0), 
+      radbasis = radbasis_params(; rin = 0.5 * r0, pin = 2), 
       transform = transform_params(; r0 = r0), 
       degree = degree_params()
    )
@@ -77,7 +77,7 @@ function pair_basis_params(;
       species = nothing,
       maxdeg = nothing, 
       r0 = 2.5,
-      radbasis = radbasis_params(; r0 = r0, pin = 0),
+      radbasis = radbasis_params(; rin = 0.0, pin = 0),
       transform = transform_params(; r0=r0),
       )
       # TODO: replace asserts with something friendlier
@@ -177,12 +177,14 @@ end
 TODO: needs docs 
 """ 
 function radbasis_params(; 
-         r0 = 2.5, 
-         rcut = 5.0,
-         rin = 0.5 * r0,
-         pcut = 2,
-         pin = 2
-         )
+      rin = nothing, 
+      pin = nothing,
+      rcut = 5.0,
+      pcut = 2)
+
+      @assert !isnothing(rin)
+      @assert !isnothing(pin)
+
    # TODO put in similar checks 
    return Dict( "rcut" => rcut, 
                 "rin" => rin, 
