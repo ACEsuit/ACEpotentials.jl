@@ -1,19 +1,18 @@
 ACE_filename: tial_ace.json
-data_params:
+data:
   force_key: force
   virial_key: virial
   xyz_filename: /Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz
-e0_dict:
+e0:
   Al: -105.5954
   Ti: -1586.0195
-error_table: true
-pair_basis_params:
+pair_basis:
   maxdeg: 6
   r0: 2.88
   species:
   - Ti
   - Al
-rpi_basis_params:
+rpi_basis:
   N: 3
   maxdeg: 6
   r0: 2.88
@@ -24,7 +23,7 @@ rpi_basis_params:
   species:
   - Ti
   - Al
-solver_params:
+solver:
   lsqr_damp: 0.001
   rlap_scal: 3.0
   solver: lsqr

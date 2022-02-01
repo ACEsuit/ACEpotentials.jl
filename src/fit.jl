@@ -12,27 +12,26 @@ TODO: documentation:
 function fit_ace(params::Dict)
 
     # ENH: remove need for specifying species, because they can be read from data (any caveats??)
-    data =  ACE1pack.read_data(params["data_params"])
+    data =  ACE1pack.read_data(params["data"])
 
     # ENH: think if anything is ever specified for both rpi_basis and pair_basis and maybe have just one "basis_params" dict
     # ENH: alternative/default to get r0 from data
-    ACE_basis = ACE1pack.generate_rpi_basis(params["rpi_basis_params"])
-    pair_basis = ACE1pack.generate_pair_basis(params["pair_basis_params"])
+    ACE_basis = ACE1pack.generate_rpi_basis(params["rpi_basis"])
+    pair_basis = ACE1pack.generate_pair_basis(params["pair_basis"])
     basis = JuLIP.MLIPs.IPSuperBasis([pair_basis, ACE_basis]);
 
     #ENH option to read-in LsqDB from file
     db = LsqDB(params["db_filename"], basis, data)
 
-    solver = ACE1pack.generate_solver(params["solver_params"])
+    solver = ACE1pack.generate_solver(params["solver"])
     apply_preconditioning!(solver, basis=basis)
 
     # ENH: altrnative/default to get isolated atom energies from the dataset (like gap)
-    Vref = OneBody(params["e0_dict"])
+    Vref = OneBody(params["e0"])
 
     weights = params["weights"]
-    error_table = params["error_table"]
 
-    IP, lsqinfo = lsqfit(db, solver=solver, Vref=Vref, weights=weights, error_table=error_table)
+    IP, lsqinfo = lsqfit(db, solver=solver, Vref=Vref, weights=weights, error_table=true)
 
     @info("Fitting errors")
     rmse_table(lsqinfo["errors"])
@@ -49,34 +48,32 @@ function fit_ace(params::Dict)
 end
 
 function ace_params(;
-    data_params = nothing,
-    rpi_basis_params = nothing,
-    pair_basis_params = nothing,
-    solver_params = nothing, 
-    e0_dict = nothing, 
+    data = nothing,
+    rpi_basis = nothing,
+    pair_basis = nothing,
+    solver = nothing, 
+    e0 = nothing, 
     weights = nothing, 
     ACE_filename = nothing, 
     db_filename = "", 
-    error_table = true, 
     )
 
     # TODO - friendlify
-    @assert !isnothing(data_params)
-    @assert !isnothing(rpi_basis_params)
-    @assert !isnothing(pair_basis_params)
-    @assert !isnothing(solver_params)
-    @assert !isnothing(e0_dict)
+    @assert !isnothing(data)
+    @assert !isnothing(rpi_basis)
+    @assert !isnothing(pair_basis)
+    @assert !isnothing(solver)
+    @assert !isnothing(e0)
 
     return Dict(
-            "data_params" => data_params,
-            "rpi_basis_params" => rpi_basis_params,
-            "pair_basis_params" => pair_basis_params,
-            "solver_params" => solver_params,
-            "e0_dict" => e0_dict,
+            "data" => data,
+            "rpi_basis" => rpi_basis,
+            "pair_basis" => pair_basis,
+            "solver" => solver,
+            "e0" => e0,
             "weights" => weights,
             "ACE_filename" => ACE_filename,
             "db_filename" => db_filename,
-            "error_table" => error_table
             )
 end
 

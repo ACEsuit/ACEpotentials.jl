@@ -21,13 +21,12 @@ function fill_default_params(params::Dict, param_key)
     # Go through the nested dictionaries filling in the default values
     params = _fill_default(params, param_key)
     for (key, val) in params
-        if val isa Dict &&  ~(key in ["weights", "e0_dict"])
+        if val isa Dict &&  ~(key in ["weights", "e0"])
             params[key] = fill_default_params(val, key)
         end
     end
     return params
 end
-
 
 """
 Converts dictionary of parameters to keyword arguments and
@@ -41,10 +40,10 @@ end
 
 _dict_constructors = Dict(
     "fit_params" => ACE1pack.ace_params,
-    "data_params" => ACE1pack.data_params,
-    "solver_params" => ACE1pack.solver_params,
-    "rpi_basis_params" => ACE1pack.rpi_basis_params,
-    "pair_basis_params" => ACE1pack.pair_basis_params,
+    "data" => ACE1pack.data_params,
+    "solver" => ACE1pack.solver_params,
+    "rpi_basis" => ACE1pack.rpi_basis_params,
+    "pair_basis" => ACE1pack.pair_basis_params,
     "radbasis" => ACE1pack.radbasis_params,
     "transform" => ACE1pack.transform_params,
     "degree" => ACE1pack.degree_params

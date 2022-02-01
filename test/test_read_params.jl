@@ -9,7 +9,7 @@ data = Dict(
     "virial_key"   => "virial")
 
 @info("Quick test for filling in missing param entries with defaults")
-data = ACE1pack.fill_default_params(data, "data_params")
+data = ACE1pack.fill_default_params(data, "data")
 @test "force_key" in collect(keys(data))
 
 @info("Test loading params from json")
