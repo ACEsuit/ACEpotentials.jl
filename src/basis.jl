@@ -59,7 +59,6 @@ function generate_rpi_basis(params::Dict)
    return ACE1.Utils.rpi_basis(; 
             species = species, 
             N = params["N"], 
-            # r0 = r0,    
             trans = trans, 
             D = D, 
             maxdeg = maxdeg, 

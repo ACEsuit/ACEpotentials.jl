@@ -14,8 +14,8 @@ function solver_params(;
     lsqr_atol = 1e-6,
     rrqr_tol = 1e-5,
     ard_tol = 1e-4,
-    ard_threshold_lambda = 1e-2 #ard
-)
+    ard_threshold_lambda = 1e-2)
+
     #ENH: maybe use `kwargs...`, similarly to `transform_params`, instead of defining all of the parameters?
 
     # TODO: explain 

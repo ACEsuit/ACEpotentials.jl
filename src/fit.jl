@@ -11,11 +11,9 @@ TODO: documentation:
 """
 function fit_ace(params::Dict)
 
-    # ENH: remove need for specifying species, because they can be read from data (any caveats??)
+    # ENH: make species non-mandatory and read from data
     data =  ACE1pack.read_data(params["data"])
 
-    # ENH: think if anything is ever specified for both rpi_basis and pair_basis and maybe have just one "basis_params" dict
-    # ENH: alternative/default to get r0 from data
     ACE_basis = ACE1pack.generate_rpi_basis(params["rpi_basis"])
     pair_basis = ACE1pack.generate_pair_basis(params["pair_basis"])
     basis = JuLIP.MLIPs.IPSuperBasis([pair_basis, ACE_basis]);
