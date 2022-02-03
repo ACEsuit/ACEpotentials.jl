@@ -46,7 +46,8 @@ _dict_constructors = Dict(
     "pair_basis" => ACE1pack.pair_basis_params,
     "radbasis" => ACE1pack.radbasis_params,
     "transform" => ACE1pack.transform_params,
-    "degree" => ACE1pack.degree_params
+    "degree" => ACE1pack.degree_params,
+    "P" => ACE1pack.precon_params
 )
 
 _params_to_kwargs(params::Dict) = 

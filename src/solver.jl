@@ -4,43 +4,38 @@
 
 using IPFitting, ACE1, LinearAlgebra, JuLIP
 
-export solver_params, precondition_laplacian, apply_preconditioning!
+export solver_params, generate_solver  
 
 """TODO documentation"""
-function solver_params(;
-    solver = nothing,
-    rlap_scal = nothing,
-    lsqr_damp = 5e-3,
-    lsqr_atol = 1e-6,
-    rrqr_tol = 1e-5,
-    ard_tol = 1e-4,
-    ard_threshold_lambda = 1e-2)
-
-    #ENH: maybe use `kwargs...`, similarly to `transform_params`, instead of defining all of the parameters?
-
-    # TODO: explain 
-    @assert !isnothing(solver)
-
+function solver_params(; solver = nothing, kwargs...)
+    # TODO error message
     solver = _solver_to_params(solver)
-    solver_params = Dict("solver" => solver, "rlap_scal" => rlap_scal)
-    if solver == "lsqr"
-        solver_params["lsqr_damp"] = lsqr_damp
-        solver_params["lsqr_atol"] = lsqr_atol
-    elseif solver == "rrqr"
-        solver_params["rrqr_tol"] = rrqr_tol
-    elseif solver == "brr"
-    elseif solver == "ard"
-        solver_params["ard_tol"] = ard_tol
-        solver_params["ard_threshold_lambda"] = ard_threshold_lambda
-    else
-        throw(error("Unrecognised solver \"$(solver)\". Available options: $(:lsqr), $(:rrqr), $(:brr), $(:ard)"))
-    end
-
-    return solver_params
+    @assert solver in keys(_solvers_params)
+    return _solvers_params[solver](; kwargs...)
 end
+
+
+# TODO: add asserts & error messages for solvers' parameters
+lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6) = 
+    Dict("solver" => "lsqr", "lsqr_damp" => lsqr_damp, "lsqr_atol" => lsqr_atol)
+
+rrqr_params(; rrqr_tol = 1e-5) =
+    Dict("solver" => "rrqr", "rrqr_tol" => rrqr_tol)
+
+brr_params(; brr_tol = 1e-3) = 
+    Dict("solver" => "brr", "brr_tol" => brr_tol)
+
+ard_params(; ard_tol = 1e-3, ard_threshold_lambda = 10000) = 
+    Dict("solver" => "ard", "ard_tol" => ard_tol, "ard_threshold_lambda" => ard_threshold_lambda)
+
 
 _solver_to_params(solver::Union{Symbol, AbstractString}) = 
     string(solver)
+
+
+_solvers_params = Dict("lsqr" => lsqr_params, "rrqr" => rrqr_params, 
+                        "brr" => brr_params, "ard" => ard_params)
+
 
 _params_to_solver(solver::AbstractString) = 
     Symbol.(solver)
@@ -53,20 +48,3 @@ function generate_solver(params::Dict)
     return params
 end
 
-
-"""TODO documentation"""
-function apply_preconditioning!(params::Dict; basis = nothing)
-    rlap_scal = pop!(params, "rlap_scal", nothing)
-    if !isnothing(rlap_scal)
-        @info("Applying preconditioning: `rlap_scal` = $(rlap_scal)")
-        @assert !isnothing(basis)
-        P = precondition_laplacian(basis, rlap_scal)
-        params["P"] = P
-    end
-end
-
-
-""" TODO documentation"""
-function precondition_laplacian(basis::JuLIP.MLIPs.IPSuperBasis, rlap_scal)
-    return Diagonal(vcat(ACE1.scaling.(basis.BB, rlap_scal)...))
-end

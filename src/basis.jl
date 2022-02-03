@@ -112,8 +112,6 @@ function generate_pair_basis(params::Dict)
 end
 
 
-
-
 _species_to_params(species::Union{Symbol, AbstractString}) = 
       [ string(species), ] 
 

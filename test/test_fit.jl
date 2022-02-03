@@ -20,7 +20,7 @@
     pair_radbasis = radbasis_params(rcut = 7.0, pcut = 1, pin = 0, rin = 0.0)
     pair_basis = pair_basis_params(species = species, maxdeg = 6, r0 = r0, radbasis = pair_radbasis)
 
-    solver = solver_params(solver = :lsqr, rlap_scal = 3.0)
+    solver = solver_params(solver = :lsqr)
 
     # symbols for species (e.g. :Ti) would work as well
     e0 = Dict("Ti" => -1586.0195, "Al" => -105.5954)
@@ -30,6 +30,8 @@
         "FLD_TiAl" => Dict("E" => 5.0, "F" => 1.0, "V" => 1.0),
         "TiAl_T5000" => Dict("E" => 30.0, "F" => 1.0, "V" => 1.0))
 
+    P = precon_params(type = "laplacian", rlap_scal = 3.0)
+
 
     fit_params = ace_params(
         data = data,
@@ -38,7 +40,8 @@
         solver = solver,
         e0 = e0,
         weights = weights,
-        ACE_fname_stem = false)
+        P = P,
+        ACE_fname_stem = "")
 
     IP, lsqinfo = ACE1pack.fit_ace(fit_params)
 

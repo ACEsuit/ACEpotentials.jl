@@ -17,6 +17,8 @@ include("basis.jl")
 
 include("solver.jl")
 
+include("precon.jl")
+
 include("read_params.jl")
 
 end

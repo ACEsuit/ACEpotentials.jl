@@ -11,22 +11,26 @@ TODO: documentation:
 """
 function fit_ace(params::Dict)
 
+    # ENH: don't generate redundant stuff if db is read from disk. 
+    # ENH: make species non-mandatory and read from data
+    data =  ACE1pack.read_data(params["data"])
+
+    ACE_basis = ACE1pack.generate_rpi_basis(params["rpi_basis"])
+    pair_basis = ACE1pack.generate_pair_basis(params["pair_basis"])
+    basis = JuLIP.MLIPs.IPSuperBasis([pair_basis, ACE_basis]);
+
     if params["fit_from_db"]
         db = LsqDB(params["ACE_fname_stem"] * "_kron.h5")
     else
-        # ENH: make species non-mandatory and read from data
-        data =  ACE1pack.read_data(params["data"])
-
-        ACE_basis = ACE1pack.generate_rpi_basis(params["rpi_basis"])
-        pair_basis = ACE1pack.generate_pair_basis(params["pair_basis"])
-        basis = JuLIP.MLIPs.IPSuperBasis([pair_basis, ACE_basis]);
-
-        #ENH option to read-in LsqDB from file
         db = LsqDB(params["ACE_fname_stem"], basis, data)
     end
 
+
     solver = ACE1pack.generate_solver(params["solver"])
-    apply_preconditioning!(solver, basis=basis)
+
+    if !isnothing(params["P"]) 
+        solver["P"] = ACE1pack.generate_precon(basis, params["P"])
+    end
 
     Vref = OneBody(params["e0"])
 
@@ -51,6 +55,7 @@ function ace_params(;
     solver = nothing, 
     e0 = nothing, 
     weights = nothing, 
+    P = nothing,
     ACE_fname_stem = "ace_fit", 
     fit_from_db = false)
 
@@ -68,6 +73,7 @@ function ace_params(;
             "solver" => solver,
             "e0" => e0,
             "weights" => weights,
+            "P" => P,
             "ACE_fname_stem" => ACE_fname_stem, 
             "fit_from_db" => fit_from_db)
 end
@@ -80,7 +86,7 @@ function _save_fit(stem, IP, lsqinfo)
     end
     fname = stem * ".json"
     if isfile(fname)
-        fnew =  stem * "." * String(rand('a':'z', 5))
+        fnew =  stem * "." * String(rand('a':'z', 5)) * ".json"
         @warn("The file $fname already exists. It will be renamed to $fnew to avoid overwriting.")
         mv(fname, fnew)
         fname = fnew
