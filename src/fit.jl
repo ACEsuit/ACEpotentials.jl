@@ -4,7 +4,7 @@
 
 import IPFitting, ACE1pack, ACE1
 
-export ace_params, fit_ace 
+export fit_params, fit_ace 
 
 """
 TODO: documentation:
@@ -48,7 +48,7 @@ function fit_ace(params::Dict)
     return IP, lsqinfo
 end
 
-function ace_params(;
+function fit_params(;
     data = nothing,
     rpi_basis = nothing,
     pair_basis = nothing,

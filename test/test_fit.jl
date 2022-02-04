@@ -33,7 +33,7 @@
     P = precon_params(type = "laplacian", rlap_scal = 3.0)
 
 
-    fit_params = ace_params(
+    params = fit_params(
         data = data,
         rpi_basis = rpi_basis,
         pair_basis = pair_basis,
@@ -43,7 +43,7 @@
         P = P,
         ACE_fname_stem = "")
 
-    IP, lsqinfo = ACE1pack.fit_ace(fit_params)
+    IP, lsqinfo = ACE1pack.fit_ace(params)
 
     expected_errors = load_dict(@__DIR__() * "/files/expected_fit_errors.json")
     errors = lsqinfo["errors"]

@@ -2,27 +2,17 @@
 # ------------------------------------------
 #   Read ACE fit parameters from file 
 
-using JSON, YAML, ACE1pack 
+using ACE1pack
 
-export json_to_params, yaml_to_params, fill_default_params
-
-function yaml_to_params(filename::AbstractString)
-    raw_params = YAML.load_file(filename)
-    return fill_default_params(raw_params, "fit_params")
-end
-
-function json_to_params(filename::AbstractString)
-    raw_params = JSON.parsefile(filename)
-    return fill_default_params(raw_params, "fit_params")
-end
+export  fill_defaults!
 
 """ Recursively updates nested dictionaries with default parameters"""
-function fill_default_params(params::Dict, param_key)
+function fill_defaults!(params::Dict; param_key = "fit_params")
     # Go through the nested dictionaries filling in the default values
     params = _fill_default(params, param_key)
     for (key, val) in params
         if val isa Dict &&  ~(key in ["weights", "e0"])
-            params[key] = fill_default_params(val, key)
+            params[key] = fill_defaults!(val; param_key = key)
         end
     end
     return params
@@ -39,7 +29,7 @@ function _fill_default(d::Dict, key)
 end
 
 _dict_constructors = Dict(
-    "fit_params" => ACE1pack.ace_params,
+    "fit_params" => ACE1pack.fit_params,
     "data" => ACE1pack.data_params,
     "solver" => ACE1pack.solver_params,
     "rpi_basis" => ACE1pack.rpi_basis_params,
