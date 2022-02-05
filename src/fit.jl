@@ -15,9 +15,8 @@ function fit_ace(params::Dict)
     # ENH: make species non-mandatory and read from data
     data =  ACE1pack.read_data(params["data"])
 
-    ACE_basis = ACE1pack.generate_rpi_basis(params["rpi_basis"])
-    pair_basis = ACE1pack.generate_pair_basis(params["pair_basis"])
-    basis = JuLIP.MLIPs.IPSuperBasis([pair_basis, ACE_basis]);
+    basis = [ACE1pack.generate_basis(p) for p in params["basis"]]
+    basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
     if params["fit_from_db"]
         db = LsqDB(params["ACE_fname_stem"] * "_kron.h5")
@@ -41,7 +40,7 @@ function fit_ace(params::Dict)
     @info("Fitting errors")
     rmse_table(lsqinfo["errors"])
 
-    lsqinfo["fit_dict"] = params 
+    lsqinfo["fit_params"] = params 
 
     _save_fit(params["ACE_fname_stem"], IP, lsqinfo)
 
@@ -50,8 +49,7 @@ end
 
 function fit_params(;
     data = nothing,
-    rpi_basis = nothing,
-    pair_basis = nothing,
+    basis = nothing,
     solver = nothing, 
     e0 = nothing, 
     weights = nothing, 
@@ -61,15 +59,13 @@ function fit_params(;
 
     # TODO - friendlify
     @assert !isnothing(data)
-    @assert !isnothing(rpi_basis)
-    @assert !isnothing(pair_basis)
+    @assert !isnothing(basis)
     @assert !isnothing(solver)
     @assert !isnothing(e0)
 
     return Dict(
             "data" => data,
-            "rpi_basis" => rpi_basis,
-            "pair_basis" => pair_basis,
+            "basis" => basis,
             "solver" => solver,
             "e0" => e0,
             "weights" => weights,
@@ -91,7 +87,7 @@ function _save_fit(stem, IP, lsqinfo)
         mv(fname, fnew)
         fname = fnew
     end
-    @info("Saving ace fit to fname")
+    @info("Saving ace fit to $(fname)")
     save_dict(fname, Dict("IP" => write_dict(IP), "info" => lsqinfo))
 end
 

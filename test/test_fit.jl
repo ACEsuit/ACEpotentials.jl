@@ -14,11 +14,27 @@
         force_key = "force",
         virial_key = "virial")
 
-    rpi_radbasis = radbasis_params(rcut = 5.5, rin = 0.6 * r0, pin = 2)
-    rpi_basis = rpi_basis_params(species = species, N = 3, maxdeg = 6, r0 = r0, radbasis = rpi_radbasis)
+    rpi_basis = basis_params(
+        type = "rpi",
+        species = species, 
+        N = 3, 
+        maxdeg = 6, 
+        r0 = r0, 
+        rad_basis = basis_params(
+            type = "rad", 
+            rcut = 5.5, 
+            rin = 0.6 * r0,
+            pin = 2))
 
-    pair_radbasis = radbasis_params(rcut = 7.0, pcut = 1, pin = 0, rin = 0.0)
-    pair_basis = pair_basis_params(species = species, maxdeg = 6, r0 = r0, radbasis = pair_radbasis)
+    pair_basis = basis_params(
+        type = "pair", 
+        species = species, 
+        maxdeg = 6,
+        r0 = r0,
+        rcut = 7.0,
+        rin = 0.0,
+        pcut = 1, # TODO: check if it should be 1 or 2?
+        pin = 0)
 
     solver = solver_params(solver = :lsqr)
 
@@ -35,8 +51,7 @@
 
     params = fit_params(
         data = data,
-        rpi_basis = rpi_basis,
-        pair_basis = pair_basis,
+        basis = [rpi_basis, pair_basis],
         solver = solver,
         e0 = e0,
         weights = weights,

@@ -2,7 +2,24 @@
 # ------------------------------------------
 #   ACE Basis  
 
-export rpi_basis_params, pair_basis_params, degree_params, radbasis_params, transform_params
+import ACE1.PairPotentials: PolyPairBasis
+
+
+export basis_params, degree_params, transform_params
+
+function basis_params(;
+      type = nothing, 
+      kwargs...)
+      @assert haskey(_bases, type)
+      return _bases[type][2](; kwargs...)
+end
+
+function generate_basis(params::Dict)
+      @assert params["type"] != "rad" 
+      basis_constructor = _bases[params["type"]][1]
+      delete!(params, "type")
+      return basis_constructor(params)
+end
 
 
 # ------------------------------------------
@@ -28,7 +45,7 @@ function rpi_basis_params(;
       N::Integer = nothing, 
       maxdeg = nothing, 
       r0 = 2.5, 
-      radbasis = radbasis_params(; rin = 0.5 * r0, pin = 2), 
+      rad_basis = rad_basis_params(; r0 = r0), 
       transform = transform_params(; r0 = r0), 
       degree = degree_params()
    )
@@ -41,10 +58,11 @@ function rpi_basis_params(;
    @assert isreal(r0)
    @assert r0 > 0 
    return Dict( 
+         "type" => "rpi",
          "species" => _species_to_params(species), 
          "N" => N, 
          "maxdeg" => maxdeg, 
-         "radbasis" => radbasis, 
+         "rad_basis" => rad_basis, 
          "transform" => transform, 
          "degree" => degree
          )
@@ -55,14 +73,14 @@ function generate_rpi_basis(params::Dict)
    trans = generate_transform(params["transform"])
    D = generate_degree(params["degree"])
    maxdeg = params["maxdeg"]
-   radbasis = generate_rpi_radbasis(params["radbasis"], D, maxdeg, species, trans)
+   rad_basis = generate_rad_basis(params["rad_basis"], D, maxdeg, species, trans)
    return ACE1.Utils.rpi_basis(; 
             species = species, 
             N = params["N"], 
             trans = trans, 
             D = D, 
             maxdeg = maxdeg, 
-            rbasis = radbasis, 
+            rbasis = rad_basis, 
          )
 end
 
@@ -76,40 +94,83 @@ function pair_basis_params(;
       species = nothing,
       maxdeg = nothing, 
       r0 = 2.5,
-      radbasis = radbasis_params(; rin = 0.0, pin = 0),
+      rcut = 5.0,
+      rin = 0.0,
+      pcut = 2, 
+      pin = 0,
       transform = transform_params(; r0=r0),
       )
+
       # TODO: replace asserts with something friendlier
       @assert !isnothing(species)
       @assert isreal(maxdeg)
       @assert maxdeg > 0
       @assert isreal(r0)
       @assert r0 > 0
+
       return Dict(
+            "type" => "pair",
             "species" => _species_to_params(species),
             "maxdeg" => maxdeg,
-            "radbasis" => radbasis,
-            "transform" => transform
-      )
+            "rcut" => rcut,
+            "rin" => rin,
+            "pcut" => pcut,
+            "pin" => pin,
+            "transform" => transform)
 end
 
 """TODO add documentation"""
 function generate_pair_basis(params::Dict)
       species = _params_to_species(params["species"])
       trans = generate_transform(params["transform"])
-      rb_params = params["radbasis"]
-      radbasis = transformed_jacobi(params["maxdeg"], 
-                                    trans, 
-                                    rb_params["rcut"],
-                                    rb_params["rin"];
-                                    pcut = rb_params["pcut"],
-                                    pin = rb_params["pin"])
-      return ACE1.Utils.pair_basis(;
-            species = species,
-            trans = trans, 
-            rbasis = radbasis,
-      )
+      rad_basis = transformed_jacobi(
+            params["maxdeg"],
+            trans, 
+            params["rcut"],
+            params["rin"];
+            pcut = params["pcut"],
+            pin = params["pin"])
+
+      return PolyPairBasis(rad_basis, species)
+
 end
+
+# ------------------------------------------
+#  rad_basis 
+
+"""
+TODO: needs docs 
+""" 
+function rad_basis_params(; 
+      r0 = 2.5,
+      rcut = 5.0,
+      rin = 0.5 * r0,
+      pcut = 2,
+      pin = 2)
+
+   # TODO put in similar checks 
+   return Dict(
+      "type" => "rad",
+      "rcut" => rcut, 
+      "rin" => rin, 
+      "pcut" => pcut, 
+      "pin" => pin )
+end   
+
+function generate_rad_basis(params::Dict, D, maxdeg, species, trans)
+   maxn = ACE1.RPI.get_maxn(D, maxdeg, species)
+   return transformed_jacobi(maxn, trans, params["rcut"], params["rin"];
+                             pcut = params["pcut"], pin = params["pin"] )
+end
+
+
+# ------------------------------------------
+#  basis helper functions 
+
+
+_bases = Dict("pair" => (generate_pair_basis, pair_basis_params),  
+              "rpi" => (generate_rpi_basis, rpi_basis_params),
+              "rad" => (nothing, rad_basis_params))
 
 
 _species_to_params(species::Union{Symbol, AbstractString}) = 
@@ -165,35 +226,6 @@ function generate_degree(params::Dict)
                             ahc = params["ahc"],
                             bhc = params["bhc"] 
                           )
-end
-
-# ------------------------------------------
-#  radbasis 
-
-"""
-TODO: needs docs 
-""" 
-function radbasis_params(; 
-      rin = nothing, 
-      pin = nothing,
-      rcut = 5.0,
-      pcut = 2)
-
-      @assert !isnothing(rin)
-      @assert !isnothing(pin)
-
-   # TODO put in similar checks 
-   return Dict( "rcut" => rcut, 
-                "rin" => rin, 
-                "pcut" => pcut, 
-                "pin" => pin 
-               )
-end   
-
-function generate_rpi_radbasis(params::Dict, D, maxdeg, species, trans)
-   maxn = ACE1.RPI.get_maxn(D, maxdeg, species)
-   return transformed_jacobi(maxn, trans, params["rcut"], params["rin"];
-                             pcut = params["pcut"], pin = params["pin"] )
 end
 
 

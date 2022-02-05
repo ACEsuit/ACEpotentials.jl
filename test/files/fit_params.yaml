@@ -6,23 +6,29 @@ data:
 e0:
   Al: -105.5954
   Ti: -1586.0195
-pair_basis:
-  maxdeg: 6
-  r0: 2.88
-  species:
-  - Ti
-  - Al
-rpi_basis:
-  N: 3
-  maxdeg: 6
-  r0: 2.88
-  radbasis:
-    pin: 2 
+basis:
+  pair_basis:
+    maxdeg: 6
+    r0: 2.88
+    species:
+    - Ti
+    - Al
     rcut: 5.0
     rin: 1.44
-  species:
-  - Ti
-  - Al
+    pcut: 2
+    pin: 2
+  rpi_basis:
+    N: 3
+    maxdeg: 6
+    r0: 2.88
+    rad_basis:
+      type: rad
+      pin: 2 
+      rcut: 5.0
+      rin: 1.44
+    species:
+    - Ti
+    - Al
 solver:
   lsqr_damp: 0.001
   solver: lsqr
