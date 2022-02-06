@@ -1,15 +1,90 @@
-{"data": 
-    {"fname": "/Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz", "energy_key": "energy", "force_key": "force", "virial_key": "virial"}, 
-"basis":[
-    {"type": "rpi", "species": ["Ti", "Al"], "N": 3, "maxdeg": 6, "r0": 2.88, "rad_basis": {"type": "rad", "rcut": 5.0, "rin": 1.44, "pcut": 2, "pin": 2}, "transform": {"type": "polynomial", "p": 2, "r0": 2.88}, "degree": {"type": "sparse", "wL": 1.5, "csp": 1.0, "chc": 0.0, "ahc": 0.0, "bhc": 0.0, "p": 1.0}},
-    {"type": "pair", "species": ["Ti", "Al"], "maxdeg": 6, "r0": 2.88, "rcut": 5.0, "rin": 1.44, "pcut": 2, "pin": 2, "transform": {"type": "polynomial", "p": 2, "r0": 2.88}}
+{
+    "data": {
+        "fname": "/Users/elena/.julia/dev/ACE1pack/test/files/TiAl_tutorial_DB_tenth.xyz",
+        "energy_key": "energy",
+        "force_key": "force",
+        "virial_key": "virial"
+    },
+    "basis": [
+        {
+            "type": "rpi",
+            "species": [
+                "Ti",
+                "Al"
+            ],
+            "N": 3,
+            "maxdeg": 6,
+            "r0": 2.88,
+            "rad_basis": {
+                "type": "rad",
+                "rcut": 5.0,
+                "rin": 1.44,
+                "pcut": 2,
+                "pin": 2
+            },
+            "transform": {
+                "type": "polynomial",
+                "p": 2,
+                "r0": 2.88
+            },
+            "degree": {
+                "type": "sparse",
+                "wL": 1.5,
+                "csp": 1.0,
+                "chc": 0.0,
+                "ahc": 0.0,
+                "bhc": 0.0,
+                "p": 1.0
+            }
+        },
+        {
+            "type": "pair",
+            "species": [
+                "Ti",
+                "Al"
+            ],
+            "maxdeg": 6,
+            "r0": 2.88,
+            "rcut": 5.0,
+            "rin": 0.0,
+            "pcut": 2,
+            "pin": 0,
+            "transform": {
+                "type": "polynomial",
+                "p": 2,
+                "r0": 2.88
+            }
+        }
     ],
-"solver": 
-    {"solver": "lsqr", "lsqr_damp": 0.005, "lsqr_atol": 1e-06}, 
-"P": 
-    {"type": "laplacian", "rlap_scal": 3.0}, 
-"e0": 
-    {"Ti": -1586.0195, "Al": -105.5954}, 
-"weights": 
-    {"default": {"E": 5.0, "F": 1.0, "V": 1.0}, "FLD_TiAl": {"E": 5.0, "F": 1.0, "V": 1.0}, "TiAl_T5000": {"E": 30.0, "F": 1.0, "V": 1.0}}, 
-"ACE_fname_stem": "tial_ace"}
+    "solver": {
+        "solver": "lsqr",
+        "lsqr_damp": 0.005,
+        "lsqr_atol": 1e-06
+    },
+    "P": {
+        "type": "laplacian",
+        "rlap_scal": 3.0
+    },
+    "e0": {
+        "Ti": -1586.0195,
+        "Al": -105.5954
+    },
+    "weights": {
+        "default": {
+            "E": 5.0,
+            "F": 1.0,
+            "V": 1.0
+        },
+        "FLD_TiAl": {
+            "E": 5.0,
+            "F": 1.0,
+            "V": 1.0
+        },
+        "TiAl_T5000": {
+            "E": 30.0,
+            "F": 1.0,
+            "V": 1.0
+        }
+    },
+    "ACE_fname_stem": "tial_ace"
+}

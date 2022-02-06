@@ -13,6 +13,8 @@ function fill_defaults!(params::Dict; param_key = "fit_params")
     for (key, val) in params
         if val isa Dict &&  ~(key in ["weights", "e0"])
             params[key] = fill_defaults!(val; param_key = key)
+        elseif  key == "basis"
+            params[key] = [fill_defaults!(v; param_key = key) for v in val]
         end
     end
     return params
@@ -32,9 +34,8 @@ _dict_constructors = Dict(
     "fit_params" => ACE1pack.fit_params,
     "data" => ACE1pack.data_params,
     "solver" => ACE1pack.solver_params,
-    "rpi_basis" => ACE1pack.rpi_basis_params,
-    "pair_basis" => ACE1pack.pair_basis_params,
-    "rad_basis" => ACE1pack.rad_basis_params,
+    "basis" => ACE1pack.basis_params,
+    "rad_basis" => ACE1pack.basis_params,
     "transform" => ACE1pack.transform_params,
     "degree" => ACE1pack.degree_params,
     "P" => ACE1pack.precon_params

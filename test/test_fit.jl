@@ -3,11 +3,11 @@
 
     using ACE1pack, JuLIP
 
-    @info("test full fit")
+    @info("test full fit from script")
 
     fit_filename = @__DIR__() * "/files/TiAl_tutorial_DB_tenth.xyz"
     species = [:Ti, :Al]
-    r0 = sum(rnn(sp) for sp in species) / length(species)
+    r0 = 2.88 
 
     data = data_params(fname = fit_filename,
         energy_key = "energy",
@@ -22,8 +22,8 @@
         r0 = r0, 
         rad_basis = basis_params(
             type = "rad", 
-            rcut = 5.5, 
-            rin = 0.6 * r0,
+            rcut = 5.0, 
+            rin = 1.44,
             pin = 2))
 
     pair_basis = basis_params(
@@ -31,9 +31,9 @@
         species = species, 
         maxdeg = 6,
         r0 = r0,
-        rcut = 7.0,
+        rcut = 5.0,
         rin = 0.0,
-        pcut = 1, # TODO: check if it should be 1 or 2?
+        pcut = 2, # TODO: check if it should be 1 or 2?
         pin = 0)
 
     solver = solver_params(solver = :lsqr)
@@ -48,7 +48,6 @@
 
     P = precon_params(type = "laplacian", rlap_scal = 3.0)
 
-
     params = fit_params(
         data = data,
         basis = [rpi_basis, pair_basis],
@@ -61,6 +60,23 @@
     IP, lsqinfo = ACE1pack.fit_ace(params)
 
     expected_errors = load_dict(@__DIR__() * "/files/expected_fit_errors.json")
+    errors = lsqinfo["errors"]
+
+    for error_type in keys(errors)
+        for config_type in keys(errors[error_type])
+            for property in keys(errors[error_type][config_type])
+                @test errors[error_type][config_type][property] ≈  
+                expected_errors[error_type][config_type][property]
+            end
+        end
+    end
+
+    @info("Test full fit from fit_params.json")
+
+    params = fill_defaults!(load_dict(@__DIR__() * "/files/fit_params.json"))
+    params["ACE_fname_stem"] = ""
+    IP, lsqinfo = fit_ace(params)
+
     errors = lsqinfo["errors"]
 
     for error_type in keys(errors)

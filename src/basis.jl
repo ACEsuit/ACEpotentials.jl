@@ -10,12 +10,12 @@ export basis_params, degree_params, transform_params
 function basis_params(;
       type = nothing, 
       kwargs...)
-      @assert haskey(_bases, type)
       return _bases[type][2](; kwargs...)
 end
 
 function generate_basis(params::Dict)
       @assert params["type"] != "rad" 
+      params = copy(params)
       basis_constructor = _bases[params["type"]][1]
       delete!(params, "type")
       return basis_constructor(params)
@@ -178,6 +178,7 @@ _species_to_params(species::Union{Symbol, AbstractString}) =
 
 _species_to_params(species::Union{Tuple, AbstractArray}) = 
       collect( string.(species) )
+
 
 _params_to_species(species::AbstractArray{<: AbstractString}) = 
       Symbol.(species)

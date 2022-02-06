@@ -85,7 +85,6 @@ function _save_fit(stem, IP, lsqinfo)
         fnew =  stem * "." * String(rand('a':'z', 5)) * ".json"
         @warn("The file $fname already exists. It will be renamed to $fnew to avoid overwriting.")
         mv(fname, fnew)
-        fname = fnew
     end
     @info("Saving ace fit to $(fname)")
     save_dict(fname, Dict("IP" => write_dict(IP), "info" => lsqinfo))
