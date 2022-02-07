@@ -1,15 +1,15 @@
 [ACE1pack_test_files]
-git-tree-sha1 = "e6c608417f7e6c736da8b2f4cd73c845885ba40b"
+git-tree-sha1 = "3e9cd4f67f7f8405897a1c58bf3a1e444933b996"
 lazy = true
 
     [[ACE1pack_test_files.download]]
-    sha256 = "53d0644806dd2e82be9943c18be098cedb6321b48325e93409eee1816d0eeee4"
+    sha256 = "53cba3bbf568c8ce127611823a7df7ef2b385770b335e2038625c92d7ce86211"
     url = "https://github.com/gelzinyte/test_julia_artifacts/blob/main/ACE1pack_test_files.zip?raw=true"
 
 [TiAl_tiny_dataset]
-git-tree-sha1 = "0122aa5170670db76a9eacb9d90b338c96635f11"
+git-tree-sha1 = "4ed1c6b17027b0be0adabb73604d478364428a89"
 lazy = true
 
     [[TiAl_tiny_dataset.download]]
-    sha256 = "dd35248f4698c4b70c17eb83b929b0f2b93f3da53a807196693987a8fbdb068b"
-    url = "https://github.com/gelzinyte/test_julia_artifacts/raw/main/TiAl_tiny.tar.gz"
+    sha256 = "7486defc941dc94a3eedd539642f7b6a7464ad73dfc364782da41db702e57fd9"
+    url = "https://github.com/gelzinyte/test_julia_artifacts/blob/main/TiAl_tiny.zip?raw=true"

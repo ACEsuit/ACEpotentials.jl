@@ -3,13 +3,18 @@
 
     using ACE1pack, JuLIP
 
+    include("artifacts.jl")
+    test_train_set = joinpath(data_dir, "TiAl_tiny.xyz")
+    json_params = joinpath(tests_files_dir, "fit_params.json")
+    expected_errors_json = joinpath(tests_files_dir, "expected_fit_errors.json")
+    json_params = joinpath(tests_files_dir, "fit_params.json")
+
     @info("test full fit from script")
 
-    fit_filename = @__DIR__() * "/files/TiAl_tutorial_DB_tenth.xyz"
     species = [:Ti, :Al]
     r0 = 2.88 
 
-    data = data_params(fname = fit_filename,
+    data = data_params(fname = test_train_set,
         energy_key = "energy",
         force_key = "force",
         virial_key = "virial")
@@ -59,8 +64,9 @@
 
     IP, lsqinfo = ACE1pack.fit_ace(params)
 
-    expected_errors = load_dict(@__DIR__() * "/files/expected_fit_errors.json")
     errors = lsqinfo["errors"]
+
+    expected_errors = load_dict(expected_errors_json)
 
     for error_type in keys(errors)
         for config_type in keys(errors[error_type])
@@ -73,8 +79,10 @@
 
     @info("Test full fit from fit_params.json")
 
-    params = fill_defaults!(load_dict(@__DIR__() * "/files/fit_params.json"))
+    params = load_dict(json_params)
+    params["data"]["fname"] = test_train_set
     params["ACE_fname_stem"] = ""
+    params = fill_defaults!(params)
     IP, lsqinfo = fit_ace(params)
 
     errors = lsqinfo["errors"]
