@@ -41,7 +41,7 @@ using Pkg.Artifacts
 
 tial = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.tar.gz")
 run(`tar -xzvf $tial`)
-tial = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
+tial = "TiAl_tiny.xyz"
 configs =  IPFitting.Data.read_xyz(tial;
     energy_key = "energy",
     force_key = "force",
@@ -50,12 +50,11 @@ configs =  IPFitting.Data.read_xyz(tial;
 #---
 # test files
 
-test_files_zip = joinpath(artifact"ACE1pack_test_files", "ACE1pack_test_file.zip")
+test_files_zip = joinpath(artifact"ACE1pack_test_files", "ACE1pack_test_files.zip")
 @show test_files_zip
 run(`unzip $test_files_zip`)
-run(`tar -xzvf $test_files_zip`)
 
-errors_fname = foinpath(artifact"ACE1pack_test_file", "files/expected_fit_errors.json")
+errors_fname = "files/expected_fit_errors.json"
 errors_dict = load_dict(errors_fname)
 
 
