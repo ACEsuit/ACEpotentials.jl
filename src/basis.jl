@@ -10,6 +10,7 @@ export basis_params, degree_params, transform_params
 function basis_params(;
       type = nothing, 
       kwargs...)
+      @assert !isnothing(type)
       return _bases[type][2](; kwargs...)
 end
 

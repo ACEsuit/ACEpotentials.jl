@@ -15,7 +15,7 @@ function fit_ace(params::Dict)
     # ENH: make species non-mandatory and read from data
     data =  ACE1pack.read_data(params["data"])
 
-    basis = [ACE1pack.generate_basis(p) for p in params["basis"]]
+    basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
     if params["fit_from_db"]

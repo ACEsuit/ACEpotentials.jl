@@ -5,7 +5,7 @@ using ACE1pack, JuLIP
 
     include("artifacts.jl")
     test_train_set = joinpath(data_dir, "TiAl_tiny.xyz")
-    json_params = joinpath(tests_files_dir, "fit_params.json")
+    json_params_fname = joinpath(tests_files_dir, "fit_params.json")
 
     data = Dict(
         "energy_key"   => "energy",
@@ -17,7 +17,9 @@ using ACE1pack, JuLIP
     @test "force_key" in collect(keys(data))
 
     @info("Test loading params from json")
-    fit_params = fill_defaults!(load_dict(json_params))
+    fit_params = load_dict(json_params_fname)
+    fit_params["data"]["fname"] = test_train_set 
+    fit_params = fill_defaults!(fit_params)
 
     # TODO introduce once JuLIP has a read_yaml
     # @info("Test loading params from yaml")

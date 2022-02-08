@@ -40,6 +40,11 @@
         rin = 0.0,
         pcut = 2, # TODO: check if it should be 1 or 2?
         pin = 0)
+    
+    basis = Dict(
+        "rpi_basis" => rpi_basis,
+        "pair_basis" => pair_basis
+    )
 
     solver = solver_params(solver = :lsqr)
 
@@ -55,7 +60,7 @@
 
     params = fit_params(
         data = data,
-        basis = [rpi_basis, pair_basis],
+        basis = basis,
         solver = solver,
         e0 = e0,
         weights = weights,
