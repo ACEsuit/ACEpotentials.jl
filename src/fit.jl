@@ -31,6 +31,12 @@ function fit_ace(params::Dict)
         solver["P"] = ACE1pack.generate_precon(basis, params["P"])
     end
 
+    if typeof(params["e0"]) == Dict{Any, Any}
+        # sometimes gets read in (from yaml?) as Dict{Any, Any} 
+        # which gives StackOverflowError somewhere in OneBody
+        params["e0"] = convert(Dict{String, Any}, params["e0"])
+    end
+
     Vref = OneBody(params["e0"])
 
     weights = params["weights"]

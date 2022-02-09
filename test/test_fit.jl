@@ -8,6 +8,7 @@
     json_params = joinpath(tests_files_dir, "fit_params.json")
     expected_errors_json = joinpath(tests_files_dir, "expected_fit_errors.json")
     json_params = joinpath(tests_files_dir, "fit_params.json")
+    yaml_params = joinpath(tests_files_dir, "fit_params.yaml")
 
     @info("test full fit from script")
 
@@ -85,6 +86,25 @@
     @info("Test full fit from fit_params.json")
 
     params = load_dict(json_params)
+    params["data"]["fname"] = test_train_set
+    params["ACE_fname_stem"] = ""
+    params = fill_defaults!(params)
+    IP, lsqinfo = fit_ace(params)
+
+    errors = lsqinfo["errors"]
+
+    for error_type in keys(errors)
+        for config_type in keys(errors[error_type])
+            for property in keys(errors[error_type][config_type])
+                @test errors[error_type][config_type][property] ≈  
+                expected_errors[error_type][config_type][property]
+            end
+        end
+    end
+
+    @info("Test full fit from fit_params.yaml")
+
+    params = load_dict(yaml_params)
     params["data"]["fname"] = test_train_set
     params["ACE_fname_stem"] = ""
     params = fill_defaults!(params)
