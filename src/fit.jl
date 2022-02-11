@@ -18,10 +18,10 @@ function fit_ace(params::Dict)
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
-    if params["fit_from_db"]
-        db = LsqDB(params["ACE_fname_stem"] * "_kron.h5")
+    if params["fit_from_LSQ_DB"]
+        db = LsqDB(params["LSQ_DB_fname"] * "_kron.h5")
     else
-        db = LsqDB(params["ACE_fname_stem"], basis, data)
+        db = LsqDB(params["LSQ_DB_fname"], basis, data)
     end
 
 
@@ -60,8 +60,9 @@ function fit_params(;
     e0 = nothing, 
     weights = nothing, 
     P = nothing,
-    ACE_fname_stem = "ace_fit", 
-    fit_from_db = false)
+    ACE_fname_stem = "ACE_fit", 
+    LSQ_DB_fname_stem = "",
+    fit_from_LSQ_DB = false)
 
     # TODO - friendlify
     @assert !isnothing(data)
@@ -77,7 +78,8 @@ function fit_params(;
             "weights" => weights,
             "P" => P,
             "ACE_fname_stem" => ACE_fname_stem, 
-            "fit_from_db" => fit_from_db)
+            "LSQ_DB_fname" => LSQ_DB_fname_stem,
+            "fit_from_lsq_db" => fit_from_LSQ_DB)
 end
 
 
