@@ -19,9 +19,9 @@ function fit_ace(params::Dict)
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
     if params["fit_from_LSQ_DB"]
-        db = LsqDB(params["LSQ_DB_fname"] * "_kron.h5")
+        db = LsqDB(params["LSQ_DB_fname_stem"] * "_kron.h5")
     else
-        db = LsqDB(params["LSQ_DB_fname"], basis, data)
+        db = LsqDB(params["LSQ_DB_fname_stem"], basis, data)
     end
 
 
