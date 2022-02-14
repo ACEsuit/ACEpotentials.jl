@@ -48,7 +48,7 @@ function fit_ace(params::Dict)
 
     lsqinfo["fit_params"] = params 
 
-    _save_fit(params["ACE_fname_stem"], IP, lsqinfo)
+    _save_fit(params["ACE_fname"], IP, lsqinfo)
 
     return IP, lsqinfo
 end
@@ -60,7 +60,7 @@ function fit_params(;
     e0 = nothing, 
     weights = nothing, 
     P = nothing,
-    ACE_fname_stem = "ACE_fit", 
+    ACE_fname = "ACE_fit.json", 
     LSQ_DB_fname_stem = "",
     fit_from_LSQ_DB = false)
 
@@ -77,9 +77,9 @@ function fit_params(;
             "e0" => e0,
             "weights" => weights,
             "P" => P,
-            "ACE_fname_stem" => ACE_fname_stem, 
-            "LSQ_DB_fname" => LSQ_DB_fname_stem,
-            "fit_from_lsq_db" => fit_from_LSQ_DB)
+            "ACE_fname" => ACE_fname, 
+            "LSQ_DB_fname_stem" => LSQ_DB_fname_stem,
+            "fit_from_LSQ_DB" => fit_from_LSQ_DB)
 end
 
 

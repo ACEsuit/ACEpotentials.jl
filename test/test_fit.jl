@@ -66,7 +66,7 @@
         e0 = e0,
         weights = weights,
         P = P,
-        ACE_fname_stem = "")
+        ACE_fname = "")
 
     IP, lsqinfo = ACE1pack.fit_ace(params)
 
@@ -87,7 +87,7 @@
 
     params = load_dict(json_params)
     params["data"]["fname"] = test_train_set
-    params["ACE_fname_stem"] = ""
+    params["ACE_fname"] = ""
     params = fill_defaults!(params)
     IP, lsqinfo = fit_ace(params)
 
@@ -106,7 +106,7 @@
 
     params = load_dict(yaml_params)
     params["data"]["fname"] = test_train_set
-    params["ACE_fname_stem"] = ""
+    params["ACE_fname"] = ""
     params = fill_defaults!(params)
     IP, lsqinfo = fit_ace(params)
 
