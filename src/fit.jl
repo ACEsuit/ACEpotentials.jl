@@ -83,13 +83,13 @@ function fit_params(;
 end
 
 
-function _save_fit(stem, IP, lsqinfo)
+function _save_fit(fname, IP, lsqinfo)
     # ENH: save to yace option
-    if stem == ""
+    if fname == ""
         return
     end
-    fname = stem * ".json"
     if isfile(fname)
+        stem = replace(fname, ".json" => "")
         fnew =  stem * "." * String(rand('a':'z', 5)) * ".json"
         @warn("The file $fname already exists. It will be renamed to $fnew to avoid overwriting.")
         mv(fname, fnew)
