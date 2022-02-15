@@ -1,5 +1,5 @@
 
-using Pkg.Artifacts
+using LazyArtifacts
 
 data_dir = joinpath(artifact"TiAl_tiny_dataset", "data")
 tests_files_dir = joinpath(artifact"ACE1pack_test_files", "files")
