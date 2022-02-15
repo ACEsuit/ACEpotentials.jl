@@ -1,20 +1,27 @@
 
 using ACE1pack, Pkg
 using Pkg.Artifacts
+using SHA
 
 artifacts_toml = joinpath(pathof(ACE1pack)[1:end-16], "Artifacts.toml")
+
+function _get_sha256(filename)
+    open(filename) do f
+        return bytes2hex(sha256(f))
+    end
+end
 
 function generate_artifact(label, zipname, url)
     data_hash = artifact_hash(label, artifacts_toml)
 
     if data_hash == nothing || !artifact_exists(data_hash)
-        tarfile = download(url, @__DIR__() * "/" * zipname)
+        zipfile = download(url, @__DIR__() * "/" * zipname)
         hash_ = create_artifact() do artifact_dir
-            cp(tarfile, joinpath(artifact_dir, zipname))
+            cp(zipfile, joinpath(artifact_dir, zipname))
         end
-        tarball_hash = archive_artifact(hash_, joinpath(tarfile))
+        url_content_hash = _get_sha256(zipfile)
         bind_artifact!(artifacts_toml, label, hash_,
-                    download_info = [ (url, tarball_hash) ], lazy=true, force=true)
+                    download_info = [ (url, url_content_hash) ], lazy=true, force=true)
     end
 end
 
