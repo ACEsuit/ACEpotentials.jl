@@ -4,7 +4,7 @@
 
 import IPFitting, ACE1pack, ACE1
 
-export fit_params, fit_ace, make_ace_db
+export fit_params, fit_ace, make_ace_db, db_params
 
 """
 TODO: documentation:
@@ -62,6 +62,21 @@ function make_ace_db(params::Dict)
     db = LsqDB(params["LSQ_DB_fname_stem"], basis, data)
 
     return db
+end
+
+function db_params(;
+    data = nothing,
+    basis = nothing,
+    LSQ_DB_fname_stem = "")
+
+    # TODO - friendlify
+    @assert !isnothing(data)
+    @assert !isnothing(basis)
+
+    return Dict(
+            "data" => data,
+            "basis" => basis,
+            "LSQ_DB_fname_stem" => LSQ_DB_fname_stem)
 end
 
 function fit_params(;
