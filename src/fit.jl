@@ -4,7 +4,7 @@
 
 import IPFitting, ACE1pack, ACE1
 
-export fit_params, fit_ace 
+export fit_params, fit_ace, make_ace_db
 
 """
 TODO: documentation:
@@ -51,6 +51,17 @@ function fit_ace(params::Dict)
     _save_fit(params["ACE_fname"], IP, lsqinfo)
 
     return IP, lsqinfo
+end
+
+function make_ace_db(params::Dict)
+    data =  ACE1pack.read_data(params["data"])
+
+    basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
+    basis = JuLIP.MLIPs.IPSuperBasis(basis);
+
+    db = LsqDB(params["LSQ_DB_fname_stem"], basis, data)
+
+    return db
 end
 
 function fit_params(;
