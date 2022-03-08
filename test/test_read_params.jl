@@ -1,12 +1,12 @@
+include("artifacts.jl")
 
 @testset "Read params" begin
 
 using ACE1pack, JuLIP
 
-    include("artifacts.jl")
-    test_train_set = joinpath(data_dir, "TiAl_tiny.xyz")
-    json_params_fname = joinpath(tests_files_dir, "fit_params.json")
-    yaml_params_fname = joinpath(tests_files_dir, "fit_params.yaml")
+    test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
+    json_params_fname = joinpath(artifact"ACE1pack_test_files", "fit_params.json")
+    yaml_params_fname = joinpath(artifact"ACE1pack_test_files", "fit_params.yaml")
 
     data = Dict(
         "energy_key"   => "energy",
