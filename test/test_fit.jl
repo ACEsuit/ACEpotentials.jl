@@ -5,11 +5,6 @@ include("artifacts.jl")
 
     using ACE1pack, JuLIP
 
-    # test_train_set = joinpath(data_dir, "TiAl_tiny.xyz")
-    # json_params = joinpath(tests_files_dir, "fit_params.json")
-    # expected_errors_json = joinpath(tests_files_dir, "expected_fit_errors.json")
-    # json_params = joinpath(tests_files_dir, "fit_params.json")
-    # yaml_params = joinpath(tests_files_dir, "fit_params.yaml")
     test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
     json_params = joinpath(artifact"ACE1pack_test_files", "fit_params.json")
     expected_errors_json = joinpath(artifact"ACE1pack_test_files", "expected_fit_errors.json")
