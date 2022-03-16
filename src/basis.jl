@@ -305,8 +305,6 @@ _species_to_params(species::Union{Tuple, AbstractArray}) =
 # values can be anything
 _species_to_params(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: Union{Symbol, AbstractString} where Tval <: Any = 
       Dict(Tuple(_species_to_params(key)) => val for (key, val) in dict)
-      # Dict(_species_to_params(key) => val for (key, val) in dict)
-
 
 _species_to_params(dict::Nothing) = nothing
 
@@ -317,8 +315,6 @@ _params_to_species(species::Union{AbstractArray{T}, Tuple{T, T}}) where T <: Abs
 
 _params_to_species(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: AbstractString where Tval <: Any = 
       Dict(Tuple(_params_to_species(d)) => val for (d, val) in dict)
-# _params_to_species(dict::Dict{Tsym, Tval}) where Tsym <: AbstractArray{<:AbstractString} where Tval <: Any = 
-      # Dict(_params_to_species(d) => val for (d, val) in dict)
 
 _params_to_species(dict::Nothing) = nothing
 
