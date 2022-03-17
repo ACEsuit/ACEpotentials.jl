@@ -250,15 +250,15 @@ function sparse_degree_M_params(;
 
       return Dict(
             "type" => "sparseM",
-            "Dd" => _species_to_params(Dd),
-            "Dn" => _species_to_params(Dn), 
-            "Dl" => _species_to_params(Dl))
+            "Dd" => _AtomicNumber_to_params(Dd),
+            "Dn" => _AtomicNumber_to_params(Dn), 
+            "Dl" => _AtomicNumber_to_params(Dl))
 end
 
 SparsePSHDegreeM(; Dn::Dict, Dl::Dict, Dd::Dict) = 
-      ACE1.RPI.SparsePSHDegreeM(_params_to_species(Dn), 
-                                _params_to_species(Dl), 
-                                _params_to_species(Dd))
+      ACE1.RPI.SparsePSHDegreeM(_params_to_AtomicNumber(Dn), 
+                                _params_to_AtomicNumber(Dl), 
+                                _params_to_AtomicNumber(Dd))
 
 _degrees = Dict(
       "sparse" => (ACE1.RPI.SparsePSHDegree, sparse_degree_params),
@@ -312,23 +312,23 @@ end
 _transforms = Dict( "polynomial" => (ACE1.Transforms.PolyTransform, PolyTransform_params) )
 
 
-function _species_to_params(dict)
+function _AtomicNumber_to_params(dict)
       new_dict = Dict()
       for (key, val) in dict
             if typeof(key) <: Tuple
-                 key = Tuple(typeof(element) <: Symbol ? string(element) : element for element in key)
+                 key = Tuple(typeof(entry) <: AtomicNumber ? string(chemical_symbol(entry)) : entry for entry in key)
             end
             new_dict[key] = val
       end
       return new_dict
 end
 
-function _params_to_species(dict)
+function _params_to_AtomicNumber(dict)
       new_dict = Dict()
       for (key, val) in dict
             if typeof(key) <: Tuple
-                  key = Tuple(typeof(element) <: AbstractString && length(element) == 1 ? 
-                              Symbol(element) : element for element in key)
+                  key = Tuple(typeof(entry) <: AbstractString && length(entry) == 1 ? 
+                              AtomicNumber(Symbol(entry)) : entry for entry in key)
             end
             new_dict[key] = val
       end
