@@ -250,18 +250,19 @@ function sparse_degree_M_params(;
 
       return Dict(
             "type" => "sparseM",
-            "Dd" => Dd,
-            "Dn" => Dn, 
-            "Dl" => Dl)
+            "Dd" => _species_to_params(Dd),
+            "Dn" => _species_to_params(Dn), 
+            "Dl" => _species_to_params(Dl))
 end
 
 SparsePSHDegreeM(; Dn::Dict, Dl::Dict, Dd::Dict) = 
-      ACE1.RPI.SparsePSHDegreeM(Dn, Dl, Dd)
+      ACE1.RPI.SparsePSHDegreeM(_params_to_species(Dn), 
+                                _params_to_species(Dl), 
+                                _params_to_species(Dd))
 
 _degrees = Dict(
       "sparse" => (ACE1.RPI.SparsePSHDegree, sparse_degree_params),
-      "sparseM" => (SparsePSHDegreeM, sparse_degree_M_params)
-)
+      "sparseM" => (SparsePSHDegreeM, sparse_degree_M_params))
 
 
 # ------------------------------------------
@@ -310,3 +311,26 @@ end
 # parameters 
 _transforms = Dict( "polynomial" => (ACE1.Transforms.PolyTransform, PolyTransform_params) )
 
+
+function _species_to_params(dict)
+      new_dict = Dict()
+      for (key, val) in dict
+            if typeof(key) <: Tuple
+                 key = Tuple(typeof(element) <: Symbol ? string(element) : element for element in key)
+            end
+            new_dict[key] = val
+      end
+      return new_dict
+end
+
+function _params_to_species(dict)
+      new_dict = Dict()
+      for (key, val) in dict
+            if typeof(key) <: Tuple
+                  key = Tuple(typeof(element) <: AbstractString && length(element) == 1 ? 
+                              Symbol(element) : element for element in key)
+            end
+            new_dict[key] = val
+      end
+      return new_dict
+end
