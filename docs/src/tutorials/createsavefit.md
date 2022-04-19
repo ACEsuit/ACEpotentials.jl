@@ -13,7 +13,7 @@ using ACE1
 using IPFitting
 ```
 
-Reading in the `.xyz` containing the [TiAl configurations](https://raw.githubusercontent.com/ACEsuit/ACE1docs.jl/main/src/tutorials/tial/TiAl_tutorial_DB.xyz). `energy_key`, `force_key` and `virial_key` need to specified in order to make sure correct data is read. Slicing is done here to reduce fitting time such that it is feasible on a laptop. 
+Reading in the `.xyz` containing the [TiAl configurations](https://raw.githubusercontent.com/ACEsuit/ACE1pack.jl/main/src/tutorials/tial/TiAl_tutorial_DB.xyz). `energy_key`, `force_key` and `virial_key` need to specified in order to make sure correct data is read. Slicing is done here to reduce fitting time such that it is feasible on a laptop. 
 
 ```julia
 al = IPFitting.Data.read_xyz(@__DIR__() * "/TiAl_tutorial_DB.xyz", energy_key="energy", force_key="force", virial_key="virial")[1:10:end];
