@@ -1,16 +1,17 @@
-using ACE1pack
-using Test
+using ACE1pack, Test, LazyArtifacts
+
+##
 
 @testset "ACE1pack.jl" begin
 
-    include("test_data.jl")
+    @testset "Read data" begin include("test_data.jl") end 
 
-    include("test_basis.jl")
+    @testset "Basis" begin include("test_basis.jl") end 
 
-    include("test_solver.jl")
+    @testset "Solver" begin include("test_solver.jl") end 
 
-    include("test_fit.jl")
+    @testset "Fit ACE" begin include("test_fit.jl") end 
 
-    include("test_read_params.jl")
+    @testset "Read params" begin include("test_read_params.jl") end 
 
 end
