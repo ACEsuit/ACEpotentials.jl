@@ -52,6 +52,3 @@ ACE1pack.generate_basis(pair_basis)
 rad_basis = basis_params(type="rad", rin = 0.0, pin = 0)
 ACE1pack.generate_rad_basis(rad_basis, D, 6, :Si, transform_poly)
 ACE1pack.generate_rad_basis(rad_basis, D, 6, :Si, transform_mult)
-
-
-

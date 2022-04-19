@@ -273,6 +273,7 @@ end
 
 
 function generate_transform(params::Dict)
+   @assert haskey(_transforms, params["type"])
    TTransform = _transforms[params["type"]][1]
    kwargs = Dict([Symbol(key) => val for (key, val) in params]...)
    delete!(kwargs, :type)
