@@ -8,6 +8,8 @@ export  fill_defaults!
 
 """ Recursively updates nested dictionaries with default parameters"""
 function fill_defaults!(params::Dict; param_key = "fit_params")
+    #TODO: "transforms" actually need processing, but it's less straightforward
+    dicts_to_not_process = ["weights", "e0", "transforms", "cutoffs"]
     # Go through the nested dictionaries filling in the default values
     params = _fill_default(params, param_key)
     for (key, val) in params
@@ -15,9 +17,8 @@ function fill_defaults!(params::Dict; param_key = "fit_params")
             for (basis_name, basis_params) in params[key]
                 params[key][basis_name] = fill_defaults!(basis_params; param_key=key)
             end
-        elseif val isa Dict &&  ~(key in ["weights", "e0"])
+        elseif val isa Dict &&  ~(key in dicts_to_not_process)
             params[key] = fill_defaults!(val; param_key = key)
-        elseif key == "basis"
         end
     end
     return params
