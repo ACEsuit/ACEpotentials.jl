@@ -9,6 +9,8 @@ export JuLIP, ACE1, IPFitting
 
 # Convenience Layer 
 
+include("acefit.jl")
+
 include("fit.jl")
 
 include("data.jl")
@@ -20,5 +22,6 @@ include("solver.jl")
 include("precon.jl")
 
 include("read_params.jl")
+
 
 end
