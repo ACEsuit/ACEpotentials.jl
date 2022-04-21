@@ -26,7 +26,7 @@ end
 
 """TODO: document this"""
 function read_data(params::Dict)
-    return IPFitting.Data.read_xyz(
+    return ACEfit.Data.read_xyz(
         params["fname"];
         energy_key = params["energy_key"],
         force_key = params["force_key"],
