@@ -2,7 +2,7 @@
 # ------------------------------------------
 #   solver
 
-using IPFitting, ACE1, LinearAlgebra, JuLIP
+using ACEfit, ACE1, LinearAlgebra, JuLIP
 
 export solver_params, generate_solver  
 

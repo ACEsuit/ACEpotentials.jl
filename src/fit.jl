@@ -2,7 +2,7 @@
 # ------------------------------------------
 #    ACE Fitting
 
-import IPFitting, ACE1pack, ACE1
+import ACEfit, ACE1pack, ACE1
 
 export fit_params, fit_ace 
 
