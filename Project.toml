@@ -5,8 +5,6 @@ version = "0.0.1"
 
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
-ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
-IPFitting = "3002bd4c-79e4-52ce-b924-91256dde4e52"
 JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -15,7 +13,6 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 ACE1 = "0.9.1"
-IPFitting = "0.10"
 JuLIP = "0.11.4"
 julia = "1.6"
 
