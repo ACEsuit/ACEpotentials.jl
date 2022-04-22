@@ -1,3 +1,7 @@
 [deps]
 ACE1pack = "8c4e8d19-0bd6-4234-8309-7210652e3178"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+
+[compat]
+Literate = "2.13.2,3"
