@@ -5,14 +5,9 @@
 
 using ACE1pack, ACE1, IPFitting, LazyArtifacts
 
-# We need LazyArtifacts to obtain a dataset that is stored in ACEsuit/ACEData specifically for this tutorial. The following line will download the dataset and return a string with the absolute path to the file. The correct command to load the artifact is 
-# ```julia 
-#    data_file = joinpath(artifact"TiAl_tutorial", "TiAl_tutorial.xyz")
-# ```
-# Unfortunately, this is incompatible with `Literate.jl` which we use for producing these tutorials so instead we use this workaround: 
+# We need LazyArtifacts (or could also use Pkg.Artifacts instead) to obtain a dataset that is stored in ACEsuit/ACEData specifically for this tutorial. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
 
-data_file = joinpath(artifact_path(artifact_hash("TiAl_tutorial", find_artifacts_toml(dirname(dirname(pathof(ACE1pack)))))), "TiAl_tutorial.xyz")
-
+data_file = joinpath(artifact"TiAl_tutorial", "TiAl_tutorial.xyz")
 
 # We can now use `IPFitting.Data.read_xyz` to load in the training set. This will not only load the structures, but also search for energies and force from a reference model, and all this will then be stored as a `Vector{Dat}`. We keep only every 10 training structures to keep the regression problem small.
 
@@ -20,7 +15,7 @@ data = IPFitting.Data.read_xyz(data_file, energy_key="energy", force_key="force"
 train = data[1:5:end];
 
 # The next step is to generate a basis set:  
-# * Here we take 3-correction, i.e. a 4-body potential, 
+# * Here we take 3-correlation, i.e. a 4-body potential, 
 # * a relatively low polynomial degree `maxdeg = 6`, and 
 # * a cutoff radious `rcut = 5.5`
 # These three are the most important approximation parameters to explore when trying to improve the fit-accuracy. In addition there is
