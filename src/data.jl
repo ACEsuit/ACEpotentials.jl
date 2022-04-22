@@ -26,10 +26,14 @@ end
 
 """TODO: document this"""
 function read_data(params::Dict)
-    return ACEfit.Data.read_xyz(
-        params["fname"];
-        energy_key = params["energy_key"],
-        force_key = params["force_key"],
-        virial_key = params["virial_key"])
-end
+    # wcw: remove this old section eventually
+    #return ACEfit.Data.read_xyz(`
+    #    params["fname"];
+    #    energy_key = params["energy_key"],
+    #    force_key = params["force_key"],
+    #    virial_key = params["virial_key"])
 
+    # wcw: new part begins here
+    julip_dataset = JuLIP.read_extxyz(params["fname"])
+    return julip_dataset
+end
