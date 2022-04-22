@@ -1,4 +1,6 @@
 
 ## ACE.jl Tutorials 
 
-create list of tutorials for more interesting problems
+* [First Example](first_example.md)
+* [Fitting a TiAl Potential](TiAl.md)
+* [Using ACE potentials in LAMMPS](lammps.md)
