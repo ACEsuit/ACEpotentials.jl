@@ -6,6 +6,8 @@ import ACEfit, ACE1pack, ACE1
 
 export fit_params, fit_ace 
 
+include("obsexamples.jl")
+
 """
 TODO: documentation:
 """
@@ -18,39 +20,100 @@ function fit_ace(params::Dict)
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
-    if params["fit_from_LSQ_DB"]
-        db = LsqDB(params["LSQ_DB_fname_stem"])
-    else
-        db = LsqDB(params["LSQ_DB_fname_stem"], basis, data)
-    end
+###    # wcw remove this old stuff eventually
+###    if params["fit_from_LSQ_DB"]
+###        db = LsqDB(params["LSQ_DB_fname_stem"])
+###    else
+###        db = LsqDB(params["LSQ_DB_fname_stem"], basis, data)
+###    end
+###
+###
+###    solver = ACE1pack.generate_solver(params["solver"])
+###
+###    if !isnothing(params["P"]) 
+###        solver["P"] = ACE1pack.generate_precon(basis, params["P"])
+###    end
+###
+###    if typeof(params["e0"]) == Dict{Any, Any}
+###        # sometimes gets read in (from yaml?) as Dict{Any, Any} 
+###        # which gives StackOverflowError somewhere in OneBody
+###        params["e0"] = convert(Dict{String, Any}, params["e0"])
+###    end
+###
+###    Vref = OneBody(params["e0"])
+###
+###    weights = params["weights"]
+###
+###    IP, lsqinfo = lsqfit(db, solver=solver, Vref=Vref, weights=weights, error_table=true)
+###
+###    @info("Fitting errors")
+###    rmse_table(lsqinfo["errors"])
+###
+###    lsqinfo["fit_params"] = params 
+###
+###    _save_fit(params["ACE_fname"], IP, lsqinfo)
+###
+###    return IP, lsqinfo
 
-
-    solver = ACE1pack.generate_solver(params["solver"])
-
-    if !isnothing(params["P"]) 
-        solver["P"] = ACE1pack.generate_precon(basis, params["P"])
-    end
-
+    # create one body potential
     if typeof(params["e0"]) == Dict{Any, Any}
         # sometimes gets read in (from yaml?) as Dict{Any, Any} 
         # which gives StackOverflowError somewhere in OneBody
         params["e0"] = convert(Dict{String, Any}, params["e0"])
     end
-
     Vref = OneBody(params["e0"])
 
     weights = params["weights"]
 
-    IP, lsqinfo = lsqfit(db, solver=solver, Vref=Vref, weights=weights, error_table=true)
+    # wcw: need to pass these in somehow
+    energy_key = "energy"
+    force_key = "force"
+    virial_key = "virial"
 
-    @info("Fitting errors")
-    rmse_table(lsqinfo["errors"])
+    function create_dataset(julip_dataset)
+        data = ACEfit.Dat[]
+        for at in julip_dataset
+            energy = nothing
+            forces = nothing
+            virial = nothing
+            config_type = "default"
+            for key in keys(at.data)
+                if lowercase(key)=="config_type"; config_type=at.data[key].data; end
+            end
+            for key in keys(at.data)
+                if lowercase(key) == lowercase(energy_key)
+                    w = (config_type in keys(weights)) ? weights[config_type]["E"] : weights["default"]["E"]
+                    energy = at.data[key].data - JuLIP.energy(Vref, at)
+                    energy = ObsExamples.ObsPotentialEnergy(energy, w)
+                end
+                if lowercase(key) == lowercase(force_key)
+                    w = (config_type in keys(weights)) ? weights[config_type]["F"] : weights["default"]["F"]
+                    forces = ObsExamples.ObsForces(at.data[key].data[:], w)
+                end
+                if lowercase(key) == lowercase(virial_key)
+                    w = (config_type in keys(weights)) ? weights[config_type]["V"] : weights["default"]["V"]
+                    m = at.data[key].data
+                    v = [m[1,1], m[2,2], m[3,3], m[3,2], m[3,1], m[2,1]]
+                    virial = ObsExamples.ObsVirial(v, w)
+                end
+            end
+            obs = [energy, forces]
+            if !isnothing(virial)
+                insert!(obs, 1, virial)
+            end
+            dat = ACEfit.Dat(at, config_type, obs)
+            push!(data, dat)
+        end
+        return data
+    end
 
-    lsqinfo["fit_params"] = params 
+    julip_dataset = JuLIP.read_extxyz(params["data"]["fname"])
 
-    _save_fit(params["ACE_fname"], IP, lsqinfo)
+    data = create_dataset(julip_dataset)
 
-    return IP, lsqinfo
+    #ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR(; damp=damp, atol=atol))
+    ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR())
+
 end
 
 function fit_params(;
