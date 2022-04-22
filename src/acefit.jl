@@ -64,7 +64,6 @@ vec_obs(obs::ObsForces) = mat(obs.F)[:]
 devec_obs(obs::ObsForces, x::AbstractVector) = 
          ObsForces(collect(vecs(x)))
 
-
 mutable struct ObsVirial
     V::SMatrix      # virial stored as a matrix, but when we use it we convert it to a 6-vector
     weight::Real    # regression weight
@@ -93,6 +92,11 @@ devec_obs(obs::ObsVirial, x::AbstractVector) =
                                  x[6], x[2], x[4], 
                                  x[5], x[4], x[3]) )
 
-# weighthook(::ValV, d::Dat) = 1.0 / sqrt(length(d.at))
+
+default_weighthooks = Dict{String, Any}("default" => Dict(
+      ObsPotentialEnergy => (w, cfg) -> w / sqrt(length(cfg)), 
+               ObsForces => (w, cfg) -> w, 
+               ObsVirial => (w, cfg) -> w / sqrt(length(cfg)) ))
+
 # err_weighthook(::ValV, d::Dat) = 1.0 / length(d.at)
 

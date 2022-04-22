@@ -5,7 +5,7 @@
 
 # Make sure to first read the installation notes. Now start by importing the required packages: 
 using Random, ACE1, JuLIP, IPFitting
-using LinearAlgebra: norm 
+using LinearAlgebra: norm, Diagonal
 
 
 # #### Step 1: specify the ACE basis 
@@ -62,7 +62,8 @@ weights = Dict("default" => Dict("E" => 15.0, "F" => 1.0 , "V" => 1.0 ))
 
 # Now we can fit the potential using 
 
-IP, lsqinfo = lsqfit(dB; weights = weights, error_table = true);
+IP, lsqinfo = lsqfit(dB; weights = weights, error_table = true, 
+                        solver = Dict("solver" => :qr));
 
 # This assembles the weighted LSQ system, and retuns the potential `IP` as well as a dictionary `lsqinfo` with some general information about the potential and fitting process.  E.g., to see the training errors we can use 
 
@@ -75,9 +76,9 @@ rmse_table(lsqinfo["errors"])
 # At a minimum we should have a test set to check generalisations, but more typically we would now run extensive robustness tests. For this mini-tutorial we will just implement a very basic energy generalisation test. 
 
 test =  [ gen_dat() for _=1:20 ]
-Etest = [ dat.D["E"][1] for dat in test ]
-Emodel = [ energy(IP, dat.at) for dat in test ] 
+Etest = [ dat.D["E"][1]/length(dat.at) for dat in test ]
+Emodel = [ energy(IP, dat.at)/length(dat.at) for dat in test ] 
 rmse_E = norm(Etest - Emodel) / sqrt(length(test))
-@show rmse_E;  # ~ 0.01306345
+@show rmse_E;    # rmse_E = 5.842000599246454e-5
 
 
