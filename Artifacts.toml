@@ -13,3 +13,11 @@ lazy = true
     [[TiAl_tiny_dataset.download]]
     sha256 = "3b286227cbd705a7d6f1a695c2decacda9981be588bcc5ce288e479f9e60db5e"
     url = "https://github.com/ACEsuit/ACEData/blob/master/trainingsets/TiAl_tiny.tar.gz?raw=true"
+
+[TiAl_tutorial]
+git-tree-sha1 = "b437d7d5fac4424b8203d0afc31732879d3da5b2"
+lazy = true
+
+    [[TiAl_tutorial.download]]
+    sha256 = "3677174b6ab4adfd07dc03235b797c88234515df793d8603cce5ab7ce0db637d"
+    url = "https://github.com/ACEsuit/ACEData/blob/master/trainingsets/TiAl_tutorial.tar.gz?raw=true"
