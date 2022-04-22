@@ -61,12 +61,12 @@ train = [ gen_dat() for _=1:50 ];
 weights = Dict("default" => Dict(ObsPotentialEnergy => 15.0, 
                                  ObsForces => 1.0, 
                                  ObsVirial => 1.0 ))
-set_weights!(train, weights)
-
+weighthooks = ACE1pack.default_weighthooks 
+set_weights!(train, weights, weighthooks)
 
 # Now we can fit the potential using `ACEfit.llsq` and then construct a potential from the parameters and the basis using `ACE1.combine` (linear combination of basis functions...). This will assemble the weighted LSQ system, then solve it using a default solver (probably QR factorisation). 
 
-θ = ACEfit.llsq(basis, train)
+θ = ACEfit.llsq(basis, train; solver = ACEfit.QR(λ = 0.0))
 acepot = ACE1.combine(basis, θ)
 
 # Note that `acepot` is a `JuLIP.jl` calculator and can be used to evaluate e.g. `energy, forces, virial` on new configurations. 
@@ -84,8 +84,7 @@ acepot = ACE1.combine(basis, θ)
 # At a minimum we should have a test set to check generalisations, but more typically we would now run much more extensive robustness tests. For this mini-tutorial we will just implement a very basic energy generalisation test. This is a bit "hacky" and should possibly be improved. 
 
 test = [ gen_dat() for _=1:20 ]
-Etest = [ dat.obs[1].E for dat in test ]
-Emodel = [ energy(acepot, dat.config) for dat in test ] 
+Etest = [ dat.obs[1].E/length(dat.config) for dat in test ]
+Emodel = [ energy(acepot, dat.config)/length(dat.config) for dat in test ] 
 rmse_E = norm(Etest - Emodel) / sqrt(length(test))
-@show rmse_E;  # 0.012284355
-
+@show rmse_E;     # rmse_E = 5.109582115300686e-5
