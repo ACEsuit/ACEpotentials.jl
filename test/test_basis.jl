@@ -11,6 +11,8 @@ ACE1pack.generate_basis(rpi_basis)
 @info("Test constructing degree and degree params")
 degree = degree_params()
 D = ACE1pack.generate_degree(degree)
+degreeM = degree_params(type = "sparseM", Dd = Dict("default" => 10, 1 => 7, (2, "H") => 3))
+D = ACE1pack.generate_degree(degreeM)
 
 
 @info("Test constructing tranforms and transform parameters")

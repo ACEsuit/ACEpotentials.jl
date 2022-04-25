@@ -179,7 +179,27 @@ transformed_jacobi(maxn::Integer, trans::PolyTransform, params::Dict) =
 # ------------------------------------------
 #  degree 
 
-# ENH: polynomial degree for each correlation order
+"""
+TODO: docs
+"""
+function degree_params(;
+      type = "sparse", 
+      kwargs...)
+      @assert haskey(_degrees, type)
+      return _degrees[type][2](; kwargs...)
+end
+
+function generate_degree(params::Dict)
+      @assert haskey(_degrees, params["type"])
+      # we ignore p for `SparsePSHDegree`, for now
+      if params["type"] == "sparse" && haskey(params, "p")
+            delete!(params, "p")
+      end
+      degree_measure = _degrees[params["type"]][1]
+      kwargs = Dict([Symbol(key) => val for (key, val) in params]...)
+      delete!(kwargs, :type)
+      return degree_measure(; kwargs...)
+end
 
 """
 TODO: needs docs 
@@ -187,8 +207,7 @@ TODO: needs docs
 * `p = 1` is current ignored, but we put it in so we can experiment later 
 with `p = 2`, `p = inf`. 
 """ 
-function degree_params(; 
-      type::String = "sparse", 
+function sparse_degree_params(; 
       wL::Real = 1.5, 
       csp::Real = 1.0, 
       chc::Real = 0.0, 
@@ -196,13 +215,12 @@ function degree_params(;
       bhc::Real = 0.0, 
       p::Real = 1.0 )
 
-   @assert type in [ "sparse", ]
    @assert wL > 0 
    @assert csp >= 0 && chc >= 0 
    @assert csp > 0 || chc > 0 
    @assert ahc >= 0 && bhc >= 0
    @assert p == 1
-   return Dict( "type" => type, 
+   return Dict( "type" => "sparse", 
                 "wL" => wL, 
                 "csp" => csp, 
                 "chc" => chc, 
@@ -211,15 +229,31 @@ function degree_params(;
                 "p" => p )
 end 
 
-function generate_degree(params::Dict) 
-   @assert params["type"] == "sparse"
-   return SparsePSHDegree(;  wL = params["wL"], 
-                            csp = params["csp"], 
-                            chc = params["chc"], 
-                            ahc = params["ahc"],
-                            bhc = params["bhc"] 
-                          )
+"""
+TODO Docs
+"""
+function sparse_degree_M_params(;
+      Dd::Dict = nothing,
+      Dn::Dict = Dict("default" => 1.0),
+      Dl::Dict = Dict("default" => 1.5))
+
+      @assert !isnothing(Dd)
+
+      return Dict(
+            "type" => "sparseM",
+            "Dd" => _AtomicNumber_to_params(Dd),
+            "Dn" => _AtomicNumber_to_params(Dn), 
+            "Dl" => _AtomicNumber_to_params(Dl))
 end
+
+SparsePSHDegreeM(; Dn::Dict, Dl::Dict, Dd::Dict) = 
+      ACE1.RPI.SparsePSHDegreeM(_params_to_AtomicNumber(Dn), 
+                                _params_to_AtomicNumber(Dl), 
+                                _params_to_AtomicNumber(Dd))
+
+_degrees = Dict(
+      "sparse" => (ACE1.RPI.SparsePSHDegree, sparse_degree_params),
+      "sparseM" => (SparsePSHDegreeM, sparse_degree_M_params))
 
 
 # ------------------------------------------
@@ -320,3 +354,26 @@ _params_to_species(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: AbstractSt
 _params_to_species(dict::Nothing) = nothing
 
 
+
+function _AtomicNumber_to_params(dict)
+      new_dict = Dict()
+      for (key, val) in dict
+            if typeof(key) <: Tuple
+                 key = Tuple(typeof(entry) <: AtomicNumber ? string(chemical_symbol(entry)) : entry for entry in key)
+            end
+            new_dict[key] = val
+      end
+      return new_dict
+end
+
+function _params_to_AtomicNumber(dict)
+      new_dict = Dict()
+      for (key, val) in dict
+            if typeof(key) <: Tuple
+                  key = Tuple(typeof(entry) <: AbstractString && length(entry) == 1 ? 
+                              AtomicNumber(Symbol(entry)) : entry for entry in key)
+            end
+            new_dict[key] = val
+      end
+      return new_dict
+end
