@@ -6,8 +6,6 @@ import ACEfit, ACE1pack, ACE1
 
 export fit_params, fit_ace 
 
-include("obsexamples.jl")
-
 """
 TODO: documentation:
 """
@@ -81,17 +79,16 @@ function fit_ace(params::Dict)
                     w = (config_type in keys(weights)) ? weights[config_type]["E"] : weights["default"]["E"]
                     energy_ref = JuLIP.energy(Vref, at)
                     energy = at.data[key].data - energy_ref
-                    energy = ObsExamples.ObsPotentialEnergy(energy, w, energy_ref)
+                    energy = ObsPotentialEnergy(energy, w, energy_ref)
                 end
                 if lowercase(key) == lowercase(force_key)
                     w = (config_type in keys(weights)) ? weights[config_type]["F"] : weights["default"]["F"]
-                    forces = ObsExamples.ObsForces(at.data[key].data[:], w)
+                    forces = ObsForces(at.data[key].data[:], w)
                 end
                 if lowercase(key) == lowercase(virial_key)
                     w = (config_type in keys(weights)) ? weights[config_type]["V"] : weights["default"]["V"]
-                    m = at.data[key].data
-                    v = [m[1,1], m[2,2], m[3,3], m[3,2], m[3,1], m[2,1]]
-                    virial = ObsExamples.ObsVirial(v, w)
+                    m = SMatrix{3,3}(at.data[key].data)
+                    virial = ObsVirial(m, w)
                 end
             end
             obs = [energy, forces]
