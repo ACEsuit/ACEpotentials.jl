@@ -112,7 +112,7 @@ function fit_ace(params::Dict)
     data = create_dataset(julip_dataset)
 
     #ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR(; damp=damp, atol=atol))
-    ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR())
+    return ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR())
 
 end
 
