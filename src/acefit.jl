@@ -7,14 +7,13 @@ import JuLIP: Atoms, energy, forces, JVec, JMat, mat, vecs
 
 import ACEfit: Dat, eval_obs, vec_obs, devec_obs, basis_obs 
 
-# export ObsPotentialEnergy, ObsForces 
-
 mutable struct ObsPotentialEnergy
     E                # value of a potential energy
     weight::Real     # regression weight 
+    E_ref            # reference energy
 end
 
-ObsPotentialEnergy(E::Number) = ObsPotentialEnergy(E, 1.0)
+ObsPotentialEnergy(E::Number) = ObsPotentialEnergy(E, 1.0, 0.0)
 
 # evaluating an observation type on a model - 
 # here we assume implicitly that `at = dat.config::Atoms` and that 
