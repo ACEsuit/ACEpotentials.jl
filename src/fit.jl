@@ -42,10 +42,6 @@ function fit_ace(params::Dict)
 ###
 ###    Vref = OneBody(params["e0"])
 ###
-###    weights = params["weights"]
-###
-###    IP, lsqinfo = lsqfit(db, solver=solver, Vref=Vref, weights=weights, error_table=true)
-###
 ###    @info("Fitting errors")
 ###    rmse_table(lsqinfo["errors"])
 ###
@@ -83,8 +79,9 @@ function fit_ace(params::Dict)
             for key in keys(at.data)
                 if lowercase(key) == lowercase(energy_key)
                     w = (config_type in keys(weights)) ? weights[config_type]["E"] : weights["default"]["E"]
-                    energy = at.data[key].data - JuLIP.energy(Vref, at)
-                    energy = ObsExamples.ObsPotentialEnergy(energy, w)
+                    energy_ref = JuLIP.energy(Vref, at)
+                    energy = at.data[key].data - energy_ref
+                    energy = ObsExamples.ObsPotentialEnergy(energy, w, energy_ref)
                 end
                 if lowercase(key) == lowercase(force_key)
                     w = (config_type in keys(weights)) ? weights[config_type]["F"] : weights["default"]["F"]
@@ -111,7 +108,6 @@ function fit_ace(params::Dict)
 
     data = create_dataset(julip_dataset)
 
-    #ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR(; damp=damp, atol=atol))
     return ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR())
 
 end

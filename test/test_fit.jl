@@ -69,25 +69,18 @@ params = fit_params(
     solver = solver,
     e0 = e0,
     weights = weights,
-# TODO: restore preconditioning
-#    P = P,
+    P = P,
     ACE_fname = "")
 
 coef, errors = fit_ace(params)
 
 expected_errors = load_dict(expected_errors_json)
 
-# TODO: this is simplified, checks only RMSE
-for config_type in keys(errors),
-       property in keys(errors[config_type])
-    print_tf(@test errors[config_type][property] <= 2 * expected_errors["rmse"][config_type][property])
+for error_type in keys(errors),
+        config_type in keys(errors[error_type]),
+            property in keys(errors[error_type][config_type])
+    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
 end
-# TODO: here is the full with different error types
-#for error_type in keys(errors),
-#        config_type in keys(errors[error_type]),
-#            property in keys(errors[error_type][config_type])
-#    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
-#end
 println()
 
 ##
@@ -100,15 +93,12 @@ params["ACE_fname"] = ""
 params = fill_defaults!(params)
 coef, errors = fit_ace(params)
 
-# TODO: restore
-#errors = lsqinfo["errors"]
-#
-#for error_type in keys(errors),
-#    config_type in keys(errors[error_type]),
-#        property in keys(errors[error_type][config_type])
-#    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
-#end
-#println()
+for error_type in keys(errors),
+    config_type in keys(errors[error_type]),
+        property in keys(errors[error_type][config_type])
+    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
+end
+println()
 
 ##
 @info("Test full fit from fit_params.yaml")
@@ -119,12 +109,9 @@ params["ACE_fname"] = ""
 params = fill_defaults!(params)
 coef, errors = fit_ace(params)
 
-# TODO: restore
-#errors = lsqinfo["errors"]
-#
-#for error_type in keys(errors),
-#    config_type in keys(errors[error_type]),
-#        property in keys(errors[error_type][config_type])
-#    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
-#end
-#println()
+for error_type in keys(errors),
+    config_type in keys(errors[error_type]),
+        property in keys(errors[error_type][config_type])
+    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
+end
+println()

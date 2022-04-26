@@ -17,10 +17,11 @@ module ObsExamples
    struct ObsPotentialEnergy{T} 
       E::T    
       weight::Real
+      E0::T
    end
 
-   ObsPotentialEnergy{T}(E::Number) where {T} = ObsPotentialEnergy{T}(E, 1.0)
-   ObsPotentialEnergy(E::Number) = ObsPotentialEnergy(E, 1.0)
+   ObsPotentialEnergy{T}(E::Number) where {T} = ObsPotentialEnergy{T}(E, 1.0, 0.0)
+   ObsPotentialEnergy(E::Number) = ObsPotentialEnergy(E, 1.0, 0.0)
 
    # evaluating an observation type on a model - 
    # here we assume implicitly that `at = dat.config::Atoms` and that 
