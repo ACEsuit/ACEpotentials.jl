@@ -69,17 +69,20 @@ params = fit_params(
     solver = solver,
     e0 = e0,
     weights = weights,
-    P = P,
+# TODO: restore preconditioning
+#    P = P,
     ACE_fname = "")
 
-#IP, lsqinfo = ACE1pack.fit_ace(params)
-ACE1pack.fit_ace(params)
+coef, errors = fit_ace(params)
 
-# TODO: restore
-#errors = lsqinfo["errors"]
-#
-#expected_errors = load_dict(expected_errors_json)
-#
+expected_errors = load_dict(expected_errors_json)
+
+# TODO: this is simplified, checks only RMSE
+for config_type in keys(errors),
+       property in keys(errors[config_type])
+    print_tf(@test errors[config_type][property] <= 2 * expected_errors["rmse"][config_type][property])
+end
+# TODO: here is the full with different error types
 #for error_type in keys(errors),
 #        config_type in keys(errors[error_type]),
 #            property in keys(errors[error_type][config_type])
@@ -95,8 +98,7 @@ params = load_dict(json_params)
 params["data"]["fname"] = test_train_set
 params["ACE_fname"] = ""
 params = fill_defaults!(params)
-#IP, lsqinfo = fit_ace(params)
-fit_ace(params)
+coef, errors = fit_ace(params)
 
 # TODO: restore
 #errors = lsqinfo["errors"]
@@ -115,8 +117,7 @@ params = load_dict(yaml_params)
 params["data"]["fname"] = test_train_set
 params["ACE_fname"] = ""
 params = fill_defaults!(params)
-#IP, lsqinfo = fit_ace(params)
-fit_ace(params)
+coef, errors = fit_ace(params)
 
 # TODO: restore
 #errors = lsqinfo["errors"]
