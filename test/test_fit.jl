@@ -69,8 +69,7 @@ params = fit_params(
     solver = solver,
     e0 = e0,
     weights = weights,
-# TODO: restore preconditioning
-#    P = P,
+    P = P,
     ACE_fname = "")
 
 IP, lsqinfo = ACE1pack.fit_ace(params)
