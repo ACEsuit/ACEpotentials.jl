@@ -1,4 +1,12 @@
 
+using Distributed
+@everywhere using Distributed
+using Pkg
+@everywhere using Pkg
+Pkg.activate("..")
+@everywhere Pkg.activate("..")
+using Revise
+@everywhere using Revise
 
 
 
