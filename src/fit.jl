@@ -9,7 +9,7 @@ export fit_params, fit_ace
 """
 TODO: documentation:
 """
-function fit_ace(params::Dict)
+function create_the_dataset(params::Dict)
 
     # ENH: don't generate redundant stuff if db is read from disk. 
     # ENH: make species non-mandatory and read from data
@@ -59,10 +59,9 @@ function fit_ace(params::Dict)
 
     weights = params["weights"]
 
-    # wcw: need to pass these in somehow
-    energy_key = "energy"
-    force_key = "force"
-    virial_key = "virial"
+    energy_key = params["data"]["energy_key"]
+    force_key = params["data"]["force_key"]
+    virial_key = params["data"]["virial_key"]
 
     function create_dataset(julip_dataset)
         data = ACEfit.Dat[]
@@ -91,7 +90,10 @@ function fit_ace(params::Dict)
                     virial = ObsVirial(m, w)
                 end
             end
-            obs = [energy, forces]
+            obs = Any[energy]
+            if !isnothing(forces)
+                push!(obs, forces)
+            end
             if !isnothing(virial)
                 insert!(obs, 1, virial)
             end
@@ -103,9 +105,24 @@ function fit_ace(params::Dict)
 
     julip_dataset = JuLIP.read_extxyz(params["data"]["fname"])
 
-    data = create_dataset(julip_dataset)
+    return create_dataset(julip_dataset)
 
-    return ACEfit.llsq!(basis, data, :dist, solver=ACEfit.LSQR())
+end
+
+function fit_ace(params::Dict; parallelism="serial")
+
+    basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
+    basis = JuLIP.MLIPs.IPSuperBasis(basis);
+
+    data = create_the_dataset(params)
+
+    if parallelism == "serial"
+        return ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR(atol=1e-12))
+    elseif parallelism == "distributed"
+        return ACEfit.llsq!(basis, data, :dist, solver=ACEfit.LSQR(atol=1e-12))
+    else
+        println("bad parallelism input")
+    end
 
 end
 
