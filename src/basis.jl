@@ -3,6 +3,7 @@
 #   ACE Basis  
 
 import ACE1.PairPotentials: PolyPairBasis
+import ACE1.Transforms: PolyTransform, MultiTransform
 
 
 export basis_params, degree_params, transform_params
@@ -124,14 +125,7 @@ end
 function generate_pair_basis(params::Dict)
       species = _params_to_species(params["species"])
       trans = generate_transform(params["transform"])
-      rad_basis = transformed_jacobi(
-            params["maxdeg"],
-            trans, 
-            params["rcut"],
-            params["rin"];
-            pcut = params["pcut"],
-            pin = params["pin"])
-
+      rad_basis = transformed_jacobi(params["maxdeg"], trans, params)
       return PolyPairBasis(rad_basis, species)
 
 end
@@ -141,6 +135,7 @@ end
 
 """
 TODO: needs docs 
+TODO: rcut and rin are ignored for multitransform. 
 """ 
 function rad_basis_params(; 
       r0 = 2.5,
@@ -160,8 +155,7 @@ end
 
 function generate_rad_basis(params::Dict, D, maxdeg, species, trans)
    maxn = ACE1.RPI.get_maxn(D, maxdeg, species)
-   return transformed_jacobi(maxn, trans, params["rcut"], params["rin"];
-                             pcut = params["pcut"], pin = params["pin"] )
+   return transformed_jacobi(maxn, trans, params)
 end
 
 
@@ -174,15 +168,15 @@ _bases = Dict("pair" => (generate_pair_basis, pair_basis_params),
               "rad" => (nothing, rad_basis_params))
 
 
-_species_to_params(species::Union{Symbol, AbstractString}) = 
-      [ string(species), ] 
-
-_species_to_params(species::Union{Tuple, AbstractArray}) = 
-      collect( string.(species) )
+transformed_jacobi(maxn::Integer, trans::MultiTransform, params::Dict) = 
+      OrthPolys.transformed_jacobi(maxn, trans; pcut = params["pcut"], pin = params["pin"])
 
 
 _params_to_species(species) = 
       Symbol.(species)
+transformed_jacobi(maxn::Integer, trans::PolyTransform, params::Dict) =
+      OrthPolys.transformed_jacobi(maxn, trans, params["rcut"], params["rin"]; 
+                         pcut = params["pcut"], pin = params["pin"])
 
 # _params_to_species(species::AbstractArray{<: AbstractString}) = 
 # Symbol.(species)
@@ -191,7 +185,27 @@ _params_to_species(species) =
 # ------------------------------------------
 #  degree 
 
-# ENH: polynomial degree for each correlation order
+"""
+TODO: docs
+"""
+function degree_params(;
+      type = "sparse", 
+      kwargs...)
+      @assert haskey(_degrees, type)
+      return _degrees[type][2](; kwargs...)
+end
+
+function generate_degree(params::Dict)
+      @assert haskey(_degrees, params["type"])
+      # we ignore p for `SparsePSHDegree`, for now
+      if params["type"] == "sparse" && haskey(params, "p")
+            delete!(params, "p")
+      end
+      degree_measure = _degrees[params["type"]][1]
+      kwargs = Dict([Symbol(key) => val for (key, val) in params]...)
+      delete!(kwargs, :type)
+      return degree_measure(; kwargs...)
+end
 
 """
 TODO: needs docs 
@@ -199,8 +213,7 @@ TODO: needs docs
 * `p = 1` is current ignored, but we put it in so we can experiment later 
 with `p = 2`, `p = inf`. 
 """ 
-function degree_params(; 
-      type::String = "sparse", 
+function sparse_degree_params(; 
       wL::Real = 1.5, 
       csp::Real = 1.0, 
       chc::Real = 0.0, 
@@ -208,13 +221,12 @@ function degree_params(;
       bhc::Real = 0.0, 
       p::Real = 1.0 )
 
-   @assert type in [ "sparse", ]
    @assert wL > 0 
    @assert csp >= 0 && chc >= 0 
    @assert csp > 0 || chc > 0 
    @assert ahc >= 0 && bhc >= 0
    @assert p == 1
-   return Dict( "type" => type, 
+   return Dict( "type" => "sparse", 
                 "wL" => wL, 
                 "csp" => csp, 
                 "chc" => chc, 
@@ -223,15 +235,31 @@ function degree_params(;
                 "p" => p )
 end 
 
-function generate_degree(params::Dict) 
-   @assert params["type"] == "sparse"
-   return SparsePSHDegree(;  wL = params["wL"], 
-                            csp = params["csp"], 
-                            chc = params["chc"], 
-                            ahc = params["ahc"],
-                            bhc = params["bhc"] 
-                          )
+"""
+TODO Docs
+"""
+function sparse_degree_M_params(;
+      Dd::Dict = nothing,
+      Dn::Dict = Dict("default" => 1.0),
+      Dl::Dict = Dict("default" => 1.5))
+
+      @assert !isnothing(Dd)
+
+      return Dict(
+            "type" => "sparseM",
+            "Dd" => _AtomicNumber_to_params(Dd),
+            "Dn" => _AtomicNumber_to_params(Dn), 
+            "Dl" => _AtomicNumber_to_params(Dl))
 end
+
+SparsePSHDegreeM(; Dn::Dict, Dl::Dict, Dd::Dict) = 
+      ACE1.RPI.SparsePSHDegreeM(_params_to_AtomicNumber(Dn), 
+                                _params_to_AtomicNumber(Dl), 
+                                _params_to_AtomicNumber(Dd))
+
+_degrees = Dict(
+      "sparse" => (ACE1.RPI.SparsePSHDegree, sparse_degree_params),
+      "sparseM" => (SparsePSHDegreeM, sparse_degree_M_params))
 
 
 # ------------------------------------------
@@ -239,15 +267,12 @@ end
 #  this is a little more interesting since there are quite a 
 #  few options. 
 
-# ENH: add multitransform
-
 """
 TODO: needs docs
 """
 function transform_params(; 
       type = "polynomial",
-      kwargs... 
-   )
+      kwargs...)
    @assert haskey(_transforms, type)
    return _transforms[type][2](; kwargs...)
 end
@@ -263,6 +288,29 @@ function PolyTransform_params(; p = 2, r0 = 2.5)
                "r0" => r0)
 end
 
+function multitransform_params(; 
+      transforms = nothing,
+      rin = nothing,
+      rcut = nothing,
+      cutoffs=nothing)
+
+      @assert !isnothing(transforms)
+      @assert (!isnothing(rin) && !isnothing(rcut)) || !isnothing(cutoffs)
+
+      return Dict("type" => "multitransform",
+                  "transforms" => _species_to_params(transforms),
+                  "rin" => rin,
+                  "rcut" => rcut,
+                  "cutoffs" => _species_to_params(cutoffs))
+end
+
+function generate_multitransform(; transforms, rin = nothing, rcut = nothing, cutoffs = nothing)
+      transforms = _params_to_species(transforms)
+      transforms = Dict(key => generate_transform(params) for (key, params) in transforms)
+      cutoffs = _params_to_species(cutoffs)
+      return ACE1.Transforms.multitransform(transforms, rin = rin, rcut = rcut, cutoffs = cutoffs)
+end
+
 
 function IdTransform_params(; r0 = 1.0)
       return Dict("type" => "identity")
@@ -270,6 +318,7 @@ end
 
 
 function generate_transform(params::Dict)
+   @assert haskey(_transforms, params["type"])
    TTransform = _transforms[params["type"]][1]
    kwargs = Dict([Symbol(key) => val for (key, val) in params]...)
    delete!(kwargs, :type)
@@ -284,5 +333,59 @@ end
 # parameters 
 _transforms = Dict(
       "polynomial" => (ACE1.Transforms.PolyTransform, PolyTransform_params),
-      "identity" => (ACE1.Transforms.IdTransform, IdTransform_params))
+      "identity" => (ACE1.Transforms.IdTransform, IdTransform_params),
+      "multitransform" => (generate_multitransform, multitransform_params)
+)
 
+
+# ------------------------------------------
+# helper functions
+
+# -- Symbol to string
+_species_to_params(species::Union{Symbol, AbstractString}) = 
+      [ string(species), ] 
+
+_species_to_params(species::Union{Tuple, AbstractArray}) = 
+      collect( string.(species) )
+
+# accept tuples of Symbol or String for dictionary key
+# values can be anything
+_species_to_params(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: Union{Symbol, AbstractString} where Tval <: Any = 
+      Dict(Tuple(_species_to_params(key)) => val for (key, val) in dict)
+
+_species_to_params(dict::Nothing) = nothing
+
+
+# -- String to Symbol
+_params_to_species(species::Union{AbstractArray{T}, Tuple{T, T}}) where T <: AbstractString  = 
+      Symbol.(species)
+
+_params_to_species(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: AbstractString where Tval <: Any = 
+      Dict(Tuple(_params_to_species(d)) => val for (d, val) in dict)
+
+_params_to_species(dict::Nothing) = nothing
+
+
+
+function _AtomicNumber_to_params(dict)
+      new_dict = Dict()
+      for (key, val) in dict
+            if typeof(key) <: Tuple
+                 key = Tuple(typeof(entry) <: AtomicNumber ? string(chemical_symbol(entry)) : entry for entry in key)
+            end
+            new_dict[key] = val
+      end
+      return new_dict
+end
+
+function _params_to_AtomicNumber(dict)
+      new_dict = Dict()
+      for (key, val) in dict
+            if typeof(key) <: Tuple
+                  key = Tuple(typeof(entry) <: AbstractString && length(entry) == 1 ? 
+                              AtomicNumber(Symbol(entry)) : entry for entry in key)
+            end
+            new_dict[key] = val
+      end
+      return new_dict
+end
