@@ -181,8 +181,11 @@ _species_to_params(species::Union{Tuple, AbstractArray}) =
       collect( string.(species) )
 
 
-_params_to_species(species::AbstractArray{<: AbstractString}) = 
+_params_to_species(species) = 
       Symbol.(species)
+
+# _params_to_species(species::AbstractArray{<: AbstractString}) = 
+# Symbol.(species)
 
 
 # ------------------------------------------
@@ -261,6 +264,11 @@ function PolyTransform_params(; p = 2, r0 = 2.5)
 end
 
 
+function IdTransform_params(; r0 = 1.0)
+      return Dict("type" => "identity")
+end
+
+
 function generate_transform(params::Dict)
    TTransform = _transforms[params["type"]][1]
    kwargs = Dict([Symbol(key) => val for (key, val) in params]...)
@@ -274,5 +282,7 @@ end
 # user supplies for the `type` parameter. The value is a tuple containing 
 # the corresponding transform type and function that generates the defaul 
 # parameters 
-_transforms = Dict( "polynomial" => (ACE1.Transforms.PolyTransform, PolyTransform_params) )
+_transforms = Dict(
+      "polynomial" => (ACE1.Transforms.PolyTransform, PolyTransform_params),
+      "identity" => (ACE1.Transforms.IdTransform, IdTransform_params))
 
