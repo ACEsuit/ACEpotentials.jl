@@ -23,8 +23,8 @@ lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6, lsqr_conlim = 1e8, lsqr_maxite
 rrqr_params(; rrqr_tol = 1e-5) =
     Dict("solver" => "rrqr", "rrqr_tol" => rrqr_tol)
 
-brr_params(; brr_tol = 1e-3) = 
-    Dict("solver" => "brr", "brr_tol" => brr_tol)
+brr_params(; brr_n_iter = 300, brr_tol = 1e-3) =
+    Dict("solver" => "brr", "brr_n_iter" => brr_n_iter, "brr_tol" => brr_tol)
 
 ard_params(; ard_tol = 1e-3, ard_threshold_lambda = 10000) = 
     Dict("solver" => "ard", "ard_tol" => ard_tol, "ard_threshold_lambda" => ard_threshold_lambda)
