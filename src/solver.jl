@@ -26,8 +26,8 @@ rrqr_params(; rrqr_tol = 1e-5) =
 brr_params(; brr_n_iter = 300, brr_tol = 1e-3) =
     Dict("solver" => "brr", "brr_n_iter" => brr_n_iter, "brr_tol" => brr_tol)
 
-ard_params(; ard_tol = 1e-3, ard_threshold_lambda = 10000) = 
-    Dict("solver" => "ard", "ard_tol" => ard_tol, "ard_threshold_lambda" => ard_threshold_lambda)
+ard_params(; ard_n_iter = 300, ard_tol = 1e-3, ard_threshold_lambda = 10000) =
+    Dict("solver" => "ard", "ard_n_iter" => ard_n_iter, "ard_tol" => ard_tol, "ard_threshold_lambda" => ard_threshold_lambda)
 
 
 _solver_to_params(solver::Union{Symbol, AbstractString}) = 
