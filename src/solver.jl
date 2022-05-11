@@ -16,8 +16,9 @@ end
 
 
 # TODO: add asserts & error messages for solvers' parameters
-lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6) = 
-    Dict("solver" => "lsqr", "lsqr_damp" => lsqr_damp, "lsqr_atol" => lsqr_atol)
+lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6, lsqr_conlim = 1e8, lsqr_maxiter = 100000, lsqr_verbose = false) =
+    Dict("solver" => "lsqr", "lsqr_damp" => lsqr_damp, "lsqr_atol" => lsqr_atol,
+         "lsqr_conlim" => lsqr_conlim, "lsqr_maxiter" => lsqr_maxiter, "lsqr_verbose" => lsqr_verbose)
 
 rrqr_params(; rrqr_tol = 1e-5) =
     Dict("solver" => "rrqr", "rrqr_tol" => rrqr_tol)

@@ -117,7 +117,16 @@ function fit_ace(params::Dict; parallelism="serial")
     data = create_the_dataset(params)
 
     if parallelism == "serial"
-        return ACEfit.llsq!(basis, data, :serial, solver=ACEfit.LSQR(atol=1e-12))
+        return ACEfit.llsq!(
+            basis,
+            data,
+            :serial,
+            solver=ACEfit.LSQR(damp=params["solver"]["lsqr_damp"],
+                               atol=params["solver"]["lsqr_atol"],
+                               conlim=params["solver"]["lsqr_conlim"],
+                               maxiter=params["solver"]["lsqr_maxiter"],
+                               verbose=params["solver"]["lsqr_verbose"])
+            )
     elseif parallelism == "distributed"
         return ACEfit.llsq!(basis, data, :dist, solver=ACEfit.LSQR(atol=1e-12))
     else
