@@ -2,7 +2,7 @@
 # ------------------------------------------
 #    ACE Fitting
 
-import ACEfit, ACE1pack, ACE1
+import ACEfit, ACE1pack, ACE1, ExtXYZ
 
 export fit_params, fit_ace 
 
@@ -107,6 +107,23 @@ function create_the_dataset(params::Dict)
 
     return create_dataset(julip_dataset)
 
+end
+
+function count_observations(filename, energy_key, force_key, virial_key)
+    count = 0
+    for dict in ExtXYZ.iread_frames(filename)
+        atoms = JuLIP._extxyz_dict_to_atoms(dict)
+        for key in keys(atoms.data)
+            if lowercase(key) == lowercase(energy_key)
+                count += 1
+            elseif lowercase(key) == lowercase(force_key)
+                count += 3*length(atoms)
+            elseif lowercase(key) == lowercase(virial_key)
+                count += 6
+            end
+        end
+    end
+    return count
 end
 
 function fit_ace(params::Dict; parallelism="serial")
