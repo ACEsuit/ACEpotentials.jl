@@ -6,6 +6,8 @@ version = "0.0.1"
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
 ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+DistributedArrays = "aaf54ef3-cdf8-58ed-94cc-d582ad619b94"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
