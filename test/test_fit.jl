@@ -12,8 +12,6 @@ json_params = joinpath(artifact"ACE1pack_test_files", "fit_params.json")
 yaml_params = joinpath(artifact"ACE1pack_test_files", "fit_params.yaml")
 
 
-
-
 @info("test full fit from script")
 
 species = [:Ti, :Al]
