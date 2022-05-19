@@ -313,6 +313,8 @@ function generate_multitransform(; transforms, rin = nothing, rcut = nothing, cu
       return ACE1.Transforms.multitransform(transforms, rin = rin, rcut = rcut, cutoffs = cutoffs)
 end
 
+# TODO make r0 a non-mandatory parameter?
+IdTransform_params(; r0 = 1.0) = Dict("type" => "identity")
 
 function generate_transform(params::Dict)
    @assert haskey(_transforms, params["type"])
@@ -331,6 +333,7 @@ end
 _transforms = Dict(
       "polynomial" => (ACE1.Transforms.PolyTransform, PolyTransform_params),
       "multitransform" => (generate_multitransform, multitransform_params),
+      "identity" => (ACE1.Transforms.IdTransform, IdTransform_params)
 )
 
 
@@ -360,6 +363,10 @@ _params_to_species(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: AbstractSt
       Dict(Tuple(_params_to_species(d)) => val for (d, val) in dict)
 
 _params_to_species(dict::Nothing) = nothing
+
+# Will's addition - see why this was needed
+# _params_to_species(species) = 
+#       Symbol.(species)
 
 
 
