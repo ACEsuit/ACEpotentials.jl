@@ -23,6 +23,26 @@ fit_parms = load_dict(json_params_fname)
 fit_parms["data"]["fname"] = test_train_set 
 fit_parms = fill_defaults!(fit_parms)
 
+@info("Test multitransform (it's a bit trickier)")
+multitransform_params = Dict(
+    "cutoffs" => Dict(
+       ("C", "C") => (1, 2),
+       ("C", "H") => (1, 3),
+       ("H", "H") => (1, 3)),
+    "transforms" => Dict(
+        ("C", "C") => Dict("type"=> "polynomial"),
+        ("C", "H") => Dict("type"=> "polynomial"),
+        ("H", "H") => Dict("type" => "polynomial")),
+    "type" => "multitransform") 
+
+out = fill_defaults!(multitransform_params, param_key="transform")
+for (key, val) in out["transforms"]
+    for extra_key in ["r0", "p"]
+        print_tf(@test haskey(val, extra_key))
+    end
+end
+println()
+
 @info("Test that all *params get filled in correctly on smallest allowed input.")
 
 @info("fit_params")
@@ -59,6 +79,7 @@ end
 for extra_key in ["rrqr_tol"]
     print_tf(@test haskey(filled_params["solver"], extra_key))
 end
+println()
 
 @info("The rest to be or not to be done...")
 
