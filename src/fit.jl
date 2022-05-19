@@ -105,7 +105,7 @@ function create_the_dataset(params::Dict)
 
     julip_dataset = JuLIP.read_extxyz(params["data"]["fname"])
 
-    return create_dataset(julip_dataset)
+    return create_dataset(julip_dataset), Vref
 
 end
 
@@ -131,12 +131,13 @@ function fit_ace(params::Dict; parallelism="serial")
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
-    data = create_the_dataset(params)
+    data, Vref = create_the_dataset(params)
 
     if parallelism == "serial"
         return ACEfit.llsq!(
             basis,
             data,
+            Vref,
             :serial,
             solver=ACEfit.LSQR(damp=params["solver"]["lsqr_damp"],
                                atol=params["solver"]["lsqr_atol"],
