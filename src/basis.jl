@@ -11,7 +11,7 @@ export basis_params, degree_params, transform_params
 function basis_params(;
       type = nothing, 
       kwargs...)
-      @assert !isnothing(type)
+      @assert haskey(_bases, type)
       return _bases[type][2](; kwargs...)
 end
 
@@ -49,7 +49,8 @@ function rpi_basis_params(;
       r0 = 2.5, 
       rad_basis = rad_basis_params(; r0 = r0), 
       transform = transform_params(; r0 = r0), 
-      degree = degree_params()
+      degree = degree_params(),
+      type = "rpi"
    )
    # TODO: replace assert statements with user-friendly error messages
    @assert !isnothing(species)
@@ -59,6 +60,8 @@ function rpi_basis_params(;
    @assert maxdeg > 0 
    @assert isreal(r0)
    @assert r0 > 0 
+   @assert type == "rpi"
+
    return Dict( 
          "type" => "rpi",
          "species" => _species_to_params(species), 
@@ -101,6 +104,7 @@ function pair_basis_params(;
       pcut = 2, 
       pin = 0,
       transform = transform_params(; r0=r0),
+      type = "pair",
       )
 
       # TODO: replace asserts with something friendlier
@@ -109,6 +113,7 @@ function pair_basis_params(;
       @assert maxdeg > 0
       @assert isreal(r0)
       @assert r0 > 0
+      @assert type == "pair"
 
       return Dict(
             "type" => "pair",
@@ -142,7 +147,10 @@ function rad_basis_params(;
       rcut = 5.0,
       rin = 0.5 * r0,
       pcut = 2,
-      pin = 2)
+      pin = 2,
+      type = "rad")
+
+   @assert type == "rad"
 
    # TODO put in similar checks 
    return Dict(

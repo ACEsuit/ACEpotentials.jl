@@ -13,7 +13,7 @@ function fill_defaults!(params::Dict; param_key = "fit_params")
     for (key, val) in params
         if key == "basis"
             for (basis_name, basis_params) in params[key]
-                params[key][basis_name] = fill_defaults!(basis_params; param_key=key)
+                params[key][basis_name] = fill_defaults!(basis_params; param_key=basis_name)
             end
         elseif key == "transforms"
             params[key] = _fill_transforms(val)
@@ -26,15 +26,17 @@ end
 
 _fill_transforms(params) = Dict([key => fill_defaults!(val, param_key="transform") for (key, val) in params])
 _fill_default(d::Dict, key) = _dict_constructors[key](;_makesymbol(d)...)
-_makesymbol(p::Pair) = (Symbol(p.first) => (p.second)) # don't need recursion at this level
-_makesymbol(D::Dict) = Dict(_makesymbol.([D...])...)    # special case dictionary 
+_makesymbol(p::Pair) = (Symbol(p.first) => (p.second))
+_makesymbol(D::Dict) = Dict(_makesymbol.([D...])...)   
 
 _dict_constructors = Dict(
     "fit_params" => ACE1pack.fit_params,
     "data" => ACE1pack.data_params,
     "solver" => ACE1pack.solver_params,
-    "basis" => ACE1pack.basis_params,
-    "transform" => ACE1pack.transform_params, # all transforms
+    "rad_basis" => ACE1pack.rad_basis_params,
+    "rpi_basis" => ACE1pack.rpi_basis_params,
+    "pair_basis" => ACE1pack.pair_basis_params,
+    "transform" => ACE1pack.transform_params, 
     "degree" => ACE1pack.degree_params,
     "P" => ACE1pack.precon_params)
 

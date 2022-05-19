@@ -43,6 +43,17 @@ for (key, val) in out["transforms"]
 end
 println()
 
+@info("Test filling in rpi_basis without \"type\" among rad_basis parameters")
+rpi_params = Dict(
+    "species" => "something",
+    "N" => 2, 
+    "maxdeg" => 2, 
+    "rad_basis" => Dict(
+        "rin" => 2.0,
+        "rcut" => 7.0
+    ))
+out = fill_defaults!(rpi_params, param_key="rpi_basis")
+
 @info("Test that all *params get filled in correctly on smallest allowed input.")
 
 @info("fit_params")
@@ -53,12 +64,12 @@ minimal_params = Dict(
         "rpi_basis" => Dict(
             "species" => "something",
             "N" => 1,
-            "maxdeg" => 1,
-            "type" => "rpi"),
+            "maxdeg" => 1
+            ),
         "pair_basis" => Dict(
             "species" => "sth",
-            "maxdeg" => 1,
-            "type" => "pair"),),
+            "maxdeg" => 1
+            ),),
     "solver" => Dict(
         "solver" => "rrqr"),
     "e0" => "something")
