@@ -6,7 +6,28 @@ using ACE1pack
 
 export  fill_defaults!, parse_basis_keys
 
-""" Recursively updates nested dictionaries with default parameters"""
+""" 
+Recursively updates nested dictionaries with default parameters. 
+One only needs to suply the mandatory parameters, for example
+````
+minimal_params = Dict(
+    "data" => Dict(
+        "fname" => "something"),
+    "basis" => Dict(
+        "rpi_basis" => Dict(
+            "species" => "something",
+            "N" => 1,
+            "maxdeg" => 1
+            ),
+        "pair_basis" => Dict(
+            "species" => "sth",
+            "maxdeg" => 1
+            ),),
+    "solver" => Dict(
+        "solver" => "rrqr"),
+    "e0" => "something")
+```
+"""
 function fill_defaults!(params::Dict; param_key = "fit_params")
     # Go through the nested dictionaries filling in the default values
     params = _fill_default(params, param_key)
