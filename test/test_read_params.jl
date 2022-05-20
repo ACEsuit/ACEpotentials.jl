@@ -54,6 +54,29 @@ rpi_params = Dict(
     ))
 out = fill_defaults!(rpi_params, param_key="rpi_basis")
 
+
+@info("Test parsing string of tuple into tuple of strings in basis")
+rpi_basis_params = Dict(
+        "degree" => Dict(
+            "type" => "sparseM",
+            "Dn" => Dict("default"=> 1.0),
+            "Dl" => Dict("default"=> 1.5),
+            "Dd" => Dict(
+                "default" => 10,
+                "(4, C)" => 8)),
+        "transform" => Dict(
+            "cutoffs" => Dict("(C, C)" => "(1.0, 2.3)"),
+            "transforms" => Dict(
+                "(C, C)" => Dict(
+                    "type" => "polynomial")),
+            "type" => "multitransform"))
+
+out = parse_basis_keys(rpi_basis_params)
+print_tf(@test haskey(out["degree"]["Dd"], (4, "C")))
+print_tf(@test haskey(out["transform"]["transforms"], ("C", "C")))
+print_tf(@test haskey(out["transform"]["cutoffs"], ("C", "C")))
+println()
+
 @info("Test that all *params get filled in correctly on smallest allowed input.")
 
 @info("fit_params")
@@ -93,7 +116,5 @@ end
 println()
 
 @info("The rest to be or not to be done...")
-
-
 
 
