@@ -24,7 +24,7 @@ function data_params(;
     force_key = "dft_force",
     virial_key = "dft_virial"
 )
-    @assert !isnothing(fname) "`fname` mut be given. "
+    @assert !isnothing(fname) "`fname` must be given. "
 
     return Dict(
         "fname" => fname,
