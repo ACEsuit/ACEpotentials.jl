@@ -4,8 +4,6 @@ using JuLIP.Testing: print_tf
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
 json_params = joinpath(artifact"ACE1pack_test_files", "fit_params.json")
 expected_errors_json = joinpath(artifact"ACE1pack_test_files", "expected_fit_errors.json")
-json_params = joinpath(artifact"ACE1pack_test_files", "fit_params.json")
-yaml_params = joinpath(artifact"ACE1pack_test_files", "fit_params.yaml")
 
 
 @info("test full fit from script")
@@ -75,43 +73,6 @@ expected_errors = load_dict(expected_errors_json)
 for error_type in keys(errors), 
         config_type in keys(errors[error_type]), 
             property in keys(errors[error_type][config_type])
-    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
-end
-println() 
-
-##
-
-@info("Test full fit from fit_params.json")
-
-params = load_dict(json_params)
-params["data"]["fname"] = test_train_set
-params["ACE_fname"] = ""
-params = fill_defaults!(params)
-IP, lsqinfo = fit_ace(params)
-
-errors = lsqinfo["errors"]
-
-for error_type in keys(errors), 
-    config_type in keys(errors[error_type]), 
-        property in keys(errors[error_type][config_type])
-    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
-end
-println() 
-
-##
-@info("Test full fit from fit_params.yaml")
-
-params = load_dict(yaml_params)
-params["data"]["fname"] = test_train_set
-params["ACE_fname"] = ""
-params = fill_defaults!(params)
-IP, lsqinfo = fit_ace(params)
-
-errors = lsqinfo["errors"]
-
-for error_type in keys(errors), 
-    config_type in keys(errors[error_type]), 
-        property in keys(errors[error_type][config_type])
     print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
 end
 println() 
