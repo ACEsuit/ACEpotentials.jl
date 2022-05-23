@@ -1,7 +1,3 @@
-
-
-
-
 using ACE1pack, JuLIP, LazyArtifacts, Test
 using JuLIP.Testing: print_tf
 
@@ -49,7 +45,7 @@ basis = Dict(
     "pair_basis" => pair_basis
 )
 
-solver = solver_params(solver = :lsqr)
+solver = solver_params(type = :lsqr)
 
 # symbols for species (e.g. :Ti) would work as well
 e0 = Dict("Ti" => -1586.0195, "Al" => -105.5954)

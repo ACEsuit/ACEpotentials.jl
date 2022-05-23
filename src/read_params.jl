@@ -24,7 +24,7 @@ minimal_params = Dict(
             "maxdeg" => 1
             ),),
     "solver" => Dict(
-        "solver" => "rrqr"),
+        "type" => "rrqr"),
     "e0" => "something")
 ```
 """

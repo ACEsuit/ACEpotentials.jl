@@ -513,7 +513,7 @@ All parameters are passed as keyword argument. Also see `?PolyTransform`
 Implements the distance transform
 
 ```math
-   x(r) = \Big(\frac{1 + r_0}{1 + r}\Big)^p
+   x(r) = \\Big(\\frac{1 + r_0}{1 + r}\\Big)^p
 ```
 
 ### Parameters
