@@ -2,9 +2,7 @@ using ACE1pack, JuLIP, LazyArtifacts, Test
 using JuLIP.Testing: print_tf
 
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
-json_params = joinpath(artifact"ACE1pack_test_files", "fit_params.json")
 expected_errors_json = joinpath(artifact"ACE1pack_test_files", "expected_fit_errors.json")
-
 
 @info("test full fit from script")
 
@@ -16,14 +14,14 @@ data = data_params(fname = test_train_set,
     force_key = "force",
     virial_key = "virial")
 
-rpi_basis = basis_params(
-    type = "rpi",
+ace_basis = basis_params(
+    type = "ace",
     species = species, 
     N = 3, 
     maxdeg = 6, 
     r0 = r0, 
-    rad_basis = basis_params(
-        type = "rad", 
+    radial = basis_params(
+        type = "radial", 
         rcut = 5.0, 
         rin = 1.44,
         pin = 2))
@@ -39,8 +37,8 @@ pair_basis = basis_params(
     pin = 0)
 
 basis = Dict(
-    "rpi_basis" => rpi_basis,
-    "pair_basis" => pair_basis
+    "ace" => ace_basis,
+    "pair" => pair_basis
 )
 
 solver = solver_params(type = :lsqr)

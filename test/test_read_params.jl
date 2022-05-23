@@ -36,20 +36,20 @@ for (key, val) in out["transforms"]
 end
 println()
 
-@info("Test filling in rpi_basis without \"type\" among rad_basis parameters")
-rpi_params = Dict(
+@info("Test filling in ace_basis without \"type\" among radial basis parameters")
+ace_params = Dict(
     "species" => "something",
     "N" => 2, 
     "maxdeg" => 2, 
-    "rad_basis" => Dict(
+    "radial" => Dict(
         "rin" => 2.0,
         "rcut" => 7.0
     ))
-out = fill_defaults!(rpi_params, param_key="rpi_basis")
+out = fill_defaults!(ace_params, param_key="ace")
 
 
 @info("Test parsing string of tuple into tuple of strings in basis")
-rpi_basis_params = Dict(
+ace_basis_params = Dict(
         "degree" => Dict(
             "type" => "sparseM",
             "Dn" => Dict("default"=> 1.0),
@@ -64,7 +64,7 @@ rpi_basis_params = Dict(
                     "type" => "polynomial")),
             "type" => "multitransform"))
 
-out = parse_basis_keys(rpi_basis_params)
+out = parse_ace_basis_keys(ace_basis_params)
 print_tf(@test haskey(out["degree"]["Dd"], (4, "C")))
 print_tf(@test haskey(out["transform"]["transforms"], ("C", "C")))
 print_tf(@test haskey(out["transform"]["cutoffs"], ("C", "C")))
@@ -77,14 +77,16 @@ minimal_params = Dict(
     "data" => Dict(
         "fname" => "something"),
     "basis" => Dict(
-        "rpi_basis" => Dict(
+        "ace" => Dict(
             "species" => "something",
             "N" => 1,
-            "maxdeg" => 1
+            "maxdeg" => 1,
+            "type" => "ace"
             ),
-        "pair_basis" => Dict(
+        "pair" => Dict(
             "species" => "sth",
-            "maxdeg" => 1
+            "maxdeg" => 1,
+            "type" => "pair"
             ),),
     "solver" => Dict(
         "type" => "rrqr"),
@@ -97,11 +99,11 @@ end
 for extra_key in ["energy_key", "force_key", "virial_key"]
     print_tf(@test haskey(filled_params["data"], extra_key))
 end
-for extra_key in ["rad_basis", "transform", "degree"]
-    print_tf(@test haskey(filled_params["basis"]["rpi_basis"], extra_key))
+for extra_key in ["radial", "transform", "degree"]
+    print_tf(@test haskey(filled_params["basis"]["ace"], extra_key))
 end
 for extra_key in ["rcut", "rin", "pcut", "pin", "transform"]
-    print_tf(@test haskey(filled_params["basis"]["pair_basis"], extra_key))
+    print_tf(@test haskey(filled_params["basis"]["pair"], extra_key))
 end
 for extra_key in ["rrqr_tol"]
     print_tf(@test haskey(filled_params["solver"], extra_key))

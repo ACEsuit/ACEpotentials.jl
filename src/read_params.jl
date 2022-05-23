@@ -4,7 +4,7 @@
 
 using ACE1pack
 
-export  fill_defaults!, parse_basis_keys
+export  fill_defaults!, parse_ace_basis_keys
 
 """ 
 Recursively updates nested dictionaries with default parameters. 
@@ -14,12 +14,12 @@ minimal_params = Dict(
     "data" => Dict(
         "fname" => "something"),
     "basis" => Dict(
-        "rpi_basis" => Dict(
+        "ace" => Dict(
             "species" => "something",
             "N" => 1,
             "maxdeg" => 1
             ),
-        "pair_basis" => Dict(
+        "pair" => Dict(
             "species" => "sth",
             "maxdeg" => 1
             ),),
@@ -34,10 +34,10 @@ function fill_defaults!(params::Dict; param_key = "fit_params")
     for (key, val) in params
         if key == "basis"
             for (basis_name, basis_params) in params[key]
-                if basis_name == "rpi"
-                    basis_params = parse_basis_keys(basis_param)
+                if basis_name == "ace"
+                    basis_params = parse_ace_basis_keys(basis_params)
                 end
-                params[key][basis_name] = fill_defaults!(basis_params; param_key=basis_name)
+                params[key][basis_name] = fill_defaults!(basis_params; param_key=key)
             end
         elseif key == "transforms"
             params[key] = _fill_transforms(val)
@@ -57,9 +57,10 @@ _dict_constructors = Dict(
     "fit_params" => ACE1pack.fit_params,
     "data" => ACE1pack.data_params,
     "solver" => ACE1pack.solver_params,
-    "rad_basis" => ACE1pack.rad_basis_params,
-    "rpi_basis" => ACE1pack.rpi_basis_params,
-    "pair_basis" => ACE1pack.pair_basis_params,
+    "basis" => ACE1pack.basis_params,
+    "ace" => ACE1pack.ace_basis_params,  
+    "pair" => ACE1pack.pair_basis_params,
+    "radial" => ACE1pack.radial_basis_params,
     "transform" => ACE1pack.transform_params, 
     "degree" => ACE1pack.degree_params,
     "P" => ACE1pack.precon_params)
@@ -73,9 +74,9 @@ This function converts `"(C, C)"`-type strings back to parameter-friendly `("C",
 A bit ugly, but to change the dictionary keys (and so dictionary type) one needs to construct 
 it from scratch, at least as far as I can tell. 
 """
-function parse_basis_keys(rpi_basis::Dict)
+function parse_ace_basis_keys(ace_basis::Dict)
     basis_out = Dict()
-    for (key, val) in rpi_basis
+    for (key, val) in ace_basis
         if val isa Dict && key in ["transform", "degree"] 
             sub_dict = Dict()
             for (sub_key, sub_val) in val 

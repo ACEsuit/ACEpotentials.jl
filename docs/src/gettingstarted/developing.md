@@ -9,10 +9,10 @@ using LinearAlgebra: norm
 
 ### Step 1: specify the ACE basis 
 
-The ACE basis can be set up using the function `rpi_basis()`. 
+The ACE basis can be set up using the function `ace_basis()`. 
 ```julia 
 r0 = rnn(:Si)
-basis = rpi_basis(; 
+basis = ace_basis(; 
       species = :Si,
       N = 3,                        # correlation order = body-order - 1
       maxdeg = 12,                  # polynomial degree

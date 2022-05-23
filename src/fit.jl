@@ -31,12 +31,12 @@ as keyword argumts.
 ### Parameters
 * `data` : data parameters, see `?data_params` for details (mandatory)
 * `basis` : dictionary containing dictionaries that specify the basis used
-in fitting. Usually just `rpi_params` and `pair_params` (mandatory). 
+in fitting. Usually just `ace_params` and `pair_params` (mandatory). 
 For example
 ```
-basis = Dict{
-    "rpi" => rpi_params(; kwargs...),
-    "pair" => pair_params(; kwargs...)}
+basis = Dict(
+    "ace" => ace_params(; kwargs...),
+    "pair" => pair_params(; kwargs...))
 ````
 keys of `basis` must correspond to one of the "type" of `basis_params`, see 
 `?basis_params` and values are corresponding parameters' dictionaries.
@@ -188,11 +188,11 @@ as keyword argumts.
 ### Parameters
 * `data` : data parameters, see `?data_params` for details (mandatory)
 * `basis` : dictionary containing dictionaries that specify the basis used
-in fitting. Usually just `rpi_params` and `pair_params` (mandatory). 
+in fitting. Usually just `ace_params` and `pair_params` (mandatory). 
 For example
 ```
 basis = Dict{
-    "rpi" => rpi_params(; kwargs...),
+    "ace" => ace_params(; kwargs...),
     "pair" => pair_params(; kwargs...)}
 ````
 keys of `basis` must correspond to one of the "type" of `basis_params`, see 

@@ -15,32 +15,32 @@ complete set of parameters required to construct one of the basis.
 All parameters are passed as keyword argument and the kind of 
 parameters required depend on "type". 
 
-### ACE (RPI) basis 
+## ACE (RPI) basis 
 Returns a dictionary containing the complete set of parameters 
 required to construct an ACE basis (`RPIBasis`). All parameters 
 are passed as keyword argument. If no default is given then 
 the argument is required. 
 
-#### Parameters
-* `type = "rpi"`
+### Parameters
+* `type = "ace"`
 * `species` : single species or list of species (mandatory)
 * `N` : correlation order, positive integer (mandatory)
 * `maxdeg` : maximum degree, positive real number (note the precise 
 notion of degree is specified by further parameters) (mandatory)
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `rad_basis = rad_basis_params(; r0 = r0)` : one-particle basis 
-parameters; cf `?rad_basis_params` for details 
+* `radial = radial_basis_params(; r0 = r0)` : one-particle basis 
+parameters; cf `?basis_params` of type "radial" for details 
 * `transform = transform_params(; r0 = r0)` : distance transform 
 parameters; cf `?transform_params()` for details
 * `degree = degree_params()` : class of sparse polynomial degree 
 to select the basis; see `?degree_params` for details 
 
-### Pair basis 
+## Pair basis 
 Returns a dictionary containing the complete set of parameters 
 required to construct an pair basis (`PolyPairBasis`). All 
 parameters are passed as keyword argument. 
 
-#### Parameters
+### Parameters
 * `type = "pair"`
 * `species` : single species or list of species (mandatory)
 * `maxdeg` : maximum degree, positive real number (note the precise 
@@ -53,13 +53,13 @@ notion of degree is specified by further parameters) (mandatory)
 * `transform = transform_params(; r0 = r0)` : distance transform 
 parameters; cf `?transform_params()` for details
 
-### Radial basis of ACE
+## Radial basis of ACE
 Returns a dictionary containing the complete set of parameters 
 required to construct radial basis for ACE. All parameters are 
 passed as keyword argument. 
 
-#### Parameters
-* `type = "rad"`
+### Parameters
+* `type = "radal"`
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
 * `rcut = 5.0`: outer cuttoff, Å 
 * `rin = 0.0`: inner cuttoff, Å 
@@ -69,12 +69,12 @@ passed as keyword argument.
 function basis_params(;
       type = nothing, 
       kwargs...)
-      @assert haskey(_bases, type)
+      @assert haskey(_bases, type) "type $(type) not found among available types of basis ($(keys(_bases)))"
       return _bases[type][2](; kwargs...)
 end
 
 function generate_basis(params::Dict)
-      @assert params["type"] != "rad" 
+      @assert params["type"] != "radal" 
       params = copy(params)
       basis_constructor = _bases[params["type"]][1]
       delete!(params, "type")
@@ -83,10 +83,10 @@ end
 
 
 # ------------------------------------------
-#  rpi basis 
+#  ace basis 
 
 """
-`rpi_basis_params(; kwargs...)` : returns a dictionary containing the 
+`ace_basis_params(; kwargs...)` : returns a dictionary containing the 
 complete set of parameters required to construct an ACE basis (`RPIBasis`). 
 All parameters are passed as keyword argument. If no default is given then 
 the argument is required. 
@@ -97,58 +97,63 @@ the argument is required.
 * `maxdeg` : maximum degree, positive real number (note the precise notion of 
 degree is specified by further parameters) (mandatory)
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `rad_basis = rad_basis_params(; r0 = r0)` : one-particle basis parameters; 
-cf `?rad_basis_params` for details 
+* `radial = radial_basis_params(; r0 = r0)` : one-particle basis parameters; 
+cf `?radial_basis_params` for details 
 * `transform = transform_params(; r0 = r0)` : distance transform parameters; 
 cf `?transform_params()` for details
 * `degree = degree_params()` : class of sparse polynomial degree to select 
 the basis; see `?degree_params` for details 
 """
-function rpi_basis_params(; 
+function ace_basis_params(; 
       species = nothing, 
       N::Integer = nothing, 
       maxdeg = nothing, 
       r0 = 2.5, 
-      rad_basis = rad_basis_params(; r0 = r0), 
+      radial = radial_basis_params(; r0 = r0), 
       transform = transform_params(; r0 = r0), 
       degree = degree_params(),
-      type = "rpi"
+      type = "ace"
    )
     
-   @assert !isnothing(species) "`species` is mandatory for `rpi_basis_params`"
+   @assert !isnothing(species) "`species` is mandatory for `ace_basis_params`"
    @assert isinteger(N) "correlation order `N` must be a positive integer"
    @assert N > 0 "correlation order `N` must be a positive integer"
    @assert isreal(maxdeg) "Maximum polynomial degree `maxdeg` must be a real positive number"
    @assert maxdeg > 0 "Maximum polynomial degree `maxdeg` must be a real positive number"
    @assert isreal(r0) "`r0` must be a real positive number "
    @assert r0 > 0 "`r0` must be a real positive number "
-   @assert type == "rpi" "`type` must be set to \"rpi\" for `rpi_basis_params`"
+   @assert type == "ace" "`type` must be set to \"ace\" for `ace_basis_params`"
+
+   if !haskey(radial, "type")
+      radial = convert(Dict{String, Any}, radial)
+      radial["type"] = "radial"
+   end
 
    return Dict( 
-         "type" => "rpi",
+         "type" => "ace",
          "species" => _species_to_params(species), 
          "N" => N, 
          "maxdeg" => maxdeg, 
-         "rad_basis" => rad_basis, 
+         "radial" => radial, 
          "transform" => transform, 
          "degree" => degree
          )
 end
 
 """Returns ACE1.Utils.rpi_basis """
-function generate_rpi_basis(params::Dict)
+function generate_ace_basis(params::Dict)
    species = _params_to_species(params["species"])
    trans = generate_transform(params["transform"])
    D = generate_degree(params["degree"])
    maxdeg = params["maxdeg"]
-   rad_basis = generate_rad_basis(params["rad_basis"], D, maxdeg, species, trans)
+   radial = generate_radial_basis(params["radial"], D, maxdeg, species, trans)
    return ACE1.Utils.rpi_basis(; 
             species = species, 
             N = params["N"], 
             trans = trans, 
             D = D, 
             maxdeg = maxdeg, 
-            rbasis = rad_basis, 
+            rbasis = radial, 
          )
 end
 
@@ -186,7 +191,7 @@ function pair_basis_params(;
       type = "pair",
       )
 
-      @assert !isnothing(species) "`species` is mandatory for `rpi_basis_params`"
+      @assert !isnothing(species) "`species` is mandatory for `ace_basis_params`"
       @assert isreal(maxdeg) "Maximum polynomial degree `maxdeg` must be a real positive number"
       @assert maxdeg > 0 "Maximum polynomial degree `maxdeg` must be a real positive number"
       @assert isreal(r0) "`r0` must be a real positive number "
@@ -217,7 +222,7 @@ end
 #  rad_basis 
 
 """
-`rad_basis_params(; kwargs...)` : returns a dictionary containing the 
+`radial_basis_params(; kwargs...)` : returns a dictionary containing the 
 complete set of parameters required to construct radial basis for ACE. 
 All parameters are passed as keyword argument. 
 
@@ -228,27 +233,27 @@ All parameters are passed as keyword argument.
 * `pcut = 2`: outer cutoff parameter
 * `pin = 0`: inner cutoff parameter
 """
-function rad_basis_params(; 
+function radial_basis_params(; 
       r0 = 2.5,
       rcut = 5.0,
       rin = 0.5 * r0,
       pcut = 2,
       pin = 2,
-      type = "rad")
+      type = "radial")
 
       @assert isreal(r0) "`r0` must be a real positive number "
       @assert r0 > 0 "`r0` must be a real positive number "
-      @assert type == "rad" "`type` must be set to \"rad\" for `rad_basis_params`"
+      @assert type == "radial" "`type` must be set to \"radial\" for `radial_basis_params`"
 
       return Dict(
-            "type" => "rad",
+            "type" => "radial",
             "rcut" => rcut, 
             "rin" => rin, 
             "pcut" => pcut, 
             "pin" => pin )
 end   
 
-function generate_rad_basis(params::Dict, D, maxdeg, species, trans)
+function generate_radial_basis(params::Dict, D, maxdeg, species, trans)
    maxn = ACE1.RPI.get_maxn(D, maxdeg, species)
    return transformed_jacobi(maxn, trans, params)
 end
@@ -259,8 +264,8 @@ end
 
 
 _bases = Dict("pair" => (generate_pair_basis, pair_basis_params),  
-              "rpi" => (generate_rpi_basis, rpi_basis_params),
-              "rad" => (nothing, rad_basis_params))
+              "ace" => (generate_ace_basis, ace_basis_params),
+              "radial" => (nothing, radial_basis_params))
 
 
 transformed_jacobi(maxn::Integer, trans::MultiTransform, params::Dict) = 
@@ -275,16 +280,16 @@ transformed_jacobi(maxn::Integer, trans::PolyTransform, params::Dict) =
 #  degree 
 
 """
-`basis_params(; kwargs...)` : returns a dictionary containing the 
+`degree_params(; kwargs...)` : returns a dictionary containing the 
 complete set of parameters required to construct a specification
 for polynomial degree. All parameters are passed as keyword argument 
 and the kind of parameters required depend on "type". 
 
-### `SparsePSHDegree` 
+## `SparsePSHDegree` 
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE1.RPI.SparsePSHDegree`. See `?SparsePSHDegree`.
 
-#### Parameters
+### Parameters
 * `type = "sparse"`
 * `wL = 1.5`
 * `csp = 1.0` 
@@ -294,13 +299,13 @@ to construct `ACE1.RPI.SparsePSHDegree`. See `?SparsePSHDegree`.
 * `bhc = 0.0`
 * `p = 1.0`
 
-### `SparsePSHDegreeM`
+## `SparsePSHDegreeM`
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE1.RPI.SparsePSHDegree`. Also see `?SparsePSHDegreeM`. 
 
 NB `maxdeg` of ACE basis (`RPIBasis`) has to be set to `1.0`.
 
-#### Parameters
+### Parameters
 * `Dd` : Dictionary specifying max degrees (mandatory)
 * `Dn = Dict("default" => 1.0)` : Dictionary specifying weights for degree 
 of radial basis functions (n)
@@ -448,7 +453,7 @@ All parameters are passed as keyword argument and the kind of
 parameters required depend on "type".
 
 
-### Polynomial transform 
+## Polynomial transform 
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE1.Transforms.PolyTransform``. All parameters are passed
  as keyword argument. Also see `?PolyTransform`
@@ -459,18 +464,18 @@ Implements the distance transform
    x(r) = \\Big(\\frac{1 + r_0}{1 + r}\\Big)^p
 ```
 
-#### Parameters
+### Parameters
 * `type = "polynomial"`
 * `p = 2` 
 * `r0 = 2.5`
 
 
-### Multitransform
+## Multitransform
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE.Transform.multitransform`. All parameters are passed 
 as keyword argument. 
 
-#### Parameters
+### Parameters
 * `transforms` : dictionary specifying transforms for each species pair. Can be
 given per-pair (i.e. only for `("element1", "element2")` and not for 
 `("element2", "element1")`) or can be different for `("element1", "element2")` and 
@@ -494,7 +499,7 @@ cutoffs => Dict(
 ``` 
 
 
-### identity
+## identity
 `IdTransform_params(;)` : returns `Dict("type" => "identity")`,
 needed to construct `ACE1.Transforms.IdTransform`.  
 """
@@ -635,11 +640,6 @@ _params_to_species(dict::Dict{Tuple{Tsym, Tsym}, Tval}) where Tsym <: AbstractSt
       Dict(Tuple(_params_to_species(d)) => val for (d, val) in dict)
 
 _params_to_species(dict::Nothing) = nothing
-
-# Will's addition - see why this was needed
-# _params_to_species(species) = 
-#       Symbol.(species)
-
 
 
 function _AtomicNumber_to_params(dict)
