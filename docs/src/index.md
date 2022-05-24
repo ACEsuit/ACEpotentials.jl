@@ -4,11 +4,7 @@ CurrentModule = ACE1pack
 
 # ACE1 and ACE1pack User Documentation 
 
-`ACE1` is a Julia package for parameterising interatomic potentials in terms of the atomic cluster expansion, i.e., body-ordered invariant polynomials. These pages contain a user-oriented documentation. 
-
-```@index
-```
-
+`ACE1` is a Julia package for parameterising interatomic potentials in terms of the atomic cluster expansion, i.e., body-ordered invariant polynomials. These pages contain a user-oriented documentation.
 
 ### Overview of Relevant Julia Packages
 

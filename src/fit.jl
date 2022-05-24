@@ -8,11 +8,11 @@ using Dates, Base
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
 """
-`fit_ace(params::Dict)` : function to set up and fit the least-squares 
-problem of "atoms' positions" -> "energy, forces, (virials)". Takes in a 
-dictionary with all the parameters. see `?fit_params` for details. 
+`fit_ace(params::Dict) -> IP, lsqinfo` 
 
-Returns `IP`, `lsqinfo`
+Function to set up and fit the least-squares 
+problem of "atoms' positions" -> "energy, forces, virials". Takes in a 
+dictionary with all the parameters. See `?fit_params` for details. 
 """
 function fit_ace(params::Dict)
 
@@ -24,22 +24,27 @@ end
 
 
 """
-`fit_params(; kwargs...)` : returns a dictionary containing all of the
+`fit_params(; kwargs...)` 
+
+Returns a dictionary containing all of the
 parameters needed for making an ACE potential. All parameters are passed 
 as keyword argumts. 
 
 ### Parameters
 * `data` : data parameters, see `?data_params` for details (mandatory)
-* `basis` : dictionary containing dictionaries that specify the basis used
-in fitting. Usually just `ace_params` and `pair_params` (mandatory). 
-For example
-```
+* `basis` : dictionary containing dictionaries that specify the basis used \\
+in fitting. For example 
+
+```julia
 basis = Dict(
-    "ace" => ace_params(; kwargs...),
-    "pair" => pair_params(; kwargs...))
-````
-keys of `basis` must correspond to one of the "type" of `basis_params`, see 
-`?basis_params` and values are corresponding parameters' dictionaries.
+    "pair_short" => Dict( "type" => "pair", ...), 
+    "pair_long" => Dict("type" => "pair", ...), 
+    "manybody" => Dict("type" => "ace", ...), 
+    "nospecies" => Dict("type" => "ace", species = ["X",], ...)
+```
+
+keys of `basis` are ignored, so that multiple basis with different specifications 
+(e.g. smaller and larger cutoffs) can be combined. See `?basis_params` for more detail.  
 * `solver` : dictionary containing parameters that specify the solver for 
 least squares problem (mandatory). See `?solver_params`.
 * `e0` : Dict{String, Float} containing reference values for isolated atoms'
@@ -108,9 +113,9 @@ function save_fit(fname, IP, lsqinfo)
 end
 
 """
-`fit_ace_db(params::Dict)` : fits LsqDB with `params["LSQ_DB_fname_stem"], which must be already present. 
-`params["fit_from_LSQ_DB"]` must be set to true. See `?fit_params` for `params` specification, 
-of which `data` and `basis` aren't needed (are ignored).
+`fit_ace_db(params::Dict) -> IP, lsqinfo`
+
+Fits LsqDB with `params["LSQ_DB_fname_stem"], which must be already present. `params["fit_from_LSQ_DB"]` must be set to true. See `?fit_params` for `params` specification, of which `data` and `basis` aren't needed (are ignored). Returns `(IP, lsqinfo)`. 
 """
 function fit_ace_db(params::Dict)
     @assert params["fit_from_LSQ_DB"]
@@ -121,7 +126,7 @@ end
 
 """
 `fit_ace_db(db::IPFitting.LsqDB, params::Dict)` : fits the given LsqDB. See `?fit_params` for 
-`params` specification, of which `data` and `basis` aren't needed (are ignored).
+`params` specification, of which `data` and `basis` aren't needed (are ignored)
 """
 function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
     solver = ACE1pack.generate_solver(params["solver"])
@@ -168,9 +173,7 @@ end
 """
 `make_ace_db(params::Dict)` : makes a LsqDB from given parameters' dictionary. 
 For `params` see `?db_params`; parameters from `fit_params` also work, except 
-unnecessary entries will be ignored. 
-
-
+unnecessary entries will be ignored. Returns `IPFitting.LsqDB`
 """
 function make_ace_db(params::Dict)
     data =  ACE1pack.read_data(params["data"])
