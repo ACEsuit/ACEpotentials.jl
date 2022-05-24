@@ -47,7 +47,7 @@ energies (mandatory).
 * `weights` : dictionary of `Dict("config_type" => Dict("E" => Float, "F => Float))``
 entries specifying fitting weights. "default" is set to `1.0` for all of "E", "F",
 and "V" weights. 
-* `P` : preconditioner parameters (optional), see `?precon_params`.
+* `P` : regularizer parameters (optional), see `?regularizer_params`.
 * `ACE_fname = "ACE_fit.json"` : filename to save ACE to. Potential & info
 do not get saved if `ACE_fname` isnothing() or is set to `""`. Files already _parse_entry
 are renamed and not overwritten. 
@@ -127,7 +127,7 @@ function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
     solver = ACE1pack.generate_solver(params["solver"])
 
     if !isnothing(params["P"]) 
-        solver["P"] = ACE1pack.generate_precon(db.basis, params["P"])
+        solver["P"] = ACE1pack.generate_regularizer(db.basis, params["P"])
     end
 
     if typeof(params["e0"]) == Dict{Any, Any}

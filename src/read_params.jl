@@ -63,7 +63,7 @@ _dict_constructors = Dict(
     "radial" => ACE1pack.radial_basis_params,
     "transform" => ACE1pack.transform_params, 
     "degree" => ACE1pack.degree_params,
-    "P" => ACE1pack.precon_params)
+    "P" => ACE1pack.regularizer_params)
 
 
 """

@@ -51,7 +51,7 @@ weights = Dict(
     "FLD_TiAl" => Dict("E" => 5.0, "F" => 1.0, "V" => 1.0),
     "TiAl_T5000" => Dict("E" => 30.0, "F" => 1.0, "V" => 1.0))
 
-P = precon_params(type = "laplacian", rlap_scal = 3.0)
+P = regularizer_params(type = "laplacian", rlap_scal = 3.0)
 
 params = fit_params(
     data = data,
