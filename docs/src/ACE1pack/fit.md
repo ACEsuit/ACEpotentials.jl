@@ -1,7 +1,9 @@
 ```@meta
 CurrentModule = ACE1pack
 ```
-# Making ACE models 
+# Making ACE 
+
+## Top-level overveiw
 
 The most minimal way of generating an ACE potential is 
 
@@ -20,15 +22,50 @@ fit_ace
 fit_params
 ```
 
+Parameters `LSQ_DB_fname_stem` and `fit_from_LSQ_DB` determine if the least-squares gets saved and/or where/how it gets fit from. 
+
+* `LSQ_DB_fname_stem` is set to `""`: LsqDB is neither saved to file;
+* `LSQ_DB_fname_stem` is given:
+    * file not present: LsqDB saved to disk and fit to;
+    * file present:
+        * `fit_from_LSQ_DB` is true: fit to the LsqDB on disk;
+        * `fit_from_LSQ_DB` is false: rename old LsqDB; make, save and fit to a new LsqDB.    
+
+
 ## Create LsqDB & fit it separately
 
-There are also functions to make the least-squares database and fit it in separate steps. This could be useful, for example, to test different regularisation and solver parameters. 
+It is also possible to decouple making the least-squares database from fitting to it. 
 
 ```@docs
-
+make_ace_db
+fit_ace_db
 ```
 
-## Example of minimal set of parameters
+(In fact, `fit_ace()` just calls both of these in one go.)
+
+## Reading parameters in from file
+
+Dictionaries may be read in from file with
+
+```julia
+params = load_dict("params.json")
+# or 
+params = load_dict("params.yaml")
+```
+
+There is a convenience function `fill_defaults()` that recursively fills in any missing values with defaults, so that only mandatory or non-default values have to be saved in the files.
+
+Some of the ACE basis parameters dictionaries keys and values may be 2-tuples (specifically, the multitransform and "sparseM" degree specification) which are mainly represented as strings in JSON or YAML formats and may not be allowed in other languages used to write these dictionaries to file. The easiest way is to save tuples as ```"(1, C)"``` (different from ```string(tuple(1, "C"))```) and use `parse_ace_basis_keys()` (also done within `fill_defaults()`) to parse that into ```(1, "C")```. 
+
+```@docs
+fill_defaults
+parse_ace_basis_keys
+```
+
+
+## Examples of minimal set of parameters
+
+### Minimal set
 
 To give an overview of the structure of the parameters' dictionary below is an example with only the mandatory values filled in. 
 
@@ -55,7 +92,7 @@ mandatory_params = Dict(
         "Al" => -105.5954))
 ```
 
-##  parameters' default values
+### With all default values
 
 The following is the full set of parameters, including the default values. 
 
@@ -115,25 +152,5 @@ params_with_defaults = Dict(
     "fit_from_LSQ_DB" => false          # do not refit to a present database
     )
 ```
-
-
-
-
-### structure of params in more detail
-
-### Mandatory structure - mainly basis
-
-### How/what files get saved
-
-## Reading parameters in from file
-
-### Read in structures
-
-### fill in default values
-
-### Tuples
-
-## Docstrings
-
 
 

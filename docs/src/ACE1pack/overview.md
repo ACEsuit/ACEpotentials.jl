@@ -26,7 +26,7 @@ All of these functions take nested dictionaries that specify various parameters 
 In addition, there are some utility functions:  
 
 * `save_fit()` - safely given potential to file, see [fit.md];
-* `fill_defaults!()` - recursively fills in default values for any of the optional parameters that were left unspecified, see [helpers.md];
+* `fill_defaults()` - recursively fills in default values for any of the optional parameters that were left unspecified, see [helpers.md];
 * `parse_ace_basis_keys()` - for parsing `"(element1, number)" -> ("element1", number)`-type entries that were read in from `.json` or `.yaml` files, see [helpers.md]; 
 * `db_params()` - a subset of parameters returned by `fit_params()`, compatible with `make_ace_db()` only, see[fit.md]; 
 * `load_dict()` - reads in parameters from `.yaml` or `.json` format, see [helpers.md].

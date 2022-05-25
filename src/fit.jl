@@ -27,13 +27,13 @@ end
 `fit_params(; kwargs...)` 
 
 Returns a dictionary containing all of the
-parameters needed for making an ACE potential. All parameters are passed 
+parameters needed to make an ACE potential. All parameters are passed 
 as keyword argumts. 
 
 ### Parameters
 * `data` : data parameters, see `?data_params` for details (mandatory)
-* `basis` : dictionary containing dictionaries that specify the basis used \\
-in fitting. For example 
+* `basis` : dictionary containing dictionaries that specify the basis used in fitting.  
+    For example 
 
 ```julia
 basis = Dict(
@@ -46,23 +46,22 @@ basis = Dict(
 keys of `basis` are ignored, so that multiple basis with different specifications 
 (e.g. smaller and larger cutoffs) can be combined. See `?basis_params` for more detail.  
 * `solver` : dictionary containing parameters that specify the solver for 
-least squares problem (mandatory). See `?solver_params`.
-* `e0` : Dict{String, Float} containing reference values for isolated atoms'
-energies (mandatory). 
+    least squares problem (mandatory). See `?solver_params`.
+* `e0` : `Dict{String, Float}` containing reference values for isolated atoms'
+    energies (mandatory). 
 * `weights` : dictionary of `Dict("config_type" => Dict("E" => Float, "F => Float))``
-entries specifying fitting weights. "default" is set to `1.0` for all of "E", "F",
-and "V" weights. 
+    entries specifying fitting weights. "default" is set to `1.0` for all of "E", "F",
+    and "V" weights. 
 * `P` : regularizer parameters (optional), see `?regularizer_params`.
 * `ACE_fname = "ACE_fit.json"` : filename to save ACE to. Potential & info
-do not get saved if `ACE_fname` isnothing() or is set to `""`. Files already _parse_entry
-are renamed and not overwritten. 
+    do not get saved if `ACE_fname` isnothing() or is set to `""`. Files already _parse_entry
+    are renamed and not overwritten. 
 * `LSQ_DB_fname_stem = ""` : stem to save LsqDB to. Doesn't get saved if set to an empty 
-string (""). If the file is already present, but `fit_from_LSQ_DB` is set to false,
-the old database is renamed, a new one constructed and saved under the given name. 
+    string (""). If the file is already present, but `fit_from_LSQ_DB` is set to false,
+    the old database is renamed, a new one constructed and saved under the given name. 
 * `fit_from_LSQ_DB = false`: whether to fit from a least squares database specified with
-`LSQ_DB_fname_stem`. If `LSQ_DB_fname_stem * "_kron.h5"` file is not present, LsqDB is 
-constructed from scratch and saved.  
-
+    `LSQ_DB_fname_stem`. If `LSQ_DB_fname_stem * "_kron.h5"` file is not present, LsqDB is 
+    constructed from scratch and saved.  
 """
 function fit_params(;
     data = nothing,
@@ -94,7 +93,9 @@ end
 
 
 """
-`save_fit(fname, IP, lsqinfo)` : saves Dict("IP" => IP, "info" => lsqinfo) to fname.
+`save_fit(fname, IP, lsqinfo)` 
+
+Saves Dict("IP" => IP, "info" => lsqinfo) to fname.
 If `fname` is already present, it is renamed and dictionary saved to `fname`. 
 """
 function save_fit(fname, IP, lsqinfo)
@@ -115,7 +116,7 @@ end
 """
 `fit_ace_db(params::Dict) -> IP, lsqinfo`
 
-Fits LsqDB with `params["LSQ_DB_fname_stem"], which must be already present. `params["fit_from_LSQ_DB"]` must be set to true. See `?fit_params` for `params` specification, of which `data` and `basis` aren't needed (are ignored). Returns `(IP, lsqinfo)`. 
+Fits LsqDB with `params["LSQ_DB_fname_stem"]`, which must be already present. `params["fit_from_LSQ_DB"]` must be set to true. See `?fit_params` for `params` specification, of which `data` and `basis` aren't needed (are ignored). 
 """
 function fit_ace_db(params::Dict)
     @assert params["fit_from_LSQ_DB"]
@@ -125,8 +126,10 @@ function fit_ace_db(params::Dict)
 end
 
 """
-`fit_ace_db(db::IPFitting.LsqDB, params::Dict)` : fits the given LsqDB. See `?fit_params` for 
-`params` specification, of which `data` and `basis` aren't needed (are ignored)
+`fit_ace_db(db::IPFitting.LsqDB, params::Dict) -> IP, lsqinfo` 
+
+Fits the given LsqDB. See `?fit_params` for `params` specification, 
+of which `data` and `basis` aren't needed (are ignored)
 """
 function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
     solver = ACE1pack.generate_solver(params["solver"])
@@ -171,8 +174,10 @@ function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
 end
 
 """
-`make_ace_db(params::Dict)` : makes a LsqDB from given parameters' dictionary. 
-For `params` see `?db_params`; parameters from `fit_params` also work, except 
+`make_ace_db(params::Dict)` -> LsqDB
+
+Makes a LsqDB from given parameters' dictionary. For `params` see 
+`?db_params`; parameters from `fit_params` also work, except 
 unnecessary entries will be ignored. Returns `IPFitting.LsqDB`
 """
 function make_ace_db(params::Dict)
@@ -190,19 +195,22 @@ as keyword argumts.
 
 ### Parameters
 * `data` : data parameters, see `?data_params` for details (mandatory)
-* `basis` : dictionary containing dictionaries that specify the basis used
-in fitting. Usually just `ace_params` and `pair_params` (mandatory). 
-For example
-```
-basis = Dict{
-    "ace" => ace_params(; kwargs...),
-    "pair" => pair_params(; kwargs...)}
-````
-keys of `basis` must correspond to one of the "type" of `basis_params`, see 
-`?basis_params` and values are corresponding parameters' dictionaries.
+* `basis` : dictionary containing dictionaries that specify the basis used in fitting.  
+    For example 
+
+    ```julia
+    basis = Dict(
+        "pair_short" => Dict( "type" => "pair", ...), 
+        "pair_long" => Dict("type" => "pair", ...), 
+        "manybody" => Dict("type" => "ace", ...), 
+        "nospecies" => Dict("type" => "ace", species = ["X",], ...)
+    ```
+
+keys of `basis` are ignored, so that multiple basis with different specifications 
+(e.g. smaller and larger cutoffs) can be combined. See `?basis_params` for more detail.  
 * `LSQ_DB_fname_stem = ""` : stem to save LsqDB to. Doesn't get saved if set to an empty 
-string (""). If `LSQ_DB_fname_stem * "_kron.h5"` file is not present it gets renamed, 
-a new LsqDB is constructed and saved.  
+    string (""). If `LSQ_DB_fname_stem * "_kron.h5"` file is not present it gets renamed, 
+    a new LsqDB is constructed and saved.  
 """
 function db_params(;
     data = nothing,
