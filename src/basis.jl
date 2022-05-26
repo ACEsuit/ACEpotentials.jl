@@ -175,13 +175,13 @@ is specified by further parameters) (mandatory)
 * `rcut = 5.0`: outer cuttoff, Å 
 * `rin = 0.0`: inner cuttoff, Å 
 * `pcut = 2`: outer cutoff parameter; 
-      * `pcut=2`: first derrivative enforced to go to zero at outer cutoff
-      * `pcut=1`: zeroth derrivative enforced to go to zero at outer cutoff
-      * `pcut=0`: no derrivative is enforced to go to zero at outer cutoff
+      * `pcut=2`: first derivative enforced to go to zero at outer cutoff
+      * `pcut=1`: zeroth derivative enforced to go to zero at outer cutoff
+      * `pcut=0`: no derivative is enforced to go to zero at outer cutoff
 * `pin = 0`: inner cutoff parameter
-      * `pin=2`: first derrivative enforced to go to zero at inner cutoff
-      * `pin=1`: zeroth derrivative enforced to go to zero at inner cutoff
-      * `pin=0`: no derrivative is enforced to go to zero at inner cutoff
+      * `pin=2`: first derivative enforced to go to zero at inner cutoff
+      * `pin=1`: zeroth derivative enforced to go to zero at inner cutoff
+      * `pin=0`: no derivative is enforced to go to zero at inner cutoff
 * `transform = transform_params(; r0 = r0)` : distance transform parameters; 
 cf `?transform_params()` for details
 """
@@ -237,13 +237,13 @@ All parameters are passed as keyword argument.
 * `rcut = 5.0`: outer cuttoff, Å 
 * `rin = 0.0`: inner cuttoff, Å 
 * `pcut = 2`: outer cutoff parameter
-      * `pcut=2`: first derrivative enforced to go to zero at outer cutoff
-      * `pcut=1`: zeroth derrivative enforced to go to zero at outer cutoff
-      * `pcut=0`: no derrivative is enforced to go to zero at outer cutoff
+      * `pcut=2`: first derivative enforced to go to zero at outer cutoff
+      * `pcut=1`: zeroth derivative enforced to go to zero at outer cutoff
+      * `pcut=0`: no derivative is enforced to go to zero at outer cutoff
 * `pin = 0`: inner cutoff parameter
-      * `pin=2`: first derrivative enforced to go to zero at inner cutoff
-      * `pin=1`: zeroth derrivative enforced to go to zero at inner cutoff
-      * `pin=0`: no derrivative is enforced to go to zero at inner cutoff
+      * `pin=2`: first derivative enforced to go to zero at inner cutoff
+      * `pin=1`: zeroth derivative enforced to go to zero at inner cutoff
+      * `pin=0`: no derivative is enforced to go to zero at inner cutoff
 """
 function radial_basis_params(; 
       r0 = 2.5,
