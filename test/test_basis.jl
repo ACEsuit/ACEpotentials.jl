@@ -3,14 +3,16 @@
 
 using ACE1pack, Test 
 
-@info("Test constructing rpi basis and parameters")
-rpi_basis = basis_params(type="rpi", species = :Si, N = 3, maxdeg = 10)
-ACE1pack.generate_basis(rpi_basis)
+@info("Test constructing ace basis and parameters")
+ace_basis = basis_params(type="ace", species = :Si, N = 3, maxdeg = 10)
+ACE1pack.generate_basis(ace_basis)
 
 
 @info("Test constructing degree and degree params")
 degree = degree_params()
 D = ACE1pack.generate_degree(degree)
+degreeM = degree_params(type = "sparseM", Dd = Dict("default" => 10, 1 => 7, (2, "H") => 3))
+D = ACE1pack.generate_degree(degreeM)
 
 
 @info("Test constructing tranforms and transform parameters")
@@ -48,7 +50,7 @@ pair_basis = basis_params(type="pair", species = [:Ti, :Al], maxdeg = 6, r0 = 1.
 ACE1pack.generate_basis(pair_basis)
 
 
-@info("Test constructing radial basis parameters and rpi radial basis")
-rad_basis = basis_params(type="rad", rin = 0.0, pin = 0)
-ACE1pack.generate_rad_basis(rad_basis, D, 6, :Si, transform_poly)
-ACE1pack.generate_rad_basis(rad_basis, D, 6, :Si, transform_mult)
+@info("Test constructing radial basis parameters and ace radial basis")
+rad_basis = basis_params(type="radial", rin = 0.0, pin = 0)
+ACE1pack.generate_radial_basis(rad_basis, D, 6, :Si, transform_poly)
+ACE1pack.generate_radial_basis(rad_basis, D, 6, :Si, transform_mult)

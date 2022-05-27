@@ -24,12 +24,12 @@ train = data[1:5:end];
 #
 
 r0 = 2.88 
-ACE_B = ACE1.Utils.rpi_basis(species = [:Ti, :Al],
-                              N = 3,
-                              r0 = r0,
-                              rin = 0.6 * r0,
-                              rcut = 5.5,
-                              maxdeg = 6);
+ACE_B = ace_basis(species = [:Ti, :Al],
+                  N = 3,
+                  r0 = r0,
+                  rin = 0.6 * r0,
+                  rcut = 5.5,
+                  maxdeg = 6);
 
 # As alluded to above, we now add a pair potential to obtain qualitatively correct repulsive behaviour for colliding atoms. The many-body basis `ACE_B` and the pair potential `Bpair` are then combined into a single basis set `B`. 
 

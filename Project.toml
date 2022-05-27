@@ -1,11 +1,11 @@
 name = "ACE1pack"
 uuid = "8c4e8d19-0bd6-4234-8309-7210652e3178"
 authors = ["Christoph Ortner <christophortner0@gmail.com> and contributors"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
-ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 IPFitting = "3002bd4c-79e4-52ce-b924-91256dde4e52"
 JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
@@ -15,7 +15,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 ACE1 = "0.9.1"
-IPFitting = "0.10"
+IPFitting = "0.10.1"
 JuLIP = "0.11.4"
 julia = "1.6"
 

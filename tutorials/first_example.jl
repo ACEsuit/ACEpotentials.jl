@@ -21,7 +21,7 @@ using LinearAlgebra: norm, Diagonal
 # * `pin` :  specifies the behaviour of the basis as the inner cutoff radius.
 
 r0 = rnn(:Si)
-basis = rpi_basis(; 
+basis = ace_basis(; 
       species = :Si,
       N = 3,                        # correlation order = body-order - 1
       maxdeg = 12,                  # polynomial degree
