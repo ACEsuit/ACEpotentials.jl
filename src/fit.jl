@@ -37,7 +37,6 @@ function fit_ace(params::Dict; parallelism="serial")
     else
         println("bad parallelism input")
     end
-
 end
 
 function fit_params(;

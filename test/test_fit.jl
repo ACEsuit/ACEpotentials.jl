@@ -80,20 +80,18 @@ params = fit_params(
     P = P,
     ACE_fname = "")
 
-IP, lsqinfo = ACE1pack.fit_ace(params)
-
-errors = lsqinfo["errors"]
+coef, errors = fit_ace(params)
 
 expected_errors = load_dict(expected_errors_json)
 
-for error_type in keys(errors), 
-        config_type in keys(errors[error_type]), 
+for error_type in keys(errors),
+        config_type in keys(errors[error_type]),
             property in keys(errors[error_type][config_type])
     print_tf(@test isapprox(errors[error_type][config_type][property],
                             expected_errors[error_type][config_type][property],
                             atol=1e-3))
 end
-println() 
+println()
 
 ##
 
@@ -103,18 +101,16 @@ params = load_dict(json_params)
 params["data"]["fname"] = test_train_set
 params["ACE_fname"] = ""
 params = fill_defaults!(params)
-IP, lsqinfo = fit_ace(params)
+coef, errors = fit_ace(params)
 
-errors = lsqinfo["errors"]
-
-for error_type in keys(errors), 
-    config_type in keys(errors[error_type]), 
+for error_type in keys(errors),
+    config_type in keys(errors[error_type]),
         property in keys(errors[error_type][config_type])
     print_tf(@test isapprox(errors[error_type][config_type][property],
                    expected_errors[error_type][config_type][property],
                    atol=1e-3))
 end
-println() 
+println()
 
 ##
 @info("Test full fit from fit_params.yaml")
@@ -123,12 +119,10 @@ params = load_dict(yaml_params)
 params["data"]["fname"] = test_train_set
 params["ACE_fname"] = ""
 params = fill_defaults!(params)
-IP, lsqinfo = fit_ace(params)
+coef, errors = fit_ace(params)
 
-errors = lsqinfo["errors"]
-
-for error_type in keys(errors), 
-    config_type in keys(errors[error_type]), 
+for error_type in keys(errors),
+    config_type in keys(errors[error_type]),
         property in keys(errors[error_type][config_type])
     print_tf(@test isapprox(errors[error_type][config_type][property],
                             expected_errors[error_type][config_type][property],
