@@ -10,12 +10,14 @@ export solver_params, generate_solver
 function solver_params(; solver = nothing, kwargs...)
     # TODO error message
     solver = _solver_to_params(solver)
-    @assert solver in keys(_solvers_params)
+#    @assert solver in keys(_solvers_params)
     return _solvers_params[solver](; kwargs...)
 end
 
 
 # TODO: add asserts & error messages for solvers' parameters
+qr_params(; lambda=0.0) = Dict("solver"=>"qr", "lambda"=>lambda)
+
 lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6, lsqr_conlim = 1e8, lsqr_maxiter = 100000, lsqr_verbose = false) =
     Dict("solver" => "lsqr", "lsqr_damp" => lsqr_damp, "lsqr_atol" => lsqr_atol,
          "lsqr_conlim" => lsqr_conlim, "lsqr_maxiter" => lsqr_maxiter, "lsqr_verbose" => lsqr_verbose)
@@ -34,8 +36,11 @@ _solver_to_params(solver::Union{Symbol, AbstractString}) =
     string(solver)
 
 
-_solvers_params = Dict("lsqr" => lsqr_params, "rrqr" => rrqr_params, 
-                        "brr" => brr_params, "ard" => ard_params)
+_solvers_params = Dict("qr" => qr_params,
+                       "lsqr" => lsqr_params,
+                       "rrqr" => rrqr_params,
+                       "brr" => brr_params,
+                       "ard" => ard_params)
 
 
 _params_to_solver(solver::AbstractString) = 
