@@ -7,7 +7,7 @@ function fit_distributed(params::Dict)
     to = TimerOutput()
 
     print("Counting observations ... "); flush(stdout)
-    Nobs = ACE1pack.count_observations(
+    Nobs = ACEfit.count_observations(
         params["data"]["fname"],
         params["data"]["energy_key"],
         params["data"]["force_key"],
@@ -65,11 +65,8 @@ function fit_distributed(params::Dict)
     
     print("Solving the Elemental system ... "); flush(stdout)
     @timeit to "solve elemental system" begin
-        @mpi_do manager println("A  ", Elemental.height(EA), "  ", Elemental.width(EA))
-        @everywhere sleep(rand())
-        @mpi_do manager println("B  ", Elemental.height(EB), "  ", Elemental.width(EB))
-        @everywhere sleep(rand())
-        @mpi_do manager EX = Elemental.ridge(EA, EB, 1e-12)
+        #@mpi_do manager EX = Elemental.ridge(EA, EB, 0.01)
+        @mpi_do manager EX = Elemental.leastSquares(EA, EB)
     end    
     print("completed.\n"); flush(stdout)
 

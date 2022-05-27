@@ -6,18 +6,14 @@ using Distributed
 using DistributedArrays, JuLIP, ACEfit, ACE1pack, Revise
 @everywhere using DistributedArrays, JuLIP, ACEfit, ACE1pack, Revise
 
+using JLD
+
 function fit_distributed(params::Dict)
 
     to = TimerOutput()
 
-    #println("preparing data"); flush(stdout)
-    #@timeit to "preparing data" begin
-    #    @everywhere workers() params = $params
-    #    @everywhere data = ACE1pack.create_the_dataset(params)
-    #end
-
     print("Counting observations ... "); flush(stdout)
-    Nobs = ACE1pack.count_observations(
+    Nobs = ACEfit.count_observations(
         params["data"]["fname"],
         params["data"]["energy_key"],
         params["data"]["force_key"],
@@ -47,15 +43,12 @@ function fit_distributed(params::Dict)
     end
     print("successful.\n"); flush(stdout)
 
-
     println("solving system"); flush(stdout)
     @timeit to "solving system" begin
         coef = ACEfit.solve_llsq(
             ACEfit.LSQR(damp=params["solver"]["lsqr_damp"],
                         atol=params["solver"]["lsqr_atol"],
-                        conlim=params["solver"]["lsqr_conlim"],
-                        maxiter=params["solver"]["lsqr_maxiter"],
-                        verbose=params["solver"]["lsqr_verbose"]),
+                        conlim=params["solver"]["lsqr_conlim"]),
             A,
             Y)
     end
