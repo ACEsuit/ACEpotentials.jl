@@ -2,7 +2,7 @@
 
 julia_version = "1.8.0-beta3"
 manifest_format = "2.0"
-project_hash = "4b177abfe5a009527b89e53add0c2681aa9341fe"
+project_hash = "94da7f6425e0eaa0d9a9a99343723044fa3c9b72"
 
 [[deps.ACE1]]
 deps = ["BenchmarkTools", "Combinatorics", "ForwardDiff", "InteractiveUtils", "JSON", "JuLIP", "LinearAlgebra", "NeighbourLists", "Parameters", "Printf", "ProgressMeter", "QuadGK", "Random", "Reexport", "Requires", "SparseArrays", "StaticArrays", "Test", "YAML", "ZipFile"]

@@ -6,13 +6,13 @@ DocMeta.setdocmeta!(ACE1pack, :DocTestSetup, :(using ACE1pack); recursive=true)
 
 # ~~~~~~~~~~ Generate the tutorial files  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-_tutorial_out = "./src/tutorials/"
-_tutorial_src = "../tutorials/"
+_tutorial_out = joinpath(@__DIR__(), "src", "tutorials")
+_tutorial_src = joinpath(@__DIR__(), "..", "tutorials")
 
-Literate.markdown(_tutorial_src * "first_example.jl", 
+Literate.markdown(_tutorial_src * "/first_example.jl", 
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "TiAl.jl", 
+Literate.markdown(_tutorial_src * "/TiAl.jl", 
                   _tutorial_out; documenter = true)
 
 # ???? cf Jump.jl docs, they do also this: 
