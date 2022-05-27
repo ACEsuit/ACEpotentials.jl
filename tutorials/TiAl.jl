@@ -53,7 +53,7 @@ Vref = OneBody(:Ti => -1586.0195, :Al => -105.5954)
 # ```math 
 #   \sum_{R} \Big( w_^E_R | E(R) - y_R^E |^2
 #            + w_F^R | {\rm forces}(R) - y_R^F |^2 
-#            + w_V^R | {\rm virial}(R) - y_R^V |^2,
+#            + w_V^R | {\rm virial}(R) - y_R^V |^2 \Big),
 # ```
 # and this is specificed via the following dictionary. The keys correspond to the `configtype` field in the `Dat` structure. 
 
@@ -65,7 +65,7 @@ weights = Dict(
 # TODO: discuss regularisation
 
 solver_type = :lsqr
-laplace_precon = true 
+smoothness_prior = true 
 
 if solver_type == :lsqr
 	solver = Dict(
@@ -87,13 +87,12 @@ elseif solver_type == :ard
          	"ard_threshold_lambda" => 10000)
 end
 
-# TODO: discuss role of regularisation 
+# ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
 
-if laplace_precon
+if smoothness_prior
 	using LinearAlgebra
-	rlap_scal = 3.0
-	P = Diagonal(vcat(ACE1.scaling.(dB.basis.BB, rlap_scal)...))
-	solver["P"] = P
+	q = 3.0
+	solver["P"] = Diagonal(vcat(ACE1.scaling.(dB.basis.BB, q)...))
 end
 
 # Once all the solver parameters have been determined, we use `IPFitting.lsqfit` to estimate the parameters. This routine will return the fitted interatomic potential `IP` as well as the a dictionary `lsqfit` with some information about the fitting process. 

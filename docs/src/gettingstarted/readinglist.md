@@ -5,11 +5,18 @@ This page contains a curated list of articles that we recommend as initial readi
 
 ### General Background / Classics
 
-
-### Reviews 
-
+* Bowman/Braams
+* Behler/Parinello 
+* GAP 
+* MTPs 
+* ANI 
 
 ### ACE
 
+* Drautz '19 
+* Dusson
+* PACE
 
-### 
+### Review articles 
+
+* Chem Rev

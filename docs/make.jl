@@ -38,7 +38,9 @@ makedocs(;
         "Getting Started" => Any[
             "gettingstarted/installation.md",
             "gettingstarted/pkg.md",
+            "gettingstarted/readinglist.md",
         ],
+        "Tutorials" => "tutorials/index.md",
         "ACE" => Any[
             "ACE/aceintro.md",
             "ACE/datatypes.md",
@@ -51,16 +53,15 @@ makedocs(;
             "IPFitting/Solvers.md",
             "IPFitting/Manipulating potentials.md",
         ],
-        "Using ACE potentials" => Any[
-            "Using_ACE/python_ase.md",
-            "Using_ACE/lammps.md",
-            "Using_ACE/openmm.md",
-        ],
-        "Tutorials" => "tutorials/index.md",
+        # "Using ACE potentials" => Any[
+        #     "Using_ACE/python_ase.md",
+        #     "Using_ACE/lammps.md",
+        #     "Using_ACE/openmm.md",
+        # ],
     ],
 )
 
-# deploydocs(;
-#     repo="github.com/ACEsuit/ACE1pack.jl",
-#     devbranch="main",
-# )
+deploydocs(;
+    repo="github.com/ACEsuit/ACE1pack.jl",
+    devbranch="main",
+)
