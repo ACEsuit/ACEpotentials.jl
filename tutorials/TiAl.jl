@@ -3,11 +3,11 @@
 #
 # Start by importing the required libraries 
 
-using ACE1pack, ACE1, IPFitting, LazyArtifacts
+using ACE1pack, ACE1, IPFitting
 
-# We need LazyArtifacts (or could also use Pkg.Artifacts instead) to obtain a dataset that is stored in ACEsuit/ACEData specifically for this tutorial. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
+# We need a dataset `TiAl_tutorial.xyz` for this tutorial which is provided as an artifact. Normally we would get the path to a datset via `artifact"TiAl_tutorial` but for these tutorial to run from anywhere it is easiest to let `ACE1pack` load the data for us. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
 
-data_file = joinpath(artifact"TiAl_tutorial", "TiAl_tutorial.xyz")
+data_file = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz")
 
 # We can now use `IPFitting.Data.read_xyz` to load in the training set. This will not only load the structures, but also search for energies and force from a reference model, and all this will then be stored as a `Vector{Dat}`. We keep only every 10 training structures to keep the regression problem small.
 

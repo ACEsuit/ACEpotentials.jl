@@ -21,5 +21,8 @@ include("regularizer.jl")
 
 include("read_params.jl")
 
+# a little hack to load ACE1pack artifacts from anywhere? 
+using LazyArtifacts
+artifact(str) = (@artifact_str str)
 
 end
