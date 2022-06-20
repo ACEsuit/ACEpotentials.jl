@@ -25,10 +25,10 @@ Next typical interatomic distance between the atoms `r0` is defined. Nearest nei
 r0 = 0.5*(rnn(:Ti) + rnn(:Al))
 ```
 
-The rotational and permutation invariant ACE basis, `rpi_basis` is defined as follows. Here `N` is the correlation order, `r0` the previously defined typical nearest neighbour distance, `rin` the inner cutoff, `rcut` the outer cutoff and `maxdeg` the maximum polynomial degree of the ACE basis.
+The rotational and permutation invariant ACE basis, `ace_basis` is defined as follows. Here `N` is the correlation order, `r0` the previously defined typical nearest neighbour distance, `rin` the inner cutoff, `rcut` the outer cutoff and `maxdeg` the maximum polynomial degree of the ACE basis.
 
 ```julia
-ACE_basis = rpi_basis(species = [:Ti, :Al],
+ACE_basis = ace_basis(species = [:Ti, :Al],
                               N = 3,
                               r0 = r0,
                               rin = 0.6 * r0,

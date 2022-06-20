@@ -14,10 +14,30 @@ Type `status` to see your required packages listed. (Note this is only a subset 
 
 3. Specify version bounds: Open `Project.toml` in an editor and under the [compat] section you can now add version bounds, e.g. ACE1 = "0.9, 0.10". Please see the [Pkg.jl docs](https://pkgdocs.julialang.org/dev/compatibility/) for details on how to specify those bounds. Start a Julia REPL again, type `]` to switch to the package manager and then `up` to up- or down-grade all installed packages to the latest version compatible with your bounds.
 
-#### Notes 
+#### Using a Deverlopment Branch
+
+If you are a user rather than developer it should almost never be required for you to check out a package (or, `dev` it in the package manager). When developers make changes to - say - `ACE1.jl` they will always immediately tag another version and then you can adjust your version bounds in your project to update as well as enforce which version to use. However a developer would frequently do this, and occasionally it might be required when iterating between a user and developer for testing. There are multiple ways to achieve this; the following is our recommended procedure: 
+
+Suppose for example that a development branch `co/dev` of `ACE1.jl` is needed in a project `project`. Then one should perform the following steps: 
+* Make sure `ACE1` has been added to `project/Project.toml` 
+* In a separate folder, `/path/to/` , clone `ACE1.jl`
+```
+cd /path/to
+git clone git@github.com:ACEsuit/ACE1.jl.git
+git checkout co/dev
+```
+so that the repo will now live in `/path/to/ACE1.jl`
+* Go to and activate `project`, then in a Julia REPL switch to the package manager `]` and execute
+```
+dev /path/to/ACE1.jl
+```
+This will replace the `ACE1` package in the Manifest with the version that lives in `/path/to/ACE1.jl` 
+
+Later on, when you want to go back to the standad Pkg versin control you can simply `release ACE1`.
+
+#### Further Notes 
 
 * The `Project.toml` should always be committed to your project git repo. Whether `Manifest.toml` is also committed is a matter of taste or context. Tracking the Manifest will (normally) ensure future compatibility since it allows you to reconstruct the precise Julia environemt that was used when the Manifest was created.
-* If you are a user rather than developer it should almost never be required for you to check out a package (or, `dev` it in the package manager). When we (the developers) make changes to - say - `ACE1.jl` we almost always immediately tag another version and then you can adjust your version bounds in your project to update as well as enforce which version to use.
 
 #### Links 
 
