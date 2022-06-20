@@ -19,7 +19,7 @@ include("basis.jl")
 
 include("solver.jl")
 
-include("precon.jl")
+include("regularizer.jl")
 
 include("read_params.jl")
 
