@@ -13,6 +13,9 @@ complete set of parameters required to construct one of the solvers.
 All parameters are passed as keyword argument and the kind of 
 parameters required depend on "type".
 
+### QR Parameters
+* 'type = "qr"`
+
 ### LSQR Parameters 
 * `type = "lsqr"`
 * `lsqr_damp = 5e-3`
@@ -44,6 +47,13 @@ function solver_params(; type = nothing, kwargs...)
     return _solvers_params[solver_type](; kwargs...)
 end
 
+"""
+`qr_params(; kwargs...)` : returns a dictionary containing the
+complete set of parameters required to construct a qr solver.
+All parameters are passed as keyword argument.
+
+"""
+qr_params() = Dict{Any,Any}("type" => "qr")
 
 """
 `lsqr_params(; kwargs...)` : returns a dictionary containing the 
@@ -105,8 +115,9 @@ _solver_to_params(solver_type::Union{Symbol, AbstractString}) =
     string(solver_type)
 
 
-_solvers_params = Dict("lsqr" => lsqr_params, "rrqr" => rrqr_params, 
-                        "brr" => brr_params, "ard" => ard_params)
+_solvers_params = Dict("qr" => qr_params,
+                       "lsqr" => lsqr_params, "rrqr" => rrqr_params,
+                       "brr" => brr_params, "ard" => ard_params)
 
 
 _params_to_solver(solver_type::AbstractString) = 
