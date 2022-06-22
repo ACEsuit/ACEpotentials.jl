@@ -1,10 +1,11 @@
 using Test
+using LazyArtifacts
 using ACE1pack
 
 ### ----- set up params -----
 
 data = data_params(
-    fname="Si_tiny.xyz",
+    fname=joinpath(artifact"Si_tiny_dataset", "Si_tiny.xyz"),
     energy_key="dft_energy", force_key="dft_force", virial_key="dft_virial")
 ace_basis = basis_params(
     type="ace",
