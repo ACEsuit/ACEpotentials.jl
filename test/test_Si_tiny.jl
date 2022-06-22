@@ -1,9 +1,9 @@
 using Test
 using ACE1pack
 
-params = load_dict("silicon_tiny_params.yaml")
+params = load_dict("Si_tiny_params.yaml")
 params = fill_defaults!(params)
-include("silicon_tiny_rmse.jl")
+include("Si_tiny_rmse.jl")
 
 function test_rmse(rmse, expected, atol)
     for config in keys(rmse)
