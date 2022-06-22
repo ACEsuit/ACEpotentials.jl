@@ -21,12 +21,12 @@ pair_basis = basis_params(
     rcut=6.5,
     pcut=1,
     pin=0)
-basis = Dict("ace" => ace_basis, "pair" => pair_basis)
+basis = Dict("ace"=>ace_basis, "pair"=>pair_basis)
 solver = solver_params(type=:qr)
 e0 = Dict("Si"=>-158.54496821)
 weights = Dict(
-    "default" => Dict("E" => 30.0, "F" => 1.0, "V" => 1.0),
-    "liq" => Dict("E" => 10.0, "F" => 0.66, "V" => 0.25))
+    "default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
+    "liq" => Dict("E"=>10.0, "F"=>0.66, "V"=>0.25))
 params = fit_params(
     data = data,
     basis = basis,
@@ -53,7 +53,7 @@ end
         "liq"           => Dict("V"=>0.034633, "E"=>0.000133371, "F"=>0.104112),
         "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
         "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
-    coef, fit_info = fit_ace(params)
+    IP, fit_info = fit_ace(params)
     test_rmse(fit_info["errors"]["rmse"], rmse_qr, 1e-5)
 end
 
@@ -69,7 +69,7 @@ end
         "liq"           => Dict("V"=>0.0340089, "E"=>0.000770027, "F"=>0.1795),
         "set"           => Dict("V"=>0.0687971, "E"=>0.00276312, "F"=>0.138958),
         "bt"            => Dict("V"=>0.0896389, "E"=>0.00359229, "F"=>0.0706966),)
-    coef, fit_info = fit_ace(params)
+    IP, fit_info = fit_ace(params)
     @warn "The LSQR test tolerance is very loose."
     test_rmse(fit_info["errors"]["rmse"], rmse_lsqr, 1e-1)
 end
@@ -83,7 +83,7 @@ end
         "liq"           => Dict("V"=>0.034633, "E"=>0.000133371, "F"=>0.104112),
         "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
         "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
-    coef, fit_info = fit_ace(params)
+    IP, fit_info = fit_ace(params)
     test_rmse(fit_info["errors"]["rmse"], rmse_rrqr, 1e-5)
 end
 
@@ -96,7 +96,7 @@ end
         "liq"           => Dict("V"=>0.0346353, "E"=>9.80216e-5, "F"=>0.152752),
         "set"           => Dict("V"=>0.0664363, "E"=>0.00240266, "F"=>0.11819),
         "bt"            => Dict("V"=>0.0851538, "E"=>0.00313734, "F"=>0.0585017),)
-    coef, fit_info = fit_ace(params)
+    IP, fit_info = fit_ace(params)
     test_rmse(fit_info["errors"]["rmse"], rmse_brr, 1e-5)
 end
 
@@ -111,6 +111,6 @@ end
         "liq"           => Dict("V"=>0.0367959, "E"=>0.0008153, "F"=>0.176037),
         "set"           => Dict("V"=>0.0734983, "E"=>0.00302168, "F"=>0.136656),
         "bt"            => Dict("V"=>0.0940645, "E"=>0.00410442, "F"=>0.0667358),)
-    coef, fit_info = fit_ace(params)
+    IP, fit_info = fit_ace(params)
     test_rmse(fit_info["errors"]["rmse"], rmse_ard, 1e-5)
 end
