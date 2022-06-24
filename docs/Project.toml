@@ -1,3 +1,13 @@
 [deps]
+ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
 ACE1pack = "8c4e8d19-0bd6-4234-8309-7210652e3178"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+IPFitting = "3002bd4c-79e4-52ce-b924-91256dde4e52"
+JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
+LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[compat]
+Literate = "2.13.2,3"

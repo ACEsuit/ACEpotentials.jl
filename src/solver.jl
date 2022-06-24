@@ -57,7 +57,7 @@ All parameters are passed as keyword argument.
 * `lsqr_maxiter = 1e5`
 * `lsqr_verbose = false`
 """
-lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6, lsqr_conlim = 1e8, lsqr_maxiter = 1e5, lsqr_verbose = false) =
+lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6, lsqr_conlim = 1e8, lsqr_maxiter = Integer(1e5), lsqr_verbose = false) =
     Dict("type" => "lsqr", "lsqr_damp" => lsqr_damp, "lsqr_atol" => lsqr_atol,
          "lsqr_conlim" => lsqr_conlim, "lsqr_maxiter" => lsqr_maxiter, "lsqr_verbose" => lsqr_verbose)
 

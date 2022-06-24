@@ -33,7 +33,7 @@ function fill_defaults(params::Dict; param_key = "fit_params")
     for (key, val) in params
         if key == "basis"
             for (basis_name, basis_params) in params[key]
-                if basis_name == "ace"
+                if basis_params["type"] == "ace"
                     basis_params = parse_ace_basis_keys(basis_params)
                 end
                 params[key][basis_name] = fill_defaults(basis_params; param_key=key)

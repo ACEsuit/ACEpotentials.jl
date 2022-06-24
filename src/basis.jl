@@ -15,14 +15,14 @@ complete set of parameters required to construct one of the basis.
 All parameters are passed as keyword argument and the kind of 
 parameters required depend on "type". 
 
-## ACE (RPI) basis 
+## ACE (RPI) basis  
 Returns a dictionary containing the complete set of parameters 
 required to construct an ACE basis (`RPIBasis`). All parameters 
 are passed as keyword argument. If no default is given then 
 the argument is required. 
 
 ### Parameters
-* `type = "ace"`
+* `type = "ace"` 
 * `species` : single species or list of species (mandatory)
 * `N` : correlation order, positive integer (mandatory)
 * `maxdeg` : maximum degree, positive real number (note the precise 
@@ -46,10 +46,16 @@ parameters are passed as keyword argument.
 * `maxdeg` : maximum degree, positive real number (note the precise 
 notion of degree is specified by further parameters) (mandatory)
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `rcut = 5.0`: outer cuttoff, Å 
-* `rin = 0.0`: inner cuttoff, Å 
-* `pcut = 2`: outer cutoff parameter
+* `rcut = 5.0`: outer cutoff, Å 
+* `rin = 0.0`: inner cutoff, Å 
+* `pcut = 2`: outer cutoff parameter; 
+      * `pcut=2`: function and first derivative go to zero at  the outer cutoff 
+      * `pcut=1`: function forced to go through zero at the outer cutoff 
+      * `pcut=0`: no constraint at the outer cutoff
 * `pin = 0`: inner cutoff parameter
+      * `pin=2`: function and first derivative go to zero at  the inner cutoff
+      * `pin=1`: function forced to go through zero at the inner cutoff
+      * `pin=0`: no constraint at the inner cutoff
 * `transform = transform_params(; r0 = r0)` : distance transform 
 parameters; cf `?transform_params()` for details
 
@@ -59,12 +65,18 @@ required to construct radial basis for ACE. All parameters are
 passed as keyword argument. 
 
 ### Parameters
-* `type = "radal"`
+* `type = "radial"`
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `rcut = 5.0`: outer cuttoff, Å 
-* `rin = 0.0`: inner cuttoff, Å 
-* `pcut = 2`: outer cutoff parameter
-* `pin = 0`: inner cutoff parameter
+* `rcut = 5.0`: outer cutoff, Å 
+* `rin = 0.5 * r0`: inner cutoff, Å 
+* `pcut = 2`: outer cutoff parameter; 
+      * `pcut=2`: function and first derivative go to zero at  the outer cutoff 
+      * `pcut=1`: function forced to go through zero at the outer cutoff 
+      * `pcut=0`: no constraint at the outer cutoff
+* `pin = 2`: inner cutoff parameter
+      * `pin=2`: function and first derivative go to zero at  the inner cutoff
+      * `pin=1`: function forced to go through zero at the inner cutoff
+      * `pin=0`: no constraint at the inner cutoff
 """
 function basis_params(;
       type = nothing, 
@@ -74,7 +86,7 @@ function basis_params(;
 end
 
 function generate_basis(params::Dict)
-      @assert params["type"] != "radal" 
+      @assert params["type"] != "radial" 
       params = copy(params)
       basis_constructor = _bases[params["type"]][1]
       delete!(params, "type")
@@ -172,10 +184,16 @@ All parameters are passed as keyword argument.
 * `maxdeg` : maximum degree, positive real number (note the precise notion of degree 
 is specified by further parameters) (mandatory)
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `rcut = 5.0`: outer cuttoff, Å 
-* `rin = 0.0`: inner cuttoff, Å 
-* `pcut = 2`: outer cutoff parameter
+* `rcut = 5.0`: outer cutoff, Å 
+* `rin = 0.0`: inner cutoff, Å 
+* `pcut = 2`: outer cutoff parameter; 
+      * `pcut=2`: function and first derivative go to zero at  the outer cutoff 
+      * `pcut=1`: function forced to go through zero at the outer cutoff 
+      * `pcut=0`: no constraint at the outer cutoff
 * `pin = 0`: inner cutoff parameter
+      * `pin=2`: function and first derivative go to zero at  the inner cutoff
+      * `pin=1`: function forced to go through zero at the inner cutoff
+      * `pin=0`: no constraint at the inner cutoff
 * `transform = transform_params(; r0 = r0)` : distance transform parameters; 
 cf `?transform_params()` for details
 """
@@ -228,10 +246,16 @@ All parameters are passed as keyword argument.
 
 ### Parameters
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `rcut = 5.0`: outer cuttoff, Å 
-* `rin = 0.0`: inner cuttoff, Å 
-* `pcut = 2`: outer cutoff parameter
-* `pin = 0`: inner cutoff parameter
+* `rcut = 5.0`: outer cutoff, Å 
+* `rin = 0.5 * r0`: inner cutoff, Å 
+* `pcut = 2`: outer cutoff parameter; 
+      * `pcut=2`: function and first derivative go to zero at  the outer cutoff 
+      * `pcut=1`: function forced to go through zero at the outer cutoff 
+      * `pcut=0`: no constraint at the outer cutoff
+* `pin = 2`: inner cutoff parameter
+      * `pin=2`: function and first derivative go to zero at  the inner cutoff
+      * `pin=1`: function forced to go through zero at the inner cutoff
+      * `pin=0`: no constraint at the inner cutoff
 """
 function radial_basis_params(; 
       r0 = 2.5,
