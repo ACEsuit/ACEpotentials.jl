@@ -10,7 +10,7 @@ CurrentModule = ACE1pack
 ```
 
 
-### Overview of Relevant Julia Packages
+## Overview of Relevant Julia Packages
 
 Usage of `ACE1.jl` or `ACE1pack.jl` involves the following Julia packages which we summarize for the same
 
@@ -21,7 +21,7 @@ Usage of `ACE1.jl` or `ACE1pack.jl` involves the following Julia packages which 
 * `ACEinterfaces.jl` provides interfaces to use ACE potentials from other languages; experimental  
 
 
-### References
+## References
 
 * Drautz, R.: Atomic cluster expansion for accurate and transferable interatomic potentials. Phys. Rev. B Condens. Matter. 99, 014104 (2019). [[DOI]](doi:10.1103/PhysRevB.99.014104) [[arxiv]](https://arxiv.org/abs/2003.00221)
 

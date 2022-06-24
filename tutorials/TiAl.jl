@@ -1,5 +1,5 @@
 
-# ### Fitting a TiAl potential 
+# # Fitting a TiAl potential 
 #
 # Start by importing the required libraries 
 
