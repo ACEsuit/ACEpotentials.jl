@@ -6,7 +6,7 @@ DocMeta.setdocmeta!(ACE1pack, :DocTestSetup, :(using ACE1pack); recursive=true)
 
 # ~~~~~~~~~~ Generate the tutorial files  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-_tutorial_out = joinpath(@__DIR__(), "src", "tutorials")
+_tutorial_out = joinpath(@__DIR__(), "src", "literate_tutorials")
 _tutorial_src = joinpath(@__DIR__(), "..", "tutorials")
 
 Literate.markdown(_tutorial_src * "/first_example.jl", 
@@ -40,7 +40,13 @@ makedocs(;
             "gettingstarted/pkg.md",
             "gettingstarted/readinglist.md",
         ],
-        "Tutorials" => "tutorials/index.md",
+        "Tutorials" => Any[
+            "tutorials/index.md",
+            "literate_tutorials/first_example.md",
+            "literate_tutorials/TiAl.md",
+            "tutorials/lammps.md"
+
+        ],
         "ACE" => Any[
             "ACE/aceintro.md",
             "ACE/datatypes.md",
