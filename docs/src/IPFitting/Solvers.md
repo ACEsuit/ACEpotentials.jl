@@ -12,12 +12,14 @@ The solver dictionary should have the following arguments:
 ```julia
 solver = Dict(
         "solver" => :lsqr,
-        "damp" => 5e-3,
-        "atol" => 1e-6)
+        "lsqr_damp" => 5e-3,
+        "lsqr_atol" => 1e-6)
 ```
-where `damp` is ``\lambda`` in the equation above. The implementation is iterative and `atol` is a convergence tolerance at which to stop the alogrithm.
+where `lsqr_damp` is ``\lambda`` in the equation above. The implementation is iterative and `lsqr_atol` is a convergence tolerance at which to stop the alogrithm.
 
 ### `:rrqr`
+
+Rank-revealing QR factorisation determines a low rank solution to the linear system. Smaller "rrqr_tol" means less regularisation. 
 
 ```julia
 solver = Dict(
@@ -31,14 +33,23 @@ The `:brr` - Bayesian Ridge Regression - is a wrapper for `scikit learn`'s Bayse
 
 ```julia
 solver = Dict(
-        "solver" => :brr)
+        "solver" => :brr, 
+        "brr_tol" => 1e-3)
 ```
 
-Since this algorithm includes hyperparameter maximisation, no parameters are required in the solver dictionary.
+## Automatic Relevance Determination (ARD)
 
 ```julia
 solver= Dict(
          "solver" => :ard,
-         "ard_tol" => 1e-4,
-         "threshold_lambda" => 1e-2)
+         "ard_tol" => 1e-3,
+         "ard_threshold_lambda" => 10000)
 ```
+
+Automatic Relevance Determination performing evidence maximisation. `ard_tol` sets the convergence for the marginal log likelihood convergence, default is`1e-3`. `ard_threshold_lambda` is the threshold for removing the basis functions with low relevance, default is `10000`.
+
+
+
+
+
+

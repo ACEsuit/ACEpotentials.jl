@@ -49,15 +49,9 @@ makedocs(;
         ],
         # "Using ACE potentials" => Any[
         #     "Using_ACE/python_ase.md",
-        #     "Using_ACE/lammps.md",
         #     "Using_ACE/openmm.md",
         # ],
-        # "Tutorials" => Any[
-        #     "tutorials/developing_ace1pack.md",
-        #     "tutorials/developing.md",
-        #     "tutorials/createsavefit.md",
-        #     "tutorials/lammps.md",
-        # ],
+
         # "In detail" => Any[
         #     "ACE1pack" => Any[
         #         "ACE1pack/overview.md",
@@ -67,18 +61,6 @@ makedocs(;
         #         "ACE1pack/basis.md",   
         #         "ACE1pack/solver.md",
         #         "ACE1pack/all_exported.md",
-        #     ],
-        #     "ACE1.jl" => Any[
-        #         "ACE/aceintro.md",
-        #         "ACE/datatypes.md",
-        #         "ACE/create_ACE.md",
-        #     ],
-        #     "IPFitting" => Any[
-        #         "IPFitting/IPFitting.md",
-        #         "IPFitting/File IO.md",
-        #         "IPFitting/Atomic Configurations in Julia.md",
-        #         "IPFitting/Solvers.md",
-        #         "IPFitting/Manipulating potentials.md",
         #     ],
         # ],
         "ACE" => Any[
@@ -93,11 +75,6 @@ makedocs(;
             "IPFitting/Solvers.md",
             "IPFitting/Manipulating potentials.md",
         ],
-        # "Using ACE potentials" => Any[
-        #     "Using_ACE/python_ase.md",
-        #     "Using_ACE/lammps.md",
-        #     "Using_ACE/openmm.md",
-        # ],
     ],
 )
 
