@@ -11,6 +11,7 @@ JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 ACE1 = "0.9.1"

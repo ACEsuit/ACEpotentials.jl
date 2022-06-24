@@ -1,7 +1,27 @@
 using ACE1pack
-using Documenter
+using Documenter, Literate 
 
 DocMeta.setdocmeta!(ACE1pack, :DocTestSetup, :(using ACE1pack); recursive=true)
+
+
+# ~~~~~~~~~~ Generate the tutorial files  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+_tutorial_out = joinpath(@__DIR__(), "src", "literate_tutorials")
+_tutorial_src = joinpath(@__DIR__(), "..", "tutorials")
+
+Literate.markdown(_tutorial_src * "/first_example.jl", 
+                  _tutorial_out; documenter = true)
+
+Literate.markdown(_tutorial_src * "/TiAl.jl", 
+                  _tutorial_out; documenter = true)
+
+# ???? cf Jump.jl docs, they do also this: 
+# postprocess = _link_example,
+# # Turn off the footer. We manually add a modified one.
+# credit = false,
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 makedocs(;
     modules=[ACE1pack],
@@ -17,8 +37,15 @@ makedocs(;
         "Home" => "index.md",
         "Getting Started" => Any[
             "gettingstarted/installation.md",
-            "gettingstarted/developing.md",
             "gettingstarted/pkg.md",
+            "gettingstarted/readinglist.md",
+        ],
+        "Tutorials" => Any[
+            "tutorials/index.md",
+            "literate_tutorials/first_example.md",
+            "literate_tutorials/TiAl.md",
+            "tutorials/lammps.md"
+
         ],
         "ACE" => Any[
             "ACE/aceintro.md",
@@ -32,17 +59,11 @@ makedocs(;
             "IPFitting/Solvers.md",
             "IPFitting/Manipulating potentials.md",
         ],
-        "Using ACE potentials" => Any[
-            "Using_ACE/python_ase.md",
-            "Using_ACE/lammps.md",
-            "Using_ACE/openmm.md",
-        ],
-        "Tutorials" => Any[
-            "tutorials/developing.md",
-            "tutorials/createsavefit.md",
-            "tutorials/lammps.md",
-        ],
-
+        # "Using ACE potentials" => Any[
+        #     "Using_ACE/python_ase.md",
+        #     "Using_ACE/lammps.md",
+        #     "Using_ACE/openmm.md",
+        # ],
     ],
 )
 
