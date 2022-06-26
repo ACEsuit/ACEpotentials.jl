@@ -12,7 +12,7 @@ data_file = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz")
 # We can now use `IPFitting.Data.read_xyz` to load in the training set. This will not only load the structures, but also search for energies and force from a reference model, and all this will then be stored as a `Vector{Dat}`. We keep only every 10 training structures to keep the regression problem small.
 
 data = IPFitting.Data.read_xyz(data_file, energy_key="energy", force_key="force", virial_key="virial")
-train = data[1:5:end];
+# train = data[1:5:end];
 
 # The next step is to generate a basis set:  
 # * Here we take 3-correlation, i.e. a 4-body potential, 
@@ -23,6 +23,8 @@ train = data[1:5:end];
 # * The inner cutoff `rin` is will ensure that the many-body potential becomes zero when atoms get too close. The reason for this is that we usually do not have data against which to fit the potential in this deformation regime and therefore cannot make reliable predictions. Instead we will add a pair potential to model this regime below.
 #
 
+
+# EG: `pin` should be set to 2?? i.e. bad `ace_basis` default?
 r0 = 2.88 
 ACE_B = ace_basis(species = [:Ti, :Al],
                   N = 3,
@@ -37,7 +39,7 @@ Bpair = pair_basis(species = [:Ti, :Al],
                    r0 = r0,
                    maxdeg = 6,
                    rcut = 7.0,
-                   pcut = 1,
+                   pcut = 1, 	# this is not a reasonable default?
                    pin = 0)  
 B = JuLIP.MLIPs.IPSuperBasis([Bpair, ACE_B]);
 
