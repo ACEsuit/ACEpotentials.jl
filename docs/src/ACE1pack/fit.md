@@ -1,9 +1,9 @@
 ```@meta
 CurrentModule = ACE1pack
 ```
-# Making ACE 
+# Fitting ACE 
 
-## Top-level overveiw
+## Top-level overview
 
 The most minimal way of generating an ACE potential is 
 
@@ -24,7 +24,7 @@ fit_params
 
 Parameters `LSQ_DB_fname_stem` and `fit_from_LSQ_DB` determine if the least-squares gets saved and/or where/how it gets fit from. 
 
-* `LSQ_DB_fname_stem` is set to `""`: LsqDB is neither saved to file;
+* `LSQ_DB_fname_stem` is set to `""`: LsqDB is neither saved to nor read from file;
 * `LSQ_DB_fname_stem` is given:
     * file not present: LsqDB saved to disk and fit to;
     * file present:
@@ -41,7 +41,7 @@ make_ace_db
 fit_ace_db
 ```
 
-(In fact, `fit_ace()` just calls both of these in one go.)
+In fact, `fit_ace()` just calls both of these in one go.
 
 ## Reading parameters in from file
 
@@ -55,13 +55,9 @@ params = load_dict("params.yaml")
 
 There is a convenience function `fill_defaults()` that recursively fills in any missing values with defaults, so that only mandatory or non-default values have to be saved in the files.
 
-Some of the ACE basis parameters dictionaries keys and values may be 2-tuples (specifically, the multitransform and "sparseM" degree specification) which are mainly represented as strings in JSON or YAML formats and may not be allowed in other languages used to write these dictionaries to file. The easiest way is to save tuples as ```"(1, C)"``` (different from ```string(tuple(1, "C"))```) and use `parse_ace_basis_keys()` (also done within `fill_defaults()`) to parse that into ```(1, "C")```. 
-
 ```@docs
 fill_defaults
-parse_ace_basis_keys
 ```
-
 
 ## Examples of minimal set of parameters
 

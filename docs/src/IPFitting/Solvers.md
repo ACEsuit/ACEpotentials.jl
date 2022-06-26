@@ -1,6 +1,6 @@
 # Least squares solvers
 
-### `:lsqr`
+### LSQR
 
 The `:lsqr` solver solves the linear system with ``l^2`` regularisation:
 
@@ -17,7 +17,7 @@ solver = Dict(
 ```
 where `lsqr_damp` is ``\lambda`` in the equation above. The implementation is iterative and `lsqr_atol` is a convergence tolerance at which to stop the alogrithm.
 
-### `:rrqr`
+### RRQR
 
 Rank-revealing QR factorisation determines a low rank solution to the linear system. Smaller "rrqr_tol" means less regularisation. 
 
@@ -27,7 +27,7 @@ solver = Dict(
         "rrqr_tol" => 1e-5)
 ```
 
-### `:brr`
+### Baysian Ridge Regression (BRR)
 
 The `:brr` - Bayesian Ridge Regression - is a wrapper for `scikit learn`'s BayseianRidge linear model [see here](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html). A Gaussian prior on the parameter vector, and a Gaussian likelihood function are used to copmute the maximum posterior probability parameter vector. Following this, the hyperparamters of the Gaussian priors are optimised by maximising the marginal log likelihood of the obsrevations. 
 

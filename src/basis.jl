@@ -15,13 +15,13 @@ complete set of parameters required to construct one of the basis.
 All parameters are passed as keyword argument and the kind of 
 parameters required depend on "type". 
 
-## ACE (RPI) basis  
+# ACE (RPI) basis  
 Returns a dictionary containing the complete set of parameters 
 required to construct an ACE basis (`RPIBasis`). All parameters 
 are passed as keyword argument. If no default is given then 
 the argument is required. 
 
-### Parameters
+## Parameters
 * `type = "ace"` 
 * `species` : single species or list of species (mandatory)
 * `N` : correlation order, positive integer (mandatory)
@@ -35,12 +35,12 @@ parameters; cf `?transform_params()` for details
 * `degree = degree_params()` : class of sparse polynomial degree 
 to select the basis; see `?degree_params` for details 
 
-## Pair basis 
+# Pair basis 
 Returns a dictionary containing the complete set of parameters 
 required to construct an pair basis (`PolyPairBasis`). All 
 parameters are passed as keyword argument. 
 
-### Parameters
+## Parameters
 * `type = "pair"`
 * `species` : single species or list of species (mandatory)
 * `maxdeg` : maximum degree, positive real number (note the precise 
@@ -59,12 +59,12 @@ notion of degree is specified by further parameters) (mandatory)
 * `transform = transform_params(; r0 = r0)` : distance transform 
 parameters; cf `?transform_params()` for details
 
-## Radial basis of ACE
+# Radial basis of ACE
 Returns a dictionary containing the complete set of parameters 
 required to construct radial basis for ACE. All parameters are 
 passed as keyword argument. 
 
-### Parameters
+## Parameters
 * `type = "radial"`
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
 * `rcut = 5.0`: outer cutoff, Å 
@@ -107,14 +107,14 @@ the argument is required.
 * `species` : single species or list of species (mandatory)
 * `N` : correlation order, positive integer (mandatory)
 * `maxdeg` : maximum degree, positive real number (note the precise notion of 
-degree is specified by further parameters) (mandatory)
+      degree is specified by further parameters) (mandatory)
 * `r0 = 2.5` : rough estimate for nearest neighbour distance
-* `radial = radial_basis_params(; r0 = r0)` : one-particle basis parameters; 
-cf `?radial_basis_params` for details 
+* `radial = radial_basis_params(; r0 = r0)` : one-particle basis  parameters; 
+      cf `?radial_basis_params` for details 
 * `transform = transform_params(; r0 = r0)` : distance transform parameters; 
-cf `?transform_params()` for details
+      cf `?transform_params()` for details
 * `degree = degree_params()` : class of sparse polynomial degree to select 
-the basis; see `?degree_params` for details 
+      the basis; see `?degree_params` for details 
 """
 function ace_basis_params(; 
       species = nothing, 
@@ -309,11 +309,11 @@ complete set of parameters required to construct a specification
 for polynomial degree. All parameters are passed as keyword argument 
 and the kind of parameters required depend on "type". 
 
-## `SparsePSHDegree` 
+# `SparsePSHDegree` 
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE1.RPI.SparsePSHDegree`. See `?SparsePSHDegree`.
 
-### Parameters
+## Parameters
 * `type = "sparse"`
 * `wL = 1.5`
 * `csp = 1.0` 
@@ -323,13 +323,13 @@ to construct `ACE1.RPI.SparsePSHDegree`. See `?SparsePSHDegree`.
 * `bhc = 0.0`
 * `p = 1.0`
 
-## `SparsePSHDegreeM`
+##`SparsePSHDegreeM`
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE1.RPI.SparsePSHDegree`. Also see `?SparsePSHDegreeM`. 
 
 NB `maxdeg` of ACE basis (`RPIBasis`) has to be set to `1.0`.
 
-### Parameters
+## Parameters
 * `Dd` : Dictionary specifying max degrees (mandatory)
 * `Dn = Dict("default" => 1.0)` : Dictionary specifying weights for degree 
 of radial basis functions (n)
@@ -477,7 +477,7 @@ All parameters are passed as keyword argument and the kind of
 parameters required depend on "type".
 
 
-## Polynomial transform 
+# Polynomial transform 
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE1.Transforms.PolyTransform``. All parameters are passed
  as keyword argument. Also see `?PolyTransform`
@@ -488,18 +488,18 @@ Implements the distance transform
    x(r) = \\Big(\\frac{1 + r_0}{1 + r}\\Big)^p
 ```
 
-### Parameters
+## Parameters
 * `type = "polynomial"`
 * `p = 2` 
 * `r0 = 2.5`
 
 
-## Multitransform
+# Multitransform
 Returns a dictionary containing the complete set of parameters required 
 to construct `ACE.Transform.multitransform`. All parameters are passed 
 as keyword argument. 
 
-### Parameters
+## Parameters
 * `transforms` : dictionary specifying transforms for each species pair. Can be
 given per-pair (i.e. only for `("element1", "element2")` and not for 
 `("element2", "element1")`) or can be different for `("element1", "element2")` and 
@@ -523,7 +523,7 @@ cutoffs => Dict(
 ``` 
 
 
-## identity
+# identity
 `IdTransform_params(;)` : returns `Dict("type" => "identity")`,
 needed to construct `ACE1.Transforms.IdTransform`.  
 """

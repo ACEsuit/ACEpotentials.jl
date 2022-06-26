@@ -52,17 +52,15 @@ makedocs(;
         #     "Using_ACE/openmm.md",
         # ],
 
-        # "In detail" => Any[
-        #     "ACE1pack" => Any[
-        #         "ACE1pack/overview.md",
-        #         "ACE1pack/fit.md",    
-        #         "ACE1pack/helpers.md",
-        #         "ACE1pack/data.md",
-        #         "ACE1pack/basis.md",   
-        #         "ACE1pack/solver.md",
-        #         "ACE1pack/all_exported.md",
-        #     ],
-        # ],
+        "ACE1pack" => Any[
+            "ACE1pack/overview.md",
+            "ACE1pack/fit.md",    
+            "ACE1pack/helpers.md",
+            "ACE1pack/data.md",
+            "ACE1pack/basis.md",   
+            "ACE1pack/solver.md",
+            "ACE1pack/all_exported.md",
+        ],
         "ACE" => Any[
             "ACE/aceintro.md",
             "ACE/datatypes.md",
