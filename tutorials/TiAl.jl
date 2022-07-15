@@ -12,7 +12,7 @@ data_file = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz")
 # We can now use `IPFitting.Data.read_xyz` to load in the training set. This will not only load the structures, but also search for energies and force from a reference model, and all this will then be stored as a `Vector{Dat}`. We keep only every 10 training structures to keep the regression problem small.
 
 data = IPFitting.Data.read_xyz(data_file, energy_key="energy", force_key="force", virial_key="virial")
-# train = data[1:5:end];
+train = data[1:5:end];
 
 # The next step is to generate a basis set:  
 # * Here we take 3-correlation, i.e. a 4-body potential, 

@@ -14,9 +14,6 @@ params = load_dict("params.json")
 params = load_dict("params.yaml")
 ```
 
-```@docs
-load_dict
-```
 
 Some of the ACE basis parameters dictionaries keys and values may be 2-tuples (specifically, the "multitransform" and "sparseM" degree specification) which are mainly represented as strings in JSON or YAML formats and may not be allowed in other languages used to write these dictionaries to file. The easiest way is to save tuples as ```"(1, C)"``` (different from ```string(tuple(1, "C"))```) and use `parse_ace_basis_keys()` (also done within `fill_defaults()`) to parse that into ```(1, "C")```. 
 

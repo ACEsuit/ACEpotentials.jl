@@ -43,7 +43,7 @@ ACE_basis_param_dict = basis_params(
 # and pair basis. 
 
 pair_basis_param_dict = basis_params(
-    type = 'pair',
+    type = "pair",
     species = species,
     maxdeg = 6,
     r0 = r0,
