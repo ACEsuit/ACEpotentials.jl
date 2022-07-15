@@ -47,7 +47,7 @@ makedocs(;
             "tutorials/index.md",
             "literate_tutorials/first_example.md",
             "literate_tutorials/TiAl.md",
-            "literate_tutorials/TiAL_ACE1pack.md",
+            "literate_tutorials/ACE1pack_TiAl.md",
             "tutorials/lammps.md"
         ],
         # "Using ACE potentials" => Any[
