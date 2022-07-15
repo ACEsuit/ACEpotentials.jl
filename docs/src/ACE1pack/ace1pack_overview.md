@@ -20,7 +20,7 @@ All of these functions take nested dictionaries that specify various parameters 
 * `degree_params()` - for specifying the degree of ACE basis, see [Constructing Basis](basis.md);
 * `transform_params()` - parameters to specify the transform for a given basis, see [Constructing Basis](basis.md);
 * `data_params()` - for reading geometries and to-be-fitted property values, see [Handling Data](data.md); 
-* `regularizer_params()` - to set up an extra regularizer, see [Regularizers](regularizer.md);
+* `regularizer_params()` - to set up an extra regularizer, see [Regularizers section in Solers](solver.md);
 * `solver_params()` - to set up solver for the least-squares problem, see [Solvers](solver.md). 
 
 In addition, there are some utility functions:  

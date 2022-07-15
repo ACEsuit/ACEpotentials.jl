@@ -1,6 +1,3 @@
-`c``@meta
-CurrentModule = ACE1pack
-```
 # Fitting ACE 
 
 ## Top-level overview

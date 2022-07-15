@@ -2,7 +2,7 @@
 #
 # In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACE1pack. 
 
-# `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `IPFitting.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`IPFitting.jl`). For full documentation see [ACE1pak overview](ace1pack_overview.md).
+# `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `IPFitting.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`IPFitting.jl`). For full documentation see [ACE1pak overview](../ACE1pack/ace1pack_overview.md).
 
 # First import ACE1pack
 
