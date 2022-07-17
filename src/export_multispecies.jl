@@ -7,18 +7,23 @@ using ACE1.OrthPolys: TransformedPolys
 using ACE1: rand_radial, cutoff, numz, ZList
 using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
 
-function export_ACE(fname, IP; export_pairpot_as_table=false)
+function export_ACE(fname, IP; export_pairpot_as_table=true)
     # supply fname with the .yace extension
     # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
     # TODO: document usage of the .table file for the pairpot
+    if !(fname[end-4:end] == ".yace")
+        throw(ArgumentError("Potential name must be supplied with .yace extension"))
+    end
+    # require 3 components of IP for now, and assume that are 1B, 2B, ACE
+    if !(length(IP.components) == 3)
+        throw("not implemented. Potentials to be exported must be composed of exactly three components: one one-body, one two-body, and one many-body component")
+    end
 
     # decomposing into V1, V2, V3 (One body, two body and ACE bases)
     V1 = IP.components[1]
     V2 = IP.components[2]
     V3 = IP.components[3]
-
-    # require 3 components of IP for now, and assume that are 1B, 2B, ACE
-    @assert length(IP.components) == 3
+    
     species = collect(string.(chemical_symbol.(IP.components[3].pibasis.zlist.list)))
     species_dict = Dict(zip(collect(0:length(species)-1), species))
     reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
@@ -29,7 +34,7 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
         matrix_v2 = true
         if !(export_pairpot_as_table)
             throw(ArgumentError(
-                "This potential uses a species dependent two-body basis, and must be exported with export_pairpot_as_table=True. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
+                "This potential was made using a recent version of ACE1. Exporting with export_pairpot_as_table=false is only possible for older potential files. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
         end
     else
         warn("This potential has been made with an older version of ACE1, and may not be compatible")
@@ -56,7 +61,6 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
     # 2body
     if export_pairpot_as_table
         # I am not handling the hasproperty(V2, :Vin) case, since I don't know what this is
-        
         # this writes a .table file, so for simplicity require that export fname is passed with
         # .yace extension, and we remove this and add the .table extension instead
         fname_stem = fname[1:end-5]
