@@ -15,8 +15,8 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
-ACE1 = "0.9.1"
-IPFitting = "0.10.0"
+ACE1 = "0.9.2"
+IPFitting = "0.10.2"
 JuLIP = "0.11.4"
 julia = "1.6"
 
