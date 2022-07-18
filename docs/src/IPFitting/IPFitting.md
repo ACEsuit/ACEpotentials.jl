@@ -20,7 +20,7 @@ where ``y_i`` are the observations of the true function, and ``\Psi_{i \nu} = B_
 ```julia
 dB = LsqDB(save_name, basis, train)
 ```
-If `save_name` is the empty string, the least squares system, which can be very large, is not saved to disk. Otherwise, `save_name` should be a string not including any file extension, which is added by IPFitting. `basis` is the ACE1 basis. `train` is a `Vector` of IPFitting `Dat` objects representing the training set. IPFitting also provides tools for reading and saving the atomic structures see [File io](link to file IO tutorial). 
+If `save_name` is the empty string, the least squares system, which can be very large, is not saved to disk. Otherwise, `save_name` should be a string not including any file extension, which is added by IPFitting. `basis` is the ACE1 basis. `train` is a `Vector` of IPFitting `Dat` objects representing the training set. IPFitting also provides tools for reading and saving the atomic structures see [File io (TO-ADD, currently points to ACE1pack data handling)](../ACE1pack/data.md). 
 
 ### Structure of the Linear System.
 
@@ -45,7 +45,7 @@ returns:
 
 ### Solvers
 
-Once the linear system has been formed, several methods exist for solving it. Some involve modifying the above minimisation statement but still require the design matrix and observation vector. Currently there are 4{?} solvers implemented in IPFitting which are discussed in [solvers](link to solvers section).
+Once the linear system has been formed, several methods exist for solving it. Some involve modifying the above minimisation statement but still require the design matrix and observation vector. Currently there are 4 solvers implemented in IPFitting which are discussed in [solvers](Solvers.md).
 
 ### Weights
 

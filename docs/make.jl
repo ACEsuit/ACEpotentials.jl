@@ -15,6 +15,9 @@ Literate.markdown(_tutorial_src * "/first_example.jl",
 Literate.markdown(_tutorial_src * "/TiAl.jl", 
                   _tutorial_out; documenter = true)
 
+Literate.markdown(_tutorial_src * "/ACE1pack_TiAl.jl", 
+                  _tutorial_out; documenter = true)
+
 # ???? cf Jump.jl docs, they do also this: 
 # postprocess = _link_example,
 # # Turn off the footer. We manually add a modified one.
@@ -44,8 +47,22 @@ makedocs(;
             "tutorials/index.md",
             "literate_tutorials/first_example.md",
             "literate_tutorials/TiAl.md",
+            "literate_tutorials/ACE1pack_TiAl.md",
             "tutorials/lammps.md"
+        ],
+        # "Using ACE potentials" => Any[
+        #     "Using_ACE/python_ase.md",
+        #     "Using_ACE/openmm.md",
+        # ],
 
+        "ACE1pack" => Any[
+            "ACE1pack/ace1pack_overview.md",
+            "ACE1pack/fit.md",    
+            "ACE1pack/helpers.md",
+            "ACE1pack/data.md",
+            "ACE1pack/basis.md",   
+            "ACE1pack/solver.md",
+            "ACE1pack/all_exported.md",
         ],
         "ACE" => Any[
             "ACE/aceintro.md",
@@ -54,16 +71,11 @@ makedocs(;
         ],
         "IPFitting" => Any[
             "IPFitting/IPFitting.md",
-            "IPFitting/File IO.md",
-            "IPFitting/Atomic Configurations in Julia.md",
+            # "IPFitting/File IO.md",
+            # "IPFitting/Atomic Configurations in Julia.md",
             "IPFitting/Solvers.md",
-            "IPFitting/Manipulating potentials.md",
+            # "IPFitting/Manipulating potentials.md",
         ],
-        # "Using ACE potentials" => Any[
-        #     "Using_ACE/python_ase.md",
-        #     "Using_ACE/lammps.md",
-        #     "Using_ACE/openmm.md",
-        # ],
     ],
 )
 
