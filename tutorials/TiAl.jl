@@ -23,6 +23,8 @@ train = data[1:5:end];
 # * The inner cutoff `rin` is will ensure that the many-body potential becomes zero when atoms get too close. The reason for this is that we usually do not have data against which to fit the potential in this deformation regime and therefore cannot make reliable predictions. Instead we will add a pair potential to model this regime below.
 #
 
+
+# EG: `pin` should be set to 2?? i.e. bad `ace_basis` default?
 r0 = 2.88 
 ACE_B = ace_basis(species = [:Ti, :Al],
                   N = 3,
@@ -37,7 +39,7 @@ Bpair = pair_basis(species = [:Ti, :Al],
                    r0 = r0,
                    maxdeg = 6,
                    rcut = 7.0,
-                   pcut = 1,
+                   pcut = 1, 	# this is not a reasonable default?
                    pin = 0)  
 B = JuLIP.MLIPs.IPSuperBasis([Bpair, ACE_B]);
 
