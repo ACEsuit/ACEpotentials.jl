@@ -10,7 +10,6 @@ using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
 function export_ACE(fname, IP; export_pairpot_as_table=false)
     # supply fname with the .yace extension
     # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
-    # TODO: document usage of the .table file for the pairpot
     if !(fname[end-4:end] == ".yace")
         throw(ArgumentError("Potential name must be supplied with .yace extension"))
     end
