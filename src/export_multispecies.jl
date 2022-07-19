@@ -7,7 +7,7 @@ using ACE1.OrthPolys: TransformedPolys
 using ACE1: rand_radial, cutoff, numz, ZList
 using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
 
-function export_ACE(fname, IP; export_pairpot_as_table=true)
+function export_ACE(fname, IP; export_pairpot_as_table=false)
     # supply fname with the .yace extension
     # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
     # TODO: document usage of the .table file for the pairpot
