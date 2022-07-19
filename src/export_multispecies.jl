@@ -36,8 +36,8 @@ function export_ACE(fname, IP; export_pairpot_as_table=true)
             throw(ArgumentError(
                 "This potential was made using a recent version of ACE1. Exporting with export_pairpot_as_table=false is only possible for older potential files. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
         end
-    else
-        warn("This potential has been made with an older version of ACE1, and may not be compatible")
+    #else
+        #warn("This potential has been made with an older version of ACE1, and may not be compatible")
     end
 
     data = Dict()
