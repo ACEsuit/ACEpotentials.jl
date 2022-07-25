@@ -3,9 +3,38 @@
 
 ## Short Version
 
-From the Julia REPL, run: 
+First, you will need to install julia (see below for instructions). 
+
+Create a folder to hold your julia `ACE` project, and `cd` into the fodler. This folder will track the packages and versions which the `ACE1pack` code requires. For example:
+```
+mkdir ~/ACE1project
+cd ~/ACE1project
+```
+
+From within this folder type `julia` to enter the Julia REPL. Then run
 ```julia
-using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack"
+using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack, ACE1, JulIP, IPFitting, ASE"
+```
+
+Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.mk), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 
+<!-- You can add this to your `.bashrc`/`.bash_profile` and not touch it again.  -->
+
+## Setting up the Python ASE calculator
+
+We use a wrapper called `pyjulip` to call julia and evaluate ACE potentials. In a terminal, with the correct julia project and python environment selected, run the following code:
+
+```
+python -m pip install julia
+python -c "import julia; julia.install()"
+```
+
+Make sure to use the correct python and pip, e.g. the ones that are in the correct Conda environment.
+Then, to set up `pyjulip`:
+
+```
+git clone https://github.com/casv2/pyjulip.git
+cd pyjulip
+pip install .
 ```
 
 ## Detailed Instructions
@@ -33,6 +62,8 @@ Now you can install `ACE1pack`. Remaining in the package manager, use
 ```julia
 add ACE1pack
 ```
+
+you will also need to add the following packages: `ACE1, JulIP, IPFitting, ASE`.
 
 ### Returning to a project
 
