@@ -30,7 +30,7 @@ basis = ace_basis(;
       D = SparsePSHDegree(; wL=1.5, csp=1.0),
       r0 = r0,                      # estimate for NN distance
       rin = 0.65*r0, rcut = 5.0,    # domain for radial basis (cf documentation)
-      pin = 0)
+      pin = 2)
 @show length(basis)
 
 
