@@ -42,6 +42,7 @@ makedocs(;
             "gettingstarted/installation.md",
             "gettingstarted/pkg.md",
             "gettingstarted/readinglist.md",
+            "gettingstarted/aceintro.md",
         ],
         "Tutorials" => Any[
             "tutorials/index.md",
@@ -64,11 +65,10 @@ makedocs(;
             "ACE1pack/solver.md",
             "ACE1pack/all_exported.md",
         ],
-        "ACE" => Any[
-            "ACE/aceintro.md",
-            "ACE/datatypes.md",
-            "ACE/create_ACE.md",
-        ],
+        # "ACE" => Any[
+        #     # "ACE/datatypes.md",
+        #     # "ACE/create_ACE.md",
+        # ],
         "IPFitting" => Any[
             "IPFitting/IPFitting.md",
             # "IPFitting/File IO.md",
