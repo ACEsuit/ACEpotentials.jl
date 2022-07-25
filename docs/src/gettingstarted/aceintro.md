@@ -1,7 +1,7 @@
 
 # Introduction to ACE Models
 
-The purpose of this section is to give a brief summary of the mathematics behind linear ACE parameterisations of invariant atomic properties. 
+The purpose of this section is to give a brief summary of the mathematics behind linear ACE parameterisations of invariant atomic properties. It is not required to use the `ACE1pack` and `ACE1` packages and can be skipped on a first reading.
 
 ## Invariant Properties
 

@@ -9,8 +9,6 @@ export JuLIP, ACE1, ACEfit
 
 # Convenience Layer 
 
-include("acefit.jl")
-
 include("fit.jl")
 
 include("data.jl")
@@ -23,5 +21,12 @@ include("regularizer.jl")
 
 include("read_params.jl")
 
+include("export.jl")
+
+include("export_multispecies.jl")
+
+# a little hack to load ACE1pack artifacts from anywhere? 
+using LazyArtifacts
+artifact(str) = (@artifact_str str)
 
 end
