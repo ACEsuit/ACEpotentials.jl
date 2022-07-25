@@ -46,7 +46,7 @@ makedocs(;
         ],
         "Tutorials" => Any[
             "tutorials/index.md",
-            "tutorials/first_example_json.md"
+            "tutorials/first_example_json.md",
             "literate_tutorials/first_example.md",
             "literate_tutorials/TiAl.md",
             "literate_tutorials/ACE1pack_TiAl.md",
@@ -56,10 +56,9 @@ makedocs(;
         #     "Using_ACE/python_ase.md",
         #     "Using_ACE/openmm.md",
         # ],
-        # "Fitting with ACE1pack" => Any[
-            # "command_lin"
-        # ]
-
+        "Commandnd line" => Any[
+            "command_line.md"
+        ],
         "ACE1pack Internals" => Any[
             "ACE1pack/ace1pack_overview.md",
             "ACE1pack/fit.md",    
