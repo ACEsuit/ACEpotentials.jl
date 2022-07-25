@@ -56,7 +56,7 @@ makedocs(;
         #     "Using_ACE/openmm.md",
         # ],
 
-        "ACE1pack" => Any[
+        "ACE1pack Internals" => Any[
             "ACE1pack/ace1pack_overview.md",
             "ACE1pack/fit.md",    
             "ACE1pack/helpers.md",
@@ -69,7 +69,7 @@ makedocs(;
         #     # "ACE/datatypes.md",
         #     # "ACE/create_ACE.md",
         # ],
-        "IPFitting" => Any[
+        "IPFitting Internals" => Any[
             "IPFitting/IPFitting.md",
             # "IPFitting/File IO.md",
             # "IPFitting/Atomic Configurations in Julia.md",
