@@ -4,31 +4,30 @@
 
 using ACE1pack
 
-export  fill_defaults!, parse_ace_basis_keys
+export  fill_defaults, parse_ace_basis_keys
 
 """ 
-Recursively updates nested dictionaries with default parameters. 
-One only needs to suply the mandatory parameters, for example
-````
-minimal_params = Dict(
-    "data" => Dict(
-        "fname" => "something"),
-    "basis" => Dict(
-        "ace" => Dict(
-            "species" => "something",
-            "N" => 1,
-            "maxdeg" => 1
-            ),
-        "pair" => Dict(
-            "species" => "sth",
-            "maxdeg" => 1
-            ),),
-    "solver" => Dict(
-        "type" => "rrqr"),
-    "e0" => "something")
+
+`fill_defaults(params::Dict; param_key = "fit_params") -> params`
+
+Recursively updates any missing entries with default parameters.
+Accepted `param_key` values and corresponding functions: 
+
+```julia 
+    "fit_params" => ACE1pack.fit_params,
+    "data" => ACE1pack.data_params,
+    "solver" => ACE1pack.solver_params,
+    "basis" => ACE1pack.basis_params,
+    "ace" => ACE1pack.ace_basis_params,  
+    "pair" => ACE1pack.pair_basis_params,
+    "radial" => ACE1pack.radial_basis_params,
+    "transform" => ACE1pack.transform_params, 
+    "degree" => ACE1pack.degree_params,
+    "P" => ACE1pack.regularizer_params
 ```
+
 """
-function fill_defaults!(params::Dict; param_key = "fit_params")
+function fill_defaults(params::Dict; param_key = "fit_params")
     # Go through the nested dictionaries filling in the default values
     params = _fill_default(params, param_key)
     for (key, val) in params
@@ -37,18 +36,18 @@ function fill_defaults!(params::Dict; param_key = "fit_params")
                 if basis_params["type"] == "ace"
                     basis_params = parse_ace_basis_keys(basis_params)
                 end
-                params[key][basis_name] = fill_defaults!(basis_params; param_key=key)
+                params[key][basis_name] = fill_defaults(basis_params; param_key=key)
             end
         elseif key == "transforms"
             params[key] = _fill_transforms(val)
         elseif val isa Dict && haskey(_dict_constructors, key)
-            params[key] = fill_defaults!(val; param_key = key)
+            params[key] = fill_defaults(val; param_key = key)
         end
     end
     return params
 end
 
-_fill_transforms(params) = Dict([key => fill_defaults!(val, param_key="transform") for (key, val) in params])
+_fill_transforms(params) = Dict([key => fill_defaults(val, param_key="transform") for (key, val) in params])
 _fill_default(d::Dict, key) = _dict_constructors[key](;_makesymbol(d)...)
 _makesymbol(p::Pair) = (Symbol(p.first) => (p.second))
 _makesymbol(D::Dict) = Dict(_makesymbol.([D...])...)   
@@ -67,14 +66,15 @@ _dict_constructors = Dict(
 
 
 """
-`("C", "C")`-type tuples are saved to and read back in as `"(\"C\", \"C\")"` to .json. 
-It's slightly easier to save these to .json or .yaml as `"(C, C)"`. 
-This function converts `"(C, C)"`-type strings back to parameter-friendly `("C", "C")`. 
+`parse_ace_basis_keys(ace_basis::Dict) -> ace_basis`
 
-A bit ugly, but to change the dictionary keys (and so dictionary type) one needs to construct 
-it from scratch, at least as far as I can tell. 
+`("C", "C")`-type tuples are saved to and read back in from JSON as `"(\"C\", \"C\")"` .json. 
+It's slightly easier to save these to JSON or YAM as `"(C, C)"`. 
+This function converts `"(C, C)"`-type strings back to parameter-friendly `("C", "C")`. 
 """
 function parse_ace_basis_keys(ace_basis::Dict)
+    # A bit ugly, but to change the dictionary keys (and so dictionary type) one needs to construct 
+    # it from scratch, at least as far as I can tell. 
     basis_out = Dict()
     for (key, val) in ace_basis
         if val isa Dict && key in ["transform", "degree"] 
