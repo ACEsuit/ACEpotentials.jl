@@ -12,6 +12,8 @@ using ACE1pack, Test, LazyArtifacts
 
     @testset "Fit ACE" begin include("test_fit.jl") end 
 
+    @testset "Test Silicon" begin include("test_silicon.jl") end 
+
     @testset "Read params" begin include("test_read_params.jl") end 
 
 end
