@@ -34,10 +34,10 @@ function save_dry_run_info(fit_params)
     exit(0)
 end
 
-if haskey(ENV, "WFL_ACE_FIT_BLAS_THREADS")
+if haskey(ENV, "ACE_FIT_BLAS_THREADS")
     using LinearAlgebra
 
-    nprocs = parse(Int, ENV["WFL_ACE_FIT_BLAS_THREADS"])
+    nprocs = parse(Int, ENV["ACE_FIT_BLAS_THREADS"])
     @warn "Using $nprocs threads for BLAS"
     BLAS.set_num_threads(nprocs)
 end
