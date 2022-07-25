@@ -47,14 +47,13 @@ function solver_params(; type = nothing, kwargs...)
     return _solvers_params[solver_type](; kwargs...)
 end
 
-qr_params(; lambda=0.0) = Dict("solver"=>"qr", "lambda"=>lambda)
 """
 `qr_params(; kwargs...)` : returns a dictionary containing the
 complete set of parameters required to construct a qr solver.
 All parameters are passed as keyword argument.
 
 """
-qr_params() = Dict{Any,Any}("type" => "qr")
+qr_params(; lambda=0.0) = Dict{Any,Any}("type" => "qr", "lambda"=>lambda)
 
 """
 `lsqr_params(; kwargs...)` : returns a dictionary containing the 
