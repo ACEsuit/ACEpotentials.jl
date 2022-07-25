@@ -5,7 +5,7 @@
 
 From the Julia REPL, run: 
 ```julia
-using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack"
+using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack, ACE1, JulIP, IPFitting, ASE"
 ```
 
 ## Detailed Instructions
@@ -33,6 +33,8 @@ Now you can install `ACE1pack`. Remaining in the package manager, use
 ```julia
 add ACE1pack
 ```
+
+you will also need to add the following packages: `ACE1, JulIP, IPFitting, ASE`.
 
 ### Returning to a project
 
