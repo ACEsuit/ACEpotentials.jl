@@ -1,4 +1,4 @@
-# # First example
+# # First example (Julia)
 
 # ## Developing a new ACE1.jl model
 

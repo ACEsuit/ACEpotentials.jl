@@ -1,4 +1,4 @@
-# # TiAl potential via ACE1pack
+# # TiAl potential (ACE1pack-julia) 
 #
 # In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACE1pack. 
 
