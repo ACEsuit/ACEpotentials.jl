@@ -1,0 +1,102 @@
+# Command line interface
+
+The (most likely) easiest way to fit an ACE potential is via the command line from a JSON or YAML parameters file: 
+
+```bash
+julia .../ACE1pack.jl/scripts/ace_fit.jl --params ace_params.json
+```
+
+In addition to parameters' file, `ace_fit.jl` takes an optional `--dry-run` flag. If it is given, a `.size` file is produced with the shape of the design matrix, useful for estimating the time and memory requirements before submitting an actual fit. Finally, there is a `--num-blas-threads` option for setting the number of BLAS threads to use (for fitting). 
+
+For the script to use the correct Julia environment, `JULIA_PROJECT` (a path) must be set to the folder where Julia's `Project.toml` and `Manifest.toml` are. 
+
+Below are examples of the parameters' files. The first one gives only the mandatory values and the second one has all of the default values filled in. For details on specific values see the appropriate pages of [ACE1pack Internals](./ACE1pack/ace1pack_overview.md). Explanation of the top-level dictionary, with links to the nested dictionaries therein are in [Fitting ACE](./ACE1pack/fit.md). 
+
+
+Mandatory parameters
+
+```
+
+{
+    "e0": {
+        "Ti": -1586.0195,
+        "Al": -105.5954},
+    "data": {
+        "fname": "training_set.xyz"},
+    "solver": {"type": "rrqr"},
+    "basis": {
+        "main_ace": {
+            "N": 2,
+            "maxdeg": 10,
+            "type": "ace",
+            "species": ["Ti", "Al"]},
+        "main_pair": {
+            "maxdeg": 4,
+            "type": "pair",
+            "species": ["Ti","Al"]
+        }
+    }
+}
+
+```
+
+Parameters with all default values
+
+```
+
+{
+    "e0": {
+        "Ti": -1586.0195,
+        "Al": -105.5954},
+    "weights": {
+        "default": {
+            "V": 1.0,
+            "E": 1.0,
+            "F": 1.0}},
+    "P": null,
+    "fit_from_LSQ_DB": false,
+    "data": {
+        "force_key": "dft_force",
+        "energy_key": "dft_energy",
+        "fname": "training_set.xyz",
+        "virial_key": "dft_virial"},
+    "solver": {
+        "rrqr_tol": 1.0e-5,
+        "type": "rrqr"},
+    "basis": {
+        "main_ace": {
+            "N": 2,
+            "maxdeg": 10,
+            "r0": 2.5,
+            "radial": {
+                "rcut": 5.0,
+                "rin": 0.5,
+                "r0": 2.5,
+                "pin": 2,
+                "pcut": 2,
+                "type": "radial"},
+            "degree": "degree",
+            "type": "ace",
+            "transform": {
+                "r0": 2.5,
+                "type": "polynomial",
+                "p": 2},
+            "species": ["Ti", "Al"]},
+        "main_pair": {
+            "rcut": 5.0,
+            "rin": 0.0,
+            "maxdeg": 4,
+            "r0": 2.5,
+            "pin": 0,
+            "pcut": 2,
+            "type": "pair",
+            "transform": {
+                "r0": 2.5,
+                "type": "polynomial",
+                "p": 2},
+            "species": ["Ti", "Al"]}},
+    "LSQ_DB_fname_stem": "",
+    "ACE_fname": "ACE_fit.json"
+}
+
+```

@@ -1,14 +1,16 @@
-using Pkg; Pkg.activate(".")
-
 using ACE1pack, ArgParse
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin
-    "--fit-params", "-p"
-        help = "A JSON filename with parameters for the fit"
+    "--params", "-p"
+        help = "A JSON or YAML filename with parameters for the fit"
     "--dry-run"
         help = "Only quickly compute various sizes, etc"
         action = :store_true
+    "--num-blas-threads"
+        help = "Number of processes for BLAS to use when solving the LsqDB"
+        arg_type = Int
+        default = 1
 end
 
 get_basis_size(d::Dict) = 
@@ -34,16 +36,15 @@ function save_dry_run_info(fit_params)
     exit(0)
 end
 
-if haskey(ENV, "ACE_FIT_BLAS_THREADS")
+nprocs = args["num-blas-threads"]
+if nprocs > 1
     using LinearAlgebra
-
-    nprocs = parse(Int, ENV["ACE_FIT_BLAS_THREADS"])
     @warn "Using $nprocs threads for BLAS"
     BLAS.set_num_threads(nprocs)
 end
 
 args = parse_args(parser)
-raw_params = load_dict(args["fit-params"])
+raw_params = load_dict(args["params"])
 fit_params = fill_defaults(raw_params)
 
 if args["dry-run"]

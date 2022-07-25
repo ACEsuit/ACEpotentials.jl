@@ -1,5 +1,4 @@
-
-# # Fitting a TiAl potential 
+# # Fitting a TiAl potential (Julia)
 #
 # Start by importing the required libraries 
 

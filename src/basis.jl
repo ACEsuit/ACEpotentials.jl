@@ -209,7 +209,7 @@ function pair_basis_params(;
       type = "pair",
       )
 
-      @assert !isnothing(species) "`species` is mandatory for `ace_basis_params`"
+      @assert !isnothing(species) "`species` is mandatory for `pair_basis_params`"
       @assert isreal(maxdeg) "Maximum polynomial degree `maxdeg` must be a real positive number"
       @assert maxdeg > 0 "Maximum polynomial degree `maxdeg` must be a real positive number"
       @assert isreal(r0) "`r0` must be a real positive number "
