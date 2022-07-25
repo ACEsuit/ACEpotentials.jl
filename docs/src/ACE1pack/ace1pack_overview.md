@@ -3,6 +3,17 @@
 
 `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `IPFitting.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`IPFitting.jl`). 
 
+## Overview of Relevant Julia Packages
+
+Usage of `ACE1.jl` or `ACE1pack.jl` involves the following Julia packages which we summarize for the same
+
+* `ACE1.jl` specifies the parameterisation of interatomic potentials in terms of the (linear) atomic cluster expansion; it provides functions to generate invariant basis sets, and to evaluate the resulting interatomic potentials.
+* `IPFitting.jl` supplied the functionality for parameter estimation. It focuses purely on linear models and linear observations, but provides various tools to deal with the typical data to which interatomic potentials are fitted (total energies, forces, virials, etc) and the reading and transforming of training data. A broad range of solvers are available through this package. 
+* `JuLIP.jl` is a simple molecular simulation code in pure Julia, focusing primarily on an infrastructure to develop interatomic potentials. It provides various generic functions on top of which all our packages on this page build.
+* `ACE1pack.jl` has two purposes: (1) import and re-export `ACE1.jl, IPFitting.jl, JuLIP.jl` with guaranteed version compatibility; and (2) several convenience wrappers for `ACE1.jl` and `IPFitting.jl`
+* `ACEinterfaces.jl` provides interfaces to use ACE potentials from other languages; experimental  
+
+
 ## General structure
 
 The main convenience functions are:

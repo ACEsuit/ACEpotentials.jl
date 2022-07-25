@@ -4,18 +4,11 @@ CurrentModule = ACE1pack
 
 # ACE1 and ACE1pack User Documentation 
 
-`ACE1` is a Julia package for parameterising interatomic potentials in terms of the atomic cluster expansion, i.e., body-ordered invariant polynomials. These pages contain a user-oriented documentation.
+`ACE1` is a Julia package for parameterising interatomic potentials in terms of the atomic cluster expansion, i.e., body-ordered invariant polynomials. `ACE1pack.jl` provides a user-oriented and compatibility layer. These pages document `ACE1pack` and to some limited extent also the packages it depend on.
 
-## Overview of Relevant Julia Packages
+## Three Ways to Work with `ACE1.jl`
 
-Usage of `ACE1.jl` or `ACE1pack.jl` involves the following Julia packages which we summarize for the same
-
-* `ACE1.jl` specifies the parameterisation of interatomic potentials in terms of the (linear) atomic cluster expansion; it provides functions to generate invariant basis sets, and to evaluate the resulting interatomic potentials.
-* `IPFitting.jl` supplied the functionality for parameter estimation. It focuses purely on linear models and linear observations, but provides various tools to deal with the typical data to which interatomic potentials are fitted (total energies, forces, virials, etc) and the reading and transforming of training data. A broad range of solvers are available through this package. 
-* `JuLIP.jl` is a simple molecular simulation code in pure Julia, focusing primarily on an infrastructure to develop interatomic potentials. It provides various generic functions on top of which all our packages on this page build.
-* `ACE1pack.jl` has two purposes: (1) import and re-export `ACE1.jl, IPFitting.jl, JuLIP.jl` with guaranteed version compatibility; and (2) several convenience wrappers for `ACE1.jl` and `IPFitting.jl`
-* `ACEinterfaces.jl` provides interfaces to use ACE potentials from other languages; experimental  
-
+todo - explain there are three ways to work with ACE1.
 
 ## References
 
