@@ -24,15 +24,8 @@ from now on, you will need to export the environment variable `JULIA_PROJECT` se
 We use a wrapper called `pyjulip` to call julia and evaluate ACE potentials. In a terminal, with the correct julia project and python environment selected, run the following code:
 
 ```
-git clone https://github.com/JuliaPy/pyjulia.git
-cd pyjulia
 python -m pip install julia
-python
-
->>> from julia.api import Julia
->>> jl = Julia(compiled_modules=False)
->>> import julia
->>> julia.install() # I had to run this before Julia(compiled_modules=False)
+python -c "import julia; julia.install()"
 ```
 
 Make sure to use the correct python and pip, e.g. the ones that are in the correct Conda environment.
