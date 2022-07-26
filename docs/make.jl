@@ -56,7 +56,7 @@ makedocs(;
         #     "Using_ACE/python_ase.md",
         #     "Using_ACE/openmm.md",
         # ],
-        "Commandnd line" => Any[
+        "Command line" => Any[
             "command_line.md"
         ],
         "ACE1pack Internals" => Any[
@@ -82,7 +82,7 @@ makedocs(;
     ],
 )
 
-deploydocs(;
-    repo="github.com/ACEsuit/ACE1pack.jl",
-    devbranch="main",
-)
+# deploydocs(;
+#     repo="github.com/ACEsuit/ACE1pack.jl",
+#     devbranch="main",
+# )

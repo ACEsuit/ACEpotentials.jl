@@ -16,7 +16,7 @@ pair_coeff      * * potential.yace I Cs Pb
 ```
 The order of the species after `pair_coef` must be the numerical ordering in the `.data` geometry file. 
 
-## Notes
+### Notes
 
 ### 1. Exporting the pair potential via a spline lookup table
 
