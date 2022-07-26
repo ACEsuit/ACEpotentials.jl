@@ -5,7 +5,7 @@
 # This is a very tutorial to demonstrate how to use ACE1 and IPFitting to construct an ACE1 model for Si by fitting to an empirical potential.
 
 # Make sure to first read the installation notes. Now start by importing the required packages: 
-using ACE1, JuLIP, IPFitting
+using ACE1pack 
 import Random
 using LinearAlgebra: norm, Diagonal
 
