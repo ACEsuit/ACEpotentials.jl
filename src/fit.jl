@@ -31,7 +31,7 @@ function fit_ace(params::Dict)
         push!(data, dat)
     end
 
-    return ACEfit.llsq!(
+    return ACEfit.llsq(
         basis, data, Vref, :serial, solver=ACEfit.create_solver(params["solver"]))
 end
 
