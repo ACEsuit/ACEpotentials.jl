@@ -104,7 +104,7 @@ end
     test_rmse(errors["rmse"], rmse_brr, 1e-5)
 end
 
-@testset "ARD" begin
+@testset "SKLEARN_ARD" begin
     params["solver"] = Dict{Any,Any}("type" => "sklearn_ard")
     params["solver"]["tol"] = 2e-3
     params["solver"]["threshold_lambda"] = 5000
@@ -116,6 +116,18 @@ end
         "set"           => Dict("V"=>0.0734983, "E"=>0.00302168, "F"=>0.136656),
         "bt"            => Dict("V"=>0.0940645, "E"=>0.00410442, "F"=>0.0667358),)
     IP, errors = fit_ace(params)
-    @warn "The ARD test tolerance is very loose."
+    @warn "The SKLEARN_ARD test tolerance is very loose."
     test_rmse(errors["rmse"], rmse_ard, 1e-2)
+end
+
+@testset "BLR" begin
+    params["solver"] = Dict{Any,Any}("type" => "BLR")
+    rmse_blr = Dict(
+         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
+         "set"           => Dict("V"=>0.0619346, "E"=>0.00238807, "F"=>0.121907),
+         "dia"           => Dict("V"=>0.0333255, "E"=>0.00130242, "F"=>0.0255582),
+         "liq"           => Dict("V"=>0.0345897, "E"=>0.000397724, "F"=>0.157461),
+         "bt"            => Dict("V"=>0.0822944, "E"=>0.00322198, "F"=>0.062758),)
+    IP, errors = fit_ace(params)
+    test_rmse(errors["rmse"], rmse_blr, 1e-5)
 end
