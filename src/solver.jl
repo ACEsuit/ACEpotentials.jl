@@ -18,26 +18,26 @@ parameters required depend on "type".
 
 ### LSQR Parameters 
 * `type = "lsqr"`
-* `lsqr_damp = 5e-3`
-* `lsqr_atol = 1e-6`
-* `lsqr_colim = 1e8`
-* `lsqr_maxiter = 1e5`
-* `lsqr_verbose = false`
+* `damp = 5e-3`
+* `atol = 1e-6`
+* `colim = 1e8`
+* `maxiter = 1e5`
+* `verbose = false`
 
 ### RRQR Parameters
 * `type = "rrqr"`
-* `rrqr_tol = 1e-5`
+* `rtol = 1e-5`
 
 ### BBR 
 * `type = "bbr"`
-* `brr_n_iter = 300`
-* `brr_tol = 1e-3`
+* `n_iter = 300`
+* `tol = 1e-3`
 
 ### ARD
 * `type = "ard"`
-* `ard_n_iter = 300`
-* `ard_tol = 1e-3`
-* `ard_threshold_lambda = 1e4` 
+* `n_iter = 300`
+* `tol = 1e-3`
+* `threshold_lambda = 1e4` 
 
 """
 function solver_params(; type = nothing, kwargs...)
@@ -61,15 +61,15 @@ complete set of parameters required to construct a lsqr solver.
 All parameters are passed as keyword argument. 
 
 ### Parameters
-* `lsqr_damp = 5e-3`
-* `lsqr_atol = 1e-6`
-* `lsqr_colim = 1e8`
-* `lsqr_maxiter = 1e5`
-* `lsqr_verbose = false`
+* `damp = 5e-3`
+* `atol = 1e-6`
+* `colim = 1e8`
+* `maxiter = 1e5`
+* `verbose = false`
 """
-lsqr_params(; lsqr_damp = 5e-3, lsqr_atol = 1e-6, lsqr_conlim = 1e8, lsqr_maxiter = Integer(1e5), lsqr_verbose = false) =
-    Dict("type" => "lsqr", "lsqr_damp" => lsqr_damp, "lsqr_atol" => lsqr_atol,
-         "lsqr_conlim" => lsqr_conlim, "lsqr_maxiter" => lsqr_maxiter, "lsqr_verbose" => lsqr_verbose)
+lsqr_params(; damp = 5e-3, atol = 1e-6, conlim = 1e8, maxiter = Integer(1e5), verbose = false) =
+    Dict("type" => "lsqr", "damp" => damp, "atol" => atol,
+         "conlim" => conlim, "maxiter" => maxiter, "verbose" => verbose)
 
 """
 `rrqr_params(; kwargs...)` : returns a dictionary containing the 
@@ -77,10 +77,10 @@ complete set of parameters required to construct a rrqr solver.
 All parameters are passed as keyword argument. 
 
 ### Parameters
-* `rrqr_tol = 1e-5`
+* `rtol = 1e-5`
 """
-rrqr_params(; rrqr_tol = 1e-5) =
-    Dict("type" => "rrqr", "rrqr_tol" => rrqr_tol)
+rrqr_params(; rtol = 1e-5) =
+    Dict("type" => "rrqr", "rtol" => rtol)
 
 """
 `brr_params(; kwargs...)` : returns a dictionary containing the 
@@ -89,11 +89,11 @@ Bayesian ridge regression solver. All parameters are passed as
 keyword argument. 
 
 ### Parameters
-* `brr_n_iter = 300`
-* `brr_tol = 1e-3`
+* `n_iter = 300`
+* `tol = 1e-3`
 """
-brr_params(; brr_n_iter = 300, brr_tol = 1e-3) =
-    Dict("type" => "brr", "brr_n_iter" => brr_n_iter, "brr_tol" => brr_tol)
+brr_params(; n_iter = 300, tol = 1e-3) =
+    Dict("type" => "brr", "n_iter" => brr_n_iter, "tol" => brr_tol)
 
 
 """
@@ -107,8 +107,8 @@ passed as keyword argument.
 * `ard_tol = 1e-3`
 * `ard_threshold_lambda = 1e4`
 """
-ard_params(; ard_n_iter = 300, ard_tol = 1e-3, ard_threshold_lambda = 1e4) =
-    Dict("type" => "ard", "ard_n_iter" => ard_n_iter, "ard_tol" => ard_tol, "ard_threshold_lambda" => ard_threshold_lambda)
+ard_params(; n_iter = 300, tol = 1e-3, threshold_lambda = 1e4) =
+    Dict("type" => "ard", "n_iter" => n_iter, "tol" => tol, "threshold_lambda" => threshold_lambda)
 
 
 _solver_to_params(solver_type::Union{Symbol, AbstractString}) = 

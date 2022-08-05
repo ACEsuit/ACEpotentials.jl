@@ -8,4 +8,4 @@ lsqr_damp = 1e-3
 solver = solver_params(type = :lsqr, lsqr_damp = lsqr_damp)
 solver = ACE1pack.generate_solver(solver)
 @test solver["solver"] == :lsqr
-@test solver["lsqr_damp"] == lsqr_damp
+@test solver["damp"] == lsqr_damp

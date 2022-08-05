@@ -62,11 +62,11 @@ end
 
 @testset "LSQR" begin
     params["solver"] = Dict{Any,Any}("type" => "lsqr")
-    params["solver"]["lsqr_damp"] = 2e-2
-    params["solver"]["lsqr_conlim"] = 1e12
-    params["solver"]["lsqr_atol"] = 1e-7
-    params["solver"]["lsqr_maxiter"] = 100000
-    params["solver"]["lsqr_verbose"] = false
+    params["solver"]["damp"] = 2e-2
+    params["solver"]["conlim"] = 1e12
+    params["solver"]["atol"] = 1e-7
+    params["solver"]["maxiter"] = 100000
+    params["solver"]["verbose"] = false
     rmse_lsqr = Dict(
         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
         "dia"           => Dict("V"=>0.0414375, "E"=>0.00179828, "F"=>0.0308943),
@@ -80,7 +80,7 @@ end
 
 @testset "RRQR" begin
     params["solver"] = Dict{Any,Any}("type" => "rrqr")
-    params["solver"]["rrqr_tol"] = 1e-12
+    params["solver"]["rtol"] = 1e-12
     rmse_rrqr = Dict(
         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
         "dia"           => Dict("V"=>0.0234649, "E"=>0.000617953, "F"=>0.018611),
