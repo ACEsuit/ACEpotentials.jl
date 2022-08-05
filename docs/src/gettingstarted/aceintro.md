@@ -1,9 +1,9 @@
 
 # Introduction to ACE Models
 
-The purpose of this section is to give a brief summary of the mathematics behind linear ACE parameterisations of invariant atomic properties. 
+The purpose of this section is to give a brief summary of the mathematics behind linear ACE parameterisations of invariant atomic properties. It is not required to use the `ACE1pack` and `ACE1` packages and can be skipped on a first reading.
 
-## Invariant Properties
+### Invariant Properties
 
 To explain the main ideas in the simplest non-trivial setting, we consider systems of indistinguishable particles. A configuration is an mset ``R := \{ \bm r_j \}_j \subset \mathbb{R}^3`` with arbitary numbers of particles and we wish to develop representation of properties 
 ```math 

@@ -12,7 +12,7 @@ complete set of parameters required to construct one of the solvers.
 All parameters are passed as keyword argument and the kind of 
 parameters required depend on "type".
 
-### LSQR Parameters (default)
+## LSQR Parameters (default)
 * `type = "laplacian"`
 * `rlap_scal = 3.0`
 """

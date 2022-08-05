@@ -1,36 +1,53 @@
-# LAMMPS interface
+# LAMMPS
 
-The ACE1 potentials can be exported as shown in the TiAl tutorial. Here we will demonstrate how this potential can be used using the LAMMPs `pace pairstyle`. Before using this make sure a LAMMPs executable with `ML-PACE` is compiled (https://github.com/lammps/lammps)
+An ACE1 potential can be used LAMMPS via the ML-PACE LAMMPS package. Intsallation details from LAMMPS are [here](https://docs.lammps.org/Build_extras.html#ml-pace) and [here](https://github.com/ICAMS/lammps-user-pace). 
 
-```python
-import os
-from ase.calculators.lammpsrun import LAMMPS
-from ase.io import read
-import time
+To run an ACE potential, you can export a potential in the `.yace` format. This is done via:
+
+```julia
+ACE1pack.ExportMulti.export_ACE("potenial.yace", IP)
 ```
 
-For LAMMPs in Python the `ASE_LAMMPSRUN_COMMAND` needs to be set pointing to a LAMMPs built using PACE.
-```python
-os.environ["ASE_LAMMPSRUN_COMMAND"]="~/gits/lammps/build/lmp"
+The syntax for the PACE pair style in LAMMPS, for a potential for I, Cs and Pb, is:
+
+```
+pair_style      pace
+pair_coeff      * * potential.yace I Cs Pb
+```
+The order of the species after `pair_coef` must be the numerical ordering in the `.data` geometry file. 
+
+### Notes
+
+### 1. Exporting the pair potential via a spline lookup table
+
+The ACE potential has a two-body component and a many body component. There is the option to export the two-body component as a spline lookup table which LAMMPs reads directly. To do this, include `export_pairpot_as_table=true` when calling `export_ACE`.
+
+This creates a many body `potential.yace` file, and a two-body `potential_pairpot.table` file. The `.table` file contains a set of lookup tables with a fixed number `N` (written in the file) of interpolation points. To use this in LAMMPS, read N from the file and use the syntax:
+
+```
+pair_style      hybrid/overlay pace table linear <N>
+pair_coeff      * * pace potential.yace I Cs Pb
+pair_coeff      1 1 table potential_pairpot.table I_I
+pair_coeff      1 2 table potential_pairpot.table I_Cs
+pair_coeff      1 3 table potential_pairpot.table I_Pb
+pair_coeff      2 2 potential_pairpot.table Cs_Cs
+pair_coeff      2 3 potential_pairpot.table Cs_Pb
+pair_coeff      3 3 potential_pairpot.table Pb_Pb
 ```
 
-Setting up the LAMMPs calculator using traditional LAMMPs commands.
+where we are using the ordering I, Cs, Pb.
+
+### 2. Calling LAMMPS from python
+
+Calling LAMMPS from python to evaluate an ACE potential is not recommended, but can be done. When calling LAMMPS pace from python, the species must be specified in alphabetical order in the `pair_coef` command. This is because python does not expect the species to appear as a string literal in the `pair_coef`, which would be specied like this in python:
+
 ```python
 parameters = {'pair_style': 'pace',
-             'pair_coeff': ['* * TiAl_tutorial_pot.yace Ti Al']}
+             'pair_coeff': ['* * potential.yace I Cs Pb']}
 
-files = ["TiAl_tutorial_pot.yace"]
+files = ["potential.yace"]
 
 calc1 = LAMMPS(parameters=parameters, files=files)
 ```
 
-Using the LAMMPS calculator to evaluate energies/forces/virials from Python
-```python
-at = read("./TiAl_tutorial_DB.xyz", ":")[0]
-
-at.set_calculator(calc1)
-
-print(at.get_potential_energy())
-print(at.get_forces())
-print(at.get_stress())
-```
+When python calls lammps, it makes a .data file in which the numeric atom types correspond to alphabetically ordered species by chemical symbol. To make python agree, the species must therefore be in alphabetical order (Cs, I, Pb)

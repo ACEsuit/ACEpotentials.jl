@@ -69,6 +69,9 @@ expected_errors = load_dict(expected_errors_json)
 for error_type in keys(errors),
         config_type in keys(errors[error_type]),
             property in keys(errors[error_type][config_type])
-    print_tf(@test errors[error_type][config_type][property] <= 2 * expected_errors[error_type][config_type][property])
+    print_tf(@test isapprox(errors[error_type][config_type][property],
+                            expected_errors[error_type][config_type][property],
+#                            atol=1e-3))
+                            atol=5e-2))
 end
 println() 
