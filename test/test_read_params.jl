@@ -105,7 +105,7 @@ end
 for extra_key in ["rcut", "rin", "pcut", "pin", "transform"]
     print_tf(@test haskey(filled_params["basis"]["pair"], extra_key))
 end
-for extra_key in ["rrqr_tol"]
+for extra_key in ["rtol"]
     print_tf(@test haskey(filled_params["solver"], extra_key))
 end
 println()
