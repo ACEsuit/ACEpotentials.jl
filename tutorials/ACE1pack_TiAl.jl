@@ -20,7 +20,7 @@ data_param_dict = data_params(
 
 
 r0 = 2.88
-species = ["Ti", "Al"]     # expressions (`:Ti`) also work
+species = ["Ti", "Al"]     # symbols (:Ti, :Al) also work
 
 # `basis_params` of `type="ace"` can optionally have radial part defined. 
 

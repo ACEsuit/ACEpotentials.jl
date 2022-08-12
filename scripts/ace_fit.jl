@@ -1,4 +1,4 @@
-using ACE1pack, ArgParse
+using ACE1pack
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin

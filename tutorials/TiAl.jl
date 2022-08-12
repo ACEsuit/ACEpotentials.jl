@@ -2,7 +2,7 @@
 #
 # Start by importing the required libraries 
 
-using ACE1pack, ACE1, IPFitting
+using ACE1pack
 
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial which is provided as an artifact. Normally we would get the path to a datset via `artifact"TiAl_tutorial` but for these tutorial to run from anywhere it is easiest to let `ACE1pack` load the data for us. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
 
