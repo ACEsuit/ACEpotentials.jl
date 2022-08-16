@@ -1,4 +1,4 @@
-# TiAl potential (JSON)
+# TiAl potential (command line JSON)
 
 In this tutorial we will fit a TiAl potential using the ACE fitting script of ACE1pack and a JSON file with all the mandatory and non-default parameters. The fitting itself is simply
 
@@ -59,9 +59,9 @@ For this example, the parameters file contains the following. For more details s
 }
 ```
 
-Brief explanation of the main entries of the repository:
+Brief explanation of the main entries:
 
-* `ACE_fname` - filename for the fitted potential. 
+* `ACE_fname` - filename for the fitted potential: the script will produce a file called `ACE.json` which can be read by julia and python.
 * `e0` - isolated atom energies
 * `weights` - weights for the loss function, for the specific structures. The labels (e.g. "TiAl_T5000") correspond to the "config_type" entry in the .xyz's "info" field. 
 * `P` - specifies (a part of) the regularisation (optional).  
