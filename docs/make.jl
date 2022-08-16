@@ -51,6 +51,7 @@ makedocs(;
             "literate_tutorials/TiAl.md",
             "literate_tutorials/ACE1pack_TiAl.md",
             "tutorials/lammps.md"
+            "tutorials/python_ase.md"
         ],
         # "Using ACE potentials" => Any[
         #     "Using_ACE/python_ase.md",

@@ -63,7 +63,7 @@ Now you can install `ACE1pack`. Remaining in the package manager, use
 add ACE1pack
 ```
 
-you will also need to add the following packages: `ACE1, JulIP, IPFitting, ASE`.
+you will also need to add the following packages: `ACE1, JuLIP, IPFitting, ASE`.
 
 #### Returning to a project
 
