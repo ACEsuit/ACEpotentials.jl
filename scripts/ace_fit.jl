@@ -1,4 +1,4 @@
-using ACE1pack, ArgParse
+using ACE1pack
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin
@@ -36,16 +36,16 @@ function save_dry_run_info(fit_params)
     exit(0)
 end
 
+args = parse_args(parser)
+raw_params = load_dict(args["params"])
+fit_params = fill_defaults(raw_params)
+
 nprocs = args["num-blas-threads"]
 if nprocs > 1
     using LinearAlgebra
     @warn "Using $nprocs threads for BLAS"
     BLAS.set_num_threads(nprocs)
 end
-
-args = parse_args(parser)
-raw_params = load_dict(args["params"])
-fit_params = fill_defaults(raw_params)
 
 if args["dry-run"]
     save_dry_run_info(fit_params)
