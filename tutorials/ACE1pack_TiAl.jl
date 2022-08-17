@@ -91,6 +91,14 @@ ace_fit_params = fit_params(
     e0 = e0, 
     weights = weights, 
     P = smoothness_prior_params,
-    ACE_fname = nothing  # change to `"ACE1.jl"` to save to file
+    ACE_fname = "ACE.json"  # change to `nothing` if you don't want to save the potential
 )
+
+fitted_potential, lsqinfo = ACE1pack.fit_ace(ace_fit_params)
+
+# `fitted_potential` is the fitted potential which can be evaluated in julia and `lsqinfo` contains information about the fit. 
+# The potential will also be saved to the file `ACE.json` which can be read in python or julia. 
+# If you want to export the potential to LAMMPS, use
+
+ACE1pack.ExportMulti.export_ACE("TiAl_tutorial_pot.yace", fitted_potential)
 
