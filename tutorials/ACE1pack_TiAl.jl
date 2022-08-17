@@ -100,5 +100,5 @@ fitted_potential, lsqinfo = ACE1pack.fit_ace(ace_fit_params)
 # The potential will also be saved to the file `ACE.json` which can be read in python or julia. 
 # If you want to export the potential to LAMMPS, use
 
-ACE1.ExportMulti.export_ACE("TiAl_tutorial_pot.yace", fitted_potential)
+ACE1pack.ExportMulti.export_ACE("TiAl_tutorial_pot.yace", fitted_potential)
 
