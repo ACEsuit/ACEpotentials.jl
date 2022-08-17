@@ -13,10 +13,6 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
     if !(fname[end-4:end] == ".yace")
         throw(ArgumentError("Potential name must be supplied with .yace extension"))
     end
-    # require 3 components of IP for now, and assume that are 1B, 2B, ACE
-    if !(length(IP.components) == 3)
-        throw("not implemented. Potentials to be exported must be composed of exactly three components: one one-body, one two-body, and one many-body component")
-    end
 
     # decomposing into V1, V2, V3 (One body, two body and ACE bases)
     # they could be in a different order
@@ -44,7 +40,7 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
     V2 = ordered_components[2]
     V3 = ordered_components[3]
     
-    species = collect(string.(chemical_symbol.(IP.components[3].pibasis.zlist.list)))
+    species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
     species_dict = Dict(zip(collect(0:length(species)-1), species))
     reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
 
