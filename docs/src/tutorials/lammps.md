@@ -10,13 +10,7 @@ To run an ACE potential in LAMMPS, you can export a potential in the `.yace` for
 ACE1pack.ExportMulti.export_ACE("potenial.yace", IP)
 ```
 
-If you have fitted from command line, you can convert a `.json` potential to a `.yace` file from command line as follows:
-
-```bash
-julia .../ACE1pack.jl/scripts/export_yace.jl ace_potential.json ace_potential.yace
-```
-
-This will create a file called `ace_potential.yace`.
+If you have fitted from command line using the `aec_fit.jl` script, the `.yace` potential file will be made automatically.
 
 ## The PACE pair style
 

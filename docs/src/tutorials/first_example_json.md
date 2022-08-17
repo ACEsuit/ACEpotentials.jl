@@ -61,7 +61,7 @@ For this example, the parameters file contains the following. For more details s
 
 Brief explanation of the main entries:
 
-* `ACE_fname` - filename for the fitted potential: the script will produce a file called `ACE.json` which can be read by julia and python.
+* `ACE_fname` - filename for the fitted potential. The script will produce a file called `ACE.json` which can be read by julia and python, and a file called `ACE.yace` which can be read by lammps. 
 * `e0` - isolated atom energies
 * `weights` - weights for the loss function, for the specific structures. The labels (e.g. "TiAl_T5000") correspond to the "config_type" entry in the .xyz's "info" field. 
 * `P` - specifies (a part of) the regularisation (optional).  
