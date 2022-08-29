@@ -27,12 +27,17 @@ function fit_ace(params::Dict)
     julip_dataset = read_data(params["data"])
     data = ACEfit.Dat[]
     for atoms in julip_dataset
-        dat = ACEfit._atoms_to_data(atoms, Vref, weights, energy_key, force_key, virial_key)
+        dat = _atoms_to_data(atoms, Vref, weights, energy_key, force_key, virial_key)
         push!(data, dat)
     end
-
-    return ACEfit.llsq(
+    A, y, w, c = ACEfit.llsq(
         basis, data, Vref, :serial, solver=ACEfit.create_solver(params["solver"]))
+    config_errors = error_llsq(data, (A*c)./w, y./w)
+    IP = JuLIP.MLIPs.combine(basis, c)
+    if Vref != nothing
+       IP = JuLIP.MLIPs.SumIP(Vref, IP)
+    end
+    return IP, config_errors
 end
 
 """

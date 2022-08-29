@@ -9,6 +9,9 @@ export JuLIP, ACE1, ACEfit
 
 # Convenience Layer 
 
+include("acefit.jl")
+include("acefit_helper.jl")
+
 include("fit.jl")
 
 include("data.jl")
