@@ -48,7 +48,9 @@ function _atoms_to_data(atoms, v_ref, weights, energy_key=nothing, force_key=not
         push!(obs, forces)
     end
     if !isnothing(virial)
-        insert!(obs, 1, virial)
+        ### Use the insert! version to match IPFitting
+        #insert!(obs, 1, virial)
+        push!(obs, virial)
     end
     return ACEfit.Dat(atoms, config_type, obs)
 end

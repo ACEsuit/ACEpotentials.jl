@@ -32,9 +32,9 @@ function fit_ace(params::Dict)
     for atoms in dataset
         push!(data_new, AtomsData(atoms,
                                   energy_key, force_key, virial_key,
-                                  weights))
+                                  weights, Vref))
     end
-    ACEfit.llsq_new(data_new, basis)
+    Anew, Ynew, Wnew, Cnew = ACEfit.llsq_new(data_new, basis)
     # ----- end new approach
 
     data = ACEfit.Dat[]
@@ -44,6 +44,11 @@ function fit_ace(params::Dict)
     end
     A, y, w, c = ACEfit.llsq(
         basis, data, Vref, :serial, solver=ACEfit.create_solver(params["solver"]))
+
+    @show norm(Anew-A)
+    @show norm(Ynew-y)
+    @show norm(Wnew-w)
+    @show norm(Cnew-c)
     config_errors = error_llsq(data, (A*c)./w, y./w)
     IP = JuLIP.MLIPs.combine(basis, c)
     if Vref != nothing

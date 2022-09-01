@@ -109,9 +109,10 @@ struct AtomsData <: ACEfit.AbstractData
     force_key
     virial_key
     weights
+    vref
     function AtomsData(atoms::Atoms,
                        energy_key, force_key, virial_key,
-                       weights)
+                       weights, vref)
 
         # set energy, force, and virial keys for this configuration
         # ("nothing" indicates data that are absent or ignored)
@@ -129,12 +130,12 @@ struct AtomsData <: ACEfit.AbstractData
         # set weights for this configuration
         w = weights["default"]
         for (key, val) in atoms.data
-            if lowercase(key)=="config_type" && val.data in keys(weights)
+            if lowercase(key)=="config_type" && lowercase(val.data) in lowercase.(keys(weights))
                 w = weights[val.data]
             end
         end
 
-        return new(atoms, ek, fk, vk, w)
+        return new(atoms, ek, fk, vk, w, vref)
     end
 end
 
@@ -172,7 +173,8 @@ function ACEfit.targetvector(d::AtomsData)
     tv = Array{Float64}(undef, ACEfit.countrows(d))
     i = 1
     if !isnothing(d.energy_key)
-        tv[i] = d.atoms.data[d.energy_key].data
+        e = d.atoms.data[d.energy_key].data
+        tv[i] = e - energy(d.vref, d.atoms)
         i += 1
     end
     if !isnothing(d.force_key)
