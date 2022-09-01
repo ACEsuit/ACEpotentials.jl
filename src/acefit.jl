@@ -133,7 +133,27 @@ function ACEfit.countrows(d::AtomsData)
 end
 
 function ACEfit.designmatrix(d::AtomsData, basis)
-    return zeros(ACEfit.countrows(d), length(basis))
+    dm = zeros(ACEfit.countrows(d), length(basis))
+    i = 1
+    if !isnothing(d.energy_key)
+        dm[i,:] .= energy(basis, d.atoms)
+        i += 1
+    end
+    if !isnothing(d.force_key)
+        f = mat.(forces(basis, d.atoms))
+        for j in 1:length(basis)
+            dm[i:i+3*length(d.atoms)-1,j] .= f[j][:]
+        end
+        i += 3*length(d.atoms)
+    end
+    if !isnothing(d.virial_key)
+        v = virial(basis, d.atoms)
+        for j in 1:length(basis)
+            dm[i:i+5,j] .= v[j][SVector(1,5,9,6,3,2)]
+        end
+        i += 5
+    end
+    return dm
 end
 
 function ACEfit.targetvector(d::AtomsData)
@@ -141,18 +161,17 @@ function ACEfit.targetvector(d::AtomsData)
     i = 1
     if !isnothing(d.energy_key)
         tv[i] = d.atoms.data[d.energy_key].data
-        i = 2
+        i += 1
     end
     if !isnothing(d.force_key)
-        tv[i:i+3*length(d.atoms)-1] .= mat(d.atoms.data[d.force_key].data)[:]
+        f = mat(d.atoms.data[d.force_key].data)
+        tv[i:i+3*length(d.atoms)-1] .= f[:]
         i += 3*length(d.atoms)
     end
     if !isnothing(d.virial_key)
-        virial = vec(d.atoms.data[d.virial_key].data)
-        for v in (1,5,9,6,3,2)  # voigt convention
-            tv[i] = virial[v]
-            i += 1
-        end
+        v = vec(d.atoms.data[d.virial_key].data)
+        tv[i:i+5] .= v[SVector(1,5,9,6,3,2)]
+        i += 5
     end
     return tv
 end
