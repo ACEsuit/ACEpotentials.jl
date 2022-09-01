@@ -30,7 +30,9 @@ function fit_ace(params::Dict)
     # ----- begin new approach
     data_new = AtomsData[]
     for atoms in dataset
-        push!(data_new, AtomsData(atoms,energy_key,force_key,virial_key))
+        push!(data_new, AtomsData(atoms,
+                                  energy_key, force_key, virial_key,
+                                  weights))
     end
     ACEfit.llsq_new(data_new, basis)
     # ----- end new approach

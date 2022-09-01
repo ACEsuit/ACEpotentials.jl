@@ -108,25 +108,55 @@ struct AtomsData <: ACEfit.AbstractData
     energy_key
     force_key
     virial_key
+    weights
+    function AtomsData(atoms::Atoms,
+                       energy_key, force_key, virial_key,
+                       weights)
+        ek, fk, vk = nothing, nothing, nothing
+        for key in keys(atoms.data)
+            if lowercase(key) == lowercase(energy_key)
+                ek = key
+            elseif lowercase(key) == lowercase(force_key)
+                fk = key
+            elseif lowercase(key) == lowercase(virial_key)
+                vk = key
+            end
+        end
+        return new(atoms, ek, fk, vk, weights)
+    end
 end
 
 function ACEfit.countrows(d::AtomsData)
-    rows = 0
-    for key in keys(d.atoms.data)
-        if lowercase(key) == lowercase(d.energy_key)
-            rows += 1
-        elseif lowercase(key) == lowercase(d.force_key)
-            rows += 3*length(d.atoms)
-        elseif lowercase(key) == lowercase(d.virial_key)
-            rows += 6
-        end
-    end
-    return rows
-end
-
-function ACEfit.targetvector(d::AtomsData)
+    return !isnothing(d.energy_key) +
+           3*length(d.atoms)*!isnothing(d.force_key) +
+           6*!isnothing(d.virial_key)
 end
 
 function ACEfit.designmatrix(d::AtomsData, basis)
-    println("in matrix")
+    return zeros(ACEfit.countrows(d), length(basis))
+end
+
+function ACEfit.targetvector(d::AtomsData)
+    tv = zeros(ACEfit.countrows(d))
+    i = 1
+    if !isnothing(d.energy_key)
+        tv[i] = d.atoms.data[d.energy_key].data
+        i = 2
+    end
+    if !isnothing(d.force_key)
+        tv[i:i+3*length(d.atoms)-1] .= mat(d.atoms.data[d.force_key].data)[:]
+        i += 3*length(d.atoms)
+    end
+    if !isnothing(d.virial_key)
+        virial = vec(d.atoms.data[d.virial_key].data)
+        for v in (1,5,9,6,3,2)  # voigt convention
+            tv[i] = virial[v]
+            i += 1
+        end
+    end
+    return tv
+end
+
+function ACEfit.weightvector(d::AtomsData)
+    return zeros(ACEfit.countrows(d))
 end
