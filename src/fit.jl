@@ -7,6 +7,7 @@ using Dates, Base
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
+
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 
 
@@ -24,9 +25,18 @@ function fit_ace(params::Dict)
     force_key = params["data"]["force_key"]
     virial_key = params["data"]["virial_key"]
     weights = params["weights"]
-    julip_dataset = read_data(params["data"])
+    dataset = JuLIP.read_extxyz(params["data"]["fname"])
+
+    # ----- begin new approach
+    data_new = AtomsData[]
+    for atoms in dataset
+        push!(data_new, AtomsData(atoms,energy_key,force_key,virial_key))
+    end
+    ACEfit.llsq_new(data_new, basis)
+    # ----- end new approach
+
     data = ACEfit.Dat[]
-    for atoms in julip_dataset
+    for atoms in dataset
         dat = _atoms_to_data(atoms, Vref, weights, energy_key, force_key, virial_key)
         push!(data, dat)
     end

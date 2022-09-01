@@ -6,6 +6,7 @@ using StaticArrays: SVector, SMatrix
 import JuLIP: Atoms, energy, forces, JVec, JMat, mat, vecs 
 
 import ACEfit: Dat, eval_obs, vec_obs, devec_obs, basis_obs 
+import ACEfit
 
 mutable struct ObsPotentialEnergy
     E                # value of a potential energy
@@ -99,3 +100,33 @@ default_weighthooks = Dict{String, Any}("default" => Dict(
 
 # err_weighthook(::ValV, d::Dat) = 1.0 / length(d.at)
 
+# ------ new
+
+
+struct AtomsData <: ACEfit.AbstractData
+    atoms::Atoms
+    energy_key
+    force_key
+    virial_key
+end
+
+function ACEfit.countrows(d::AtomsData)
+    rows = 0
+    for key in keys(d.atoms.data)
+        if lowercase(key) == lowercase(d.energy_key)
+            rows += 1
+        elseif lowercase(key) == lowercase(d.force_key)
+            rows += 3*length(d.atoms)
+        elseif lowercase(key) == lowercase(d.virial_key)
+            rows += 6
+        end
+    end
+    return rows
+end
+
+function ACEfit.targetvector(d::AtomsData)
+end
+
+function ACEfit.designmatrix(d::AtomsData, basis)
+    println("in matrix")
+end

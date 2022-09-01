@@ -34,8 +34,3 @@ function data_params(;
     )
 
 end
-
-function read_data(params::Dict)
-    julip_dataset = JuLIP.read_extxyz(params["fname"])
-    return julip_dataset
-end
