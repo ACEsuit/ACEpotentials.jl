@@ -112,6 +112,9 @@ struct AtomsData <: ACEfit.AbstractData
     function AtomsData(atoms::Atoms,
                        energy_key, force_key, virial_key,
                        weights)
+
+        # set energy, force, and virial keys for this configuration
+        # ("nothing" indicates data that are absent or ignored)
         ek, fk, vk = nothing, nothing, nothing
         for key in keys(atoms.data)
             if lowercase(key) == lowercase(energy_key)
@@ -122,7 +125,16 @@ struct AtomsData <: ACEfit.AbstractData
                 vk = key
             end
         end
-        return new(atoms, ek, fk, vk, weights)
+
+        # set weights for this configuration
+        w = weights["default"]
+        for (key, val) in atoms.data
+            if lowercase(key)=="config_type" && val.data in keys(weights)
+                w = weights[val.data]
+            end
+        end
+
+        return new(atoms, ek, fk, vk, w)
     end
 end
 
@@ -133,7 +145,7 @@ function ACEfit.countrows(d::AtomsData)
 end
 
 function ACEfit.designmatrix(d::AtomsData, basis)
-    dm = zeros(ACEfit.countrows(d), length(basis))
+    dm = Array{Float64}(undef, ACEfit.countrows(d), length(basis))
     i = 1
     if !isnothing(d.energy_key)
         dm[i,:] .= energy(basis, d.atoms)
@@ -157,7 +169,7 @@ function ACEfit.designmatrix(d::AtomsData, basis)
 end
 
 function ACEfit.targetvector(d::AtomsData)
-    tv = zeros(ACEfit.countrows(d))
+    tv = Array{Float64}(undef, ACEfit.countrows(d))
     i = 1
     if !isnothing(d.energy_key)
         tv[i] = d.atoms.data[d.energy_key].data
@@ -177,5 +189,19 @@ function ACEfit.targetvector(d::AtomsData)
 end
 
 function ACEfit.weightvector(d::AtomsData)
-    return zeros(ACEfit.countrows(d))
+    wv = Array{Float64}(undef, ACEfit.countrows(d))
+    i = 1
+    if !isnothing(d.energy_key)
+        wv[i] = d.weights["E"] / sqrt(length(d.atoms))
+        i += 1
+    end
+    if !isnothing(d.force_key)
+        wv[i:i+3*length(d.atoms)-1] .= d.weights["F"]
+        i += 3*length(d.atoms)
+    end
+    if !isnothing(d.virial_key)
+        wv[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
+        i += 5
+    end
+    return wv
 end
