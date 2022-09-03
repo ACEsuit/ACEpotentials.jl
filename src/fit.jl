@@ -30,30 +30,29 @@ function fit_ace(params::Dict)
     # ----- begin new approach
     data_new = AtomsData[]
     for atoms in dataset
-        push!(data_new, AtomsData(atoms,
-                                  energy_key, force_key, virial_key,
-                                  weights, Vref))
+        dat = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
+        push!(data_new, dat)
     end
-    Anew, Ynew, Wnew, Cnew = ACEfit.llsq_new(data_new, basis)
+    A, Y, W, C = ACEfit.llsq_new(data_new, basis; solver=ACEfit.create_solver(params["solver"]))
     # ----- end new approach
 
+    # ----- begin old approach
     data = ACEfit.Dat[]
     for atoms in dataset
         dat = _atoms_to_data(atoms, Vref, weights, energy_key, force_key, virial_key)
         push!(data, dat)
     end
-    A, y, w, c = ACEfit.llsq(
+    Aold, Yold, Wold, Cold = ACEfit.llsq(
         basis, data, Vref, :serial, solver=ACEfit.create_solver(params["solver"]))
+    @show norm(A-Aold)
+    @show norm(Y-Yold)
+    @show norm(W-Wold)
+    @show norm(C-Cold)
+    # ----- end old approach
 
-    @show norm(Anew-A)
-    @show norm(Ynew-y)
-    @show norm(Wnew-w)
-    @show norm(Cnew-c)
-    config_errors = error_llsq(data, (A*c)./w, y./w)
-    IP = JuLIP.MLIPs.combine(basis, c)
-    if Vref != nothing
-       IP = JuLIP.MLIPs.SumIP(Vref, IP)
-    end
+    config_errors = error_llsq(data, (A*C)./W, Y./W)
+    IP = JuLIP.MLIPs.combine(basis, C)
+    (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
     return IP, config_errors
 end
 
