@@ -27,32 +27,17 @@ function fit_ace(params::Dict)
     weights = params["weights"]
     dataset = JuLIP.read_extxyz(params["data"]["fname"])
 
-    # ----- begin new approach
-    data_new = AtomsData[]
+    data = AtomsData[]
     for atoms in dataset
-        dat = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
-        push!(data_new, dat)
+        d = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
+        push!(data, d)
     end
-    A, Y, W, C = ACEfit.llsq_new(data_new, basis; solver=ACEfit.create_solver(params["solver"]))
-    # ----- end new approach
 
-    # ----- begin old approach
-    data = ACEfit.Dat[]
-    for atoms in dataset
-        dat = _atoms_to_data(atoms, Vref, weights, energy_key, force_key, virial_key)
-        push!(data, dat)
-    end
-    Aold, Yold, Wold, Cold = ACEfit.llsq(
-        basis, data, Vref, :serial, solver=ACEfit.create_solver(params["solver"]))
-    @show norm(A-Aold)
-    @show norm(Y-Yold)
-    @show norm(W-Wold)
-    @show norm(C-Cold)
-    # ----- end old approach
-
+    A, Y, W, C = ACEfit.llsq(data, basis; solver=ACEfit.create_solver(params["solver"]))
     IP = JuLIP.MLIPs.combine(basis, C)
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
-    errors = llsq_errors(data_new, IP)
+
+    errors = llsq_errors(data, IP)
     return IP, errors
 end
 

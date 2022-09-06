@@ -5,7 +5,7 @@ using StaticArrays: SVector, SMatrix
 
 import JuLIP: Atoms, energy, forces, JVec, JMat, mat, vecs 
 
-import ACEfit: Dat, eval_obs, vec_obs, devec_obs, basis_obs 
+###import ACEfit: Dat, eval_obs, vec_obs, devec_obs, basis_obs 
 import ACEfit
 
 mutable struct ObsPotentialEnergy
@@ -212,7 +212,7 @@ function config_type(d::AtomsData)
     config_type = missing
     for (k,v) in d.atoms.data
         if (lowercase(k)=="config_type")
-            config_type = lowercase(v.data)
+            config_type = v.data
         end
     end
     return config_type
