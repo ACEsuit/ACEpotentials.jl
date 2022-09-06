@@ -170,42 +170,42 @@ function ACEfit.designmatrix(d::AtomsData, basis)
 end
 
 function ACEfit.targetvector(d::AtomsData)
-    tv = Array{Float64}(undef, ACEfit.countobservations(d))
+    y = Array{Float64}(undef, ACEfit.countobservations(d))
     i = 1
     if !isnothing(d.energy_key)
         e = d.atoms.data[d.energy_key].data
-        tv[i] = e - energy(d.vref, d.atoms)
+        y[i] = e - energy(d.vref, d.atoms)
         i += 1
     end
     if !isnothing(d.force_key)
         f = mat(d.atoms.data[d.force_key].data)
-        tv[i:i+3*length(d.atoms)-1] .= f[:]
+        y[i:i+3*length(d.atoms)-1] .= f[:]
         i += 3*length(d.atoms)
     end
     if !isnothing(d.virial_key)
         v = vec(d.atoms.data[d.virial_key].data)
-        tv[i:i+5] .= v[SVector(1,5,9,6,3,2)]
+        y[i:i+5] .= v[SVector(1,5,9,6,3,2)]
         i += 5
     end
-    return tv
+    return y
 end
 
 function ACEfit.weightvector(d::AtomsData)
-    wv = Array{Float64}(undef, ACEfit.countobservations(d))
+    w = Array{Float64}(undef, ACEfit.countobservations(d))
     i = 1
     if !isnothing(d.energy_key)
-        wv[i] = d.weights["E"] / sqrt(length(d.atoms))
+        w[i] = d.weights["E"] / sqrt(length(d.atoms))
         i += 1
     end
     if !isnothing(d.force_key)
-        wv[i:i+3*length(d.atoms)-1] .= d.weights["F"]
+        w[i:i+3*length(d.atoms)-1] .= d.weights["F"]
         i += 3*length(d.atoms)
     end
     if !isnothing(d.virial_key)
-        wv[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
+        w[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
         i += 5
     end
-    return wv
+    return w
 end
 
 function _atoms_to_data(atoms, v_ref, weights, energy_key=nothing, force_key=nothing, virial_key=nothing)
