@@ -130,7 +130,7 @@ struct AtomsData <: ACEfit.AbstractData
         # set weights for this configuration
         w = weights["default"]
         for (key, val) in atoms.data
-            if lowercase(key)=="config_type" && lowercase(val.data) in lowercase.(keys(weights))
+            if lowercase(key)=="config_type" && (lowercase(val.data) in lowercase.(keys(weights)))
                 w = weights[val.data]
             end
         end
@@ -207,6 +207,100 @@ function ACEfit.weightvector(d::AtomsData)
     end
     return w
 end
+
+function config_type(d::AtomsData)
+    config_type = missing
+    for (k,v) in d.atoms.data
+        if (lowercase(k)=="config_type")
+            config_type = lowercase(v.data)
+        end
+    end
+    return config_type
+end
+
+function llsq_errors(data, model)
+
+   mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
+   rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
+   num = Dict("E"=>0, "F"=>0, "V"=>0)
+
+   config_types = []
+   config_mae = Dict{String,Any}()
+   config_rmse = Dict{String,Any}()
+   config_num = Dict{String,Any}()
+
+   for d in data
+
+       ct = config_type(d)
+       if !(ct in config_types)
+          push!(config_types, ct)
+          merge!(config_rmse, Dict(ct=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
+          merge!(config_mae, Dict(ct=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
+          merge!(config_num, Dict(ct=>Dict("E"=>0, "F"=>0, "V"=>0)))
+       end
+
+       # energy errors
+       if !isnothing(d.energy_key)
+           estim = energy(model, d.atoms) / length(d.atoms)
+           exact = d.atoms.data[d.energy_key].data / length(d.atoms)
+           mae["E"] += abs(estim-exact)
+           rmse["E"] += (estim-exact)^2
+           num["E"] += 1
+           config_mae[ct]["E"] += abs(estim-exact)
+           config_rmse[ct]["E"] += (estim-exact)^2
+           config_num[ct]["E"] += 1
+       end
+
+       # force errors
+       if !isnothing(d.force_key)
+           estim = mat(forces(model, d.atoms))
+           exact = mat(d.atoms.data[d.force_key].data)
+           mae["F"] += sum(abs.(estim-exact))
+           rmse["F"] += sum((estim-exact).^2)
+           num["F"] += 3*length(d.atoms)
+           config_mae[ct]["F"] += sum(abs.(estim-exact))
+           config_rmse[ct]["F"] += sum((estim-exact).^2)
+           config_num[ct]["F"] += 3*length(d.atoms)
+       end
+
+       # virial errors
+       if !isnothing(d.virial_key)
+           estim = virial(model, d.atoms)[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
+           exact = d.atoms.data[d.virial_key].data[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
+           mae["V"] += sum(abs.(estim-exact))
+           rmse["V"] += sum((estim-exact).^2)
+           num["V"] += 6
+           config_mae[ct]["V"] += sum(abs.(estim-exact))
+           config_rmse[ct]["V"] += sum((estim-exact).^2)
+           config_num[ct]["V"] += 6
+       end
+    end
+
+    # finalize errors
+    for (k,n) in num
+        (n==0) && continue
+        rmse[k] = sqrt(rmse[k] / n)
+        mae[k] = mae[k] / n
+    end
+    errors = Dict("mae"=>mae, "rmse"=>rmse)
+
+    # finalize config errors
+    for ct in config_types
+        for (k,cn) in config_num[ct]
+            (cn==0) && continue
+            config_rmse[ct][k] = sqrt(config_rmse[ct][k] / cn)
+            config_mae[ct][k] = config_mae[ct][k] / cn
+        end
+    end
+    config_errors = Dict("mae"=>config_mae, "rmse"=>config_rmse)
+
+    # merge errors into config_errors and return
+    merge!(config_errors["mae"], Dict("set"=>mae))
+    merge!(config_errors["rmse"], Dict("set"=>rmse))
+    return config_errors
+end
+
+
 
 function _atoms_to_data(atoms, v_ref, weights, energy_key=nothing, force_key=nothing, virial_key=nothing)
 

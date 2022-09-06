@@ -50,10 +50,10 @@ function fit_ace(params::Dict)
     @show norm(C-Cold)
     # ----- end old approach
 
-    config_errors = error_llsq(data, (A*C)./W, Y./W)
     IP = JuLIP.MLIPs.combine(basis, C)
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
-    return IP, config_errors
+    errors = llsq_errors(data_new, IP)
+    return IP, errors
 end
 
 """
