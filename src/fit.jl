@@ -15,7 +15,7 @@ Function to set up and fit the least-squares
 problem of "atoms' positions" -> "energy, forces, virials". Takes in a 
 dictionary with all the parameters. See `?fit_params` for details. 
 """
-function fit_ace(params::Dict)
+function fit_ace(params::Dict, mode=:serial)
 
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
@@ -33,7 +33,8 @@ function fit_ace(params::Dict)
         push!(data, d)
     end
 
-    A, Y, W, C = ACEfit.llsq(data, basis; solver=ACEfit.create_solver(params["solver"]))
+    solver = ACEfit.create_solver(params["solver"])
+    A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode)
     IP = JuLIP.MLIPs.combine(basis, C)
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
 

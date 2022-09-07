@@ -1,3 +1,4 @@
+using Distributed
 using Test
 using LazyArtifacts
 using ACE1pack
@@ -57,6 +58,13 @@ end
         "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
         "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
     IP, errors = fit_ace(params)
+    test_rmse(errors["rmse"], rmse_qr, 1e-5)
+
+    # repeat with distributed assembly
+    addprocs(2)
+    @everywhere using ACE1pack
+    IP, errors = fit_ace(params, :distributed)
+    rmprocs(workers())
     test_rmse(errors["rmse"], rmse_qr, 1e-5)
 end
 
@@ -131,3 +139,5 @@ end
     IP, errors = fit_ace(params)
     test_rmse(errors["rmse"], rmse_blr, 1e-5)
 end
+
+
