@@ -2,11 +2,17 @@
 
 An ACE1 potential can be used LAMMPS via the ML-PACE LAMMPS package. Intsallation details from LAMMPS are [here](https://docs.lammps.org/Build_extras.html#ml-pace) and [here](https://github.com/ICAMS/lammps-user-pace). 
 
-To run an ACE potential, you can export a potential in the `.yace` format. This is done via:
+## Export the model to the `'yace` format
+
+To run an ACE potential in LAMMPS, you can export a potential in the `.yace` format. When fitting from julia, the potential must be exported by doing (see [this example](../literate_tutorials/TiAl.md)):
 
 ```julia
 ACE1pack.ExportMulti.export_ACE("potenial.yace", IP)
 ```
+
+If you have fitted from command line using the `aec_fit.jl` script, the `.yace` potential file will be made automatically.
+
+## The PACE pair style
 
 The syntax for the PACE pair style in LAMMPS, for a potential for I, Cs and Pb, is:
 

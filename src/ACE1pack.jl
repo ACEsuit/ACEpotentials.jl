@@ -1,11 +1,13 @@
 module ACE1pack
 
-# load and reexport JuLIP, ACE1, ACEfit 
+# load and reexport JuLIP, ACE1
+# also ArgParse for the command line script
 using Reexport 
 @reexport using JuLIP
 @reexport using ACE1
 @reexport using ACEfit
-export JuLIP, ACE1, ACEfit 
+@reexport using ArgParse
+export JuLIP, ACE1, ACEfit, Argparse
 
 # Convenience Layer 
 

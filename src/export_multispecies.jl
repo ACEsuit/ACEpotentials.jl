@@ -13,17 +13,34 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
     if !(fname[end-4:end] == ".yace")
         throw(ArgumentError("Potential name must be supplied with .yace extension"))
     end
-    # require 3 components of IP for now, and assume that are 1B, 2B, ACE
-    if !(length(IP.components) == 3)
-        throw("not implemented. Potentials to be exported must be composed of exactly three components: one one-body, one two-body, and one many-body component")
-    end
 
     # decomposing into V1, V2, V3 (One body, two body and ACE bases)
-    V1 = IP.components[1]
-    V2 = IP.components[2]
-    V3 = IP.components[3]
+    # they could be in a different order
+    if length(IP.components) != 3
+        throw("IP must have three components which are OneBody, pair potential, and ace")
+    end
+
+    ordered_components = []
+
+    for target_type in [OneBody, PolyPairPot, PIPotential]
+        did_not_find = true
+        for i = 1:3
+            if typeof(IP.components[i]) <: target_type
+                push!(ordered_components, IP.components[i])
+                did_not_find = false
+            end
+        end
+
+        if did_not_find
+            throw("IP must have three components which are OneBody, pair potential, and ace")
+        end
+    end
+
+    V1 = ordered_components[1]
+    V2 = ordered_components[2]
+    V3 = ordered_components[3]
     
-    species = collect(string.(chemical_symbol.(IP.components[3].pibasis.zlist.list)))
+    species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
     species_dict = Dict(zip(collect(0:length(species)-1), species))
     reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
 

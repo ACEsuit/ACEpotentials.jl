@@ -1,11 +1,17 @@
 
 # Tutorials Overview 
 
-### Fitting potentials using Dictionaries (JSON or YAML)
+### Fitting potentials from the commend line
 
-These tutorials show how to call Julia from the command line using a parameter file that specified model parameters via a dictionary.
+ACE potentials can be fitted from the command line using a dictionary stored in a `.json` or `.yaml` file to specify the parameters. This tutorials show how to do this:
 
-* [TiAl Potential (JSON)](../literate_tutorials/ACE1pack_TiAl.md)
+* [TiAl Potential (command line JSON)](./first_example_json.md)
+
+### Fitting potentials using ACE1pack in julia
+
+This tutorial shows how to use ACE1pack to fit ACE potentials, using the same dictionary structure:
+
+* [TiAl Potential (ACE1pack)](../literate_tutorials/ACE1pack_TiAl.md)
 
 ### Fitting potentials using `ACE1` and `IPFitting` directly
 
@@ -14,7 +20,7 @@ These tutorials use `ACE1.jl` and `IPFitting.jl` directly instead of the `ACE1pa
 * [First Example (Julia)](../literate_tutorials/first_example.md)
 * [TiAl Potential (Julia)](../literate_tutorials/TiAl.md)
 
-
 ### Using ACE1 Potentials in External Software
 
-* [Using ACE potentials in LAMMPS](lammps.md)
+* [ACE potentials in LAMMPS](lammps.md)
+* [ACE potentials in python with `ase`](python_ase.md)
