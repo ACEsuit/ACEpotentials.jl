@@ -2,7 +2,7 @@
 #
 # Start by importing the required libraries 
 
-using ACE1pack, ACE1, IPFitting
+using ACE1pack
 
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial which is provided as an artifact. Normally we would get the path to a datset via `artifact"TiAl_tutorial` but for these tutorial to run from anywhere it is easiest to let `ACE1pack` load the data for us. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
 
@@ -115,7 +115,7 @@ rmse_table(test)
 
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following command: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
-# ```julia 
-#    save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(IP), "info" => lsqinfo))
-#    ACE1.ExportMulti.export_ACE("./TiAl_tutorial_pot.yace", IP)
-# ```
+
+save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(IP), "info" => lsqinfo))
+ACE1pack.ExportMulti.export_ACE("./TiAl_tutorial_pot.yace", IP)
+

@@ -7,6 +7,7 @@ using Dates, Base
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
+
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 
 
@@ -14,7 +15,7 @@ Function to set up and fit the least-squares
 problem of "atoms' positions" -> "energy, forces, virials". Takes in a 
 dictionary with all the parameters. See `?fit_params` for details. 
 """
-function fit_ace(params::Dict)
+function fit_ace(params::Dict, mode=:serial)
 
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
@@ -24,15 +25,21 @@ function fit_ace(params::Dict)
     force_key = params["data"]["force_key"]
     virial_key = params["data"]["virial_key"]
     weights = params["weights"]
-    julip_dataset = read_data(params["data"])
-    data = ACEfit.Dat[]
-    for atoms in julip_dataset
-        dat = ACEfit._atoms_to_data(atoms, Vref, weights, energy_key, force_key, virial_key)
-        push!(data, dat)
+    dataset = JuLIP.read_extxyz(params["data"]["fname"])
+
+    data = AtomsData[]
+    for atoms in dataset
+        d = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
+        push!(data, d)
     end
 
-    return ACEfit.llsq(
-        basis, data, Vref, :serial, solver=ACEfit.create_solver(params["solver"]))
+    solver = ACEfit.create_solver(params["solver"])
+    A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode)
+    IP = JuLIP.MLIPs.combine(basis, C)
+    (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
+
+    errors = llsq_errors(data, IP)
+    return IP, errors
 end
 
 """

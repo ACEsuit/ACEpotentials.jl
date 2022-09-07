@@ -1,4 +1,4 @@
-using ACE1pack, ArgParse
+using ACE1pack
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin
@@ -36,6 +36,15 @@ function save_dry_run_info(fit_params)
     exit(0)
 end
 
+args = parse_args(parser)
+raw_params = load_dict(args["params"])
+fit_params = fill_defaults(raw_params)
+
+# the export to lammps try to replace .json with .yace, so check that ACE_fname actually ends in .json first
+if fit_params["ACE_fname"][end-4:end] != ".json"
+    throw("potential file names must end in .json")
+end
+
 nprocs = args["num-blas-threads"]
 if nprocs > 1
     using LinearAlgebra
@@ -43,12 +52,12 @@ if nprocs > 1
     BLAS.set_num_threads(nprocs)
 end
 
-args = parse_args(parser)
-raw_params = load_dict(args["params"])
-fit_params = fill_defaults(raw_params)
-
 if args["dry-run"]
     save_dry_run_info(fit_params)
 end
 
-ACE1pack.fit_ace(fit_params)
+IP, lsqinfo = ACE1pack.fit_ace(fit_params)
+
+# export to a .yace automatically, also need to generate the new name.
+yace_name = replace(fit_params["ACE_fname"], ".json" => ".yace")
+ACE1pack.ExportMulti.export_ACE(yace_name, IP)
