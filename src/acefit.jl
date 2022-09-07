@@ -139,14 +139,14 @@ struct AtomsData <: ACEfit.AbstractData
     end
 end
 
-function ACEfit.countobservations(d::AtomsData)
+function ACEfit.count_observations(d::AtomsData)
     return !isnothing(d.energy_key) +
            3*length(d.atoms)*!isnothing(d.force_key) +
            6*!isnothing(d.virial_key)
 end
 
-function ACEfit.designmatrix(d::AtomsData, basis)
-    dm = Array{Float64}(undef, ACEfit.countobservations(d), length(basis))
+function ACEfit.feature_matrix(d::AtomsData, basis)
+    dm = Array{Float64}(undef, ACEfit.count_observations(d), length(basis))
     i = 1
     if !isnothing(d.energy_key)
         dm[i,:] .= energy(basis, d.atoms)
@@ -169,8 +169,8 @@ function ACEfit.designmatrix(d::AtomsData, basis)
     return dm
 end
 
-function ACEfit.targetvector(d::AtomsData)
-    y = Array{Float64}(undef, ACEfit.countobservations(d))
+function ACEfit.target_vector(d::AtomsData)
+    y = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
         e = d.atoms.data[d.energy_key].data
@@ -190,8 +190,8 @@ function ACEfit.targetvector(d::AtomsData)
     return y
 end
 
-function ACEfit.weightvector(d::AtomsData)
-    w = Array{Float64}(undef, ACEfit.countobservations(d))
+function ACEfit.weight_vector(d::AtomsData)
+    w = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
         w[i] = d.weights["E"] / sqrt(length(d.atoms))
