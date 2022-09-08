@@ -2,10 +2,6 @@
 
 Probably the most useful utility function is `fill_defaults()` which takes in a dictionary compatible with one of the `*params()` functions and recursively fills in the default values for non-mandatory functions. 
 
-```@docs
-fill_defaults
-```
-
 The (incomplete) dictionaries may read from a JSON or YAML file. Creating these files with another programming language and then calling a short Julia script to read in and fit using these parameters is the expected way of interfacing with ACE1 from other languages. 
 
 ```julia
