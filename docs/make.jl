@@ -83,7 +83,7 @@ makedocs(;
     ],
 )
 
-# deploydocs(;
-#     repo="github.com/ACEsuit/ACE1pack.jl",
-#     devbranch="main",
-# )
+deploydocs(;
+    repo="github.com/ACEsuit/ACE1pack.jl",
+    devbranch="main",
+)
