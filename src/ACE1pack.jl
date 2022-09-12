@@ -1,15 +1,17 @@
 module ACE1pack
 
-# load and reexport JuLIP, ACE1, IPFitting 
+# load and reexport JuLIP, ACE1
 # also ArgParse for the command line script
 using Reexport 
 @reexport using JuLIP
 @reexport using ACE1
-@reexport using IPFitting
+@reexport using ACEfit
 @reexport using ArgParse
-export JuLIP, ACE1, IPFitting, Argparse
+export JuLIP, ACE1, ACEfit, Argparse
 
 # Convenience Layer 
+
+include("acefit.jl")
 
 include("fit.jl")
 

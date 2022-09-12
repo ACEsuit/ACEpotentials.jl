@@ -34,12 +34,3 @@ function data_params(;
     )
 
 end
-
-function read_data(params::Dict)
-    return IPFitting.Data.read_xyz(
-        params["fname"];
-        energy_key = params["energy_key"],
-        force_key = params["force_key"],
-        virial_key = params["virial_key"])
-end
-

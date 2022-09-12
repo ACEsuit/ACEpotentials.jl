@@ -2,10 +2,11 @@
 # ------------------------------------------
 #    ACE Fitting
 
-import IPFitting, ACE1pack, ACE1
+import ACEfit, ACE1pack, ACE1, ExtXYZ
 using Dates, Base 
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
+
 
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 
@@ -14,14 +15,32 @@ Function to set up and fit the least-squares
 problem of "atoms' positions" -> "energy, forces, virials". Takes in a 
 dictionary with all the parameters. See `?fit_params` for details. 
 """
-function fit_ace(params::Dict)
+function fit_ace(params::Dict, mode=:serial)
 
-    db = _decide_how_to_get_db(params)
-    IP, lsqinfo = fit_ace_db(db, params)
+    basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
+    basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
-    return IP, lsqinfo
+    Vref = OneBody(convert(Dict{String,Any},params["e0"]))
+    energy_key = params["data"]["energy_key"]
+    force_key = params["data"]["force_key"]
+    virial_key = params["data"]["virial_key"]
+    weights = params["weights"]
+    dataset = JuLIP.read_extxyz(params["data"]["fname"])
+
+    data = AtomsData[]
+    for atoms in dataset
+        d = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
+        push!(data, d)
+    end
+
+    solver = ACEfit.create_solver(params["solver"])
+    A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode)
+    IP = JuLIP.MLIPs.combine(basis, C)
+    (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
+
+    errors = llsq_errors(data, IP)
+    return IP, errors
 end
-
 
 """
 `fit_params(; kwargs...)` 
@@ -113,65 +132,63 @@ function save_fit(fname, IP, lsqinfo)
     save_dict(fname, Dict("IP" => write_dict(IP), "info" => lsqinfo))
 end
 
-"""
-`fit_ace_db(params::Dict) -> IP, lsqinfo`
+#"""
+#`fit_ace_db(params::Dict)` : fits LsqDB with `params["LSQ_DB_fname_stem"], which must be already present. 
+#`params["fit_from_LSQ_DB"]` must be set to true. See `?fit_params` for `params` specification, 
+#of which `data` and `basis` aren't needed (are ignored).
+#"""
+#function fit_ace_db(params::Dict)
+#    @assert params["fit_from_LSQ_DB"]
+#    db = LsqDB(params["LSQ_DB_fname_stem"])
+#    IP, lsqinfo = fit_ace_db(db, params)
+#    return IP, lsqinfo    
+#end
 
-Fits LsqDB with `params["LSQ_DB_fname_stem"]`, which must be already present. `params["fit_from_LSQ_DB"]` must be set to true. See `?fit_params` for `params` specification, of which `data` and `basis` aren't needed (are ignored). 
-"""
-function fit_ace_db(params::Dict)
-    @assert params["fit_from_LSQ_DB"]
-    db = LsqDB(params["LSQ_DB_fname_stem"])
-    IP, lsqinfo = fit_ace_db(db, params)
-    return IP, lsqinfo    
-end
-
-"""
-`fit_ace_db(db::IPFitting.LsqDB, params::Dict) -> IP, lsqinfo` 
-
-Fits the given LsqDB. See `?fit_params` for `params` specification, 
-of which `data` and `basis` aren't needed (are ignored)
-"""
-function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
-    solver = ACE1pack.generate_solver(params["solver"])
-
-    if !isnothing(params["P"]) 
-        solver["P"] = ACE1pack.generate_regularizer(db.basis, params["P"])
-    end
-
-    if typeof(params["e0"]) == Dict{Any, Any}
-        # sometimes gets read in (from yaml?) as Dict{Any, Any} 
-        # which gives StackOverflowError somewhere in OneBody
-        params["e0"] = convert(Dict{String, Any}, params["e0"])
-    end
-
-    Vref = OneBody(params["e0"])
-    weights = params["weights"]
-
-    vals, solve_time, bytes, _, _ = @timed IPFitting.Lsq.lsqfit(
-        db,
-        Vref=Vref,  
-        solver=solver,
-        weights=weights,
-        error_table=true
-    );
-
-    IP = vals[1]
-    lsqinfo = vals[2]
-    solve_time = canonicalize(Dates.CompoundPeriod(Second(trunc(Int, solve_time))))
-    bytes = Base.format_bytes(bytes)
-    lsqinfo["solve_time"] = solve_time
-    lsqinfo["solve_mem"] = bytes
-    lsqinfo["fit_params"] = params
-
-    save_fit(params["ACE_fname"], IP, lsqinfo)
-
-    @info("Fitting errors")
-    rmse_table(lsqinfo["errors"])
-    @info("LsqDB solve time: $(solve_time)")
-    @info("LsqDB memory: $(bytes)")
-
-    return IP, lsqinfo    
-end
+#"""
+#`fit_ace_db(db::IPFitting.LsqDB, params::Dict)` : fits the given LsqDB. See `?fit_params` for 
+#`params` specification, of which `data` and `basis` aren't needed (are ignored).
+#"""
+#function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
+#    solver = ACE1pack.generate_solver(params["solver"])
+#
+#    if !isnothing(params["P"]) 
+#        solver["P"] = ACE1pack.generate_regularizer(db.basis, params["P"])
+#    end
+#
+#    if typeof(params["e0"]) == Dict{Any, Any}
+#        # sometimes gets read in (from yaml?) as Dict{Any, Any} 
+#        # which gives StackOverflowError somewhere in OneBody
+#        params["e0"] = convert(Dict{String, Any}, params["e0"])
+#    end
+#
+#    Vref = OneBody(params["e0"])
+#    weights = params["weights"]
+#
+#    vals, solve_time, bytes, _, _ = @timed IPFitting.Lsq.lsqfit(
+#        db,
+#        Vref=Vref,  
+#        solver=solver,
+#        weights=weights,
+#        error_table=true
+#    );
+#
+#    IP = vals[1]
+#    lsqinfo = vals[2]
+#    solve_time = canonicalize(Dates.CompoundPeriod(Second(trunc(Int, solve_time))))
+#    bytes = Base.format_bytes(bytes)
+#    lsqinfo["solve_time"] = solve_time
+#    lsqinfo["solve_mem"] = bytes
+#    lsqinfo["fit_params"] = params
+#
+#    save_fit(params["ACE_fname"], IP, lsqinfo)
+#
+#    @info("Fitting errors")
+#    rmse_table(lsqinfo["errors"])
+#    @info("LsqDB solve time: $(solve_time)")
+#    @info("LsqDB memory: $(bytes)")
+#
+#    return IP, lsqinfo    
+#end
 
 """
 `make_ace_db(params::Dict)` -> LsqDB
