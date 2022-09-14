@@ -60,8 +60,8 @@ jobs:
           Pkg.precompile()
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-runtest@v1
-  test:
-    name: Julia ${{ matrix.julia-version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }} x Python ${{ matrix.python-version }}
+  test_mpi:
+    name: Julia MPI ${{ matrix.julia-version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }} x Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
