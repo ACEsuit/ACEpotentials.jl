@@ -60,6 +60,51 @@ jobs:
           Pkg.precompile()
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-runtest@v1
+  test:
+    name: Julia ${{ matrix.julia-version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }} x Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        julia-version:
+          - '1.8'
+          - 'nightly'
+        python-version: 
+          - '3.8'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+          # - x86 (this fails, why?)
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.julia-version }}
+          arch: ${{ matrix.arch }}
+      - uses: actions/setup-python@v2
+        with: 
+          python-version: ${{ matrix.python-version }}
+      - name: install Python packages
+        run: |
+          pip install ase scikit-learn
+      - uses: actions/cache@v1
+        env:
+          cache-name: cache-artifacts
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-test-${{ env.cache-name }}-
+            ${{ runner.os }}-test-
+            ${{ runner.os }}-
+      - run: |
+          using Pkg
+          Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
+        shell: bash -c "julia --color=yes {0}"
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: "test-mpi"
+        run: mpirun -np 3 julia test/test_mpi.jl
   docs:
     name: Documentation
     runs-on: ubuntu-latest
