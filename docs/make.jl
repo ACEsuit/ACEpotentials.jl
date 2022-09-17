@@ -74,7 +74,7 @@ makedocs(;
         #     # "ACE/create_ACE.md",
         # ],
         "ACEfit Internals" => Any[
-            "ACEfit/ACEfit.md",
+            "ACEfit/Fitting.md",
             # "ACEfit/File IO.md",
             # "ACEfit/Atomic Configurations in Julia.md",
             "ACEfit/Solvers.md",
