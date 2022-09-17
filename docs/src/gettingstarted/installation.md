@@ -5,7 +5,7 @@
 
 First, you will need to install julia (see below for instructions). 
 
-Create a folder to hold your julia `ACE` project, and `cd` into the fodler. This folder will track the packages and versions which the `ACE1pack` code requires. For example:
+Create a folder to hold your julia `ACE` project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. For example:
 ```
 mkdir ~/ACE1project
 cd ~/ACE1project
