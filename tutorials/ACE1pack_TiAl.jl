@@ -82,7 +82,7 @@ smoothness_prior_params = regularizer_params(
     type = "laplacian", 
     rlap_scal = 3.0)        # default
 
-# Finally, let's upt everything together. Note that exporting to `pacemaker` code isn't supported (should it be?).
+# Finally, let's put everything together.
 
 ace_fit_params = fit_params(
     data = data_param_dict,
