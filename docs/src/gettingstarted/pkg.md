@@ -8,7 +8,7 @@ The package manager provides functionality to organize reproducable Julia projec
 
 2. You now have an empty project. Start adding the packages you need, e.g., 
     ```
-    add ACE1, JuLIP, IPFitting
+    add ACE1, JuLIP, ACEfit
     ```
 Type `status` to see your required packages listed. (Note this is only a subset of the installed packages!). Exit the REPL and type `ls`; you will then see a new file `Project.toml` which lists the project requirements, and a `Manifest.toml` which lists the actually packages and the version that have been installed.
 
