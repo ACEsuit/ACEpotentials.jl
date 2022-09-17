@@ -74,7 +74,7 @@ weights = Dict(
 
 solver_param_dict = solver_params(
     type = "lsqr", 
-    lsqr_damp = 1e-2)
+    damp = 1e-2)
 
 # and define parameters for smoothness prior. 
 
