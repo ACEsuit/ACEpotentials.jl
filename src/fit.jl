@@ -39,6 +39,9 @@ function fit_ace(params::Dict, mode=:serial)
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
 
     errors = llsq_errors(data, IP)
+
+    save_fit(params["ACE_fname"], IP, Dict("errors" => errors, "params" => params))
+
     return IP, errors
 end
 
