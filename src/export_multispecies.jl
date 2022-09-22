@@ -8,52 +8,42 @@ using ACE1: rand_radial, cutoff, numz, ZList
 using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
 
 function export_ACE(fname, IP; export_pairpot_as_table=false)
+    # options: 
+    #   (1) to export as a spline or table or not. With newer versions of ACE, you have to use splines.
+    #   (2) to use 2 body or repulsive core
+
     # supply fname with the .yace extension
-    # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
-    if !(fname[end-4:end] == ".yace")
-        throw(ArgumentError("Potential name must be supplied with .yace extension"))
+    if !(fname[end-4:end] == ".yace") ;throw(ArgumentError("Potential name must be supplied with .yace extension")) ;end
+
+    # decomposing into V1, V2, V3 (One body, two-body/repulsive-core, ACE bases)
+    if length(IP.components) != 3 ;throw("IP must have three components which are OneBody, two-body/repulsive-core, and ace"); end
+
+    V1_arr = filter(e->typeof(e) <: OneBody, IP.components)
+    V2_arr = filter(e->(typeof(e) <: PolyPairPot || typeof(e) <: ACE1.PairPotentials.RepulsiveCore), IP.components)
+    V3_arr = filter(e->typeof(e) <: PIPotential, IP.components)
+
+    if !all([length(arr) == 1 for arr in [V1_arr, V2_arr, V3_arr]])
+        throw("IP must have three components which are OneBody, two-body/repulsive-core, and ace")
     end
-
-    # decomposing into V1, V2, V3 (One body, two body and ACE bases)
-    # they could be in a different order
-    if length(IP.components) != 3
-        throw("IP must have three components which are OneBody, pair potential, and ace")
-    end
-
-    ordered_components = []
-
-    for target_type in [OneBody, PolyPairPot, PIPotential]
-        did_not_find = true
-        for i = 1:3
-            if typeof(IP.components[i]) <: target_type
-                push!(ordered_components, IP.components[i])
-                did_not_find = false
-            end
-        end
-
-        if did_not_find
-            throw("IP must have three components which are OneBody, pair potential, and ace")
-        end
-    end
-
-    V1 = ordered_components[1]
-    V2 = ordered_components[2]
-    V3 = ordered_components[3]
+            
+    V1 = V1_arr[1]
+    V2 = V2_arr[1]
+    V3 = V3_arr[1]
     
     species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
     species_dict = Dict(zip(collect(0:length(species)-1), species))
     reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
 
-    # check for the old pairpotential style: one basis, or the new style: a matrix of bases
-    matrix_v2 = false
-    if typeof(V2.basis.J) <: SMatrix
-        matrix_v2 = true
-        if !(export_pairpot_as_table)
-            throw(ArgumentError(
-                "This potential was made using a recent version of ACE1. Exporting with export_pairpot_as_table=false is only possible for older potential files. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
+    # check for the old pairpotential style: one basis, or the new style: a matrix of bases. This is a big change and needs an explicit exception
+    if typeof(V2) <: PolyPairPot
+        matrix_v2 = false
+        if typeof(V2.basis.J) <: SMatrix
+            matrix_v2 = true
+            if !(export_pairpot_as_table)
+                throw(ArgumentError(
+                    "This potential was made using a recent version of ACE1. Exporting with export_pairpot_as_table=false is only possible for older potential files. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
+            end
         end
-    #else
-        #warn("This potential has been made with an older version of ACE1, and may not be compatible")
     end
 
     data = Dict()
@@ -74,22 +64,25 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
     # 1body
     data["E0"] = E0
 
-    # 2body
-    if export_pairpot_as_table
-        # I am not handling the hasproperty(V2, :Vin) case, since I don't know what this is
-        # this writes a .table file, so for simplicity require that export fname is passed with
-        # .yace extension, and we remove this and add the .table extension instead
-        fname_stem = fname[1:end-5]
-        write_pairpot_table(fname_stem, V2, species_dict)
-    else
-        if hasproperty(V2, :basis)
+    # 2body]
+    if typeof(V2) <: PolyPairPot # pair pot
+        if export_pairpot_as_table
+            fname_stem = fname[1:end-5]
+            write_pairpot_table(fname_stem, V2, species_dict)
+        else
             polypairpot = export_polypairpot(V2, reversed_species_dict)
-        else hasproperty(V2, :Vin)
-            polypairpot = export_polypairpot(V2.Vout, reversed_species_dict)
-            reppot = export_reppot(V2, reversed_species_dict)
-            data["reppot"] = reppot
         end
-        data["polypairpot"] = polypairpot
+    else # repulsive core - take just the V2.out part. 
+        if export_pairpot_as_table
+            fname_stem = fname[1:end-5]
+            write_pairpot_table(fname_stem, V2.Vout, species_dict)
+        else
+            polypairpot = export_polypairpot(V2.Vout, reversed_species_dict)
+        end
+
+        # and do this
+        reppot = export_reppot(V2, reversed_species_dict)
+        data["reppot"] = reppot
     end
 
     # ACE
