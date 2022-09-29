@@ -5,7 +5,7 @@
 
 First, you will need to install julia (see below for instructions). 
 
-Create a folder to hold your julia `ACE` project, and `cd` into the fodler. This folder will track the packages and versions which the `ACE1pack` code requires. For example:
+Create a folder to hold your julia `ACE` project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. For example:
 ```
 mkdir ~/ACE1project
 cd ~/ACE1project
@@ -13,7 +13,7 @@ cd ~/ACE1project
 
 From within this folder type `julia` to enter the Julia REPL. Then run
 ```julia
-using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack, ACE1, JuLIP, IPFitting, ASE"
+using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack"
 ```
 
 Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.md), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 

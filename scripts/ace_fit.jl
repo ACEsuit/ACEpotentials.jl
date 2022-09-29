@@ -17,14 +17,13 @@ get_basis_size(d::Dict) =
     sum([length(ACE1pack.generate_basis(basis_params)) for (basis_name, basis_params) in d])
 
 function get_num_observations(d::Dict)
-    # doesn't work properly somehow
-    data = ACE1pack.read_data(d)    
+
+    data = JuLIP.read_extxyz(d["fname"])
     global n_obs = 0
-    for (okey, d, _) in IPFitting.observations(data)
-        len = length(IPFitting.observation(d, okey))
-        n_obs += len
-     end
-     return n_obs
+    for atoms in data
+        n_obs += length(atoms.Z)  # Z - atomic numbers
+    end
+    return n_obs
 end
 
 function save_dry_run_info(fit_params)

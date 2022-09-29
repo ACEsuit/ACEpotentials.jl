@@ -26,14 +26,13 @@ Mandatory parameters
     "solver": {"type": "rrqr"},
     "basis": {
         "main_ace": {
-            "N": 2,
-            "maxdeg": 10,
             "type": "ace",
             "species": ["Ti", "Al"]},
+            "N": 2,
+            "maxdeg": 10,
         "main_pair": {
-            "maxdeg": 4,
-            "type": "pair",
             "species": ["Ti","Al"]
+            "maxdeg": 4,
         }
     }
 }
@@ -50,21 +49,23 @@ Parameters with all default values
         "Al": -105.5954},
     "weights": {
         "default": {
-            "V": 1.0,
             "E": 1.0,
             "F": 1.0}},
+            "V": 1.0,
     "P": null,
     "fit_from_LSQ_DB": false,
     "data": {
-        "force_key": "dft_force",
-        "energy_key": "dft_energy",
         "fname": "training_set.xyz",
+        "energy_key": "dft_energy",
+        "force_key": "dft_force",
         "virial_key": "dft_virial"},
     "solver": {
-        "rrqr_tol": 1.0e-5,
         "type": "rrqr"},
+        "tol": 1.0e-5,
     "basis": {
         "main_ace": {
+            "type": "ace",
+            "species": ["Ti", "Al"]},
             "N": 2,
             "maxdeg": 10,
             "r0": 2.5,
@@ -76,25 +77,23 @@ Parameters with all default values
                 "pcut": 2,
                 "type": "radial"},
             "degree": "degree",
-            "type": "ace",
             "transform": {
                 "r0": 2.5,
                 "type": "polynomial",
                 "p": 2},
-            "species": ["Ti", "Al"]},
         "main_pair": {
+            "type": "pair",
+            "species": ["Ti", "Al"]}},
             "rcut": 5.0,
             "rin": 0.0,
             "maxdeg": 4,
             "r0": 2.5,
             "pin": 0,
             "pcut": 2,
-            "type": "pair",
             "transform": {
                 "r0": 2.5,
                 "type": "polynomial",
                 "p": 2},
-            "species": ["Ti", "Al"]}},
     "LSQ_DB_fname_stem": "",
     "ACE_fname": "ACE_fit.json"
 }
