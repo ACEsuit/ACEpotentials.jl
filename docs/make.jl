@@ -73,12 +73,12 @@ makedocs(;
         #     # "ACE/datatypes.md",
         #     # "ACE/create_ACE.md",
         # ],
-        "IPFitting Internals" => Any[
-            "IPFitting/IPFitting.md",
-            # "IPFitting/File IO.md",
-            # "IPFitting/Atomic Configurations in Julia.md",
-            "IPFitting/Solvers.md",
-            # "IPFitting/Manipulating potentials.md",
+        "ACEfit Internals" => Any[
+            "ACEfit/Fitting.md",
+            # "ACEfit/File IO.md",
+            # "ACEfit/Atomic Configurations in Julia.md",
+            "ACEfit/Solvers.md",
+            # "ACEfit/Manipulating potentials.md",
         ],
     ],
 )

@@ -1,4 +1,4 @@
-# ACE1 and IPFitting
+# ACE1 and ACEfit
 
 `ACE1.jl` defines functions from the space of local atomic environments `` \mathcal{X}`` to the space of real numbers ``\mathbb{R}``. These functions respect physical symmetries such as invariance under rotation of the environment and permutation of equivalent atoms. This set of functions ``\{B_\nu \}_\nu`` may be treated as a basis of a space of such symmetric functions, allowing us to express a property of an atomic environment ``R \in \mathcal{X}`` as follows:
 ```math
@@ -8,7 +8,8 @@ Having explicitly constructed such a basis set, the coefficients ``c_\nu`` can b
 ```math
 \mathbf{c} = \text{arg} \min_\mathbf{c} \sum_i \left( y_i - \sum_\nu c_\nu B_\nu(R_i) \right)^2 + \text{REG}
 ```
-`ACE1.jl` describes the symmetric basis set; `IPFitting.jl` handles the assembly and solution of the resulting least squares system, and provides a variety of methods for doing so including different regularization methods. `IPFitting.jl` also defines a type `Dat` [[source]](https://github.com/ACEsuit/IPFitting.jl/blob/main/src/prototypes.jl) which represents a labelled atomic configuration.
+`ACE1.jl` describes the symmetric basis set; `ACE1pack.jl` and `ACEfit.jl` handle the assembly and solution of the resulting least squares system, and provides a variety of methods for doing so including different regularization methods.
+`ACEfit.jl` also defines a generic `Data` type and `ACE1pack.jl` implements a version of this type which represents a labelled atomic configuration.
 
 # The Least Squares Database
 
@@ -16,16 +17,16 @@ The minimisation problem above can be written:
 ```math
 \mathbf{c} = \text{arg} \min_\mathbf{c} \| \mathbf{y} - \Psi \mathbf{c} \|^2
 ```
-where ``y_i`` are the observations of the true function, and ``\Psi_{i \nu} = B_\nu(R_i)`` is the design matrix. IPFitting constructs the design matrix and the observation vector (from the basis and training configurations) and stores them in an `IPFitting.lsqDB`: [[source]](https://github.com/ACEsuit/IPFitting.jl/blob/main/src/lsq_db.jl)
+where ``y_i`` are the observations of the true function, and ``\Psi_{i \nu} = B_\nu(R_i)`` is the design matrix. `ACE1pack` and `ACEfit` construct the design matrix and the observation vector (from the basis and training configurations) and stores them in a database: [[source]](https://github.com/ACEsuit/IPFitting.jl/blob/main/src/lsq_db.jl)
 ```julia
 dB = LsqDB(save_name, basis, train)
 ```
-If `save_name` is the empty string, the least squares system, which can be very large, is not saved to disk. Otherwise, `save_name` should be a string not including any file extension, which is added by IPFitting. `basis` is the ACE1 basis. `train` is a `Vector` of IPFitting `Dat` objects representing the training set. IPFitting also provides tools for reading and saving the atomic structures see [File io (TO-ADD, currently points to ACE1pack data handling)](../ACE1pack/data.md). 
+If `save_name` is the empty string, the least squares system, which can be very large, is not saved to disk. Otherwise, `save_name` should be a string not including any file extension, which is added by... `basis` is the ACE1 basis. `train` is a `Vector` of ACE1pack `AtomsData` objects representing the training set. TODO also provides tools for reading and saving the atomic structures see [File io (TO-ADD, currently points to ACE1pack data handling)](../ACE1pack/data.md). 
 
 ### Structure of the Linear System.
 
 Observations of the energy, forces and virial stresses of an atomic configuration can be used to train a model. Each scalar observable contributes one row to the linear system: An energy observation therefore contributes a single row, and the forces on all the of the N atoms in a configuration contribute 3N rows.
-Training configurations can also be distinguised from one another by setting the `configtype` field in the IPFitting `Dat` object [[source]](https://github.com/ACEsuit/IPFitting.jl/blob/main/src/prototypes.jl). The least squares database recognises the config type of a configuration, which can be used to apply different settings for different config types when fitting.
+Training configurations can also be distinguised from one another by setting the `configtype` field in the ACE1pack `AtomsData` object. The least squares database recognises the config type of a configuration, which can be used to apply different settings for different config types when fitting.
 
 # Solving the Linear System
 

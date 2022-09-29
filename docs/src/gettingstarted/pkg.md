@@ -8,13 +8,13 @@ The package manager provides functionality to organize reproducable Julia projec
 
 2. You now have an empty project. Start adding the packages you need, e.g., 
     ```
-    add ACE1, JuLIP, IPFitting
+    add ACE1, JuLIP, ACEfit
     ```
 Type `status` to see your required packages listed. (Note this is only a subset of the installed packages!). Exit the REPL and type `ls`; you will then see a new file `Project.toml` which lists the project requirements, and a `Manifest.toml` which lists the actually packages and the version that have been installed.
 
 3. Specify version bounds: Open `Project.toml` in an editor and under the [compat] section you can now add version bounds, e.g. ACE1 = "0.9, 0.10". Please see the [Pkg.jl docs](https://pkgdocs.julialang.org/dev/compatibility/) for details on how to specify those bounds. Start a Julia REPL again, type `]` to switch to the package manager and then `up` to up- or down-grade all installed packages to the latest version compatible with your bounds.
 
-#### Using a Deverlopment Branch
+#### Using a Development Branch
 
 If you are a user rather than developer it should almost never be required for you to check out a package (or, `dev` it in the package manager). When developers make changes to - say - `ACE1.jl` they will always immediately tag another version and then you can adjust your version bounds in your project to update as well as enforce which version to use. However a developer would frequently do this, and occasionally it might be required when iterating between a user and developer for testing. There are multiple ways to achieve this; the following is our recommended procedure: 
 

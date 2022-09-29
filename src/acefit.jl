@@ -27,7 +27,11 @@ struct AtomsData <: ACEfit.AbstractData
         end
 
         # set weights for this configuration
-        w = weights["default"]
+        if "default" in keys(weights)
+            w = weights["default"]
+        else
+            w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
+        end
         for (key, val) in atoms.data
             if lowercase(key)=="config_type" && (lowercase(val.data) in lowercase.(keys(weights)))
                 w = weights[val.data]
@@ -108,7 +112,7 @@ function ACEfit.weight_vector(d::AtomsData)
 end
 
 function config_type(d::AtomsData)
-    config_type = missing
+    config_type = "default"
     for (k,v) in d.atoms.data
         if (lowercase(k)=="config_type")
             config_type = v.data

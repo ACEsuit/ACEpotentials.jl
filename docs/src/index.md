@@ -8,7 +8,7 @@ CurrentModule = ACE1pack
 
 ### Three Ways to Work with `ACE1.jl`
 
-1. Fitting form the Command line.
+1. Fitting from the Command line.
 
 `ACE1pack` provides scripts to fit potentials from the command line. Fitting is controlled by a dictionary of parameters in a `.json` file to specify the model and fitting options.
 

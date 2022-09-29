@@ -2,7 +2,7 @@
 #
 # In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACE1pack. 
 
-# `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `IPFitting.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`IPFitting.jl`). For full documentation see [ACE1pak overview](../ACE1pack/ace1pack_overview.md).
+# `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACE1pack overview](../ACE1pack/ace1pack_overview.md).
 
 # First import ACE1pack
 
@@ -74,7 +74,7 @@ weights = Dict(
 
 solver_param_dict = solver_params(
     type = "lsqr", 
-    lsqr_damp = 1e-2)
+    damp = 1e-2)
 
 # and define parameters for smoothness prior. 
 
@@ -82,7 +82,7 @@ smoothness_prior_params = regularizer_params(
     type = "laplacian", 
     rlap_scal = 3.0)        # default
 
-# Finally, let's upt everything together. Note that exporting to `pacemaker` code isn't supported (should it be?).
+# Finally, let's put everything together.
 
 ace_fit_params = fit_params(
     data = data_param_dict,
