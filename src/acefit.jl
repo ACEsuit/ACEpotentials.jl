@@ -1,5 +1,6 @@
 import ACEfit
 import JuLIP: Atoms, energy, forces, mat
+using PrettyTables
 using StaticArrays: SVector
 
 struct AtomsData <: ACEfit.AbstractData
@@ -201,4 +202,51 @@ function llsq_errors(data, model)
     merge!(config_errors["mae"], Dict("set"=>mae))
     merge!(config_errors["rmse"], Dict("set"=>rmse))
     return config_errors
+end
+
+function assess_dataset(data)
+    config_types = []
+
+    n_configs = Dict{String,Integer}()
+    n_environments = Dict{String,Integer}()
+    n_energies = Dict{String,Integer}()
+    n_forces = Dict{String,Integer}()
+    n_virials = Dict{String,Integer}()
+
+    for d in data
+        c_t = config_type(d)
+        if !(c_t in config_types)
+            push!(config_types, c_t)
+            n_configs[c_t] = 0
+            n_environments[c_t] = 0
+            n_energies[c_t] = 0
+            n_forces[c_t] = 0
+            n_virials[c_t] = 0
+        end
+        n_configs[c_t] += 1
+        n_environments[c_t] += length(d.atoms)
+        !isnothing(d.energy_key) && (n_energies[c_t] += 1)
+        !isnothing(d.force_key) && (n_forces[c_t] += 3*length(d.atoms))
+        !isnothing(d.virial_key) && (n_virials[c_t] += 6)
+    end
+
+    n_configs = collect(values(n_configs))
+    n_environments = collect(values(n_environments))
+    n_energies = collect(values(n_energies))
+    n_forces = collect(values(n_forces))
+    n_virials = collect(values(n_virials))
+
+    header = ["Type", "#Configs", "#Envs", "#E", "#F", "#V"]
+    table = hcat(
+        config_types, n_configs, n_environments,
+        n_energies, n_forces, n_virials)
+    tot = [
+        "total", sum(n_configs), sum(n_environments),
+         sum(n_energies), sum(n_forces), sum(n_virials)]
+    miss = [
+        "missing", 0, 0,
+        tot[4]-tot[2], 3*tot[3]-tot[5], 6*tot[2]-tot[6]]
+    table = vcat(table, permutedims(tot), permutedims(miss))
+    pretty_table(table; header=header, body_hlines=[length(n_configs)])
+
 end

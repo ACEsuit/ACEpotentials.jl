@@ -32,6 +32,7 @@ function fit_ace(params::Dict, mode=:serial)
         d = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
         push!(data, d)
     end
+    assess_dataset(data)
 
     solver = ACEfit.create_solver(params["solver"])
     if isnothing(params["P"])
