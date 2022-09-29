@@ -34,7 +34,12 @@ function fit_ace(params::Dict, mode=:serial)
     end
 
     solver = ACEfit.create_solver(params["solver"])
-    A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode)
+    if isnothing(params["P"])
+        P = nothing
+    else
+        P = ACE1pack.generate_regularizer(basis, params["P"])
+    end
+    A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode, P)
     IP = JuLIP.MLIPs.combine(basis, C)
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
 
