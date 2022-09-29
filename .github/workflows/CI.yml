@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         julia-version:
-          - '1.7'
+          - '1.8'
           - 'nightly'
         python-version: 
           - '3.8'
@@ -56,6 +56,11 @@ jobs:
           Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
+      - name: "use development version of ACEfit"
+        run: |
+          using Pkg
+          Pkg.develop("ACEfit")
+        shell: bash -c "julia --color=yes {0}"
       - name: "test-precompile" 
         run: |
           using Pkg
