@@ -29,16 +29,17 @@ Parameters `LSQ_DB_fname_stem` and `fit_from_LSQ_DB` determine if the least-squa
         * `fit_from_LSQ_DB` is false: rename old LsqDB; make, save and fit to a new LsqDB.    
 
 
-## Create LsqDB & fit it separately
-
-It is also possible to decouple making the least-squares database from fitting to it. 
-
-```@docs
-make_ace_db
-fit_ace_db
-```
-
-In fact, `fit_ace()` just calls both of these in one go.
+# TODO
+### Create LsqDB & fit it separately
+#
+#It is also possible to decouple making the least-squares database from fitting to it. 
+#
+#```@docs
+#make_ace_db
+#fit_ace_db
+#```
+#
+#In fact, `fit_ace()` just calls both of these in one go.
 
 ## Reading parameters in from file
 
