@@ -112,7 +112,7 @@ function ACEfit.weight_vector(d::AtomsData)
 end
 
 function config_type(d::AtomsData)
-    config_type = missing
+    config_type = "default"
     for (k,v) in d.atoms.data
         if (lowercase(k)=="config_type")
             config_type = v.data
