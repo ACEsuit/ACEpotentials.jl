@@ -60,9 +60,12 @@ run(pipeline(`julia --project=.. ../scripts/ace_fit.jl --params TiAl.yaml`,
 ### perform the tests
 for line in readlines("TiAl.log")
    if occursin("set", line)
-       @test split(line)[4] == "5.480"    # energy error
-       @test split(line)[6] == "0.199"    # force error
-       @test split(line)[10] == "65.608"  # virial error
+       ene_err = parse(Float64, split(line)[4]) * 1e-3
+       for_err = parse(Float64, split(line)[6])
+       vir_err = parse(Float64, split(line)[10]) * 1e-3
+       @test isapprox(ene_err, 0.005480, atol=1e-3)
+       @test isapprox(for_err, 0.199, atol=1e-3)
+       @test isapprox(vir_err, 0.065608, atol=1e-3)
    end
 end
 
