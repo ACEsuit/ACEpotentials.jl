@@ -61,7 +61,7 @@ end
     test_rmse(errors["rmse"], rmse_qr, 1e-5)
 
     # repeat with distributed assembly
-    addprocs(2)
+    addprocs(3, exeflags="--project=..")
     @everywhere using ACE1pack
     IP, errors = fit_ace(params, :distributed)
     rmprocs(workers())
