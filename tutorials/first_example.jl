@@ -79,7 +79,7 @@ IP = JuLIP.MLIPs.combine(basis, C)
 
 # This assembles the weighted LSQ system, and retuns the potential `IP` as well as a dictionary `lsqinfo` with some general information about the potential and fitting process.  E.g., to see the training errors we can use 
 
-@show ACE1pack.llsq_errors(train, IP)
+@show ACE1pack.linear_errors(train, IP)
 
 # Note that `IP` is a `JuLIP.jl` calculator and can be used to evaluate e.g. `energy, forces, virial` on new configurations. 
 

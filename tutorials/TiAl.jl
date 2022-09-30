@@ -115,7 +115,7 @@ IP = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(B, C))
 
 @info("Training Error Table")
 #rmse_table(lsqinfo["errors"])
-@show ACE1pack.llsq_errors(train, IP)
+@show ACE1pack.linear_errors(train, IP)
 
 # We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions. 
 
