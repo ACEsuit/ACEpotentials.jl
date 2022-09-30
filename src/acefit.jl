@@ -52,6 +52,14 @@ end
 function ACEfit.feature_matrix(d::AtomsData, basis)
     dm = Array{Float64}(undef, ACEfit.count_observations(d), length(basis))
     i = 1
+    ### must put virial first for direct comparison with IPFitting
+    #if !isnothing(d.virial_key)
+    #    v = virial(basis, d.atoms)
+    #    for j in 1:length(basis)
+    #        dm[i:i+5,j] .= v[j][SVector(1,5,9,6,3,2)]
+    #    end
+    #    i += 6
+    #end
     if !isnothing(d.energy_key)
         dm[i,:] .= energy(basis, d.atoms)
         i += 1
@@ -68,7 +76,7 @@ function ACEfit.feature_matrix(d::AtomsData, basis)
         for j in 1:length(basis)
             dm[i:i+5,j] .= v[j][SVector(1,5,9,6,3,2)]
         end
-        i += 5
+        i += 6
     end
     return dm
 end
@@ -76,6 +84,12 @@ end
 function ACEfit.target_vector(d::AtomsData)
     y = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
+    ### must put virial first for direct comparison with IPFitting
+    #if !isnothing(d.virial_key)
+    #    v = vec(d.atoms.data[d.virial_key].data)
+    #    y[i:i+5] .= v[SVector(1,5,9,6,3,2)]
+    #    i += 6
+    #end
     if !isnothing(d.energy_key)
         e = d.atoms.data[d.energy_key].data
         y[i] = e - energy(d.vref, d.atoms)
@@ -89,7 +103,7 @@ function ACEfit.target_vector(d::AtomsData)
     if !isnothing(d.virial_key)
         v = vec(d.atoms.data[d.virial_key].data)
         y[i:i+5] .= v[SVector(1,5,9,6,3,2)]
-        i += 5
+        i += 6
     end
     return y
 end
@@ -97,6 +111,11 @@ end
 function ACEfit.weight_vector(d::AtomsData)
     w = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
+    ### must put virial first for direct comparison with IPFitting
+    #if !isnothing(d.virial_key)
+    #    w[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
+    #    i += 6
+    #end
     if !isnothing(d.energy_key)
         w[i] = d.weights["E"] / sqrt(length(d.atoms))
         i += 1
@@ -107,7 +126,7 @@ function ACEfit.weight_vector(d::AtomsData)
     end
     if !isnothing(d.virial_key)
         w[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
-        i += 5
+        i += 6
     end
     return w
 end
@@ -199,8 +218,34 @@ function linear_errors(data, model)
     config_errors = Dict("mae"=>config_mae, "rmse"=>config_rmse)
 
     # merge errors into config_errors and return
+    push!(config_types, "set")
     merge!(config_errors["mae"], Dict("set"=>mae))
     merge!(config_errors["rmse"], Dict("set"=>rmse))
+
+    @info "RMSE Table"
+    header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
+    table = hcat(
+        config_types,
+        [1000*config_errors["rmse"][c_t]["E"] for c_t in config_types],
+        [config_errors["rmse"][c_t]["F"] for c_t in config_types],
+        [1000*config_errors["rmse"][c_t]["V"] for c_t in config_types],
+    )
+    pretty_table(
+        table; header=header,
+        body_hlines=[length(config_types)-1], formatters=ft_printf("%5.3f"))
+
+    @info "MAE Table"
+    header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
+    table = hcat(
+        config_types,
+        [1000*config_errors["mae"][c_t]["E"] for c_t in config_types],
+        [config_errors["mae"][c_t]["F"] for c_t in config_types],
+        [1000*config_errors["mae"][c_t]["V"] for c_t in config_types],
+    )
+    pretty_table(
+        table; header=header,
+        body_hlines=[length(config_types)-1], formatters=ft_printf("%5.3f"))
+
     return config_errors
 end
 
