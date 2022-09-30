@@ -135,12 +135,12 @@ function llsq_errors(data, model)
 
    for d in data
 
-       ct = config_type(d)
-       if !(ct in config_types)
-          push!(config_types, ct)
-          merge!(config_rmse, Dict(ct=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
-          merge!(config_mae, Dict(ct=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
-          merge!(config_num, Dict(ct=>Dict("E"=>0, "F"=>0, "V"=>0)))
+       c_t = config_type(d)
+       if !(c_t in config_types)
+          push!(config_types, c_t)
+          merge!(config_rmse, Dict(c_t=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
+          merge!(config_mae, Dict(c_t=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
+          merge!(config_num, Dict(c_t=>Dict("E"=>0, "F"=>0, "V"=>0)))
        end
 
        # energy errors
@@ -150,9 +150,9 @@ function llsq_errors(data, model)
            mae["E"] += abs(estim-exact)
            rmse["E"] += (estim-exact)^2
            num["E"] += 1
-           config_mae[ct]["E"] += abs(estim-exact)
-           config_rmse[ct]["E"] += (estim-exact)^2
-           config_num[ct]["E"] += 1
+           config_mae[c_t]["E"] += abs(estim-exact)
+           config_rmse[c_t]["E"] += (estim-exact)^2
+           config_num[c_t]["E"] += 1
        end
 
        # force errors
@@ -162,9 +162,9 @@ function llsq_errors(data, model)
            mae["F"] += sum(abs.(estim-exact))
            rmse["F"] += sum((estim-exact).^2)
            num["F"] += 3*length(d.atoms)
-           config_mae[ct]["F"] += sum(abs.(estim-exact))
-           config_rmse[ct]["F"] += sum((estim-exact).^2)
-           config_num[ct]["F"] += 3*length(d.atoms)
+           config_mae[c_t]["F"] += sum(abs.(estim-exact))
+           config_rmse[c_t]["F"] += sum((estim-exact).^2)
+           config_num[c_t]["F"] += 3*length(d.atoms)
        end
 
        # virial errors
@@ -174,9 +174,9 @@ function llsq_errors(data, model)
            mae["V"] += sum(abs.(estim-exact))
            rmse["V"] += sum((estim-exact).^2)
            num["V"] += 6
-           config_mae[ct]["V"] += sum(abs.(estim-exact))
-           config_rmse[ct]["V"] += sum((estim-exact).^2)
-           config_num[ct]["V"] += 6
+           config_mae[c_t]["V"] += sum(abs.(estim-exact))
+           config_rmse[c_t]["V"] += sum((estim-exact).^2)
+           config_num[c_t]["V"] += 6
        end
     end
 
@@ -189,11 +189,11 @@ function llsq_errors(data, model)
     errors = Dict("mae"=>mae, "rmse"=>rmse)
 
     # finalize config errors
-    for ct in config_types
-        for (k,cn) in config_num[ct]
-            (cn==0) && continue
-            config_rmse[ct][k] = sqrt(config_rmse[ct][k] / cn)
-            config_mae[ct][k] = config_mae[ct][k] / cn
+    for c_t in config_types
+        for (k,c_n) in config_num[c_t]
+            (c_n==0) && continue
+            config_rmse[c_t][k] = sqrt(config_rmse[c_t][k] / c_n)
+            config_mae[c_t][k] = config_mae[c_t][k] / c_n
         end
     end
     config_errors = Dict("mae"=>config_mae, "rmse"=>config_rmse)
