@@ -90,4 +90,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/ACEsuit/ACE1pack.jl",
     devbranch="main",
+    push_preview=true,
 )
