@@ -8,7 +8,7 @@ using ACE1pack, LazyArtifacts, MultivariateStats, Plots
 # configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
 # configurations.
 
-dataset = JuLIP.read_extxyz(joinpath(artifact"Si_tiny_dataset", "Si_tiny.xyz"));
+dataset = JuLIP.read_extxyz(joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"));
 
 # Define a basis.
 
