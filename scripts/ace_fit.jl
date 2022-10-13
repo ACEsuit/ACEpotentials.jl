@@ -44,27 +44,18 @@ if fit_params["ACE_fname"][end-4:end] != ".json"
     throw("potential file names must end in .json")
 end
 
-if args["dry-run"]
-    save_dry_run_info(fit_params)
-end
-
 nprocs = args["num-blas-threads"]
 if nprocs > 1
     using LinearAlgebra
     @warn "Using $nprocs threads for BLAS"
     BLAS.set_num_threads(nprocs)
-
-    nprocs_str = string(nprocs)
-    withenv("MKL_NUM_THREADS"=>nprocs_str,
-            "OPENBLAS_NUM_THREADS"=>nprocs_str,
-            "OMP_NUM_THREADS"=>nprocs_str,
-            "NUMEXPR_NUM_THREADS"=>nprocs_str,
-            "VECLIB_MAXIMUM_THREADS"=>nprocs_str) do
-        IP, lsqinfo = ACE1pack.fit_ace(fit_params)
-    end
-else
-    IP, lsqinfo = ACE1pack.fit_ace(fit_params)
 end
+
+if args["dry-run"]
+    save_dry_run_info(fit_params)
+end
+
+IP, lsqinfo = ACE1pack.fit_ace(fit_params)
 
 # export to a .yace automatically, also need to generate the new name.
 yace_name = replace(fit_params["ACE_fname"], ".json" => ".yace")
