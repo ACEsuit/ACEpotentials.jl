@@ -24,3 +24,7 @@ These tutorials use `ACE1.jl` and `IPFitting.jl` directly instead of the `ACE1pa
 
 * [ACE potentials in LAMMPS](lammps.md)
 * [ACE potentials in python with `ase`](python_ase.md)
+
+### Structure analysis with ACE1 descriptors
+
+* [ACE descriptors](../literate_tutorials/descriptor.md)
