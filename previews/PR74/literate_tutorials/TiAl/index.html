@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Fitting a TiAl potential (Julia) · ACE1pack.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://ACEsuit.github.io/ACE1pack.jl/literate_tutorials/TiAl/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACE1pack.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation Instructions</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../../tutorials/first_example_json/">TiAl potential (command line JSON)</a></li><li><a class="tocitem" href="../first_example/">First example (Julia)</a></li><li class="is-active"><a class="tocitem" href>Fitting a TiAl potential (Julia)</a></li><li><a class="tocitem" href="../ACE1pack_TiAl/">TiAl potential (ACE1pack-julia)</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li><a class="tocitem" href="../../tutorials/lammps/">LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li></ul></li><li><span class="tocitem">Command line</span><ul><li><a class="tocitem" href="../../command_line/">Command line interface</a></li></ul></li><li><span class="tocitem">ACE1pack Internals</span><ul><li><a class="tocitem" href="../../ACE1pack/ace1pack_overview/">Overview</a></li><li><a class="tocitem" href="../../ACE1pack/fit/">Fitting ACE</a></li><li><a class="tocitem" href="../../ACE1pack/helpers/">Helper Functions</a></li><li><a class="tocitem" href="../../ACE1pack/data/">Handling Data</a></li><li><a class="tocitem" href="../../ACE1pack/basis/">Constructing Basis</a></li><li><a class="tocitem" href="../../ACE1pack/solver/">Solvers</a></li><li><a class="tocitem" href="../../ACE1pack/all_exported/">All ACE1pack functions</a></li></ul></li><li><span class="tocitem">IPFitting Internals</span><ul><li><a class="tocitem" href="../../IPFitting/IPFitting/">ACE1 and IPFitting</a></li><li><a class="tocitem" href="../../IPFitting/Solvers/">Least squares solvers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Fitting a TiAl potential (Julia)</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Fitting a TiAl potential (Julia)</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ACEsuit/ACE1pack.jl/blob/main/tutorials/TiAl.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Fitting-a-TiAl-potential-(Julia)"><a class="docs-heading-anchor" href="#Fitting-a-TiAl-potential-(Julia)">Fitting a TiAl potential (Julia)</a><a id="Fitting-a-TiAl-potential-(Julia)-1"></a><a class="docs-heading-anchor-permalink" href="#Fitting-a-TiAl-potential-(Julia)" title="Permalink"></a></h1><p>Start by importing the required libraries</p><pre><code class="language-julia hljs">using ACE1pack</code></pre><p>We need a dataset <code>TiAl_tutorial.xyz</code> for this tutorial which is provided as an artifact. Normally we would get the path to a datset via <code>artifact&quot;TiAl_tutorial</code> but for these tutorial to run from anywhere it is easiest to let <code>ACE1pack</code> load the data for us. The following line will download the dataset, store is somewhere inside <code>~/.julia/...</code> and return a string with the absolute path to the file.</p><pre><code class="language-julia hljs">data_file = joinpath(ACE1pack.artifact(&quot;TiAl_tutorial&quot;), &quot;TiAl_tutorial.xyz&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;/home/runner/.julia/artifacts/b437d7d5fac4424b8203d0afc31732879d3da5b2/TiAl_tutorial.xyz&quot;</code></pre><p>We can now use <code>IPFitting.Data.read_xyz</code> to load in the training set. This will not only load the structures, but also search for energies and force from a reference model, and all this will then be stored as a <code>Vector{Dat}</code>. We keep only every 10 training structures to keep the regression problem small.</p><pre><code class="language-julia hljs">data = IPFitting.Data.read_xyz(data_file, energy_key=&quot;energy&quot;, force_key=&quot;force&quot;, virial_key=&quot;virial&quot;)
+train = data[1:5:end];</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Reading in /home/runner/.julia/artifacts/b437d7d5fac4424b8203d0afc31732879d3da5b2/TiAl_tutorial.xyz ...
+Processing data ...
+[ Info: Keys used: E =&gt; &quot;energy&quot;, F =&gt; &quot;force&quot;, V =&gt; &quot;virial&quot;
+[ Info: Array keys found: &quot;force&quot; [329], &quot;numbers&quot; [329], &quot;positions&quot; [329], &quot;tags&quot; [315]
+[ Info: Info keys found: &quot;config_type&quot; [329], &quot;energy&quot; [329], &quot;n_minim_iter&quot; [315], &quot;spacegroup&quot; [315], &quot;unit_cell&quot; [315], &quot;virial&quot; [329]
+┌─────────────┬───────┬───────┬───────┬───────┬───────┐
+│ config_type │ #cfgs │ #envs │    #E │    #F │    #V │
+│      String │ Int64 │ Int64 │ Int64 │ Int64 │ Int64 │
+├─────────────┼───────┼───────┼───────┼───────┼───────┤
+│    FLD_TiAl │   315 │   630 │   315 │  1890 │  2835 │
+│  TiAl_T5000 │    14 │  1126 │    14 │  3378 │   126 │
+├─────────────┼───────┼───────┼───────┼───────┼───────┤
+│       total │   329 │  1756 │   329 │  5268 │  2961 │
+│     missing │     0 │     0 │     0 │     0 │     0 │
+└─────────────┴───────┴───────┴───────┴───────┴───────┘</code></pre><p>The next step is to generate a basis set:</p><ul><li>Here we take 3-correlation, i.e. a 4-body potential,</li><li>a relatively low polynomial degree <code>maxdeg = 6</code>, and</li><li>a cutoff radious <code>rcut = 5.5</code></li></ul><p>These three are the most important approximation parameters to explore when trying to improve the fit-accuracy. In addition there is</p><ul><li>The parameter <code>r0</code> is just a scalig parameter and the fits should not be very sensitive to its choice. A rough estimate for the nearest-neighbour distance is usually ok.</li><li>The inner cutoff <code>rin</code> is will ensure that the many-body potential becomes zero when atoms get too close. The reason for this is that we usually do not have data against which to fit the potential in this deformation regime and therefore cannot make reliable predictions. Instead we will add a pair potential to model this regime below.</li></ul><p>EG: <code>pin</code> should be set to 2?? i.e. bad <code>ace_basis</code> default?</p><pre><code class="language-julia hljs">r0 = 2.88
+ACE_B = ace_basis(species = [:Ti, :Al],
+                  N = 3,
+                  r0 = r0,
+                  rin = 0.6 * r0,
+                  rcut = 5.5,
+                  maxdeg = 6);</code></pre><p>As alluded to above, we now add a pair potential to obtain qualitatively correct repulsive behaviour for colliding atoms. The many-body basis <code>ACE_B</code> and the pair potential <code>Bpair</code> are then combined into a single basis set <code>B</code>.</p><pre><code class="language-julia hljs">Bpair = pair_basis(species = [:Ti, :Al],
+                   r0 = r0,
+                   maxdeg = 6,
+                   rcut = 7.0,
+                   pcut = 1, 	# this is not a reasonable default?
+                   pin = 0)
+B = JuLIP.MLIPs.IPSuperBasis([Bpair, ACE_B]);</code></pre><p>The next step is to evaluate the basis on the training set. Precomputing the basis once (and possibly save it to disk) makes experimenting with different regression parameters much more efficient. This is demonstrated below by showing various different solver options. Similarly once could also explore different data weights (see <code>weights</code> below).</p><pre><code class="language-julia hljs">dB = LsqDB(&quot;&quot;, B, train);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Assemble LSQ blocks in serial
+Progress:   6%|██▋                                      |  ETA: 0:00:02Progress:  12%|█████▏                                   |  ETA: 0:00:02Progress:  22%|█████████                                |  ETA: 0:00:01Progress:  33%|█████████████▌                           |  ETA: 0:00:01Progress:  51%|█████████████████████                    |  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:01
+[ Info: Elapsed: 1.2s
+[ Info: db is not written to disk since `dbpath` is empty.</code></pre><p><code>Vref</code> specifies a reference potential, which is subtracted from the training data and the ACE parameters are then estimates from the difference. I.e. the this reference potential will in the end be added to the ACE model. Here we just use a one-body potential i.e. a reference atom energy for each individual species.</p><pre><code class="language-julia hljs">Vref = OneBody(:Ti =&gt; -1586.0195, :Al =&gt; -105.5954)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">OneBody{Float64}(Dict(:Al =&gt; -105.5954, :Ti =&gt; -1586.0195))</code></pre><p>The next line specifies the regression weights: in the least squares loss different observations are given different weights,</p><p class="math-container">\[  \sum_{R} \Big( w_^E_R | E(R) - y_R^E |^2
+           + w_F^R | {\rm forces}(R) - y_R^F |^2
+           + w_V^R | {\rm virial}(R) - y_R^V |^2 \Big),\]</p><p>and this is specificed via the following dictionary. The keys correspond to the <code>configtype</code> field in the <code>Dat</code> structure.</p><pre><code class="language-julia hljs">weights = Dict(
+        &quot;FLD_TiAl&quot; =&gt; Dict(&quot;E&quot; =&gt; 30.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ),
+        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Dict{String, Float64}} with 2 entries:
+  &quot;FLD_TiAl&quot;   =&gt; Dict(&quot;V&quot;=&gt;1.0, &quot;E&quot;=&gt;30.0, &quot;F&quot;=&gt;1.0)
+  &quot;TiAl_T5000&quot; =&gt; Dict(&quot;V&quot;=&gt;1.0, &quot;E&quot;=&gt;5.0, &quot;F&quot;=&gt;1.0)</code></pre><p>We are finally coming to the parameter estimation. In this tutorial we provide four different algorithms to solve the LLSQ problem: a Krylov method LSQR, rank-revealing QR, <code>scikit-learn</code> BRR solver as well as <code>the scikit-learn</code> ARD solver. TODO: discuss regularisation</p><pre><code class="language-julia hljs">solver_type = :lsqr
+smoothness_prior = true
+
+if solver_type == :lsqr
+	solver = Dict(
+        	&quot;solver&quot; =&gt; :lsqr,
+        	&quot;lsqr_damp&quot; =&gt; 1e-2,
+        	&quot;lsqr_atol&quot; =&gt; 1e-6)
+elseif solver_type == :rrqr
+	solver = Dict(
+        	&quot;solver&quot; =&gt; :rrqr,
+        	&quot;rrqr_tol&quot; =&gt; 1e-5)
+elseif solver_type == :brr
+	solver = Dict(
+        	&quot;solver&quot; =&gt; :brr,
+		&quot;brr_tol&quot; =&gt; 1e-3)
+elseif solver_type == :ard
+	solver= Dict(
+         	&quot;solver&quot; =&gt; :ard,
+         	&quot;ard_tol&quot; =&gt; 1e-3,
+         	&quot;ard_threshold_lambda&quot; =&gt; 10000)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 3 entries:
+  &quot;lsqr_atol&quot; =&gt; 1.0e-6
+  &quot;lsqr_damp&quot; =&gt; 0.01
+  &quot;solver&quot;    =&gt; :lsqr</code></pre><p>ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function <code>Bi</code> a scaling parameter <code>si</code> that estimates how &quot;rough&quot; that basis function is. The following line generates a regularizer (prior) with <code>si^q</code> on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential.</p><pre><code class="language-julia hljs">if smoothness_prior
+	using LinearAlgebra
+	q = 3.0
+	solver[&quot;P&quot;] = Diagonal(vcat(ACE1.scaling.(dB.basis.BB, q)...))
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">214×214 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
+ 1.0   ⋅     ⋅     ⋅      ⋅      ⋅    ⋅   …    ⋅        ⋅        ⋅     ⋅ 
+  ⋅   8.0    ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅   27.0    ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅   64.0     ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅   125.0     ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅   216.0   ⋅   …    ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅   1.0       ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+ ⋮                              ⋮         ⋱   ⋮                      
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅   …    ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅   …  12.1381    ⋅        ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅      24.0416    ⋅     ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅      36.0    ⋅ 
+  ⋅    ⋅     ⋅     ⋅      ⋅      ⋅    ⋅        ⋅        ⋅        ⋅   58.7878</code></pre><p>Once all the solver parameters have been determined, we use <code>IPFitting.lsqfit</code> to estimate the parameters. This routine will return the fitted interatomic potential <code>IP</code> as well as the a dictionary <code>lsqfit</code> with some information about the fitting process.</p><pre><code class="language-julia hljs">IP, lsqinfo = lsqfit(dB, solver=solver, weights=weights, Vref=Vref, error_table = true);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: assemble lsq system
+[ Info: Free Memory: ≈ 4.96 GB
+[ Info: Free Memory: ≈ 4.96 GB
+[ Info: Free Memory: ≈ 4.99 GB
+[ Info: Using Laplacian Preconditioning (P)
+[ Info: Size of least squares system: (1770, 214)
+[ Info: Using LSQR: damp=0.01, atol=1.0e-6, conlim=1.0e8, maxiter=1770
+[ Info: Free Memory: ≈ 4.99 GB
+[ Info: Relative RMSE on training set: 0.0040509367016663645
+[ Info: Assembling Error Table
+[ Info: Assemble Information about the fit</code></pre><p>For example,<code>lsqinfo</code> will contain information about the fit accuracy which we can display as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
+rmse_table(lsqinfo[&quot;errors&quot;])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Training Error Table
+┌─────────────┬─────────┬──────────┬───────┬────────┐
+│ config type │ E [meV] │ F [eV/A] │ F [%] │ V[meV] │
+├─────────────┼─────────┼──────────┼───────┼────────┤
+│    FLD_TiAl │   3.987 │    0.042 │ 4.482 │ 56.545 │
+│  TiAl_T5000 │   9.342 │    0.269 │ 7.107 │ 24.130 │
+├─────────────┼─────────┼──────────┼───────┼────────┤
+│         set │   4.375 │    0.228 │ 7.054 │ 55.484 │
+└─────────────┴─────────┴──────────┴───────┴────────┘</code></pre><p>We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions.</p><pre><code class="language-julia hljs">@info(&quot;Test Error Table&quot;)
+test = data[2:10:end]
+IPFitting.add_fits!(IP, test)
+rmse_table(test)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Test Error Table
+Add Fit info to configs in serial
+[ Info: Elapsed: 0.1s
+┌─────────────┬─────────┬──────────┬────────┬─────────┐
+│ config type │ E [meV] │ F [eV/A] │  F [%] │  V[meV] │
+├─────────────┼─────────┼──────────┼────────┼─────────┤
+│    FLD_TiAl │  26.766 │    0.382 │ 28.906 │ 366.140 │
+│  TiAl_T5000 │   2.651 │    0.329 │  8.614 │  55.689 │
+├─────────────┼─────────┼──────────┼────────┼─────────┤
+│         set │  26.362 │    0.359 │ 13.003 │ 360.680 │
+└─────────────┴─────────┴──────────┴────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can use one of the following command: the first saves the potential as an <code>ACE1.jl</code> compatible potential, while the second line exports it to a format that can be ready by the <code>pacemaker</code> code to be used within LAMMPS.</p><pre><code class="language-julia hljs">save_dict(&quot;./TiAl_tutorial_pot.json&quot;, Dict(&quot;IP&quot; =&gt; write_dict(IP), &quot;info&quot; =&gt; lsqinfo))
+ACE1pack.ExportMulti.export_ACE(&quot;./TiAl_tutorial_pot.yace&quot;, IP)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../first_example/">« First example (Julia)</a><a class="docs-footer-nextpage" href="../ACE1pack_TiAl/">TiAl potential (ACE1pack-julia) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 14 October 2022 10:36">Friday 14 October 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
