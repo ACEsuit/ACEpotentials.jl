@@ -41,7 +41,12 @@ function fit_ace(params::Dict, mode=:serial)
         P = ACE1pack.generate_regularizer(basis, params["P"])
     end
     A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode, P)
-    IP = JuLIP.MLIPs.combine(basis, C)
+    if !haskey(params["solver"], "committee_size") || params["solver"]["committee_size"]==0
+        IP = JuLIP.MLIPs.combine(basis, C)
+    else
+        @warn "Still need to get committee added."
+        IP = JuLIP.MLIPs.combine(basis, C)
+    end
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
 
     errors = linear_errors(data, IP)
