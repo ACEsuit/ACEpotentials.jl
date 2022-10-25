@@ -6,7 +6,8 @@ manager = MPIClusterManagers.start_main_loop(MPI_TRANSPORT_ALL)
 
 @everywhere using ACE1pack
 @everywhere using ACEfit
-@mpi_do manager using Elemental
+@everywhere using Suppressor
+@mpi_do manager @suppress using Elemental
 
 function ace_fit_mpi(params::Dict)
 
@@ -84,7 +85,7 @@ function ace_fit_mpi(params::Dict)
     (v_ref != nothing) && (IP = JuLIP.MLIPs.SumIP(v_ref, IP))
 
     @info "Computing fit error."
-    errors = ACE1pack.llsq_errors(data, IP)
+    errors = ACE1pack.linear_errors(data, IP)
     return IP, errors
 end
 
