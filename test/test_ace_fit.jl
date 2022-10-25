@@ -62,10 +62,11 @@ for line in readlines("TiAl.log")
    if occursin("set", line)
        ene_err = parse(Float64, split(line)[4]) * 1e-3
        for_err = parse(Float64, split(line)[6])
-       vir_err = parse(Float64, split(line)[10]) * 1e-3
-       @test isapprox(ene_err, 0.005480, atol=1e-3)
+       vir_err = parse(Float64, split(line)[8]) * 1e-3
+       @test isapprox(ene_err, 0.005, atol=1e-3)
        @test isapprox(for_err, 0.199, atol=1e-3)
-       @test isapprox(vir_err, 0.065608, atol=1e-3)
+       @test isapprox(vir_err, 0.066, atol=1e-3)
+       break
    end
 end
 
