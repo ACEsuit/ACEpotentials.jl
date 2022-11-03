@@ -28,16 +28,19 @@ parameters required depend on "type".
 * `type = "rrqr"`
 * `rtol = 1e-5`
 
-### BBR 
-* `type = "bbr"`
+### SKLEARN_BRR
+* `type = "sklearn_brr"`
 * `n_iter = 300`
 * `tol = 1e-3`
 
-### ARD
-* `type = "ard"`
+### SKLEARN_ARD
+* `type = "sklearn_ard"`
 * `n_iter = 300`
 * `tol = 1e-3`
 * `threshold_lambda = 1e4` 
+
+### BLR
+* `type` = "blr"
 
 """
 function solver_params(; type = nothing, kwargs...)
@@ -83,7 +86,7 @@ rrqr_params(; rtol = 1e-5) =
     Dict("type" => "rrqr", "rtol" => rtol)
 
 """
-`brr_params(; kwargs...)` : returns a dictionary containing the 
+`sklearn_brr_params(; kwargs...)` : returns a dictionary containing the 
 complete set of parameters required to construct a scikit-learn 
 Bayesian ridge regression solver. All parameters are passed as 
 keyword argument. 
@@ -92,23 +95,34 @@ keyword argument.
 * `n_iter = 300`
 * `tol = 1e-3`
 """
-brr_params(; n_iter = 300, tol = 1e-3) =
-    Dict("type" => "brr", "n_iter" => brr_n_iter, "tol" => brr_tol)
+sklearn_brr_params(; n_iter = 300, tol = 1e-3) =
+    Dict("type" => "sklearn_brr", "n_iter" => n_iter, "tol" => tol)
 
 
 """
-`ard_params(; kwargs...)` : returns a dictionary containing the 
+`sklearn_ard_params(; kwargs...)` : returns a dictionary containing the 
 complete set of parameters required to construct a scikit-learn 
 Automatic Relevance Detemrination solver. All parameters are 
 passed as keyword argument. 
 
 ### Parameters
-* `ard_n_iter = 300`
-* `ard_tol = 1e-3`
-* `ard_threshold_lambda = 1e4`
+* `n_iter = 300`
+* `tol = 1e-3`
+* `threshold_lambda = 1e4`
 """
-ard_params(; n_iter = 300, tol = 1e-3, threshold_lambda = 1e4) =
-    Dict("type" => "ard", "n_iter" => n_iter, "tol" => tol, "threshold_lambda" => threshold_lambda)
+sklearn_ard_params(; n_iter = 300, tol = 1e-3, threshold_lambda = 1e4) =
+    Dict("type" => "sklearn_ard", "n_iter" => n_iter, "tol" => tol, "threshold_lambda" => threshold_lambda)
+
+"""
+`blr_params(; kwargs...)` : returns a dictionary containing the 
+complete set of parameters required to construct a Bayesian 
+linear regression solver. All parameters are passed as 
+keyword argument. 
+
+### Parameters
+"""
+blr_params(;) =
+    Dict("type" => "blr")
 
 
 _solver_to_params(solver_type::Union{Symbol, AbstractString}) = 
@@ -118,8 +132,9 @@ _solver_to_params(solver_type::Union{Symbol, AbstractString}) =
 _solvers_params = Dict("qr" => qr_params,
                        "lsqr" => lsqr_params,
                        "rrqr" => rrqr_params,
-                       "brr" => brr_params,
-                       "ard" => ard_params)
+                       "sklearn_brr" => sklearn_brr_params,
+                       "sklearn_ard" => sklearn_ard_params,
+                       "blr" => blr_params)
 
 _params_to_solver(solver_type::AbstractString) = 
     Symbol.(solver_type)
