@@ -47,15 +47,18 @@ end
 nprocs = args["num-blas-threads"]
 if nprocs > 1
     using LinearAlgebra
-    @warn "Using $nprocs threads for BLAS"
+    @info "Using $nprocs threads for BLAS"
     BLAS.set_num_threads(nprocs)
+    controller = pyimport("threadpoolctl")["ThreadpoolController"]()
+    controller.limit(limits=nprocs, user_api="blas")
+    pyimport("pprint")["pprint"](controller.select(user_api="blas").info())
 end
 
 if args["dry-run"]
     save_dry_run_info(fit_params)
 end
 
-IP, lsqinfo = ACE1pack.fit_ace(fit_params)
+IP, lsqinfo = ACE1pack.fit_ace(fit_params, :distributed)
 
 # export to a .yace automatically, also need to generate the new name.
 yace_name = replace(fit_params["ACE_fname"], ".json" => ".yace")

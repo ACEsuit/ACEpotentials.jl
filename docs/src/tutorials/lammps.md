@@ -36,9 +36,9 @@ pair_coeff      * * pace potential.yace I Cs Pb
 pair_coeff      1 1 table potential_pairpot.table I_I
 pair_coeff      1 2 table potential_pairpot.table I_Cs
 pair_coeff      1 3 table potential_pairpot.table I_Pb
-pair_coeff      2 2 potential_pairpot.table Cs_Cs
-pair_coeff      2 3 potential_pairpot.table Cs_Pb
-pair_coeff      3 3 potential_pairpot.table Pb_Pb
+pair_coeff      2 2 table potential_pairpot.table Cs_Cs
+pair_coeff      2 3 table potential_pairpot.table Cs_Pb
+pair_coeff      3 3 table potential_pairpot.table Pb_Pb
 ```
 
 where we are using the ordering I, Cs, Pb.
