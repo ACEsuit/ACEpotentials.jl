@@ -28,9 +28,9 @@ cutoffs = Dict(
     (:C, :H) => (1.2, 3.4))
 
 transforms = Dict(
-    (:C, :C) => transform_params(r0 = 2),
+    (:C, :C) => transform_params(r0 = 2.0),
     (:H, :H) => transform_params(r0 = 1.1),
-    (:C, :H) => transform_params(r0 = 2))
+    (:C, :H) => transform_params(r0 = 2.0))
 
 multitransform_params = transform_params(
     type = "multitransform", 
