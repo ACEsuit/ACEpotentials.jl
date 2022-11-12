@@ -41,6 +41,7 @@ parameters required depend on "type".
 
 ### BLR
 * `type` = "blr"
+* `verbose = false`
 
 """
 function solver_params(; type = nothing, kwargs...)
@@ -120,9 +121,10 @@ linear regression solver. All parameters are passed as
 keyword argument. 
 
 ### Parameters
+* `verbose = false`
 """
-blr_params(;) =
-    Dict("type" => "blr")
+blr_params(; verbose = false) =
+    Dict("type" => "blr", "verbose" => verbose)
 
 
 _solver_to_params(solver_type::Union{Symbol, AbstractString}) = 
