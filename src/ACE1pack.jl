@@ -13,7 +13,7 @@ export JuLIP, ASE, ACE1, ACEfit, Argparse, PyCall
 
 # Convenience Layer 
 
-include("acefit.jl")
+include("atoms_data.jl")
 
 include("fit.jl")
 
