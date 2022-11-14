@@ -4,11 +4,12 @@ module ACE1pack
 # also ArgParse and PyCall for the command line script
 using Reexport 
 @reexport using JuLIP
+@reexport using ASE
 @reexport using ACE1
 @reexport using ACEfit
 @reexport using ArgParse
 @reexport using PyCall
-export JuLIP, ACE1, ACEfit, Argparse, PyCall
+export JuLIP, ASE, ACE1, ACEfit, Argparse, PyCall
 
 # Convenience Layer 
 
