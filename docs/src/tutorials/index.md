@@ -28,3 +28,7 @@ These tutorials use `ACE1.jl` and `ACEfit.jl` directly instead of the `ACE1pack`
 ### Structure analysis with ACE1 descriptors
 
 * [ACE descriptors](../literate_tutorials/descriptor.md)
+
+### Committee Potentials
+
+* [Committee Potentials](../literate_tutorials/committee.md)

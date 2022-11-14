@@ -7,6 +7,18 @@ using Dates, Base
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
+# TODO: replace this workaround once ACE1 supports committee_potential(::IPSuperBasis,...)
+function committee_potential(basis::JuLIP.MLIPs.IPSuperBasis{JuLIP.MLIPs.IPBasis}, C, committee)
+    i1 = 1
+    com_pots = []
+    for b in basis.BB
+        i2 = i1 + length(b) - 1
+        com_pot = ACE1.committee_potential(b, C[i1:i2], committee[i1:i2,:])
+        push!(com_pots, com_pot)
+        i1 = i1 + length(b)
+    end
+    return JuLIP.MLIPs.SumIP(com_pots)
+end
 
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 
@@ -40,15 +52,23 @@ function fit_ace(params::Dict, mode=:serial)
     else
         P = ACE1pack.generate_regularizer(basis, params["P"])
     end
-    A, Y, W, C = ACEfit.linear_fit(data, basis, solver, mode, P)
+    fit = ACEfit.linear_fit(data, basis, solver, mode, P)
+    C = fit["C"]
     IP = JuLIP.MLIPs.combine(basis, C)
     (Vref != nothing) && (IP = JuLIP.MLIPs.SumIP(Vref, IP))
 
     errors = linear_errors(data, IP)
+    results = Dict{String,Any}("IP" => IP, "errors" => errors)
 
     save_fit(params["ACE_fname"], IP, Dict("errors" => errors, "params" => params))
 
-    return IP, errors
+    if haskey(fit, "committee")
+        IP_com = committee_potential(basis, C, fit["committee"])
+        results["IP_com"] = IP_com
+        save_fit("committee.json", IP_com, Dict("errors" => errors, "params" => params))
+    end
+
+    return results
 end
 
 """

@@ -21,6 +21,9 @@ Literate.markdown(_tutorial_src * "/ACE1pack_TiAl.jl",
 Literate.markdown(_tutorial_src * "/descriptor.jl",
                   _tutorial_out; documenter = true)
 
+Literate.markdown(_tutorial_src * "/committee.jl",
+                  _tutorial_out; documenter = true)
+
 # ???? cf Jump.jl docs, they do also this: 
 # postprocess = _link_example,
 # # Turn off the footer. We manually add a modified one.
@@ -54,6 +57,7 @@ makedocs(;
             "literate_tutorials/TiAl.md",
             "literate_tutorials/ACE1pack_TiAl.md",
             "literate_tutorials/descriptor.md",
+            "literate_tutorials/committee.md",
             "tutorials/lammps.md",
             "tutorials/python_ase.md"
         ],

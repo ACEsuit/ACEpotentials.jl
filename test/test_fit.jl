@@ -62,7 +62,8 @@ params = fit_params(
     P = P,
     ACE_fname = "")
 
-IP, errors = fit_ace(params)
+results = fit_ace(params)
+errors = results["errors"]
 
 expected_errors = load_dict(expected_errors_json)
 
