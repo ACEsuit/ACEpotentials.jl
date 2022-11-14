@@ -65,7 +65,9 @@ function fit_ace(params::Dict, mode=:serial)
     if haskey(fit, "committee")
         IP_com = committee_potential(basis, C, fit["committee"])
         results["IP_com"] = IP_com
-        save_fit("committee.json", IP_com, Dict("errors" => errors, "params" => params))
+        if !(params["ACE_fname"] == "") && !isnothing(params["ACE_fname"])
+            save_fit("committee_"*params["ACE_fname"], IP_com, Dict("errors" => errors, "params" => params))
+        end
     end
 
     return results
