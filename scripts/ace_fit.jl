@@ -62,4 +62,4 @@ results = ACE1pack.fit_ace(fit_params, :distributed)
 
 # export to a .yace automatically, also need to generate the new name.
 yace_name = replace(fit_params["ACE_fname"], ".json" => ".yace")
-ACE1pack.ExportMulti.export_ACE(yace_name, results["IP"])
+ACE1pack.ExportMulti.export_ACE(yace_name, results["IP"]; export_pairpot_as_table=true)
