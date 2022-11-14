@@ -5,6 +5,7 @@ version = "0.2.0"
 
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
+ASE = "51974c44-a7ed-5088-b8be-3e78c8ba416c"
 ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
