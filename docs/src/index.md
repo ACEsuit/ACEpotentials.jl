@@ -10,11 +10,11 @@ CurrentModule = ACE1pack
 
 1. Fitting from the Command line.
 
-`ACE1pack` provides scripts to fit potentials from the command line. Fitting is controlled by a dictionary of parameters in a `.json` file to specify the model and fitting options.
+    `ACE1pack` provides scripts to fit potentials from the command line. Fitting is controlled by a dictionary of parameters in a `.json` file to specify the model and fitting options.
 
 2. Using the `ACE1pack` wrapper functions in julia
 
-`ACE1pack` also provides helper functions which wrap the functionality of `ACE1.jl` in julia. 
+    `ACE1pack` also provides helper functions which wrap the functionality of `ACE1.jl` in julia. 
 
 3. Using `ACE1.jl` in julia directly. 
 

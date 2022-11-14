@@ -3,7 +3,7 @@
 
 ### Fitting potentials from the command line
 
-ACE potentials can be fitted from the command line using a dictionary stored in a `.json` or `.yaml` file to specify the parameters. This tutorials show how to do this:
+ACE potentials can be fitted from the command line using a dictionary stored in a `.json` or `.yaml` file to specify the parameters:
 
 * [TiAl Potential (command line JSON)](./first_example_json.md)
 

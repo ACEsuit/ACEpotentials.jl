@@ -13,11 +13,10 @@ cd ~/ACE1project
 
 From within this folder type `julia` to enter the Julia REPL. Then run
 ```julia
-using Pkg; Pkg.activate("."); pkg"registry add https://github.com/JuliaRegistries/General"; pkg"registry add https://github.com/JuliaMolSim/MolSim.git"; pkg"add ACE1pack"
+using Pkg; Pkg.activate("."); Pkg.Registry.add("https://github.com/JuliaRegistries/General"); Pkg.Registry.add("https://github.com/JuliaMolSim/MolSim.git"); Pkg.add("ACE1pack")
 ```
 
 Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.md), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 
-<!-- You can add this to your `.bashrc`/`.bash_profile` and not touch it again.  -->
 
 ### Setting up the Python ASE calculator
 
@@ -43,7 +42,7 @@ If you have any difficulties with the following setup process, please file an is
 
 #### Installing Julia
 
-Download and unpack [Julia](https://julialang.org). We recommend v1.6 or upwards. Add the `julia` executable to your path with something like `export PATH=<julia-directory>/bin:$PATH`.
+Download and unpack [Julia](https://julialang.org). We recommend v1.8 or upwards. Add the `julia` executable to your path with something like `export PATH=<julia-directory>/bin:$PATH`.
 
 Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then install the General registry and the [`MolSim` registry](https://github.com/JuliaMolSim/MolSim):
 ```julia
