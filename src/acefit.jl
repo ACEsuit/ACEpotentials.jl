@@ -9,21 +9,30 @@ struct AtomsData <: ACEfit.AbstractData
     force_key
     virial_key
     weights
-    vref
+    energy_ref
     function AtomsData(atoms::Atoms,
-                       energy_key, force_key, virial_key,
-                       weights, vref)
+                       energy_key=nothing,
+                       force_key=nothing,
+                       virial_key=nothing,
+                       weights=Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)),
+                       v_ref=nothing)
 
         # set energy, force, and virial keys for this configuration
         # ("nothing" indicates data that are absent or ignored)
         ek, fk, vk = nothing, nothing, nothing
-        for key in keys(atoms.data)
-            if lowercase(key) == lowercase(energy_key)
-                ek = key
-            elseif lowercase(key) == lowercase(force_key)
-                fk = key
-            elseif lowercase(key) == lowercase(virial_key)
-                vk = key
+        if !isnothing(energy_key)
+            for key in keys(atoms.data)
+                (lowercase(energy_key)==lowercase(key)) && (ek=key)
+            end
+        end
+        if !isnothing(force_key)
+            for key in keys(atoms.data)
+                (lowercase(force_key)==lowercase(key)) && (fk=key)
+            end
+        end
+        if !isnothing(virial_key)
+            for key in keys(atoms.data)
+                (lowercase(virial_key)==lowercase(key)) && (vk=key)
             end
         end
 
@@ -39,7 +48,13 @@ struct AtomsData <: ACEfit.AbstractData
             end
         end
 
-        return new(atoms, ek, fk, vk, w, vref)
+        if isnothing(v_ref)
+            e_ref = 0.0
+        else
+            e_ref = energy(v_ref, atoms)
+        end
+
+        return new(atoms, ek, fk, vk, w, e_ref)
     end
 end
 
@@ -52,14 +67,6 @@ end
 function ACEfit.feature_matrix(d::AtomsData, basis)
     dm = Array{Float64}(undef, ACEfit.count_observations(d), length(basis))
     i = 1
-    ### must put virial first for direct comparison with IPFitting
-    #if !isnothing(d.virial_key)
-    #    v = virial(basis, d.atoms)
-    #    for j in 1:length(basis)
-    #        dm[i:i+5,j] .= v[j][SVector(1,5,9,6,3,2)]
-    #    end
-    #    i += 6
-    #end
     if !isnothing(d.energy_key)
         dm[i,:] .= energy(basis, d.atoms)
         i += 1
@@ -84,15 +91,9 @@ end
 function ACEfit.target_vector(d::AtomsData)
     y = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
-    ### must put virial first for direct comparison with IPFitting
-    #if !isnothing(d.virial_key)
-    #    v = vec(d.atoms.data[d.virial_key].data)
-    #    y[i:i+5] .= v[SVector(1,5,9,6,3,2)]
-    #    i += 6
-    #end
     if !isnothing(d.energy_key)
         e = d.atoms.data[d.energy_key].data
-        y[i] = e - energy(d.vref, d.atoms)
+        y[i] = e - d.energy_ref
         i += 1
     end
     if !isnothing(d.force_key)
@@ -111,11 +112,6 @@ end
 function ACEfit.weight_vector(d::AtomsData)
     w = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
-    ### must put virial first for direct comparison with IPFitting
-    #if !isnothing(d.virial_key)
-    #    w[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
-    #    i += 6
-    #end
     if !isnothing(d.energy_key)
         w[i] = d.weights["E"] / sqrt(length(d.atoms))
         i += 1
