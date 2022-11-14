@@ -123,8 +123,8 @@ keyword argument.
 ### Parameters
 * `verbose = false`
 """
-blr_params(; verbose = false) =
-    Dict("type" => "blr", "verbose" => verbose)
+blr_params(; verbose = false, committee_size = 10) =
+    Dict("type" => "blr", "verbose" => verbose, "committee_size" => committee_size)
 
 
 _solver_to_params(solver_type::Union{Symbol, AbstractString}) = 
