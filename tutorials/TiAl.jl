@@ -8,7 +8,7 @@ using ACE1pack
 
 data_file = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz")
 
-# We can now use `IPFitting.Data.read_xyz` to load in the training set. This will not only load the structures, but also search for energies and force from a reference model, and all this will then be stored as a `Vector{Dat}`. We keep only every 10 training structures to keep the regression problem small.
+# We can now use `JuLIP.read_extxyz` to load in the training set. We keep only every 10 training structures to keep the regression problem small.
 
 data = JuLIP.read_extxyz(data_file)
 train = data[1:5:end];
@@ -18,10 +18,9 @@ train = data[1:5:end];
 # * a relatively low polynomial degree `maxdeg = 6`, and 
 # * a cutoff radious `rcut = 5.5`
 # These three are the most important approximation parameters to explore when trying to improve the fit-accuracy. In addition there is
-# * The parameter `r0` is just a scalig parameter and the fits should not be very sensitive to its choice. A rough estimate for the nearest-neighbour distance is usually ok. 
+# * The parameter `r0` is just a scaling parameter and the fits should not be very sensitive to its choice. A rough estimate for the nearest-neighbour distance is usually ok. 
 # * The inner cutoff `rin` is will ensure that the many-body potential becomes zero when atoms get too close. The reason for this is that we usually do not have data against which to fit the potential in this deformation regime and therefore cannot make reliable predictions. Instead we will add a pair potential to model this regime below.
 #
-
 
 # EG: `pin` should be set to 2?? i.e. bad `ace_basis` default?
 r0 = 2.88 
@@ -42,16 +41,6 @@ Bpair = pair_basis(species = [:Ti, :Al],
                    pin = 0)  
 B = JuLIP.MLIPs.IPSuperBasis([Bpair, ACE_B]);
 
-# The next step is to evaluate the basis on the training set. Precomputing the basis once (and possibly save it to disk) makes experimenting with different regression parameters much more efficient. This is demonstrated below by showing various different solver options. Similarly once could also explore different data weights (see `weights` below). 
-
-Vref = OneBody(:Ti => -1586.0195, :Al => -105.5954)
-weights = Dict(
-        "FLD_TiAl" => Dict("E" => 30.0, "F" => 1.0 , "V" => 1.0 ),
-        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ))
-
-train = [ACE1pack.AtomsData(t,"energy","force","virial",weights,Vref) for t in train] 
-A, Y, W = ACEfit.linear_assemble(train, B)
-
 # `Vref` specifies a reference potential, which is subtracted from the training data and the ACE parameters are then estimates from the difference. I.e. the this reference potential will in the end be added to the ACE model. Here we just use a one-body potential i.e. a reference atom energy for each individual species. 
 
 Vref = OneBody(:Ti => -1586.0195, :Al => -105.5954)
@@ -68,12 +57,16 @@ weights = Dict(
         "FLD_TiAl" => Dict("E" => 30.0, "F" => 1.0 , "V" => 1.0 ),
         "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ))
 
+# The next step is to evaluate the basis on the training set. Precomputing the basis once (and possibly save it to disk) makes experimenting with different regression parameters much more efficient. This is demonstrated below by showing various different solver options. Similarly once could also explore different data weights (see `weights` below). 
+
+train = [ACE1pack.AtomsData(t,"energy","force","virial",weights,Vref) for t in train] 
+A, Y, W = ACEfit.linear_assemble(train, B)
+
 # We are finally coming to the parameter estimation. In this tutorial we provide four different algorithms to solve the LLSQ problem: a Krylov method LSQR, rank-revealing QR, `scikit-learn` BRR solver as well as `the scikit-learn` ARD solver. 
 # TODO: discuss regularisation
 
 solver_type = :lsqr
-@warn "must restore smoothness prior"
-smoothness_prior = false 
+smoothness_prior = true 
 
 if solver_type == :lsqr
 	solver = Dict(
@@ -98,38 +91,29 @@ end
 # ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
 
 if smoothness_prior
-	using LinearAlgebra
-	q = 3.0
-	solver["P"] = Diagonal(vcat(ACE1.scaling.(B.BB, q)...))
+    using LinearAlgebra
+    q = 3.0
+    solver["P"] = Diagonal(vcat(ACE1.scaling.(B.BB, q)...))
 end
 
-# Once all the solver parameters have been determined, we use `IPFitting.lsqfit` to estimate the parameters. This routine will return the fitted interatomic potential `IP` as well as the a dictionary `lsqfit` with some information about the fitting process. 
-
-#IP, lsqinfo = lsqfit(dB, solver=solver, weights=weights, Vref=Vref, error_table = true);
+# Once all the solver parameters have been determined, we use `ACEfit` to estimate the parameters. This routine will return the fitted interatomic potential `IP` as well as the a dictionary `lsqfit` with some information about the fitting process. 
 
 solver = ACEfit.create_solver(solver)
-C = ACEfit.linear_solve(solver, A, Y)
-IP = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(B, C))
+results = ACEfit.linear_solve(solver, A, Y)
+IP = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(B, results["C"]))
 
-# For example,`lsqinfo` will contain information about the fit accuracy which we can display as follows:
+# We can display an error table as follows:
 
 @info("Training Error Table")
-#rmse_table(lsqinfo["errors"])
-@show ACE1pack.linear_errors(train, IP)
+ACE1pack.linear_errors(train, IP);
 
 # We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions. 
 
-@warn "Must restore test error table"
 @info("Test Error Table")
-#test = data[2:10:end]
-#IPFitting.add_fits!(IP, test)
-#rmse_table(test)
-
-
+test = [ACE1pack.AtomsData(d,"energy","force","virial",weights,Vref) for d in data[2:10:end]] 
+ACE1pack.linear_errors(test, IP);
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following command: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
 
-@warn "Can't save dictionary"
-#save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(IP), "info" => lsqinfo))
-ACE1pack.ExportMulti.export_ACE("./TiAl_tutorial_pot.yace", IP)
-
+save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(IP)))
+ACE1pack.ExportMulti.export_ACE("./TiAl_tutorial_pot.yace", IP; export_pairpot_as_table=true)
