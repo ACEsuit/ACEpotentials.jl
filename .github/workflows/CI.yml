@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - acefit
     tags: '*'
   pull_request:
   workflow_dispatch:
@@ -56,11 +55,6 @@ jobs:
           Pkg.pkg"registry add https://github.com/JuliaMolSim/MolSim.git"
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
-      - name: "use development version of ACEfit"
-        run: |
-          using Pkg
-          Pkg.develop("ACEfit")
-        shell: bash -c "julia --color=yes {0}"
       - name: "test-precompile" 
         run: |
           using Pkg
@@ -139,6 +133,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+      - run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.add("ACEfit", rev="main")'
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
