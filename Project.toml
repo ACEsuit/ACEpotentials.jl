@@ -31,7 +31,7 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
-ACE1 = "= 0.10.1"
+ACE1 = "= 0.10.2"
 ASE = "= 0.5.4"
 JuLIP = "0.11.5"
 PrettyTables = "1.3"
