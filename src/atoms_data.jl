@@ -228,7 +228,9 @@ function linear_errors(data, model)
     )
     pretty_table(
         table; header=header,
-        body_hlines=[length(config_types)-1], formatters=ft_printf("%5.3f"))
+        body_hlines=[length(config_types)-1],
+        formatters=ft_printf("%5.3f"),
+        crop = :horizontal)
 
     @info "MAE Table"
     header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
@@ -240,7 +242,9 @@ function linear_errors(data, model)
     )
     pretty_table(
         table; header=header,
-        body_hlines=[length(config_types)-1], formatters=ft_printf("%5.3f"))
+        body_hlines=[length(config_types)-1],
+        formatters=ft_printf("%5.3f"),
+        crop = :horizontal)
 
     return config_errors
 end
@@ -288,6 +292,6 @@ function assess_dataset(data)
         "missing", 0, 0,
         tot[4]-tot[2], 3*tot[3]-tot[5], 6*tot[2]-tot[6]]
     table = vcat(table, permutedims(tot), permutedims(miss))
-    pretty_table(table; header=header, body_hlines=[length(n_configs)])
+    pretty_table(table; header=header, body_hlines=[length(n_configs)], crop = :horizontal)
 
 end
