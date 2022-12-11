@@ -1,6 +1,7 @@
 import ACEfit
 import JuLIP: Atoms, energy, forces, mat
 using PrettyTables
+using OrderedCollections
 using StaticArrays: SVector
 
 struct AtomsData <: ACEfit.AbstractData
@@ -252,11 +253,11 @@ end
 function assess_dataset(data)
     config_types = []
 
-    n_configs = Dict{String,Integer}()
-    n_environments = Dict{String,Integer}()
-    n_energies = Dict{String,Integer}()
-    n_forces = Dict{String,Integer}()
-    n_virials = Dict{String,Integer}()
+    n_configs = OrderedDict{String,Integer}()
+    n_environments = OrderedDict{String,Integer}()
+    n_energies = OrderedDict{String,Integer}()
+    n_forces = OrderedDict{String,Integer}()
+    n_virials = OrderedDict{String,Integer}()
 
     for d in data
         c_t = config_type(d)
