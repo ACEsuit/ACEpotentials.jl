@@ -25,8 +25,7 @@ r0 = rnn(:Si)
 basis = ace_basis(; 
       species = :Si,
       N = 3,                        # correlation order = body-order - 1
-      maxdeg = 12,                  # polynomial degree
-      D = SparsePSHDegree(; wL=1.5, csp=1.0),
+      maxdeg = 12,                  # total polynomial degree
       r0 = r0,                      # estimate for NN distance
       rin = 0.65*r0, rcut = 5.0,    # domain for radial basis (cf documentation)
       pin = 2)
@@ -34,9 +33,9 @@ basis = ace_basis(;
 
 # ### Step 2: Generate a training set 
 #
-# Normally one would generate a training set using DFT data, stored as an `.xyz` file. Here, we create a random training set for simplicity. 
-# * `gen_dat()` generates a single training configuration wrapped in an `ACE1pack.AtomsData` structure. Each `d::Dat` contains the structure `d.at`, and energy value and a force vector to train against. 
-# * `train` is then a list of 50 such training configurations.
+# Next we need to generate some training data to estimate the model parameters. Normally one would generate a training set using DFT data, stored as an `.xyz` file. Here, we create a random training set for simplicity. Please note that this is generally *not* a good strategy to generate data!
+# * `gen_dat()` generates a single training configuration wrapped in an `ACE1pack.AtomsData` structure. Each `d::AtomsData` contains the structure `d.atoms`, and energy value and a force vector to train against. 
+# * `train` is then a collection of such random training configurations.
 
 function gen_dat()
    sw = StillingerWeber() 
@@ -52,15 +51,13 @@ train = [gen_dat() for _=1:20];
 
 # ### Step 3: Estimate Parameters 
 #
-# Now, we assemble the design matrix (A), target vector (Y), and weight vector (W).
+# We specify a solver and then as `ACEfit.jl` to do all the work for us. More fine-grained control is possible; see the `ACEfit.jl` documentation.
+# For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us. 
 
-A, Y, W = ACEfit.linear_assemble(train, basis)
+solver = ACEfit.BR()   
+solution = ACEfit.linear_fit(train, basis, solver)
 
-# Next, we solve the linear problem.
-
-solution = ACEfit.linear_solve(ACEfit.create_solver(Dict("type"=>"blr")), A, Y)
-
-# Finally, we generate the potential.
+# Finally, we generate the potential from the parameters. 
 
 potential = JuLIP.MLIPs.combine(basis, solution["C"])
 

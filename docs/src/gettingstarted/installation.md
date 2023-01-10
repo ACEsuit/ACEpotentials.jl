@@ -3,20 +3,23 @@
 
 ### Short Version
 
-First, you will need to install julia (see below for instructions). 
+These short instructions are intended for users who are already familiar with Julia. 
+If these instructions don't make sense please see the detailed instructions below. 
 
-Create a folder to hold your julia `ACE` project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. For example:
+1. Install Julia if you haven't already. Make sure the `General` registry is installed and up to date. 
+2. Install the ACE registry: Most ACE related packages are registered not in `General` but in our own registry. Add this by switching to the package manager `]` and then typing 
+``` 
+registry add https://github.com/ACEsuit/ACEregistry
 ```
-mkdir ~/ACE1project
-cd ~/ACE1project
-```
+3. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. Start julia, activate the project and add `ACE1pack`: 
+``` 
+] 
+activate . 
+add ACE1pack 
+``` 
+`ACE1pack` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`. 
+4. Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.md), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 
 
-From within this folder type `julia` to enter the Julia REPL. Then run
-```julia
-using Pkg; Pkg.activate("."); Pkg.Registry.add("https://github.com/JuliaRegistries/General"); Pkg.Registry.add("https://github.com/ACEsuit/ACEregistry"); Pkg.add("ACE1pack")
-```
-
-Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.md), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 
 
 ### Setting up the Python ASE calculator
 
@@ -36,6 +39,7 @@ cd pyjulip
 pip install .
 ```
 
+
 ### Detailed Instructions
 
 If you have any difficulties with the following setup process, please file an issue. We highly recommend familiarizing oneself with the [Julia package manager](https://github.com/JuliaLang/Pkg.jl) and how Project management is best done in Julia (there is also a summary in [this section](pkg.md) of these docs). In particular all projects should manage their own `Project.toml` file with appropriate version bounds, and where appropriate the `Manifest.toml` file can be tracked in order to guarantee reproducibility of results.
@@ -44,7 +48,7 @@ If you have any difficulties with the following setup process, please file an is
 
 Download and unpack [Julia](https://julialang.org). We recommend v1.8 or upwards. Add the `julia` executable to your path with something like `export PATH=<julia-directory>/bin:$PATH`.
 
-Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then install the General registry and the [`MolSim` registry](https://github.com/JuliaMolSim/MolSim):
+Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then install the General registry and the [`ACE` registry](https://github.com/ACEsuit/ACEregistry):
 ```julia
 registry add https://github.com/JuliaRegistries/General
 registry add https://github.com/ACEsuit/ACEregistry
@@ -62,7 +66,7 @@ Now you can install `ACE1pack`. Remaining in the package manager, use
 add ACE1pack
 ```
 
-you will also need to add the following packages: `ACE1, JuLIP, IPFitting, ASE`.
+Depending on your usage you may also need to add the following packages: `ACE1, JuLIP, ACEfit, ASE`.
 
 #### Returning to a project
 
@@ -70,5 +74,5 @@ When returning to a project, there are several methods for reactivating it. One 
 
 ### Trouble-shooting
 
-* On some systems `ASE.jl` (a dependency of `IPFitting.jl`) is unable to automatically install python dependencies. We found that installing [Anaconda](https://anaconda.org) and then pointing `PyCall.jl` to the Anaconda installation (cf [PyCall Readme](https://github.com/JuliaPy/PyCall.jl)) resolves this. After installing Anaconda, it should then be sufficient to build `ASE.jl` again.
+* On some systems `ASE.jl` and `ACEfit.jl` is unable to automatically install python dependencies. We found that installing [Anaconda](https://anaconda.org) and then pointing `PyCall.jl` to the Anaconda installation (cf [PyCall Readme](https://github.com/JuliaPy/PyCall.jl)) resolves this. After installing Anaconda, it should then be sufficient to build `ASE.jl` again.
 * If you cannot use Anaconda python, or if the last point failed, then you can try to install the python dependencies manually before trying to build `ASE.jl` again. Specifically, it should be sufficient to just install the [ase](https://wiki.fysik.dtu.dk/ase/) package. Please follow the installation instructions on their website.
