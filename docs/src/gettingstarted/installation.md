@@ -13,7 +13,7 @@ cd ~/ACE1project
 
 From within this folder type `julia` to enter the Julia REPL. Then run
 ```julia
-using Pkg; Pkg.activate("."); Pkg.Registry.add("https://github.com/JuliaRegistries/General"); Pkg.Registry.add("https://github.com/JuliaMolSim/MolSim.git"); Pkg.add("ACE1pack")
+using Pkg; Pkg.activate("."); Pkg.Registry.add("https://github.com/JuliaRegistries/General"); Pkg.Registry.add("https://github.com/ACEsuit/ACEregistry"); Pkg.add("ACE1pack")
 ```
 
 Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.md), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 
@@ -47,7 +47,7 @@ Download and unpack [Julia](https://julialang.org). We recommend v1.8 or upwards
 Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then install the General registry and the [`MolSim` registry](https://github.com/JuliaMolSim/MolSim):
 ```julia
 registry add https://github.com/JuliaRegistries/General
-registry add https://github.com/JuliaMolSim/MolSim.git
+registry add https://github.com/ACEsuit/ACEregistry
 ```
 Press Backspace or `Ctrl-c` to exit the package manager. Use `Ctrl-d`, or `exit()` followed by Enter, to close the Julia REPL.
 
