@@ -32,17 +32,21 @@ end
 # - some of this replicates functionality from ACE1.jl and we should 
 #   consider having it in just one of the two places. 
 # - better defaults for transform
-# - more documentation 
+# - more documentation, especially if this becomes the standard interface  
 
 """
-required parameters: 
-* `species`
-* `maxdeg`
-* `rcut`
+`function acemodel` : convenience constructor for `ACE1Model` objects.
+
+Required parameters: 
+* `species` : list of chemical elements
+* `N` : correlation order (body-order - 1)
+* `maxdeg` : total polynomial degree of the ace basis 
+* `rcut` : cutoff radius of the ace basis 
+
 Recommended parameters: 
-* `maxdeg2`
-* `rcut2`
-* `Eref`
+* `maxdeg2` : polynomial degree of the pair basis 
+* `rcut2` : cutoff radius of the pair basis
+* `Eref` : reference energies for the species
 
 The pair basis is activated by either providing `maxdeg2` or `rbasis2`. 
 The reference potential is activated by either providing `Eref` or `Vref`.
@@ -122,7 +126,7 @@ function acemodel(;  species = nothing,
    # set some random parameters -> this will also generate the evaluator 
    params = randn(length(basis))
    params = params ./ (1:length(basis)).^4
-   set_params!(model, params)
+   _set_params!(model, params)
    return model 
 end
 
@@ -133,7 +137,7 @@ _sumip(pot1, pot2) =
 _sumip(pot1::JuLIP.MLIPs.SumIP, pot2) = 
       JuLIP.MLIPs.SumIP([pot1.components..., pot2])
                                       
-function set_params!(model, params)
+function _set_params!(model, params)
    model.params = params
    model.potential = JuLIP.MLIPs.combine(model.basis, model.params)
    if model.Vref != nothing 
@@ -143,6 +147,14 @@ function set_params!(model, params)
 end
 
 
+"""
+`function acefit!` : provides a simplified interface to fitting the 
+parameters of a model specified via `ACE1Model`. The data should be 
+provided as a collection (`AbstractVector`) of `JuLIP.Atoms` structures. 
+The keyword arguments `energy_key`, `force_key`, `virial_key` specify 
+the label of the data to which the parameters will be fitted. 
+The final keyword argument is a `weights` dictionary. 
+"""
 function acefit!(model, raw_data, solver; 
              weights = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0)),
              energy_key = "energy", 
@@ -151,6 +163,6 @@ function acefit!(model, raw_data, solver;
    data = [ AtomsData(at, energy_key, force_key, virial_key, 
                       weights, model.Vref) for at in raw_data ] 
    result = ACEfit.linear_fit(data, model.basis, solver) 
-   set_params!(model, result["C"])
+   _set_params!(model, result["C"])
    return model 
 end
