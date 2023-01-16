@@ -21,6 +21,8 @@ include("data.jl")
 
 include("basis.jl")
 
+include("model.jl")
+
 include("solver.jl")
 
 include("regularizer.jl")
