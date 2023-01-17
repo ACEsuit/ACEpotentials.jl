@@ -7,19 +7,26 @@ These short instructions are intended for users who are already familiar with Ju
 If these instructions don't make sense please see the detailed instructions below. 
 
 1. Install Julia if you haven't already. Make sure the `General` registry is installed and up to date. 
-2. Install the ACE registry: Most ACE related packages are registered not in `General` but in our own registry. Add this by switching to the package manager `]` and then typing 
-``` 
-registry add https://github.com/ACEsuit/ACEregistry
-```
-3. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. Start julia, activate the project and add `ACE1pack`: 
-``` 
-] 
-activate . 
-add ACE1pack 
-``` 
-`ACE1pack` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`. 
-4. Before working on an ACE1 project in the `ACE1project` folder you will need to activate the Julia environment you just created in that folder. This can be done by starting julia with `julia --project=pathtoproject`, or from the [package manager](pkg.md), or by exporting the environment variable `JULIA_PROJECT` set to the path to this folder. For example, `export JULIA_PROJECT=~/ACE1project`. 
 
+2. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. Start julia, activate the project and add `ACEregistry` that includes `ACE1pack`, which is the package that we want to install:
+
+```julia
+using Pkg
+pkg"activate ."
+pkg"registry add https://github.com/ACEsuit/ACEregistry"
+pkg"add ACE1pack"
+```
+
+`ACE1pack` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`.
+
+3. You need to activate the project folder when starting julia.
+This can be done by starting julia with `julia --project=pathtoproject` command,
+using environment variable `export JULIA_PROJECT=pathtoproject` or by after starting julia calling
+
+```julia
+using Pkg
+pkg"activate pathtoproject"
+```
 
 ### Setting up the Python ASE calculator
 
