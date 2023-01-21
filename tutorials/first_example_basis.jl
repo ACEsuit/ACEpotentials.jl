@@ -1,6 +1,4 @@
-# # First example (Julia)
-
-# ## Developing a new ACE1.jl model
+# # First example (Julia) - `acebasis`
 
 # This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.
 

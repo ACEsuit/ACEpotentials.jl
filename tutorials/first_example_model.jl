@@ -1,6 +1,4 @@
-# # First example (Julia)
-
-# ## Developing a new ACE1.jl model
+# # First example (Julia) - `acemodel`
 
 # This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.
 
@@ -48,12 +46,12 @@ train = [gen_dat() for _=1:20];
 # For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us. 
 
 solver = ACEfit.RRQR(rtol = 1e-4)   
-acefit!(model, train, solver; data_keys...)
+acefit!(model, train, solver; data_keys...);
 
 # To see the training errors we can use 
 
 @info("Training Errors")
-ACE1pack.linear_errors(train, model; data_keys...)
+ACE1pack.linear_errors(train, model; data_keys...);
 
 # ### Step 4: Run some tests 
 #
@@ -61,7 +59,7 @@ ACE1pack.linear_errors(train, model; data_keys...)
 
 @info("Test Errors")
 test =  [gen_dat() for _=1:20]
-ACE1pack.linear_errors(test, model; data_keys...)
+ACE1pack.linear_errors(test, model; data_keys...);
 
 # If we wanted to perform such a test ``manually'' it might look like this: 
 

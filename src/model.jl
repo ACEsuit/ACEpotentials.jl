@@ -183,6 +183,5 @@ end
 
 using LinearAlgebra: Diagonal 
 
-function smoothness_prior(model::ACE1Model; p = 2)
-
-end
+smoothness_prior(model::ACE1Model; p = 2) = 
+      Diagonal(vcat(ACE1.scaling.(model.basis.BB, p)...))

@@ -1,4 +1,4 @@
-# # Fitting a TiAl potential (Julia)
+# # Fitting a TiAl potential (Julia) - `acebasis`
 #
 # Start by importing the required libraries 
 

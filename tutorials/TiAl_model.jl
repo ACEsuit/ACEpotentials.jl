@@ -1,4 +1,4 @@
-# # Fitting a TiAl potential (Julia)
+# # Fitting a TiAl potential (Julia) - `acemodel`
 #
 # Start by importing the required libraries 
 
@@ -29,45 +29,45 @@ train_data = data[1:5:end];
 
 r0 = 2.88 
 model = acemodel(species = [:Ti, :Al],
-					  # many-body potential parameters
+					  ## many-body potential parameters
 					  N = 3,
 					  maxdeg = 6, 
 					  rcut = 5.5, 
 					  r0 = r0,
 					  rin = 0.6 * r0, pin = 2,
-					  # pair potential parameters 
+					  ## pair potential parameters 
 					  rcut2 = 7.0, 
 					  maxdeg2 = 6,
-					  # One-body reference energies 
+					  ## One-body reference energies 
 					  Eref = [:Ti => -1586.0195, :Al => -105.5954])
+@show length(model.basis);					  
 
 # The next line specifies the regression weights: in the least squares loss different observations are given different weights,
 # ```math 
-#   \sum_{R} \Big( w_^E_R | E(R) - y_R^E |^2
-#            + w_F^R | {\rm forces}(R) - y_R^F |^2 
-#            + w_V^R | {\rm virial}(R) - y_R^V |^2 \Big),
+#   \sum_{R} \Big( w^E_R | E(R) - y_R^E |^2
+#            + w^F_R | {\rm forces}(R) - y_R^F |^2 
+#            + w^V_R | {\rm virial}(R) - y_R^V |^2 \Big),
 # ```
 # and this is specificed via the following dictionary. The keys correspond to the `config_type` of the training structures. 
 
 weights = Dict(
         "FLD_TiAl" => Dict("E" => 60.0, "F" => 1.0 , "V" => 1.0 ),
-        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ))
+        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ));
 
 # To estimate the parameters we still need to choose a solver for the least squares system. In this tutorial we provide four different algorithms to solve the LLSQ problem: a Krylov method LSQR, rank-revealing QR, `scikit-learn` BRR solver as well as `the scikit-learn` ARD solver. 
 
-solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6)
-# solver = ACEfit.RRQR(rtol = 1e-5)
+solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6);
+## solver = ACEfit.RRQR(rtol = 1e-5);
 
-# ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
+# ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. To use this priot, we need to re-initialize the solver with the prior as an additional argument.
 
-using LinearAlgebra: Diagonal 
-P = Diagonal(vcat(ACE1.scaling.(model.basis.BB, q)...))
-solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6, P = P)
+P = ACE1pack.smoothness_prior(model; p = 3)
+solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6, P = P);
 
 # We are now ready to estimate the parameters. 
 
 data_train = data[1:5:end]
-acefit!(model, data_train, _solver)
+acefit!(model, data_train, solver);
 
 # We can display an error table as follows:
 
@@ -84,4 +84,4 @@ ACE1pack.linear_errors(test_data, model; weights=weights);
 
 potential = model.potential 
 save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(potential)))
-ACE1pack.ExportMulti.export_ACE("./TiAl_tutorial_pot.yace", potential; export_pairpot_as_table=true)
+ACE1pack.ExportMulti.export_ACE("./TiAl_tutorial_pot.yace", potential; export_pairpot_as_table=true);
