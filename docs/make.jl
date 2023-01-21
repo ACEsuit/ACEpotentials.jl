@@ -9,10 +9,16 @@ DocMeta.setdocmeta!(ACE1pack, :DocTestSetup, :(using ACE1pack); recursive=true)
 _tutorial_out = joinpath(@__DIR__(), "src", "literate_tutorials")
 _tutorial_src = joinpath(@__DIR__(), "..", "tutorials")
 
-Literate.markdown(_tutorial_src * "/first_example.jl", 
+Literate.markdown(_tutorial_src * "/first_example_basis.jl", 
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/TiAl.jl", 
+Literate.markdown(_tutorial_src * "/first_example_model.jl", 
+                  _tutorial_out; documenter = true)
+
+Literate.markdown(_tutorial_src * "/TiAl_basis.jl", 
+                  _tutorial_out; documenter = true)
+
+Literate.markdown(_tutorial_src * "/TiAl_model.jl", 
                   _tutorial_out; documenter = true)
 
 Literate.markdown(_tutorial_src * "/ACE1pack_TiAl.jl", 
@@ -53,8 +59,10 @@ makedocs(;
         "Tutorials" => Any[
             "tutorials/index.md",
             "tutorials/first_example_json.md",
-            "literate_tutorials/first_example.md",
-            "literate_tutorials/TiAl.md",
+            "literate_tutorials/first_example_basis.md",
+            "literate_tutorials/first_example_model.md",
+            "literate_tutorials/TiAl_basis.md",
+            "literate_tutorials/TiAl_model.md",
             "literate_tutorials/ACE1pack_TiAl.md",
             "literate_tutorials/descriptor.md",
             "literate_tutorials/committee.md",

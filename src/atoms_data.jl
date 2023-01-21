@@ -3,6 +3,8 @@ import JuLIP: Atoms, energy, forces, mat
 using PrettyTables
 using StaticArrays: SVector
 
+export AtomsData
+
 struct AtomsData <: ACEfit.AbstractData
     atoms::Atoms
     energy_key

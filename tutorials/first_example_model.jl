@@ -1,6 +1,4 @@
-# # First example (Julia)
-
-# ## Developing a new ACE1.jl model
+# # First example (Julia) - `acemodel`
 
 # This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.
 
@@ -9,22 +7,19 @@ using ACE1pack
 import Random
 using LinearAlgebra: norm, Diagonal
 
-# ### Step 1: specify the ACE basis 
+# ### Step 1: specify the ACE Model
 #
-# The ACE basis can be set up using the function `ace_basis`, 
-# where the parameters have the following meaning: 
+# The parameters have the following meaning: 
 # * `species`: chemical species, for multiple species provide a list 
 # * `N` : correlation order
 # * `maxdeg`: maximum total polynomial degree 
-# * `r0` : an estimate on the nearest-neighbour distance for scaling, `JuLIP.rnn()` function returns element specific earest-neighbour distance
 # * `rcut` : cutoff radius
 
-basis = ace_basis(; species = :Si,
-                    N = 3,   
-                    maxdeg = 12,           
-                    r0 = rnn(:Si),         
-                    rcut = 5.0)
-@show length(basis);
+model = acemodel(species = :Si,
+                 N = 3,   
+                 maxdeg = 12,           
+                 rcut = 5.0)
+@show length(model.basis);
 
 # ### Step 2: Generate a training set 
 #
@@ -32,13 +27,14 @@ basis = ace_basis(; species = :Si,
 # * `gen_dat()` generates a single training configuration wrapped in an `ACE1pack.AtomsData` structure. Each `d::AtomsData` contains the structure `d.atoms`, and energy value and a force vector to train against. 
 # * `train` is then a collection of such random training configurations.
 
+data_keys = (energy_key = "energy", force_key = "forces")
+
 function gen_dat()
    sw = StillingerWeber() 
-   n = rand(2:3)
-   at = rattle!(bulk(:Si, cubic=true) * n, 0.3)
-   set_data!(at, "energy", energy(sw,at))
-   set_data!(at, "forces", forces(sw,at))
-   return ACE1pack.AtomsData(at, "energy", "forces")
+   at = rattle!(bulk(:Si, cubic=true) * rand(2:3), 0.3)
+   set_data!(at, data_keys.energy_key, energy(sw,at))
+   set_data!(at, data_keys.force_key, forces(sw,at))
+   return at
 end
 
 Random.seed!(0)
@@ -46,32 +42,31 @@ train = [gen_dat() for _=1:20];
 
 # ### Step 3: Estimate Parameters 
 #
-# We specify a solver and then as `ACEfit.jl` to do all the work for us. More fine-grained control is possible; see the `ACEfit.jl` documentation.
+# We specify a solver and then let `ACEfit.jl` to do all the work for us. More fine-grained control is possible; see the `ACEfit.jl` documentation.
 # For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us. 
 
 solver = ACEfit.RRQR(rtol = 1e-4)   
-solution = ACEfit.linear_fit(train, basis, solver)
-
-# Finally, we generate the potential from the parameters. 
-# Note that `potential` is a `JuLIP.jl` calculator and can be used to evaluate e.g. `energy, forces, virial` on new configurations. 
-
-potential = JuLIP.MLIPs.combine(basis, solution["C"])
+acefit!(model, train, solver; data_keys...);
 
 # To see the training errors we can use 
 
-ACE1pack.linear_errors(train, potential)
+@info("Training Errors")
+ACE1pack.linear_errors(train, model; data_keys...);
 
 # ### Step 4: Run some tests 
 #
 # At a minimum one should have a test set, check the errors on that test set, and confirm that they are similar as the training errors. 
 
+@info("Test Errors")
 test =  [gen_dat() for _=1:20]
-ACE1pack.linear_errors(test, potential)
+ACE1pack.linear_errors(test, model; data_keys...);
 
 # If we wanted to perform such a test ``manually'' it might look like this: 
 
-test_energies = [d.atoms.data["energy"].data/length(d.atoms) for d in test]
-model_energies = [energy(potential, d.atoms)/length(d.atoms) for d in test] 
+@info("Manual RMSE Test")
+potential = model.potential
+test_energies = [ JuLIP.get_data(at, "energy") / length(at) for at in test]
+model_energies = [energy(potential, at) / length(at) for at in test] 
 rmse_energy = norm(test_energies - model_energies) / sqrt(length(test))
 @show rmse_energy;
 
