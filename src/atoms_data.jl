@@ -139,14 +139,6 @@ function config_type(d::AtomsData)
     return config_type
 end
 
-function linear_errors(data::AbstractVector{<: Atoms}, model::ACE1Model; 
-                       Ekey = "energy", Fkey = "force", Vkey = "virial", 
-                       weights = nothing)
-    Vref = model.Vref                       
-    _data = [ AtomsData(d, Ekey, Fkey, Vkey, weights, Vref) for d in data ]
-    return linear_errors(_data, model.potential)
-end
-
 function linear_errors(data, model)
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)

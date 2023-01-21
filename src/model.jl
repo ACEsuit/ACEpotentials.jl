@@ -146,6 +146,7 @@ function _set_params!(model, params)
    return model 
 end
 
+default_weights() = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0))
 
 """
 `function acefit!` : provides a simplified interface to fitting the 
@@ -156,7 +157,7 @@ the label of the data to which the parameters will be fitted.
 The final keyword argument is a `weights` dictionary. 
 """
 function acefit!(model, raw_data, solver; 
-             weights = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0)),
+             weights = default_weights(),
              energy_key = "energy", 
              force_key = "force", 
              virial_key = "virial")
@@ -165,4 +166,23 @@ function acefit!(model, raw_data, solver;
    result = ACEfit.linear_fit(data, model.basis, solver) 
    _set_params!(model, result["C"])
    return model 
+end
+
+
+
+function linear_errors(data::AbstractVector{<: Atoms}, model::ACE1Model; 
+                       energy_key = "energy", 
+                       force_key = "force", 
+                       virial_key = "virial", 
+                       weights = default_weights())
+   Vref = model.Vref                       
+   _data = [ AtomsData(d, energy_key, force_key, virial_key, weights, Vref) for d in data ]
+   return linear_errors(_data, model.potential)
+end
+
+
+using LinearAlgebra: Diagonal 
+
+function smoothness_prior(model::ACE1Model; p = 2)
+
 end
