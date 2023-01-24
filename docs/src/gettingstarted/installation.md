@@ -13,6 +13,7 @@ If these instructions don't make sense please see the detailed instructions belo
 ```julia
 using Pkg
 pkg"activate ."
+pkg"registry add https://github.com/JuliaRegistries/General"
 pkg"registry add https://github.com/ACEsuit/ACEregistry"
 pkg"add ACE1pack"
 ```
