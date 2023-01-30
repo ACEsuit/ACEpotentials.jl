@@ -22,15 +22,12 @@ function _auto_degrees(N::Integer, maxdeg::Number, wL::Number, D = nothing)
    return D, maxdeg 
 end
 
-function _auto_degrees(N::Integer, maxdeg::AbstractVector, wL::Union{Number, AbstractVector}, D = nothing)
+function _auto_degrees(N::Integer, maxdeg::AbstractVector, wL::Number, D = nothing)
    if D == nothing 
-      if wL isa Number
-         wL = wL .* ones(N)
-      end
       Dn = Dict("default" => 1.0) 
-      Dl = Dict([n => wL[n] for n in 1:N]...)
+      Dl = Dict("default" => wL)
       Dd = Dict([n => maxdeg[n] for n in 1:N]...)
-      D = SparsePSHDegreeM(Dn, Dl, Dd)
+      D = ACE1.RPI.SparsePSHDegreeM(Dn, Dl, Dd)
       maxdeg = 1
    end
 
@@ -124,7 +121,6 @@ function acemodel(;  species = nothing,
       if (pin < 2) && (pin != 0) && warn 
          @warn("`pin` should normally be ≥ 2 or 0.")
       end
-
       rbasis = ACE1.transformed_jacobi(get_maxn(D, maxdeg, species), trans, rcut, rin;
                                     pcut=pcut, pin=pin)
    end
