@@ -58,7 +58,7 @@ function acemodel(;  species = nothing,
                      trans = PolyTransform(2, r0),
                      # degree parameters
                      wL = 1.5, 
-                     D = SparsePSHDegree(; wL = wL),
+                     D = nothing,
                      maxdeg = nothing,
                      # radial basis parameters
                      rcut = nothing,
