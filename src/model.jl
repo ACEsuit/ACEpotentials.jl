@@ -6,6 +6,38 @@ import ACE1.Utils: get_maxn
 
 _mean(x) = sum(x) / length(x)
 
+# -------------------- convert user degree specification to ACE1 0.10.x format
+# note that these functions live in ACE1.jl from version 0.11.x onwards 
+# they are backported here to ACE1pack.jl v0.2.x for convenience but won't 
+# be in ACE1pack.jl v0.3.x onwards.
+
+"""
+`_auto_degrees` : provide a simplified interface to generate degree parameters 
+for the ACE1 basis. 
+"""
+function _auto_degrees(N::Integer, maxdeg::Number, wL::Number, D = nothing)
+   if D == nothing
+      D = SparsePSHDegree(; wL = wL)
+   end
+   return D, maxdeg 
+end
+
+function _auto_degrees(N::Integer, maxdeg::AbstractVector, wL::Union{Number, AbstractVector}, D = nothing)
+   if D == nothing 
+      if wL isa Number
+         wL = wL .* ones(N)
+      end
+      Dn = Dict("default" => 1.0) 
+      Dl = Dict([n => wL[n] for n in 1:N]...)
+      Dd = Dict([n => maxdeg[n] for n in 1:N]...)
+      D = SparsePSHDegreeM(Dn, Dl, Dd)
+      maxdeg = 1
+   end
+
+   return D, maxdeg
+end
+
+# ------------------------------------------------------------
 
 """
 `struct ACE1Model` : this specifies an affine `ACE1.jl` model via a basis, the 
@@ -58,7 +90,7 @@ function acemodel(;  species = nothing,
                      trans = PolyTransform(2, r0),
                      # degree parameters
                      wL = 1.5, 
-                     D = SparsePSHDegree(; wL = wL),
+                     D = nothing,
                      maxdeg = nothing,
                      # radial basis parameters
                      rcut = nothing,
@@ -82,6 +114,9 @@ function acemodel(;  species = nothing,
                      warn = true, 
                      Basis1p = BasicPSH1pBasis
                     )
+   # convert the user degree specification to a SparsePSHDegreeM
+   D, maxdeg = _auto_degrees(N, maxdeg, wL, D)
+                    
    if rbasis == nothing    
       if (pcut < 2) && warn 
          @warn("`pcut` should normally be ≥ 2.")
