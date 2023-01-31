@@ -47,7 +47,8 @@ train = [gen_dat() for _=1:20];
 # We specify a solver and then as `ACEfit.jl` to do all the work for us. More fine-grained control is possible; see the `ACEfit.jl` documentation.
 # For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us. 
 
-solver = ACEfit.RRQR(rtol = 1e-4)   
+# TODO: change this solver name once we agree on the new API
+solver = ACEfit.BayesianLinearRegressionSVD() 
 solution = ACEfit.linear_fit(train, basis, solver)
 
 # Finally, we generate the potential from the parameters. 
