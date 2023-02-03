@@ -118,7 +118,7 @@ function fit_params(;
     basis = nothing,
     solver = nothing, 
     e0 = nothing, 
-    weights = nothing, 
+    weights = Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)),
     P = nothing,
     ACE_fname = "ACE_fit.json", 
     LSQ_DB_fname_stem = "",
