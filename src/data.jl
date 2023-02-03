@@ -20,9 +20,9 @@ for fitting.
 """
 function data_params(;
     fname = nothing,
-    energy_key = "dft_energy",
-    force_key = "dft_force",
-    virial_key = "dft_virial"
+    energy_key = "energy",
+    force_key = "force",
+    virial_key = "virial"
 )
     @assert !isnothing(fname) "`fname` must be given. "
 
