@@ -32,7 +32,7 @@ function fit_ace(params::Dict, mode=:serial)
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
-    Vref = OneBody(convert(Dict{String,Any},params["e0"]))
+    Vref = OneBody(Dict(Symbol(k) => v for (k,v) in params["e0"]))
     energy_key = params["data"]["energy_key"]
     force_key = params["data"]["force_key"]
     virial_key = params["data"]["virial_key"]
