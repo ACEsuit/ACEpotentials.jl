@@ -258,7 +258,7 @@ function assess_dataset(data)
     n_virials = Dict{String,Integer}()
 
     for d in data
-        c_t = config_type(d)
+        c_t = group_type(d)
         if !(c_t in config_types)
             push!(config_types, c_t)
             n_configs[c_t] = 0

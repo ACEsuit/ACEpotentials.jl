@@ -20,7 +20,7 @@ function data_params(;
     fname = nothing,
     energy_key = "energy",
     force_key = "forces",
-    virial_key = "virial"
+    virial_key = "virial",
     weight_key = "config_type"
 )
     @assert !isnothing(fname) "`fname` must be given. "
