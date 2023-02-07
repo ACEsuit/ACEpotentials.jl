@@ -13,7 +13,7 @@ All parameters are passed as keyword arguments.
 * `fname` : a "*.xyz" file with atomistic data (mandatory).
 * `energy_key = "energy` : ASE's `Atoms.info` key to read energy 
 for fitting.
-* `force_key = "force` : ASE's `Atoms.arrays` key to read forces 
+* `force_key = "forces` : ASE's `Atoms.arrays` key to read forces 
 for fitting.
 * `virial_key = "virial` : ASE's `Atoms.info` key to read virial 
 for fitting.
@@ -21,7 +21,7 @@ for fitting.
 function data_params(;
     fname = nothing,
     energy_key = "energy",
-    force_key = "force",
+    force_key = "forces",
     virial_key = "virial"
 )
     @assert !isnothing(fname) "`fname` must be given. "
