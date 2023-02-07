@@ -11,11 +11,11 @@ All parameters are passed as keyword arguments.
 
 ### Parameters
 * `fname` : a "*.xyz" file with atomistic data (mandatory).
-* `energy_key = "dft_energy` : ASE's `Atoms.info` key to read energy 
+* `energy_key = "energy` : ASE's `Atoms.info` key to read energy 
 for fitting.
-* `force_key = "dft_force` : ASE's `Atoms.arrays` key to read forces 
+* `force_key = "force` : ASE's `Atoms.arrays` key to read forces 
 for fitting.
-* `virial_key = "dft_virial` : ASE's `Atoms.info` key to read virial 
+* `virial_key = "virial` : ASE's `Atoms.info` key to read virial 
 for fitting.
 """
 function data_params(;
