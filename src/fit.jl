@@ -36,12 +36,13 @@ function fit_ace(params::Dict, mode=:serial)
     energy_key = params["data"]["energy_key"]
     force_key = params["data"]["force_key"]
     virial_key = params["data"]["virial_key"]
+    weight_key = params["data"]["weight_key"]
     weights = params["weights"]
     dataset = JuLIP.read_extxyz(params["data"]["fname"])
 
     data = AtomsData[]
     for atoms in dataset
-        d = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
+        d = AtomsData(atoms; energy_key=energy_key, force_key=force_key, virial_key=virial_key, weight_key=weight_key, weights=weights, v_ref=Vref)
         push!(data, d)
     end
     assess_dataset(data)

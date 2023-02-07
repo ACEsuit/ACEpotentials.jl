@@ -17,12 +17,14 @@ for fitting.
 for fitting.
 * `virial_key = "virial` : ASE's `Atoms.info` key to read virial 
 for fitting.
+* `weight_key = "config_type"`: ASE's `Atoms.info` key used for picking the correct weight out of the weights dictionary. 
 """
 function data_params(;
     fname = nothing,
     energy_key = "energy",
     force_key = "force",
-    virial_key = "virial"
+    virial_key = "virial",
+    weight_key = "config_type"
 )
     @assert !isnothing(fname) "`fname` must be given. "
 
@@ -30,7 +32,8 @@ function data_params(;
         "fname" => fname,
         "energy_key" => energy_key,
         "force_key" => force_key,
-        "virial_key" => virial_key
+        "virial_key" => virial_key,
+        "weight_key" => weight_key
     )
 
 end
