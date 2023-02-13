@@ -65,6 +65,7 @@ function fit_ace(params::Dict, mode=:serial)
 
     if haskey(fit, "committee")
         IP_com = committee_potential(basis, C, fit["committee"])
+        (Vref != nothing) && (IP_com = JuLIP.MLIPs.SumIP(Vref, IP_com))
         results["IP_com"] = IP_com
         if !(params["ACE_fname"] == "") && !isnothing(params["ACE_fname"])
             save_fit("committee_"*params["ACE_fname"], IP_com, Dict("errors" => errors, "params" => params))
