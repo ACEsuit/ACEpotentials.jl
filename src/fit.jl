@@ -7,19 +7,6 @@ using Dates, Base
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
-# TODO: replace this workaround once ACE1 supports committee_potential(::IPSuperBasis,...)
-function committee_potential(basis::JuLIP.MLIPs.IPSuperBasis{JuLIP.MLIPs.IPBasis}, C, committee)
-    i1 = 1
-    com_pots = []
-    for b in basis.BB
-        i2 = i1 + length(b) - 1
-        com_pot = ACE1.committee_potential(b, C[i1:i2], committee[i1:i2,:])
-        push!(com_pots, com_pot)
-        i1 = i1 + length(b)
-    end
-    return JuLIP.MLIPs.SumIP(com_pots)
-end
-
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 
 
