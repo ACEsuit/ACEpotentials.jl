@@ -25,12 +25,24 @@ function _make_prior(model, smoothness, P)
 end
 
 """
-`function acefit!` : provides a simplified interface to fitting the 
+`function acefit!(model, data; kwargs...)` : 
+provides a simplified interface to fitting the 
 parameters of a model specified via `ACE1Model`. The data should be 
 provided as a collection (`AbstractVector`) of `JuLIP.Atoms` structures. 
-The keyword arguments `energy_key`, `force_key`, `virial_key` specify 
+
+Keyword arguments:
+* `energy_key`, `force_key`, `virial_key` specify 
 the label of the data to which the parameters will be fitted. 
-The final keyword argument is a `weights` dictionary. 
+* `weights` specifies the regression weights, default is 30 for energy, 1 for forces and virials
+* `solver` specifies the lsq solver, default is `BayesianLinearRegressionSVD`
+* `smoothness` specifies the smoothness prior, i.e. how strongly damped 
+   parameters corresponding to high polynomial degrees are; is 2.
+* `prior` specifies a covariance of the prior, if `nothing` then a smoothness prior 
+   is used, using the `smoothness` parameter 
+* `repulsion_restraint` specifies whether to add artificial data to the training 
+   set that effectively introduces a restraints encouraging repulsion 
+   in the limit rij -> 0.
+* `restraint_weight` specifies the weight of the repulsion restraint.
 """
 function acefit!(model::ACE1Model, raw_data;
                 solver = ACEfit.BayesianLinearRegressionSVD(), 
