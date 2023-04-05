@@ -62,7 +62,7 @@ end
     test_rmse(results["errors"]["rmse"], rmse_qr, 1e-5)
 
     # repeat with distributed assembly
-    addprocs(3, exeflags="--project=..")
+    addprocs(3, exeflags="--project=$(Base.active_project())")
     @everywhere using ACE1pack
     results = fit_ace(params)
     rmprocs(workers())
