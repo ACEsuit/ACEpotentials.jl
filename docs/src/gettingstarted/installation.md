@@ -12,10 +12,10 @@ If these instructions don't make sense please see the detailed instructions belo
 
 ```julia
 using Pkg
-pkg"activate ."
-pkg"registry add https://github.com/JuliaRegistries/General"
-pkg"registry add https://github.com/ACEsuit/ACEregistry"
-pkg"add ACE1pack"
+Pkg.activate(".")
+Pkg.Registry.add("General")  # only needed when installing Julia for the first time
+Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
+Pkg.add("ACE1pack")
 ```
 
 `ACE1pack` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`.
