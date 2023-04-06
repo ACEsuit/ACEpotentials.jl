@@ -136,7 +136,7 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Pkg
-            Pkg.add("ACEfit", rev="main")'
+            Pkg.add("ACEfit")'
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
