@@ -6,6 +6,7 @@ using Reexport
 @reexport using JuLIP
 @reexport using ASE
 @reexport using ACE1
+@reexport using ACE1x
 @reexport using ACEfit
 @reexport using ArgParse
 @reexport using PyCall
@@ -32,6 +33,8 @@ include("read_params.jl")
 include("export.jl")
 
 include("export_multispecies.jl")
+
+include("analysis.jl")
 
 # a little hack to load ACE1pack artifacts from anywhere? 
 using LazyArtifacts

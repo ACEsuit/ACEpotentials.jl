@@ -1,10 +1,18 @@
 [ACE1pack_test_files]
-git-tree-sha1 = "6b47b035f06e56fa0ca5cd9b0fb976b7f03bd3ba"
+git-tree-sha1 = "9b3562a2b25e2580fe9d16f3ba8d613eddd29dd1"
 lazy = true
 
     [[ACE1pack_test_files.download]]
-    sha256 = "5416b14aa2356ce8a399102a45232e8c44e746c3270c4baa15d4bbcce9fcc2e7"
+    sha256 = "56290709a859cabac2875804d550e5b088a63644040c6386f504be7b4d17dc82"
     url = "https://github.com/ACEsuit/ACEData/blob/master/tests/ACE1pack_test_files.tar.gz?raw=true"
+
+[Si_tiny_dataset]
+git-tree-sha1 = "819e985e3a8e8f87dc26139af3389542839706a7"
+lazy = true
+
+    [[Si_tiny_dataset.download]]
+    sha256 = "02c9403b5ab17f07e065065f07dc15e9aaa67867842e4e21304837a325c25e8c"
+    url = "https://github.com/wcwitt/ACEData/blob/master/trainingsets/Si_tiny.tar.gz?raw=true"
 
 [TiAl_tiny_dataset]
 git-tree-sha1 = "86fd99369720539181edb3f27e0a265ae0c696df"
@@ -22,10 +30,10 @@ lazy = true
     sha256 = "3677174b6ab4adfd07dc03235b797c88234515df793d8603cce5ab7ce0db637d"
     url = "https://github.com/ACEsuit/ACEData/blob/master/trainingsets/TiAl_tutorial.tar.gz?raw=true"
 
-[Si_tiny_dataset]
-git-tree-sha1 = "819e985e3a8e8f87dc26139af3389542839706a7"
-lazy = true
+[ZuoEtAl2020]
+git-tree-sha1 = "e6a5b6fc27faa19b2ebe88e29ae56f2712468bd5"
+lazy = true 
 
-    [[Si_tiny_dataset.download]]
-    sha256 = "02c9403b5ab17f07e065065f07dc15e9aaa67867842e4e21304837a325c25e8c"
-    url = "https://github.com/wcwitt/ACEData/blob/master/trainingsets/Si_tiny.tar.gz?raw=true"
+    [[ZuoEtAl2020.download]]
+    sha256 = "f77a80e2fb00534f42bce2ccf72833dfec316d48f2b756aa333687652dd6c589"
+    url = "https://github.com/ACEsuit/ACEData/blob/master/minibenchmarks/ZuoEtAl2020.tar.gz?raw=true"
