@@ -7,9 +7,9 @@ export AtomsData
 
 struct AtomsData <: ACEfit.AbstractData
     atoms::Atoms
-    energy_key
-    force_key
-    virial_key
+    energy_key::Union{String, Nothing}
+    force_key::Union{String, Nothing}
+    virial_key::Union{String, Nothing}
     weights
     energy_ref
     function AtomsData(atoms::Atoms;

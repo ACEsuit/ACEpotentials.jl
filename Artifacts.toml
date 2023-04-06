@@ -29,3 +29,11 @@ lazy = true
     [[TiAl_tutorial.download]]
     sha256 = "3677174b6ab4adfd07dc03235b797c88234515df793d8603cce5ab7ce0db637d"
     url = "https://github.com/ACEsuit/ACEData/blob/master/trainingsets/TiAl_tutorial.tar.gz?raw=true"
+
+[ZuoEtAl2020]
+git-tree-sha1 = "e6a5b6fc27faa19b2ebe88e29ae56f2712468bd5"
+lazy = true 
+
+    [[ZuoEtAl2020.download]]
+    sha256 = "f77a80e2fb00534f42bce2ccf72833dfec316d48f2b756aa333687652dd6c589"
+    url = "https://github.com/ACEsuit/ACEData/blob/master/minibenchmarks/ZuoEtAl2020.tar.gz?raw=true"
