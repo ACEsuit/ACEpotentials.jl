@@ -156,77 +156,7 @@ functions:
   0:
     - rank: 1
       ctildes:
-        - 0.03790822415518337
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 0
-    - rank: 1
-      ctildes:
-        - 2.228192249240224e-5
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 6
-      mu0: 0
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - 0.0002900770781598968
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 0
-    - rank: 1
-      ctildes:
-        - 2.4838488969229335e-5
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - 0.0010842974781223177
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-      mu0: 0
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 0
-    - rank: 1
-      ctildes:
-        - -0.13111206026013017
+        - -3.0810890271825673
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -240,21 +170,7 @@ functions:
         - 0
     - rank: 1
       ctildes:
-        - 3.5422204351238426e-5
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-      mu0: 0
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - -1.6880597434788796e-5
+        - 0.004043269171080894
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -268,7 +184,21 @@ functions:
         - 1
     - rank: 1
       ctildes:
-        - 0.00023833066155822067
+        - -0.050676115206263646
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - -0.008434894425032289
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -282,7 +212,49 @@ functions:
         - 0
     - rank: 1
       ctildes:
-        - 4.565625663471447e-5
+        - 0.3396338891081967
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.046504487232175214
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 6
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.054300117126864784
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - -0.03943837540072743
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -296,11 +268,25 @@ functions:
         - 0
     - rank: 1
       ctildes:
-        - 5.578675684469179e-6
+        - -0.03330321385809758
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 3
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.0034945673187385977
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
       mu0: 0
       ms_combs:
         - 0
@@ -310,7 +296,7 @@ functions:
         - 1
     - rank: 1
       ctildes:
-        - -4.590527548475023e-6
+        - 0.6048269711709205
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -321,226 +307,24 @@ functions:
       ls:
         - 0
       mus:
-        - 1
-    - rank: 2
+        - 0
+    - rank: 1
       ctildes:
-        - -4.104317047816034e-7
+        - 0.0963390447845105
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 5
       mu0: 0
       ms_combs:
         - 0
-        - 0
       ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -9.935074100886945e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 4.967537050443474e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 8.48535023029933e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
         - 0
       mus:
         - 1
-        - 1
     - rank: 2
       ctildes:
-        - 3.942701913853536e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 3.456308529806136e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 1.857744452269994e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.8577444522699943e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 1.8577444522699943e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 9.221730119955942e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -9.221730119955943e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 9.221730119955943e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -2.6211975463437344e-7
+        - 0.11809082144506959
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -555,10 +339,10 @@ functions:
         - 1
       mus:
         - 0
-        - 0
+        - 1
     - rank: 2
       ctildes:
-        - 1.3105987731718675e-7
+        - -0.1180908214450696
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -573,46 +357,10 @@ functions:
         - 1
       mus:
         - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - -3.4575290068849595e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
         - 1
     - rank: 2
       ctildes:
-        - 2.191530965266877e-6
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 2.4587840344644394e-9
+        - 0.1180908214450696
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -620,17 +368,71 @@ functions:
         - 1
       mu0: 0
       ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
         - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
         - 1
     - rank: 2
       ctildes:
-        - 2.094072718057387e-8
+        - 0.0030263911462425457
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.003026391146242546
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.003026391146242546
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.021010925873875246
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -644,34 +446,16 @@ functions:
         - 0
         - 0
       mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 8.840349761917078e-7
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
         - 0
         - 1
     - rank: 2
       ctildes:
-        - -6.721441746627307e-8
+        - -0.005200848076660175
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 2
-        - 4
+        - 3
       mu0: 0
       ms_combs:
         - 0
@@ -680,83 +464,11 @@ functions:
         - 0
         - 0
       mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - -3.483045701245649e-7
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
         - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
         - 1
     - rank: 2
       ctildes:
-        - -7.179984481003805e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 7.179984481003807e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -7.179984481003807e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 8.880228674826257e-8
+        - -0.0011284170466494639
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -771,28 +483,10 @@ functions:
         - 0
       mus:
         - 0
-        - 1
+        - 0
     - rank: 2
       ctildes:
-        - -8.113119566377864e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 4
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -8.899718708429867e-8
+        - 0.001495300449038512
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -810,12 +504,66 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - 2.795907261434274e-9
+        - 0.0016740972082075144
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.0016740972082075146
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.0016740972082075146
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.05647335402355028
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 2
-        - 3
+        - 2
       mu0: 0
       ms_combs:
         - 0
@@ -824,11 +572,47 @@ functions:
         - 0
         - 0
       mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.00383944174481108
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.0011614174096490468
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
         - 1
+        - 5
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
         - 1
     - rank: 2
       ctildes:
-        - 3.753275170679451e-8
+        - 0.0015330760876347918
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -843,15 +627,51 @@ functions:
         - 0
       mus:
         - 0
-        - 0
+        - 1
     - rank: 2
       ctildes:
-        - -1.7811473320354125e-6
+        - -0.0498488086597485
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.022783952545031162
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.20173138139211017
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
+        - 2
       mu0: 0
       ms_combs:
         - 0
@@ -864,7 +684,7 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - -1.5384990074683846e-8
+        - 0.011339708358359948
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -882,7 +702,313 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 2.7081359590307787e-9
+        - 0.014158702509368692
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.09488045644411039
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.006010346900146797
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.006010346900146798
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.006010346900146798
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.04565781535509795
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 3.195810753370695e-5
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.000797212213976032
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0007972122139760323
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0007972122139760323
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.004561432002754121
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.12597274030379613
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.020491937715104016
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.12459295025312177
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.005885543114989912
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.07763040384418998
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.030208732774404858
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.012637013082068918
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -900,83 +1026,11 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 7.720312763689073e-7
+        - 0.1533252419710999
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -3.602476554937381e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.6814678880157224e-7
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 4
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.7499411223819465e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.520968539955796e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
         - 1
       mu0: 0
       ms_combs:
@@ -986,15 +1040,15 @@ functions:
         - 1
         - 1
       mus:
-        - 0
+        - 1
         - 1
     - rank: 2
       ctildes:
-        - 1.520968539955796e-8
+        - -0.07666262098554996
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 2
+        - 1
         - 1
       mu0: 0
       ms_combs:
@@ -1004,33 +1058,15 @@ functions:
         - 1
         - 1
       mus:
-        - 0
+        - 1
         - 1
     - rank: 2
       ctildes:
-        - -1.520968539955796e-8
+        - -0.02095282225117372
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 2
         - 1
-      mu0: 0
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 2.0839014121097892e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
         - 3
       mu0: 0
       ms_combs:
@@ -1041,32 +1077,14 @@ functions:
         - 0
       mus:
         - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 2.0263686680389458e-6
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
         - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
     - rank: 2
       ctildes:
-        - -6.418906652744131e-8
+        - -0.033358812267324914
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 2
+        - 4
         - 1
       mu0: 0
       ms_combs:
@@ -1080,12 +1098,12 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 9.421298014303183e-9
+        - 0.028782468667286062
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 2
+        - 3
       mu0: 0
       ms_combs:
         - 0
@@ -1098,7 +1116,7 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - -4.7288624384289796e-9
+        - 0.0015270634904242018
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -1116,7 +1134,43 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 2.8241631611170122e-8
+        - -0.04203232570515862
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.11852135148367088
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0158916323859737
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -1134,30 +1188,12 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 2.1355417209903673e-6
+        - 0.03210680399392177
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 4
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 1.3053893864855136e-7
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
         - 1
-        - 2
       mu0: 0
       ms_combs:
         - -1
@@ -1170,12 +1206,12 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - -1.3053893864855138e-7
+        - -0.016053401996960887
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 2
+        - 1
       mu0: 0
       ms_combs:
         - 0
@@ -1188,30 +1224,12 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - 1.3053893864855138e-7
+        - -0.0304736455023996
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 1.09433312214277e-7
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
+        - 3
       mu0: 0
       ms_combs:
         - 0
@@ -1224,29 +1242,11 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - 1.7793643289992422e-7
+        - -0.14279142804204792
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
         - 1
-    - rank: 2
-      ctildes:
-        - -2.9597620375925474e-8
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
         - 2
       mu0: 0
       ms_combs:
@@ -1260,73 +1260,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -8.670660307579553e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.2751601553197923e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.1923883763282572e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.4208365063534518e-9
+        - 0.003999614373360317
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -1345,80 +1279,14 @@ functions:
       mus:
         - 0
         - 0
-        - 0
+        - 1
     - rank: 3
       ctildes:
-        - -1.6836416064149183e-9
+        - 0.0002410031468648558
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.6836416064149179e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.6836416064149179e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 1
-        - -1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -4.5911144328072356e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
         - 2
         - 2
       mu0: 0
@@ -1431,62 +1299,18 @@ functions:
         - 0
         - 0
       mus:
-        - 1
-        - 1
-        - 1
+        - 0
+        - 0
+        - 0
     - rank: 3
       ctildes:
-        - 1.2802889614799993e-9
+        - 0.00199074897176365
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -6.401444807399995e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 3.182948812077744e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 4
+        - 2
+        - 3
       mu0: 0
       ms_combs:
         - 0
@@ -1502,12 +1326,12 @@ functions:
         - 0
     - rank: 3
       ctildes:
-        - 1.4327225635404249e-9
+        - 0.007072006104767127
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
+        - 2
         - 1
       mu0: 0
       ms_combs:
@@ -1520,11 +1344,11 @@ functions:
         - 0
       mus:
         - 0
-        - 1
+        - 0
         - 1
     - rank: 3
       ctildes:
-        - -1.2762072789455546e-9
+        - -0.004139721869941025
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -1546,7 +1370,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 6.381036394727774e-10
+        - 0.0020698609349705127
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -1568,733 +1392,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -8.092730781616935e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -8.935466593874326e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.7578191929477517e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 5.504883243321695e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.8151812855097077e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 5.074237651065405e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.5451266499026472e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 3.213422042259323e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.1754829398048218e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 4
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.4284528067430037e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.6026727709884536e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 1.8013363854942262e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - -2.0041815157078457e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 3
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.903831808723043e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.1697196394707616e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -5.848598197353805e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -8.85623688290944e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 3
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -6.950605712869645e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - -1
-        - 0
-        - 1
-      ls:
-        - 1
-        - 0
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 6.950605712869646e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 1
-        - 0
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -6.950605712869646e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 1
-        - 0
-        - -1
-      ls:
-        - 1
-        - 0
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.1589210115648704e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.0481871595280385e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.2488442291310046e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 3.5129954032745763e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.458665382613153e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.8413755030915198e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 7.448298051104311e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 3
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.0432717435340501e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - -2.8600221735873854e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -4.3692819337873353e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-        - 1
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 3.551421260205424e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 4.1329114368401066e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 2
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.625377682993803e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 3
-      mu0: 0
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -9.86848778568682e-10
+        - 0.0003509330665167944
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2316,7 +1414,73 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 7.713736675014911e-10
+        - -0.0012702437688527565
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0004244255906678235
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.002378151840813813
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.00043600643332422027
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2338,7 +1502,183 @@ functions:
         - 0
     - rank: 3
       ctildes:
-        - 2.997249609989676e-10
+        - 0.0016006272784120739
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0013151138657069496
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.010592502837384955
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005296251418692475
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0017180190547801553
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.008870483229751407
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0010727162692053527
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0003642845152339572
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0011194879728953805
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2355,12 +1695,232 @@ functions:
         - 0
         - 0
       mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.009125771705283454
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 0
+        - 1
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.009125771705283454
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.009125771705283454
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 1
+        - 0
+        - -1
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0023773904339546904
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0011831148119008498
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
         - 1
         - 1
         - 1
     - rank: 3
       ctildes:
-        - -5.159333271730404e-9
+        - -0.0028086187653598555
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002808618765359854
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.002808618765359854
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 1
+        - -1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0034869063509521225
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0006401161549214598
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0006194518397051891
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2382,13 +1942,233 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 3.065766707355796e-10
+        - 4.5260428006672e-6
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.006011953276644314
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0030059766383221565
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0027330648994676335
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0013665324497338163
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0053274367469949985
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0014586786927811557
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.013079015921367242
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0005310229781473098
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.008286927242168857
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
         - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
         - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0015439387005406074
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
       mu0: 0
       ms_combs:
         - 0
@@ -2404,7 +2184,29 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 4.850053478068725e-10
+        - 0.004801110112852327
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0018749539363703536
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2426,13 +2228,211 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -2.42364596821348e-10
+        - -0.00010302630556722379
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004240121994369815
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0011572158726802849
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005254382166000937
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0022256689695548874
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
         - 1
         - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0009528748752871034
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00526290578011272
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0005091481939051411
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0021528307295309965
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0038752376525624035
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
       mu0: 0
       ms_combs:
         - 0
@@ -2449,11 +2449,11 @@ functions:
   1:
     - rank: 1
       ctildes:
-        - -9.561255449881039e-10
+        - 0.33963388910827325
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 1
+        - 2
       mu0: 1
       ms_combs:
         - 0
@@ -2463,7 +2463,35 @@ functions:
         - 0
     - rank: 1
       ctildes:
-        - -1.3787421147408454e-11
+        - -0.0007448853070586206
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.05430011712687099
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.003494567318739134
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2477,35 +2505,7 @@ functions:
         - 0
     - rank: 1
       ctildes:
-        - -5.345313859580551e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 5
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - -4.923534741912723e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - -3.563746170350123e-9
+        - 0.004043269171082261
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2519,7 +2519,7 @@ functions:
         - 0
     - rank: 1
       ctildes:
-        - -1.0396530100394158e-9
+        - 0.0255832187669469
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2533,7 +2533,77 @@ functions:
         - 1
     - rank: 1
       ctildes:
-        - -1.7337190516267272e-9
+        - 0.09633904480350247
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.26592955414542785
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - -0.015381995671227297
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.028506785516745847
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 6
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 1.1723148126669296
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.04650448723217596
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2545,84 +2615,14 @@ functions:
         - 0
       mus:
         - 0
-    - rank: 1
-      ctildes:
-        - -1.1985858193392941e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - -6.388439021260979e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 0
-    - rank: 1
-      ctildes:
-        - -1.1275429169611413e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 6
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
-    - rank: 1
-      ctildes:
-        - -6.098422830553049e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 0
-    - rank: 1
-      ctildes:
-        - -2.624764099457051e-9
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-      ls:
-        - 0
-      mus:
-        - 1
     - rank: 2
       ctildes:
-        - 2.3990764979199608e-11
+        - 0.0034442452485481836
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
+        - 2
       mu0: 1
       ms_combs:
         - -1
@@ -2635,61 +2635,43 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - -1.1995382489599806e-11
+        - -0.003444245248548184
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 2.1857513064343123e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
         - 2
-        - 4
       mu0: 1
       ms_combs:
         - 0
         - 0
       ls:
-        - 0
-        - 0
+        - 1
+        - 1
       mus:
         - 0
-        - 1
+        - 0
     - rank: 2
       ctildes:
-        - 5.436410049976372e-10
+        - 0.003444245248548184
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 4
+        - 2
       mu0: 1
       ms_combs:
-        - 0
-        - 0
+        - 1
+        - -1
       ls:
-        - 0
-        - 0
+        - 1
+        - 1
       mus:
         - 0
         - 0
     - rank: 2
       ctildes:
-        - -1.392876889376881e-10
+        - -0.19848339433540957
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2704,28 +2686,10 @@ functions:
         - 0
       mus:
         - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -3.346903140330504e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
         - 0
     - rank: 2
       ctildes:
-        - 1.2076373436394332e-11
+        - 0.009461942491958818
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2743,7 +2707,7 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - -1.2076373436394335e-11
+        - -0.00946194249195882
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2761,7 +2725,7 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 1.2076373436394335e-11
+        - 0.00946194249195882
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2779,79 +2743,7 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 1.7270048244380865e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -9.640171375886822e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - -2.4321190909280125e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 5
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.5669505702278913e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 4
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -9.650557637140452e-10
+        - -0.00934458637572833
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -2865,353 +2757,11 @@ functions:
         - 0
         - 0
       mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 1.8510160433720753e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.8510160433720755e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 1.8510160433720755e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 1.8338384908341292e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
         - 1
         - 1
     - rank: 2
       ctildes:
-        - -9.425590966211912e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -5.6117577162770365e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-      mu0: 1
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 5.611757716277038e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -5.611757716277038e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-      mu0: 1
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 1.9687444948519775e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -9.382206730205203e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 2.330596131578943e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.1652980657894714e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 7.06965156451124e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -7.069651564511242e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - 7.069651564511242e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -3.413582173484594e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 4
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 6.310679142142371e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.8668693667406438e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -3.437458667893153e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 4
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.5032636715653206e-10
+        - 0.002232462115670337
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3229,7 +2779,565 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 6.657401199246968e-10
+        - -0.11136756706470236
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.055683783532351185
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.023270967522377783
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.009435499478381406
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.009435499478381407
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.009435499478381407
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0026947824738656223
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.007453564886784382
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.17848271566753973
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.08924135783376987
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.18700498553688844
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.014883539445232786
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.08183855233768282
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.08183855233768283
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.08183855233768283
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.014660721073323375
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.0020021070879156517
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.012490800874490716
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.002504822336340919
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.03080261154469284
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.05223874653494298
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.014258747564009817
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.01626802826885083
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.018156085208629772
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.011367863840233462
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.011367863840233463
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.011367863840233463
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.008122980875092813
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.035615708073942764
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.001648346356341842
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0008606587152647946
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0012558050219740587
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3247,151 +3355,7 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - 2.7290012478355785e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 4
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.7683773187861328e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - -1
-        - 1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 1.768377318786133e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - -1.768377318786133e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 1
-        - -1
-      ls:
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - -6.668799177343053e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 5.2915887952693516e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - 5.928618831019992e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 2.5778262821313405e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-    - rank: 2
-      ctildes:
-        - -1.4581989079380506e-10
+        - 0.00536357191906678
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3405,52 +3369,16 @@ functions:
         - 0
         - 0
       mus:
-        - 1
-        - 1
-    - rank: 2
-      ctildes:
-        - -2.5916897885615754e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
         - 0
         - 1
     - rank: 2
       ctildes:
-        - -3.8621284274913543e-10
+        - 0.044233060876099586
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 1
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-    - rank: 2
-      ctildes:
-        - 9.693600867927697e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 3
+        - 2
+        - 2
       mu0: 1
       ms_combs:
         - 0
@@ -3463,12 +3391,12 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - -3.2897228177634465e-10
+        - 0.01032714887914968
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 1
-        - 1
+        - 2
+        - 3
       mu0: 1
       ms_combs:
         - 0
@@ -3481,7 +3409,7 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - -6.746350312181874e-10
+        - 0.060603822874121534
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3499,7 +3427,43 @@ functions:
         - 1
     - rank: 2
       ctildes:
-        - -2.6119227398549477e-11
+        - 0.12933150088563206
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0316718885913203
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0013732866104805088
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3517,12 +3481,12 @@ functions:
         - 0
     - rank: 2
       ctildes:
-        - -8.711010433271057e-11
+        - -0.13468319648151508
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 2
-        - 3
+        - 1
+        - 1
       mu0: 1
       ms_combs:
         - 0
@@ -3532,100 +3496,70 @@ functions:
         - 0
       mus:
         - 0
-        - 0
+        - 1
     - rank: 2
       ctildes:
-        - -3.4647128494921616e-10
+        - 0.010249489672018925
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-      mus:
-        - 0
         - 1
-    - rank: 3
-      ctildes:
-        - 3.846324110332507e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
         - 4
-        - 1
-        - 1
       mu0: 1
       ms_combs:
-        - 0
         - 0
         - 0
       ls:
         - 0
         - 0
-        - 0
       mus:
-        - 0
         - 1
         - 1
-    - rank: 3
+    - rank: 2
       ctildes:
-        - -5.915185946822518e-12
+        - -0.0008770859887680763
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 2.9575929734112585e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
+        - 4
       mu0: 1
       ms_combs:
         - 0
         - 0
-        - 0
       ls:
         - 0
-        - 1
-        - 1
+        - 0
       mus:
         - 0
-        - 0
-        - 0
-    - rank: 3
+        - 1
+    - rank: 2
       ctildes:
-        - 6.7350538451827985e-12
+        - 0.03162544665088077
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 2
         - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0027677440876203597
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
         - 2
+        - 3
       mu0: 1
       ms_combs:
         - 0
@@ -3637,38 +3571,16 @@ functions:
         - 0
       mus:
         - 0
-        - 1
+        - 0
         - 1
     - rank: 3
       ctildes:
-        - -1.570241612292852e-11
+        - 0.0028251664792180438
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 1
         - 1
         - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -6.299546829998859e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
         - 2
       mu0: 1
       ms_combs:
@@ -3682,80 +3594,14 @@ functions:
       mus:
         - 0
         - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - -1.1342032714342708e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
         - 1
     - rank: 3
       ctildes:
-        - -3.809343701140079e-11
+        - -0.004731832882382139
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 2
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.9022867350850306e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 3
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.528924207661497e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
         - 1
         - 1
       mu0: 1
@@ -3773,73 +3619,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -1.580450199155809e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.0328772300300363e-13
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.0164386150150178e-13
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.1958569619993282e-11
+        - -0.004487490491012644
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3861,7 +3641,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -1.1958569619993285e-11
+        - 0.004487490491012646
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3883,7 +3663,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 1.1958569619993285e-11
+        - -0.004487490491012646
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -3905,249 +3685,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -4.925076145580658e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.5268919400779617e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.0233349893500437e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.176011201088213e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.165425488164375e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - -1
-        - 1
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.082712744082187e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 1
-        - 1
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -5.489474247968611e-13
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.507509256941303e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -2.203283032167242e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - -1
-        - 1
-        - 0
-      ls:
-        - 1
-        - 1
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.1016415160836213e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 1
-        - 1
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.069803248529442e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - -6.354076135842515e-11
+        - 3.4544554429494834e-5
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4169,12 +3707,144 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -7.639232419516195e-11
+        - -0.00336330926198255
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
-        - 3
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004629266452743041
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00231463322637152
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.007368565694187437
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+        - 0
+      ls:
+        - 1
+        - 1
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0036842828470937195
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00041502506597645663
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005318464374415469
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
         - 1
       mu0: 1
       ms_combs:
@@ -4191,7 +3861,29 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 2.4172149968646497e-11
+        - 0.0008451019521436236
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0018228469784099413
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4213,7 +3905,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -2.4172149968646487e-11
+        - 0.0018228469784099405
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4235,7 +3927,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 2.4172149968646487e-11
+        - -0.0018228469784099405
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4257,7 +3949,73 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -1.9787857831560064e-12
+        - 0.0011533345073828302
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.004321927162998547
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.002160963581499273
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.001768265664810755
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4279,13 +4037,145 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 3.746658515251949e-11
+        - -0.0006151719719166073
       num_ms_combs: 1
       ndensity: 1
       ns:
+        - 1
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0007013580083902785
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
         - 1
         - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.001179887390653773
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
         - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004515753243247217
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.002257876621623608
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0030486227793030136
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0020063498900537245
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+        - 1
       mu0: 1
       ms_combs:
         - 0
@@ -4301,7 +4191,7 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -1.6228924629447783e-11
+        - -0.00011673622567286984
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4323,78 +4213,34 @@ functions:
         - 0
     - rank: 3
       ctildes:
-        - -1.1533961286588186e-11
+        - -0.00041210630450620755
       num_ms_combs: 1
       ndensity: 1
       ns:
-        - 1
-        - 2
         - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 2.681516504622778e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 4
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.149774791251116e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.2589118024796094e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
         - 1
         - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0037468695567626207
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
         - 2
       mu0: 1
       ms_combs:
@@ -4406,34 +4252,12 @@ functions:
         - 0
         - 0
       mus:
-        - 0
+        - 1
         - 1
         - 1
     - rank: 3
       ctildes:
-        - -1.810824143537409e-10
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 9.193408081284673e-12
+        - -0.0004889139296235362
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4455,7 +4279,205 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 9.9962031060027e-12
+        - -0.0015419764506460405
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004286011051409849
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0017283776026333732
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.002554273234830559
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0017684015990284548
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0020220858417746576
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.00038181763604712573
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00023635062547120003
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.000365168241062729
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0016153484224901034
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4477,11 +4499,143 @@ functions:
         - 0
     - rank: 3
       ctildes:
-        - 2.3574938620404132e-11
+        - -0.0009605434817561627
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00018608279218780048
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0014830758584535558
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00030880802528805956
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00484489328720257
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0024238414854340184
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.003029832784549952
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
         - 1
         - 3
       mu0: 1
@@ -4499,7 +4653,51 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - 2.7111491559717466e-11
+        - -0.0014466371831851628
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0034706064734795067
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0005473020259733303
       num_ms_combs: 1
       ndensity: 1
       ns:
@@ -4521,79 +4719,13 @@ functions:
         - 1
     - rank: 3
       ctildes:
-        - -7.473650037145872e-11
+        - 4.697757557146723e-5
       num_ms_combs: 1
       ndensity: 1
       ns:
         - 1
         - 1
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - -2.143755492608938e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 2
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 0
-    - rank: 3
-      ctildes:
-        - 5.182582237826724e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 8.761912072016376e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 1
+        - 4
       mu0: 1
       ms_combs:
         - 0
@@ -4606,136 +4738,4 @@ functions:
       mus:
         - 1
         - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -1.6805409134155871e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 1
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.873465196157629e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 1.07110988303294e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 2
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - 9.718131131324417e-12
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 3
-        - 1
-        - 1
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 1
-        - 1
-    - rank: 3
-      ctildes:
-        - -3.025573630952315e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 2
-        - 3
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
-        - 1
-    - rank: 3
-      ctildes:
-        - -6.271775937867232e-11
-      num_ms_combs: 1
-      ndensity: 1
-      ns:
-        - 1
-        - 1
-        - 2
-      mu0: 1
-      ms_combs:
-        - 0
-        - 0
-        - 0
-      ls:
-        - 0
-        - 0
-        - 0
-      mus:
-        - 0
-        - 0
         - 1
