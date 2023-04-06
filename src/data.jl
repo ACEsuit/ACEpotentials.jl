@@ -11,18 +11,17 @@ All parameters are passed as keyword arguments.
 
 ### Parameters
 * `fname` : a "*.xyz" file with atomistic data (mandatory).
-* `energy_key = "dft_energy` : ASE's `Atoms.info` key to read energy 
-for fitting.
-* `force_key = "dft_force` : ASE's `Atoms.arrays` key to read forces 
-for fitting.
-* `virial_key = "dft_virial` : ASE's `Atoms.info` key to read virial 
-for fitting.
+* `energy_key = "energy"` : key identifying energy for fitting.
+* `force_key = "forces"` : key identifying forces for fitting.
+* `virial_key = "virial"` : key identifying virial tensor for fitting.
+* `weight_key` = "config_type` : key identifying label for setting the correct weight from weights dictionary. 
 """
 function data_params(;
     fname = nothing,
-    energy_key = "dft_energy",
-    force_key = "dft_force",
-    virial_key = "dft_virial"
+    energy_key = "energy",
+    force_key = "forces",
+    virial_key = "virial",
+    weight_key = "config_type"
 )
     @assert !isnothing(fname) "`fname` must be given. "
 
@@ -30,7 +29,8 @@ function data_params(;
         "fname" => fname,
         "energy_key" => energy_key,
         "force_key" => force_key,
-        "virial_key" => virial_key
+        "virial_key" => virial_key,
+        "weight_key" => weight_key
     )
 
 end
