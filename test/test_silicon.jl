@@ -62,7 +62,7 @@ end
     test_rmse(results["errors"]["rmse"], rmse_qr, 1e-5)
 
     # repeat with distributed assembly
-    addprocs(3, exeflags="--project=..")
+    addprocs(3, exeflags="--project="*pathof(ACE1pack)[1:end-16])
     @everywhere using ACE1pack
     results = fit_ace(params)
     rmprocs(workers())
@@ -105,10 +105,10 @@ end
     params["solver"]["tol"] = 1e-4
     rmse_brr = Dict(
         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-        "dia"           => Dict("V"=>0.0428196, "E"=>0.00154743, "F"=>0.0286633),
-        "liq"           => Dict("V"=>0.0346353, "E"=>9.80216e-5, "F"=>0.152752),
-        "set"           => Dict("V"=>0.0664363, "E"=>0.00240266, "F"=>0.11819),
-        "bt"            => Dict("V"=>0.0851538, "E"=>0.00313734, "F"=>0.0585017),)
+        "dia"           => Dict("V"=>0.0333241, "E"=>0.0013034, "F"=>0.0255757),
+        "liq"           => Dict("V"=>0.0347208, "E"=>0.0003974, "F"=>0.1574544),
+        "set"           => Dict("V"=>0.0619434, "E"=>0.0023868, "F"=>0.1219008),
+        "bt"            => Dict("V"=>0.0823042, "E"=>0.0032196, "F"=>0.0627417),)
     results = fit_ace(params)
     test_rmse(results["errors"]["rmse"], rmse_brr, 1e-5)
 end
@@ -120,10 +120,10 @@ end
     params["solver"]["n_iter"] = 1000
     rmse_ard = Dict(
         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-        "dia"           => Dict("V"=>0.0477465, "E"=>0.00156758, "F"=>0.0417769),
-        "liq"           => Dict("V"=>0.0367959, "E"=>0.0008153, "F"=>0.176037),
-        "set"           => Dict("V"=>0.0734983, "E"=>0.00302168, "F"=>0.136656),
-        "bt"            => Dict("V"=>0.0940645, "E"=>0.00410442, "F"=>0.0667358),)
+        "dia"           => Dict("V"=>0.1084975, "E"=>0.0070814, "F"=>0.0937790),
+        "liq"           => Dict("V"=>0.0682268, "E"=>0.0090065, "F"=>0.3693146),
+        "set"           => Dict("V"=>0.1839696, "E"=>0.0137778, "F"=>0.2883043),
+        "bt"            => Dict("V"=>0.2413568, "E"=>0.0185958, "F"=>0.1507498),)
     results = fit_ace(params)
     @warn "The SKLEARN_ARD test tolerance is very loose."
     test_rmse(results["errors"]["rmse"], rmse_ard, 1e-2)

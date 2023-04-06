@@ -12,12 +12,13 @@ struct AtomsData <: ACEfit.AbstractData
     virial_key::Union{String, Nothing}
     weights
     energy_ref
-    function AtomsData(atoms::Atoms,
+    function AtomsData(atoms::Atoms;
                        energy_key=nothing,
                        force_key=nothing,
                        virial_key=nothing,
                        weights=Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)),
-                       v_ref=nothing)
+                       v_ref=nothing, 
+                       weight_key="config_type")
 
         # set energy, force, and virial keys for this configuration
         # ("nothing" indicates data that are absent or ignored)
@@ -45,7 +46,7 @@ struct AtomsData <: ACEfit.AbstractData
             w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
         end
         for (key, val) in atoms.data
-            if lowercase(key)=="config_type" && (lowercase(val.data) in lowercase.(keys(weights)))
+            if lowercase(key)==weight_key && (lowercase(val.data) in lowercase.(keys(weights)))
                 w = weights[val.data]
             end
         end
@@ -129,17 +130,17 @@ function ACEfit.weight_vector(d::AtomsData)
     return w
 end
 
-function config_type(d::AtomsData)
-    config_type = "default"
+function group_type(d::AtomsData; group_key="config_type")
+    group_type = "default"
     for (k,v) in d.atoms.data
-        if (lowercase(k)=="config_type")
-            config_type = v.data
+        if (lowercase(k)==group_key)
+            group_type = v.data
         end
     end
-    return config_type
+    return group_type
 end
 
-function linear_errors(data, model)
+function linear_errors(data, model; group_key="config_type")
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
    rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
@@ -152,7 +153,7 @@ function linear_errors(data, model)
 
    for d in data
 
-       c_t = config_type(d)
+       c_t = group_type(d; group_key)
        if !(c_t in config_types)
           push!(config_types, c_t)
           merge!(config_rmse, Dict(c_t=>Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)))
@@ -257,7 +258,7 @@ function assess_dataset(data)
     n_virials = Dict{String,Integer}()
 
     for d in data
-        c_t = config_type(d)
+        c_t = group_type(d)
         if !(c_t in config_types)
             push!(config_types, c_t)
             n_configs[c_t] = 0
