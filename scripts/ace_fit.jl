@@ -58,7 +58,7 @@ if args["dry-run"]
     save_dry_run_info(fit_params)
 end
 
-results = ACE1pack.fit_ace(fit_params, :distributed)
+results = ACE1pack.fit_ace(fit_params)
 
 # export to a .yace automatically, also need to generate the new name.
 yace_name = replace(fit_params["ACE_fname"], ".json" => ".yace")
