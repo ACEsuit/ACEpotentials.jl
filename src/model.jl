@@ -56,8 +56,10 @@ function acefit!(model::ACE1Model, raw_data;
                 restraint_weight = 0.01, 
                 mode = :serial )
 
-   data = [ AtomsData(at, energy_key, force_key, virial_key, 
-                      weights, model.Vref) for at in raw_data ] 
+   data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
+                          virial_key = virial_key, weights = weights, 
+                          v_ref = model.Vref) 
+            for at in raw_data ] 
 
    if repulsion_restraint 
       append!(data, _rep_dimer_data(model, weight = restraint_weight))
@@ -76,14 +78,17 @@ end
 
 
 
-function linear_errors(data::AbstractVector{<: Atoms}, model::ACE1Model; 
+function linear_errors(raw_data::AbstractVector{<: Atoms}, model::ACE1Model; 
                        energy_key = "energy", 
                        force_key = "force", 
                        virial_key = "virial", 
                        weights = default_weights())
    Vref = model.Vref                       
-   _data = [ AtomsData(d, energy_key, force_key, virial_key, weights, Vref) for d in data ]
-   return linear_errors(_data, model.potential)
+   data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
+                          virial_key = virial_key, weights = weights, 
+                          v_ref = model.Vref) 
+            for at in raw_data ] 
+   return linear_errors(data, model.potential)
 end
 
 
