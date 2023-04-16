@@ -7,19 +7,6 @@ using Dates, Base
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
-# TODO: replace this workaround once ACE1 supports committee_potential(::IPSuperBasis,...)
-function committee_potential(basis::JuLIP.MLIPs.IPSuperBasis{JuLIP.MLIPs.IPBasis}, C, committee)
-    i1 = 1
-    com_pots = []
-    for b in basis.BB
-        i2 = i1 + length(b) - 1
-        com_pot = ACE1.committee_potential(b, C[i1:i2], committee[i1:i2,:])
-        push!(com_pots, com_pot)
-        i1 = i1 + length(b)
-    end
-    return JuLIP.MLIPs.SumIP(com_pots)
-end
-
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 
 
@@ -32,16 +19,17 @@ function fit_ace(params::Dict)
     basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
-    Vref = OneBody(convert(Dict{String,Any},params["e0"]))
+    Vref = OneBody(Dict(Symbol(k) => v for (k,v) in params["e0"]))
     energy_key = params["data"]["energy_key"]
     force_key = params["data"]["force_key"]
     virial_key = params["data"]["virial_key"]
+    weight_key = params["data"]["weight_key"]
     weights = params["weights"]
     dataset = JuLIP.read_extxyz(params["data"]["fname"])
 
     data = AtomsData[]
     for atoms in dataset
-        d = AtomsData(atoms, energy_key, force_key, virial_key, weights, Vref)
+        d = AtomsData(atoms; energy_key=energy_key, force_key=force_key, virial_key=virial_key, weight_key=weight_key, weights=weights, v_ref=Vref)
         push!(data, d)
     end
     assess_dataset(data)
@@ -63,7 +51,8 @@ function fit_ace(params::Dict)
     save_fit(params["ACE_fname"], IP, Dict("errors" => errors, "params" => params))
 
     if haskey(fit, "committee")
-        IP_com = committee_potential(basis, C, fit["committee"])
+        IP_com = ACE1.committee_potential(basis, C, fit["committee"])
+        (Vref != nothing) && (IP_com = JuLIP.MLIPs.SumIP(Vref, IP_com))
         results["IP_com"] = IP_com
         if !(params["ACE_fname"] == "") && !isnothing(params["ACE_fname"])
             save_fit("committee_"*params["ACE_fname"], IP_com, Dict("errors" => errors, "params" => params))
