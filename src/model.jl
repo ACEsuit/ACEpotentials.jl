@@ -53,8 +53,7 @@ function acefit!(model::ACE1Model, raw_data;
                 smoothness = 2, 
                 prior = nothing, 
                 repulsion_restraint = false, 
-                restraint_weight = 0.01, 
-                mode = :serial )
+                restraint_weight = 0.01) 
 
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
@@ -66,7 +65,7 @@ function acefit!(model::ACE1Model, raw_data;
    end
                   
    P = _make_prior(model, smoothness, prior)
-   A, Y, W = ACEfit.linear_assemble(data, model.basis, mode)
+   A, Y, W = ACEfit.linear_assemble(data, model.basis)
    Ap = Diagonal(W) * (A / P) 
    Y = W .* Y
    result = ACEfit.linear_solve(solver, Ap, Y)
