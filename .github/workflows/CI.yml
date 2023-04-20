@@ -185,13 +185,7 @@ jobs:
           Pkg.pkg"registry add https://github.com/ACEsuit/ACEregistry"
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
-      - name: "test-precompile" 
+      - name: "Run paper examples"
         run: |
-          using Pkg
-          Pkg.precompile()
-        shell: bash -c "julia --color=yes {0}"
-      - name: "run paper examples"
-        run: |
-          using Pkg
-          Pkg.activate(".")
-          include("paper-examples/runexamples.jl")
+          julia --project -e 'using Pkg; Pkg.add(url="https://github.com/ACEsuit/ACEfit.jl", rev="0.1-dev")'
+          julia --project paper-examples/runexamples.jl
