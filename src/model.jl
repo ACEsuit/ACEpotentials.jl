@@ -65,10 +65,10 @@ function acefit!(model::ACE1Model, raw_data;
    end
                   
    P = _make_prior(model, smoothness, prior)
-   A, Y, W = ACEfit.linear_assemble(data, model.basis)
+   A, Y, W = ACEfit.assemble(data, model.basis)
    Ap = Diagonal(W) * (A / P) 
    Y = W .* Y
-   result = ACEfit.linear_solve(solver, Ap, Y)
+   result = ACEfit.solve(solver, Ap, Y)
    coeffs = P \ result["C"]
    ACE1x._set_params!(model, coeffs)
 
