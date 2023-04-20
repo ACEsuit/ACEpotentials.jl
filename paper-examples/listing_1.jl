@@ -2,7 +2,8 @@ using ACE1pack
 
 @info "BEGIN LISTING 1"
 
-model = acemodel(; elements = [:Ti, :Al],
+model = acemodel(;
+            elements = [:Ti, :Al],
             order = 3,
             totaldegree = 15,
             rcut = 5.5,
