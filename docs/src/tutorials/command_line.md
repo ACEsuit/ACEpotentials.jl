@@ -19,14 +19,14 @@ Example parameters
 
 ```
 {
-    "elements": [:Si]
+    "elements": ["Si"],
     "order": 3,
     "totaldegree": 12,
-    "rcut": 5,
-    "datafile": "Si_tiny.xyz"
-    "solver": "BayesianLinearRegression"
-    "energy_key": "dft_energy"
-    "force_key": "dft_force"
+    "rcut": 5.0,
+    "datafile": "Si_tiny.xyz",
+    "solver": "BayesianLinearRegression",
+    "energy_key": "dft_energy",
+    "force_key": "dft_force",
     "virial_key": "dft_virial"
 }
 ```
