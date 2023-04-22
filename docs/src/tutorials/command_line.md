@@ -15,6 +15,8 @@ Below are examples of the parameters' files. The first one gives only the mandat
 
 Example parameters
 
+(One can access the test data at the location printed by `julia --project=@. -e "using ACE1pack; using LazyArtifacts; println(joinpath(artifact\"Si_tiny_dataset\", \"Si_tiny.xyz\"))"`.)
+
 ```
 {
     "elements": [:Si]
