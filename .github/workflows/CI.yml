@@ -137,9 +137,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
       - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.add("ACEfit")'
+          # TODO: restore normal ACEfit
+          julia --project=docs -e 'using Pkg; Pkg.add(url="https://github.com/ACEsuit/ACEfit.jl", rev="0.1-dev")'
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
