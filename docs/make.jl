@@ -75,7 +75,7 @@ makedocs(;
         #     "Using_ACE/openmm.md",
         # ],
         "Command line" => Any[
-            "command_line.md"
+            "tutorials/command_line_old.md",
         ],
         "ACE1pack Internals" => Any[
             "ACE1pack/ace1pack_overview.md",

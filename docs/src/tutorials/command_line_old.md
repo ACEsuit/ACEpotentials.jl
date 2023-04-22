@@ -1,4 +1,4 @@
-# Command line interface
+# OLD (!) Command line interface
 
 The (most likely) easiest way to fit an ACE potential is via the command line from a JSON or YAML parameters file: 
 
