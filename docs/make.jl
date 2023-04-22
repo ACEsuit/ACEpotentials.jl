@@ -55,6 +55,7 @@ makedocs(;
             "gettingstarted/pkg.md",
             # "gettingstarted/readinglist.md",
             "gettingstarted/aceintro.md",
+            "gettingstarted/parallel-fitting.md",
         ],
         "Tutorials" => Any[
             "tutorials/index.md",
