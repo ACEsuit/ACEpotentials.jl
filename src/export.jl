@@ -54,6 +54,22 @@ function export_ace(fptr::IOStream, Pr::TransformedPolys; ntests=0, kwargs...)
    end
 end
 
+function export_ace(fptr::IOStream, basis::ACE1.Splines.RadialSplines)
+
+   # these are hardcoded in PACE
+   ntot = 10000 # number of bins for lookup table
+   nlut = 10000 # number of nodes for lookup table
+
+   # PACE lookup table. the final dimension holds the coefficients
+   #   c0 + c1*(r-rn) + c2*(r-rn)^2 + c3*(r-rn)^3
+   #   where rn is a bin lower bound
+   lookupTable = zeros(ntot+1, length(basis.splines), 4)
+
+   # TODO: populate the lookup table using something analagous to
+   # ACE1.Splines.export_splines
+
+end
+
 function export_ace(fptr::IOStream, Vpair::PolyPairPot; kwargs...)
    println(fptr, "begin polypairpot")
    # this exports everything except the coefficients
@@ -79,7 +95,6 @@ function export_ace(fptr::IOStream, Vrep::RepulsiveCore; kwargs...)
    println(fptr, "B=$(Vin.B)")
    println(fptr, "end repulsive potential")
 end
-
 
 function export_ace(fptr::IOStream, V::PIPotential, Vpair=nothing, V0=nothing; kwargs...)
    @assert numz(V) == 1
@@ -114,7 +129,9 @@ function export_ace(fptr::IOStream, V::PIPotential, Vpair=nothing, V0=nothing; k
    println(fptr, "")
 
    # export_ace the radial basis
-   export_ace(fptr, V.pibasis.basis1p.J; kwargs...)
+   #export_ace(fptr, V.pibasis.basis1p.J; kwargs...)
+   # TODO: improve this hack
+   export_ace(fptr, ACE1.Splines.RadialSplines(V.pibasis.basis1p.J))
    println(fptr, "")
 
    if haspair == "t"
