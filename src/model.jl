@@ -34,7 +34,7 @@ Keyword arguments:
 * `energy_key`, `force_key`, `virial_key` specify 
 the label of the data to which the parameters will be fitted. 
 * `weights` specifies the regression weights, default is 30 for energy, 1 for forces and virials
-* `solver` specifies the lsq solver, default is `BayesianLinearRegressionSVD`
+* `solver` specifies the lsq solver, default is `BLR` (BayesianLinearRegression)
 * `smoothness` specifies the smoothness prior, i.e. how strongly damped 
    parameters corresponding to high polynomial degrees are; is 2.
 * `prior` specifies a covariance of the prior, if `nothing` then a smoothness prior 
@@ -45,7 +45,7 @@ the label of the data to which the parameters will be fitted.
 * `restraint_weight` specifies the weight of the repulsion restraint.
 """
 function acefit!(model::ACE1Model, raw_data;
-                solver = ACEfit.BayesianLinearRegressionSVD(), 
+                solver = ACEfit.BLR(),
                 weights = default_weights(),
                 energy_key = "energy", 
                 force_key = "force", 
