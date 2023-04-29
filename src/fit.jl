@@ -34,7 +34,11 @@ function fit_ace(params::Dict)
     end
     assess_dataset(data)
 
-    solver = ACEfit.create_solver(params["solver"])
+    # create solver
+    solver = eval(Meta.parse("ACEfit." * uppercase(params["solver"]["type"])))
+    solver_kwargs = Dict(Symbol(k)=>v for (k,v) in params["solver"] if k!="type")
+    solver = solver(;solver_kwargs...)
+
     if isnothing(params["P"])
         P = nothing
     else
