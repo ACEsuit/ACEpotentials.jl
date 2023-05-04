@@ -199,19 +199,10 @@ function export_ace(fname, IP)
         range = ranges[iz1,iz2]
         for i in 1:size(radialsplines.splines,1)
             spl = radialsplines.splines[1,iz1,iz2]
-            deriv = zeros(length(range))
-            for (j,r) in enumerate(range)  # must be a more elegant way
-                deriv[j] = Interpolations.gradient(spl,r)[1]
-            end
-            nodalderivs[i,iz1,iz2] = deriv
+            deriv(r) = Interpolations.gradient(spl,r)[1]
+            nodalderivs[i,iz1,iz2] = deriv.(range)
         end
     end
-
-
-    #grabbing all the required params
-    Pr = V3.pibasis.basis1p
-    rcut = cutoff(Pr)
-    maxn = length(V3.pibasis.basis1p.J.J.A)
 
     # export splines
     data["bonds"] = OrderedDict()
