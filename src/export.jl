@@ -1,248 +1,500 @@
+module ExportMulti
 
-# --------------------------------------------------------------------------
-# ACE1.jl: Julia implementation of the Atomic Cluster Expansion
-# Copyright (c) 2019 Christoph Ortner <christophortner0@gmail.com>
-# Licensed under ASL - see ASL.md for terms and conditions.
-# --------------------------------------------------------------------------
-
-
-
-module Export
-
-import ACE1, JuLIP
-using ACE1.RPI: BasicPSH1pBasis, PSH1pBasisFcn
+using Interpolations
+using OrderedCollections
+using YAML
+using ACE1
 using ACE1: PIBasis, PIBasisFcn, PIPotential
 using ACE1.OrthPolys: TransformedPolys
-using ACE1: rand_radial, cutoff, numz
-using JuLIP: energy, bulk, i2z, z2i, chemical_symbol
-using ACE1.PairPotentials: RepulsiveCore, PolyPairPot
+using ACE1: rand_radial, cutoff, numz, ZList
+using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
 
-function export_ace(fname::AbstractString, args...;  kwargs...)
-   fptr = open(fname; write=true)
-   export_ace(fptr, args...; kwargs...)
-   close(fptr)
+function export_ACE(fname, IP; export_pairpot_as_table=false)
+    # supply fname with the .yace extension
+    # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
+    if !(fname[end-4:end] == ".yace")
+        throw(ArgumentError("Potential name must be supplied with .yace extension"))
+    end
+
+    # decomposing into V1, V2, V3 (One body, two body and ACE bases)
+    # they could be in a different order
+    if length(IP.components) != 3
+        throw("IP must have three components which are OneBody, pair potential, and ace")
+    end
+
+    ordered_components = []
+
+    for target_type in [OneBody, PolyPairPot, PIPotential]
+        did_not_find = true
+        for i = 1:3
+            if typeof(IP.components[i]) <: target_type
+                push!(ordered_components, IP.components[i])
+                did_not_find = false
+            end
+        end
+
+        if did_not_find
+            throw("IP must have three components which are OneBody, pair potential, and ace")
+        end
+    end
+
+    V1 = ordered_components[1]
+    V2 = ordered_components[2]
+    V3 = ordered_components[3]
+    
+    species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
+    species_dict = Dict(zip(collect(0:length(species)-1), species))
+    reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
+
+    # check for the old pairpotential style: one basis, or the new style: a matrix of bases
+    matrix_v2 = false
+    if typeof(V2.basis.J) <: SMatrix
+        matrix_v2 = true
+        if !(export_pairpot_as_table)
+            throw(ArgumentError(
+                "This potential was made using a recent version of ACE1. Exporting with export_pairpot_as_table=false is only possible for older potential files. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
+        end
+    #else
+        #warn("This potential has been made with an older version of ACE1, and may not be compatible")
+    end
+
+    data = Dict()
+
+    data["deltaSplineBins"] = 0.001 #" none
+
+    elements = Vector(undef, length(species))
+    E0 = zeros(length(elements))
+    
+    for (index, element) in species_dict
+        E0[index+1] = V1(Symbol(element))
+        elements[index+1] = element
+    end
+
+    # grabbing the elements key and E0 key from the onebody (V1)
+    data["elements"] = elements
+
+    # 1body
+    data["E0"] = E0
+
+    # 2body
+    if export_pairpot_as_table
+        # I am not handling the hasproperty(V2, :Vin) case, since I don't know what this is
+        # this writes a .table file, so for simplicity require that export fname is passed with
+        # .yace extension, and we remove this and add the .table extension instead
+        fname_stem = fname[1:end-5]
+        write_pairpot_table(fname_stem, V2, species_dict)
+    else
+        if hasproperty(V2, :basis)
+            polypairpot = export_polypairpot(V2, reversed_species_dict)
+        else hasproperty(V2, :Vin)
+            polypairpot = export_polypairpot(V2.Vout, reversed_species_dict)
+            reppot = export_reppot(V2, reversed_species_dict)
+            data["reppot"] = reppot
+        end
+        data["polypairpot"] = polypairpot
+    end
+
+    # ACE
+    embeddings, bonds = export_radial_basis(V3, species_dict)
+    data["embeddings"] = embeddings
+    data["bonds"] = bonds
+
+    functions, lmax = export_ACE_functions(V3, species, reversed_species_dict)
+    data["functions"] = functions
+    data["lmax"] = lmax
+
+    YAML.write_file(fname, data)
+end
+
+function export_ace(fname, IP)
+    # supply fname with the .yace extension
+    # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
+    if !(fname[end-4:end] == ".yace")
+        throw(ArgumentError("Potential name must be supplied with .yace extension"))
+    end
+
+    # decomposing into V1, V2, V3 (One body, two body and ACE bases)
+    # they could be in a different order
+    if length(IP.components) != 3
+        throw("IP must have three components which are OneBody, pair potential, and ace")
+    end
+
+    ordered_components = []
+
+    for target_type in [OneBody, PolyPairPot, PIPotential]
+        did_not_find = true
+        for i = 1:3
+            if typeof(IP.components[i]) <: target_type
+                push!(ordered_components, IP.components[i])
+                did_not_find = false
+            end
+        end
+
+        if did_not_find
+            throw("IP must have three components which are OneBody, pair potential, and ace")
+        end
+    end
+
+    V1 = ordered_components[1]
+    V2 = ordered_components[2]
+    V3 = ordered_components[3]
+    
+    species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
+    species_dict = Dict(zip(collect(0:length(species)-1), species))
+    reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
+
+    data = OrderedDict()
+
+    #data["deltaSplineBins"] = 0.001 #" none
+
+    elements = Vector(undef, length(species))
+    E0 = zeros(length(elements))
+    
+    for (index, element) in species_dict
+    #    E0[index+1] = V1(Symbol(element))
+        elements[index+1] = element
+    end
+
+    # grabbing the elements key and E0 key from the onebody (V1)
+    data["elements"] = elements
+
+    # 1body
+    data["E0"] = E0
+
+    ## 2body
+    #if export_pairpot_as_table
+    #    # I am not handling the hasproperty(V2, :Vin) case, since I don't know what this is
+    #    # this writes a .table file, so for simplicity require that export fname is passed with
+    #    # .yace extension, and we remove this and add the .table extension instead
+    #    fname_stem = fname[1:end-5]
+    #    write_pairpot_table(fname_stem, V2, species_dict)
+    #else
+    #    if hasproperty(V2, :basis)
+    #        polypairpot = export_polypairpot(V2, reversed_species_dict)
+    #    else hasproperty(V2, :Vin)
+    #        polypairpot = export_polypairpot(V2.Vout, reversed_species_dict)
+    #        reppot = export_reppot(V2, reversed_species_dict)
+    #        data["reppot"] = reppot
+    #    end
+    #    data["polypairpot"] = polypairpot
+    #end
+
+    # ACE
+#    embeddings, bonds = export_radial_basis(V3, species_dict)
+    data["embeddings"] = Dict()
+    data["embeddings"][0] = Dict(
+        "ndensity" => 1,
+        "FS_parameters" => [1.0, 1.0],
+        "npoti" => "FinnisSinclairShiftedScaled",
+        "drho_core_cutoff" => 1.000000000000000000,
+        "rho_core_cutoff" => 100000.000000000000000000)
+
+    radialsplines = ACE1.Splines.RadialSplines(V3.pibasis.basis1p.J; nnodes = 10000)
+    ranges, nodalvals, zlist = ACE1.Splines.export_splines(radialsplines)
+
+    # TODO: move this elsewhere
+    # compute spline derivatives
+    nodalderivs = similar(nodalvals)
+    for iz1 in size(nodalvals,2), iz2 in size(nodalvals,3)
+        range = ranges[iz1,iz2]
+        for i in 1:size(radialsplines.splines,1)
+            spl = radialsplines.splines[1,iz1,iz2]
+            deriv = zeros(length(range))
+            for (j,r) in enumerate(range)  # must be a more elegant way
+                deriv[j] = Interpolations.gradient(spl,r)[1]
+            end
+            nodalderivs[i,iz1,iz2] = deriv
+        end
+    end
+
+
+    #grabbing all the required params
+    Pr = V3.pibasis.basis1p
+    rcut = cutoff(Pr)
+    maxn = length(V3.pibasis.basis1p.J.J.A)
+
+    # export splines
+    data["bonds"] = OrderedDict()
+    for iz1 in size(nodalvals,2), iz2 in size(nodalvals,3)
+        data["bonds"][[iz1-1,iz2-1]] = OrderedDict{Any,Any}(
+            "radbasename" => "ACE.jl",
+            "maxn" => length(V3.pibasis.basis1p.J.J.A),
+            "rcut" => ranges[iz1,iz2][end],
+            "ntot" => length(ranges[iz1,iz2])-1)
+        nodalvals_map = OrderedDict([i-1 => nodalvals[i,iz1,iz2] for i in 1:size(nodalvals,1)])
+        data["bonds"][[iz1-1,iz2-1]]["splinenodalvals"] = nodalvals_map
+        nodalderivs_map = OrderedDict([i-1 => nodalderivs[i,iz1,iz2] for i in 1:size(nodalvals,1)])
+        data["bonds"][[iz1-1,iz2-1]]["splinenodalderivs"] = nodalderivs_map
+    end
+
+    functions, lmax = export_ACE_functions(V3, species, reversed_species_dict)
+    data["functions"] = functions
+    data["lmax"] = lmax
+
+    YAML.write_file(fname, data)
+end
+
+function export_reppot(Vrep, reversed_species_dict)
+    reppot = Dict("coefficients" => Dict())
+
+    zlist_dict = Dict(zip(1:length(Vrep.Vout.basis.zlist.list), [string(chemical_symbol(z)) for z in Vrep.Vout.basis.zlist.list]))
+
+    for (index1, element1) in zlist_dict
+        for (index2, element2) in zlist_dict
+            pair = [reversed_species_dict[element1], reversed_species_dict[element2]]
+            coefficients = Dict( "A" => Vrep.Vin[index1, index2].A,
+                                "B" => Vrep.Vin[index1, index2].B,
+                                "e0" => Vrep.Vin[index1, index2].e0,
+                                "ri" => Vrep.Vin[index1, index2].ri) 
+            reppot["coefficients"][pair] = coefficients
+        end
+    end
+
+    return reppot
+end
+
+function export_polypairpot(V2, reversed_species_dict)
+    Pr = V2.basis.J
+
+    p = Pr.trans.p
+    r0 = Pr.trans.r0
+    xr = Pr.J.tr
+    xl = Pr.J.tl
+    pr = Pr.J.pr
+    pl = Pr.J.pl
+    rcut = cutoff(Pr)
+    maxn = length(Pr)
+
+    if length(keys(reversed_species_dict)) == 1
+        num_coeffs = length(V2.coeffs)
+    else
+        num_coeffs = vcat(V2.basis.bidx0...)[2]
+    end
+
+    zlist_dict = Dict(zip(1:length(V2.basis.zlist.list), [string(chemical_symbol(z)) for z in V2.basis.zlist.list]))
+
+    polypairpot = Dict( "p" => p,
+                        "r0" => r0,
+                        "xr" => xr,
+                        "xl" => xl,
+                        "pr" => pr,
+                        "pl" => pl,
+                        "rcut" => rcut,
+                        "maxn"=> maxn,
+                        "recursion_coefficients" => Dict("A" => [Pr.J.A[i] for i in 1:maxn],
+                                                         "B" => [Pr.J.B[i] for i in 1:maxn],
+                                                         "C" => [Pr.J.C[i] for i in 1:maxn],),
+                        "coefficients" => Dict())
+
+    for (index1, element1) in zlist_dict
+        for (index2, element2) in zlist_dict
+            pair = [reversed_species_dict[element1], reversed_species_dict[element2]]
+            ind = V2.basis.bidx0[index1, index2]
+            polypairpot["coefficients"][pair] = V2.coeffs[ind+1:ind+num_coeffs]
+        end
+    end
+    
+    return polypairpot
 end
 
 
-function export_ace(fptr::IOStream, Pr::TransformedPolys; ntests=0, kwargs...)
-   p = Pr.trans.p
-   r0 = Pr.trans.r0
-   xr = Pr.J.tr
-   xl = Pr.J.tl
-   pr = Pr.J.pr
-   pl = Pr.J.pl
-   rcut = cutoff(Pr)
-   maxn = length(Pr)
+make_dimer(s1, s2, rr) = Atoms(
+    [[0.0,0.0,0.0],[rr,0.0,0.0]], 
+    [[0.0,0.0,0.0],[0.0,0.0,0.0]],
+    [atomic_mass(s1), atomic_mass(s2)],
+    [AtomicNumber(s1), AtomicNumber(s2)],
+    [100.0,100.0,100.0],
+    [false, false, false])
 
-   println(fptr, "transform parameters: p=$(p) r0=$(r0)")
-   println(fptr, "cutoff parameters: rcut=$rcut xl=$xl xr=$xr pl=$pl pr=$pr")
-   println(fptr, "recursion coefficients: maxn=$(maxn)")
-   for n = 1:maxn
-      println(fptr, " $(Pr.J.A[n]) $(Pr.J.B[n]) $(Pr.J.C[n])")
-   end
+function write_pairpot_table(fname, V2, species_dict)
+    # fname is JUST THE STEM
+    # write a pair_style table file for LAMMPS
+    # the file has a seperate section for each species pair interaction
+    # format of table pair_style is described at https://docs.lammps.org/pair_table.html
 
-   # save some tests
-   println(fptr, "tests: ntests=$(ntests)")
-   for itest = 1:ntests
-      r = ACE1.rand_radial(Pr)
-      P = ACE1.evaluate(Pr, r)
-      dP = ACE1.evaluate_d(Pr, r)
-      println(fptr, " r=$(r)")
-      for n = 1:length(P)
-         println(fptr, " $(P[n]) $(dP[n])")
-      end
-   end
+    # Create filename. Only the stem is specified
+    fname = fname * "_pairpot.table"
+
+    # enumerate sections
+    species_pairs = []
+    for i in 0:length(species_dict) - 1
+        for j in i:length(species_dict) - 1
+            push!(species_pairs, (species_dict[i], species_dict[j]))
+        end
+    end
+
+    lines = Vector{String}()
+
+    # make header. date is none since ACE1 current doesnt depend on time/dates package
+    push!(lines, "# DATE: none UNITS: metal CONTRIBUTOR: ACE1.jl - https://github.com/ACEsuit/ACE1.jl")
+    push!(lines, "# ACE1 pair potential")
+    push!(lines, "")
+
+    for spec_pair in species_pairs
+        # make dimer
+        dimer = make_dimer(Symbol(spec_pair[1]), Symbol(spec_pair[2]), 1.0)
+
+        # get inner and outer cutoffs
+
+        if typeof(V2.basis.J) <: SMatrix
+            get_ru(jj) = jj.ru
+            rus = get_ru.(V2.basis.J)
+            rout = maximum(rus)    
+        else
+            rout = V2.basis.J.ru
+        end
+
+        rin = 0.1
+        spacing = 0.001
+        rs = rin:spacing:rout
+
+        # section header
+        push!(lines, string(spec_pair[1], "_", spec_pair[2]))
+        push!(lines, string("N ", length(rs)))
+        push!(lines, "")
+        
+        # values
+        for (index, R) in enumerate(rs)
+            set_positions!(dimer, AbstractVector{JVec{Float64}}([[R,0.0,0.0], [0.0,0.0,0.0]]))
+            E = energy(V2, dimer)
+            F = forces(V2, dimer)[1][1]
+            push!(lines, string(index, " ", R, " ", E, " ", F))
+        end
+        push!(lines, "")
+    end
+
+    # write
+    open(fname, "w+") do io
+        for line in lines
+            write(io, line * "\n")
+        end
+    end
+
+    return nothing
 end
 
-function export_ace(fptr::IOStream, basis::ACE1.Splines.RadialSplines)
+function export_radial_basis(V3, species_dict)
+    #grabbing the transform and basis
+    transbasis = V3.pibasis.basis1p.J
+    Pr = V3.pibasis.basis1p
 
-   # these are hardcoded in PACE
-   ntot = 10000 # number of bins for lookup table
-   nlut = 10000 # number of nodes for lookup table
+    #grabbing all the required params
+    p = transbasis.trans.p
+    r0 = transbasis.trans.r0
+    xr = transbasis.J.tr
+    xl = transbasis.J.tl
+    pr = transbasis.J.pr
+    pl = transbasis.J.pl
+    rcut = cutoff(Pr)
+    maxn = length(V3.pibasis.basis1p.J.J.A)
 
-   # PACE lookup table. the final dimension holds the coefficients
-   #   c0 + c1*(r-rn) + c2*(r-rn)^2 + c3*(r-rn)^3
-   #   where rn is a bin lower bound
-   lookupTable = zeros(ntot+1, length(basis.splines), 4)
+    #guessing "radbasname" is that just "polypairpots"
+    radbasename = "ACE.jl.base"
 
-   # TODO: populate the lookup table using something analagous to
-   # ACE1.Splines.export_splines
+    embeddings = Dict()
 
+    for species_ind1 in sort(collect(keys(species_dict)))
+        embeddings[species_ind1] = Dict("ndensity" => 1,
+                    "FS_parameters" => [1.0, 1.0],
+                    "npoti" => "FinnisSinclairShiftedScaled",
+                    "drho_core_cutoff" => 1.000000000000000000,
+                    "rho_core_cutoff" => 100000.000000000000000000)
+    end
+
+    bonds = Dict()
+    #this does not respect the coefficient decompositions required per pair
+    #need to figure out how to get the right coeffs per pair
+    for species_ind1 in sort(collect(keys(species_dict)))
+        for species_ind2 in sort(collect(keys(species_dict)))
+            pair = [species_ind1, species_ind2]
+            bonds[pair] = Dict("p" => p,
+                "r0" => r0,
+                "xl" => xl,
+                "xr" => xr,
+                "pr" => pr,
+                "pl" => pl,
+                "rcut" => rcut,
+                "radbasename" => radbasename,
+                "maxn" => maxn,
+                "recursion_coefficients" => Dict("A" => [Pr.J.J.A[i] for i in 1:maxn],
+                                                 "B" => [Pr.J.J.B[i] for i in 1:maxn],
+                                                 "C" => [Pr.J.J.C[i] for i in 1:maxn],))
+        end
+    end
+
+    return embeddings, bonds
 end
 
-function export_ace(fptr::IOStream, Vpair::PolyPairPot; kwargs...)
-   println(fptr, "begin polypairpot")
-   # this exports everything except the coefficients
-   export_ace(fptr, Vpair.basis.J; kwargs...)
-   println(fptr, "coefficients")
-   c = Vpair.coeffs
-   for n = 1:length(c)
-      println(fptr, "$(c[n])")
-   end
-   println(fptr, "end polypairpot")
+function export_ACE_functions(V3, species, reversed_species_dict)
+    functions = Dict()
+    lmax = 0
+
+    for i in 1:length(V3.pibasis.inner)
+        sel_bgroups = []
+        inner = V3.pibasis.inner[i]
+        z0 = V3.pibasis.inner[i].z0
+        coeffs = V3.coeffs[i]
+        groups = _basis_groups(inner, coeffs)
+        for group in groups
+            for (m, c) in zip(group["M"], group["C"])
+                c_ace = c / (4*π)^(group["ord"]/2)
+                #@show length(c_ace)
+                ndensity = 1
+                push!(sel_bgroups, Dict("rank" => group["ord"],
+                            "mu0" => reversed_species_dict[string(chemical_symbol(group["z0"]))],
+                            "ndensity" => ndensity,
+                            "ns" => group["n"],
+                            "ls" => group["l"],
+                            "mus" => [reversed_species_dict[i] for i in string.(chemical_symbol.(group["zs"]))],
+                            "ctildes" => [c_ace],
+                            "ms_combs" => m,
+                            "num_ms_combs" => length([c_ace])))
+                if maximum(group["l"]) > lmax
+                    lmax = maximum(group["l"])
+                end
+            end
+        end
+        functions[reversed_species_dict[string(chemical_symbol(z0))]] = sel_bgroups
+    end
+
+    return functions, lmax
 end
-
-function export_ace(fptr::IOStream, Vrep::RepulsiveCore; kwargs...)
-   println(fptr, "begin repulsive potential")
-   # export the pair potential part
-   export_ace(fptr, Vrep.Vout; kwargs...)
-   println(fptr, "spline parameters")
-   println(fptr, "   e_0 + B  exp(-A*(r/ri-1)) * (ri/r)")
-   Vin = Vrep.Vin[1]
-   println(fptr, "ri=$(Vin.ri)")
-   println(fptr, "e0=$(Vin.e0)")
-   println(fptr, "A=$(Vin.A)")
-   println(fptr, "B=$(Vin.B)")
-   println(fptr, "end repulsive potential")
-end
-
-function export_ace(fptr::IOStream, V::PIPotential, Vpair=nothing, V0=nothing; kwargs...)
-   @assert numz(V) == 1
-   inner = V.pibasis.inner[1]
-   coeffs = V.coeffs[1]
-   # sort the basis functions into groups the way the ace evaluator wants it
-   groups = _basis_groups(inner, coeffs)
-   lmax = maximum(maximum(g["l"]) for g in groups)
-
-   sym = chemical_symbol(i2z(V, 1))
-   haspair = (Vpair == nothing) ? "f" : "t"
-
-   # header
-   println(fptr, "nelements=1")
-   println(fptr, "elements: $sym")
-   println(fptr, "")
-   println(fptr, "lmax=$lmax")
-   println(fptr, "")
-   println(fptr, "2 FS parameters:  1.000000 1.000000")
-   println(fptr, "core energy-cutoff parameters: 100000.000000000000000000 1.000000000000000000")
-
-   # write E0 values
-   if V0 == nothing
-      println(fptr, "E0: 0.0")
-   else
-      println(fptr, "E0: $(V0(sym))")
-   end
-
-   println(fptr, "")
-   println(fptr, "radbasename=ACE1.jl.Basic")
-   println(fptr, "haspair: $(haspair)")
-   println(fptr, "")
-
-   # export_ace the radial basis
-   #export_ace(fptr, V.pibasis.basis1p.J; kwargs...)
-   # TODO: improve this hack
-   export_ace(fptr, ACE1.Splines.RadialSplines(V.pibasis.basis1p.J))
-   println(fptr, "")
-
-   if haspair == "t"
-      export_ace(fptr, Vpair)
-      println(fptr, "")
-   end
-
-   # header
-   rankmax = maximum(length(g["l"]) for g in groups)
-   println(fptr, "rankmax=$rankmax")
-   println(fptr, "ndensitymax=1")
-   println(fptr, "")
-
-   # header for basis list pair contributions
-   println(fptr, "num_c_tilde_max=$(length(groups))")
-   num_ms_combinations_max = maximum( length(g["M"]) for g in groups )
-   println(fptr, "num_ms_combinations_max=$(num_ms_combinations_max)")
-
-   # write the pair basis groups
-   total_basis_size_rank1 = sum( (length(g["l"]) ==  1) for g in groups )
-   println(fptr, "total_basis_size_rank1: $(total_basis_size_rank1)")
-   for i = 1:total_basis_size_rank1
-      g = groups[i]
-      _write_group(fptr, g)
-   end
-
-   # write the rest
-   total_basis_size = length(groups) - total_basis_size_rank1
-   println(fptr, "total_basis_size: $(total_basis_size)")
-   for i = (total_basis_size_rank1+1):length(groups)
-      g = groups[i]
-      _write_group(fptr, g)
-   end
-
-end
-
-function _write_group(fptr, g)
-   order = length(g["l"])
-   println(fptr, "ctilde_basis_func: rank=$(order) ndens=1 mu0=0 mu=(" * " 0 "^order * ")")
-   println(fptr, "n=(" * prod(" $(ni) " for ni in g["n"]) * ")")
-   println(fptr, "l=(" * prod(" $(li) " for li in g["l"]) * ")")
-   println(fptr, "num_ms=$(length(g["M"]))")
-   for (m, c) in zip(g["M"], g["C"])
-      c_ace = c / (4*π)^(order/2)
-      println(fptr, "<" * prod(" $(mi) " for mi in m) * ">:  $(c_ace)")
-   end
-end
-
-
-
-function export_ace_tests(fname::AbstractString, V, ntests = 1;
-                          nrepeat = 3, pert=0.05,
-                          s = JuLIP.chemical_symbol(i2z(V, 1)))
-   at = bulk(s, cubic=true) * nrepeat
-   JuLIP.set_pbc!(at, false)
-   r0 = JuLIP.rnn(s)
-   for n = 1:ntests
-      JuLIP.rattle!(at, pert * r0)
-      E = energy(V, at)
-      _write_test(fname * "_$n.dat", JuLIP.positions(at), E)
-   end
-   return at
-end
-
-function _write_test(fname, X, E)
-   fptr = open(fname; write=true)
-   println(fptr, "E = $E")
-   println(fptr, "natoms = $(length(X))")
-   println(fptr, "# type x y z")
-   for n = 1:length(X)
-      println(fptr, "0 $(X[n][1]) $(X[n][2]) $(X[n][3])")
-   end
-   close(fptr)
-end
-
-
 
 function _basis_groups(inner, coeffs)
-   NL = []
-   M = []
-   C = []
-   for b in keys(inner.b2iAA)
-      if coeffs[ inner.b2iAA[b] ] != 0
-         push!(NL, ( [b1.n for b1 in b.oneps], [b1.l for b1 in b.oneps] ))
-         push!(M, [b1.m for b1 in b.oneps])
-         push!(C, coeffs[ inner.b2iAA[b] ])
-      end
-   end
-   ords = length.(M)
-   perm = sortperm(ords)
-   NL = NL[perm]
-   M = M[perm]
-   C = C[perm]
-   @assert issorted(length.(M))
-   bgrps = []
-   alldone = fill(false, length(NL))
-   for i = 1:length(NL)
-      if alldone[i]; continue; end
-      nl = NL[i]
-      Inl = findall(NL .== Ref(nl))
-      alldone[Inl] .= true
-      Mnl = M[Inl]
-      Cnl = C[Inl]
-      pnl = sortperm(Mnl)
-      Mnl = Mnl[pnl]
-      Cnl = Cnl[pnl]
-      push!(bgrps, Dict("n" => nl[1], "l" => nl[2],
-                        "M" => Mnl, "C" => Cnl))
-   end
-   return bgrps
+    ## grouping the basis functions
+    NLZZ = []
+    M = []
+    C = []
+    for b in keys(inner.b2iAA)
+       if coeffs[ inner.b2iAA[b] ] != 0
+          push!(NLZZ, ( [b1.n for b1 in b.oneps], [b1.l for b1 in b.oneps], [b1.z for b1 in b.oneps], b.z0))
+          push!(M, [b1.m for b1 in b.oneps])
+          push!(C, coeffs[ inner.b2iAA[b] ])
+       end
+    end
+    ords = length.(M)
+    perm = sortperm(ords)
+    NLZZ = NLZZ[perm]
+    M = M[perm]
+    C = C[perm]
+    @assert issorted(length.(M))
+    bgrps = []
+    alldone = fill(false, length(NLZZ))
+    for i = 1:length(NLZZ)
+       if alldone[i]; continue; end
+       nlzz = NLZZ[i]
+       Inl = findall(NLZZ .== Ref(nlzz))
+       alldone[Inl] .= true
+       Mnl = M[Inl]
+       Cnl = C[Inl]
+       pnl = sortperm(Mnl)
+       Mnl = Mnl[pnl]
+       Cnl = Cnl[pnl]
+       order = length(nlzz[1])
+       push!(bgrps, Dict("n" => nlzz[1], "l" => nlzz[2], "z0" => nlzz[4], "zs" => nlzz[3],
+                         "M" => Mnl, "C" => Cnl, "ord" => order)) #correct?
+    end
+    return bgrps
 end
-
 
 end
