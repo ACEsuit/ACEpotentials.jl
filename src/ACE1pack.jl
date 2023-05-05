@@ -32,8 +32,6 @@ include("read_params.jl")
 
 include("export.jl")
 
-include("export_multispecies.jl")
-
 include("analysis.jl")
 
 # a little hack to load ACE1pack artifacts from anywhere? 
