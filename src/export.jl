@@ -1,17 +1,13 @@
-module ExportMulti
-
-using Interpolations
-using OrderedCollections
-using YAML
 using ACE1
 using ACE1: PIBasis, PIBasisFcn, PIPotential
-using ACE1.OrthPolys: TransformedPolys
 using ACE1: rand_radial, cutoff, numz, ZList
+using Interpolations
 using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
+using OrderedCollections
+using YAML
 
-function export_ACE(fname, IP; export_pairpot_as_table=false)
-    # supply fname with the .yace extension
-    # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
+function export2lammps(fname, IP)
+
     if !(fname[end-4:end] == ".yace")
         throw(ArgumentError("Potential name must be supplied with .yace extension"))
     end
@@ -41,26 +37,11 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
     V1 = ordered_components[1]
     V2 = ordered_components[2]
     V3 = ordered_components[3]
-    
+
     species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
     species_dict = Dict(zip(collect(0:length(species)-1), species))
     reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
 
-    # check for the old pairpotential style: one basis, or the new style: a matrix of bases
-    matrix_v2 = false
-    if typeof(V2.basis.J) <: SMatrix
-        matrix_v2 = true
-        if !(export_pairpot_as_table)
-            throw(ArgumentError(
-                "This potential was made using a recent version of ACE1. Exporting with export_pairpot_as_table=false is only possible for older potential files. See https://acesuit.github.io/ACE1docs.jl/dev/Using_ACE/lammps/"))
-        end
-    #else
-        #warn("This potential has been made with an older version of ACE1, and may not be compatible")
-    end
-
-    data = Dict()
-
-    data["deltaSplineBins"] = 0.001 #" none
 
     elements = Vector(undef, length(species))
     E0 = zeros(length(elements))
@@ -70,148 +51,48 @@ function export_ACE(fname, IP; export_pairpot_as_table=false)
         elements[index+1] = element
     end
 
-    # grabbing the elements key and E0 key from the onebody (V1)
-    data["elements"] = elements
+    # V1 and V3  (V2 handled below)
 
-    # 1body
-    data["E0"] = E0
-
-    # 2body
-    if export_pairpot_as_table
-        # I am not handling the hasproperty(V2, :Vin) case, since I don't know what this is
-        # this writes a .table file, so for simplicity require that export fname is passed with
-        # .yace extension, and we remove this and add the .table extension instead
-        fname_stem = fname[1:end-5]
-        write_pairpot_table(fname_stem, V2, species_dict)
-    else
-        if hasproperty(V2, :basis)
-            polypairpot = export_polypairpot(V2, reversed_species_dict)
-        else hasproperty(V2, :Vin)
-            polypairpot = export_polypairpot(V2.Vout, reversed_species_dict)
-            reppot = export_reppot(V2, reversed_species_dict)
-            data["reppot"] = reppot
-        end
-        data["polypairpot"] = polypairpot
-    end
-
-    # ACE
-    embeddings, bonds = export_radial_basis(V3, species_dict)
-    data["embeddings"] = embeddings
-    data["bonds"] = bonds
-
-    functions, lmax = export_ACE_functions(V3, species, reversed_species_dict)
-    data["functions"] = functions
-    data["lmax"] = lmax
-
-    YAML.write_file(fname, data)
-end
-
-function export_ace(fname, IP)
-    # supply fname with the .yace extension
-    # if export_pairpot_as_table, don't write the pairpot and make .table file instead.
-    if !(fname[end-4:end] == ".yace")
-        throw(ArgumentError("Potential name must be supplied with .yace extension"))
-    end
-
-    # decomposing into V1, V2, V3 (One body, two body and ACE bases)
-    # they could be in a different order
-    if length(IP.components) != 3
-        throw("IP must have three components which are OneBody, pair potential, and ace")
-    end
-
-    ordered_components = []
-
-    for target_type in [OneBody, PolyPairPot, PIPotential]
-        did_not_find = true
-        for i = 1:3
-            if typeof(IP.components[i]) <: target_type
-                push!(ordered_components, IP.components[i])
-                did_not_find = false
-            end
-        end
-
-        if did_not_find
-            throw("IP must have three components which are OneBody, pair potential, and ace")
-        end
-    end
-
-    V1 = ordered_components[1]
-    V2 = ordered_components[2]
-    V3 = ordered_components[3]
-    
-    species = collect(string.(chemical_symbol.(V3.pibasis.zlist.list)))
-    species_dict = Dict(zip(collect(0:length(species)-1), species))
-    reversed_species_dict = Dict(zip(species, collect(0:length(species)-1)))
-
+    # Begin assembling data structure for YAML
     data = OrderedDict()
-
-    #data["deltaSplineBins"] = 0.001 #" none
-
-    elements = Vector(undef, length(species))
-    E0 = zeros(length(elements))
-    
-    for (index, element) in species_dict
-    #    E0[index+1] = V1(Symbol(element))
-        elements[index+1] = element
-    end
-
-    # grabbing the elements key and E0 key from the onebody (V1)
     data["elements"] = elements
-
-    # 1body
     data["E0"] = E0
 
-    ## 2body
-    #if export_pairpot_as_table
-    #    # I am not handling the hasproperty(V2, :Vin) case, since I don't know what this is
-    #    # this writes a .table file, so for simplicity require that export fname is passed with
-    #    # .yace extension, and we remove this and add the .table extension instead
-    #    fname_stem = fname[1:end-5]
-    #    write_pairpot_table(fname_stem, V2, species_dict)
-    #else
-    #    if hasproperty(V2, :basis)
-    #        polypairpot = export_polypairpot(V2, reversed_species_dict)
-    #    else hasproperty(V2, :Vin)
-    #        polypairpot = export_polypairpot(V2.Vout, reversed_species_dict)
-    #        reppot = export_reppot(V2, reversed_species_dict)
-    #        data["reppot"] = reppot
-    #    end
-    #    data["polypairpot"] = polypairpot
-    #end
-
-    # ACE
-#    embeddings, bonds = export_radial_basis(V3, species_dict)
+    # embeddings
     data["embeddings"] = Dict()
-    data["embeddings"][0] = Dict(
-        "ndensity" => 1,
-        "FS_parameters" => [1.0, 1.0],
-        "npoti" => "FinnisSinclairShiftedScaled",
-        "drho_core_cutoff" => 1.000000000000000000,
-        "rho_core_cutoff" => 100000.000000000000000000)
+    for species_ind1 in sort(collect(keys(species_dict)))
+        data["embeddings"][species_ind1] = Dict(
+            "ndensity" => 1,
+            "FS_parameters" => [1.0, 1.0],
+            "npoti" => "FinnisSinclairShiftedScaled",
+            "drho_core_cutoff" => 1.000000000000000000,
+            "rho_core_cutoff" => 100000.000000000000000000)
+    end
 
+    # bonds
+    data["bonds"] = OrderedDict()
     radialsplines = ACE1.Splines.RadialSplines(V3.pibasis.basis1p.J; nnodes = 10000)
     ranges, nodalvals, zlist = ACE1.Splines.export_splines(radialsplines)
-
-    # TODO: move this elsewhere
     # compute spline derivatives
+    # TODO: move this elsewhere
     nodalderivs = similar(nodalvals)
-    for iz1 in size(nodalvals,2), iz2 in size(nodalvals,3)
-        range = ranges[iz1,iz2]
-        for i in 1:size(radialsplines.splines,1)
-            spl = radialsplines.splines[1,iz1,iz2]
+    for iz1 in 1:size(nodalvals,2), iz2 in 1:size(nodalvals,3)
+        for i in 1:size(nodalvals,1)
+            range = ranges[i,iz1,iz2]
+            spl = radialsplines.splines[i,iz1,iz2]
             deriv(r) = Interpolations.gradient(spl,r)[1]
             nodalderivs[i,iz1,iz2] = deriv.(range)
         end
     end
-
-    # export splines
-    data["bonds"] = OrderedDict()
-    for iz1 in size(nodalvals,2), iz2 in size(nodalvals,3)
+    # ----- end section to move
+    for iz1 in 1:size(nodalvals,2), iz2 in 1:size(nodalvals,3)
         data["bonds"][[iz1-1,iz2-1]] = OrderedDict{Any,Any}(
             "radbasename" => "ACE.jl",
             "maxn" => length(V3.pibasis.basis1p.J.J.A),
-            "rcut" => ranges[iz1,iz2][end],
-            "ntot" => length(ranges[iz1,iz2])-1)
+            # TODO: note hardcoded [1,iz1,iz2]
+            "rcut" => ranges[1,iz1,iz2][end],
+            # TODO: note hardcoded [1,iz1,iz2]
+            "ntot" => length(ranges[1,iz1,iz2])-1)
         nodalvals_map = OrderedDict([i-1 => nodalvals[i,iz1,iz2] for i in 1:size(nodalvals,1)])
         data["bonds"][[iz1-1,iz2-1]]["splinenodalvals"] = nodalvals_map
         nodalderivs_map = OrderedDict([i-1 => nodalderivs[i,iz1,iz2] for i in 1:size(nodalvals,1)])
@@ -223,6 +104,13 @@ function export_ace(fname, IP)
     data["lmax"] = lmax
 
     YAML.write_file(fname, data)
+
+    # ----- 2body handled separately -----
+    # writes a .table file, so for simplicity require that export fname is passed with
+    # .yace extension, and we remove this and add the .table extension instead
+    fname_stem = fname[1:end-5]
+    write_pairpot_table(fname_stem, V2, species_dict)
+    
 end
 
 function export_reppot(Vrep, reversed_species_dict)
@@ -364,58 +252,6 @@ function write_pairpot_table(fname, V2, species_dict)
     return nothing
 end
 
-function export_radial_basis(V3, species_dict)
-    #grabbing the transform and basis
-    transbasis = V3.pibasis.basis1p.J
-    Pr = V3.pibasis.basis1p
-
-    #grabbing all the required params
-    p = transbasis.trans.p
-    r0 = transbasis.trans.r0
-    xr = transbasis.J.tr
-    xl = transbasis.J.tl
-    pr = transbasis.J.pr
-    pl = transbasis.J.pl
-    rcut = cutoff(Pr)
-    maxn = length(V3.pibasis.basis1p.J.J.A)
-
-    #guessing "radbasname" is that just "polypairpots"
-    radbasename = "ACE.jl.base"
-
-    embeddings = Dict()
-
-    for species_ind1 in sort(collect(keys(species_dict)))
-        embeddings[species_ind1] = Dict("ndensity" => 1,
-                    "FS_parameters" => [1.0, 1.0],
-                    "npoti" => "FinnisSinclairShiftedScaled",
-                    "drho_core_cutoff" => 1.000000000000000000,
-                    "rho_core_cutoff" => 100000.000000000000000000)
-    end
-
-    bonds = Dict()
-    #this does not respect the coefficient decompositions required per pair
-    #need to figure out how to get the right coeffs per pair
-    for species_ind1 in sort(collect(keys(species_dict)))
-        for species_ind2 in sort(collect(keys(species_dict)))
-            pair = [species_ind1, species_ind2]
-            bonds[pair] = Dict("p" => p,
-                "r0" => r0,
-                "xl" => xl,
-                "xr" => xr,
-                "pr" => pr,
-                "pl" => pl,
-                "rcut" => rcut,
-                "radbasename" => radbasename,
-                "maxn" => maxn,
-                "recursion_coefficients" => Dict("A" => [Pr.J.J.A[i] for i in 1:maxn],
-                                                 "B" => [Pr.J.J.B[i] for i in 1:maxn],
-                                                 "C" => [Pr.J.J.C[i] for i in 1:maxn],))
-        end
-    end
-
-    return embeddings, bonds
-end
-
 function export_ACE_functions(V3, species, reversed_species_dict)
     functions = Dict()
     lmax = 0
@@ -486,6 +322,4 @@ function _basis_groups(inner, coeffs)
                          "M" => Mnl, "C" => Cnl, "ord" => order)) #correct?
     end
     return bgrps
-end
-
 end
