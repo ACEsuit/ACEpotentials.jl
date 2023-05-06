@@ -1,6 +1,21 @@
 # LAMMPS
 
-An ACE1 potential can be used LAMMPS via the ML-PACE LAMMPS package. Intsallation details from LAMMPS are [here](https://docs.lammps.org/Build_extras.html#ml-pace) and [here](https://github.com/ICAMS/lammps-user-pace). 
+An ACE1 potential can be used LAMMPS via the ML-PACE LAMMPS package. General installation details from LAMMPS are [here](https://docs.lammps.org/Build_extras.html#ml-pace) and [here](https://github.com/ICAMS/lammps-user-pace). However, at the moment, one must install LAMMPS as follows:
+```
+git clone https://github.com/lammps/lammps
+cd lammps
+mkdir build
+cd build
+wget -O libpace.tar.gz https://github.com/wcwitt/lammps-user-pace/archive/main.tar.gz
+cmake \
+    -D BUILD_SHARED_LIBS=yes \
+    -D LAMMPS_EXCEPTIONS=yes \
+    -D PKG_ML-PACE=yes \
+    -D PACELIB_MD5=$(md5sum libpace.tar.gz | awk '{print $1}') \
+    ../cmake
+make -j 4
+```
+
 
 ## Export the model to the `'yace` format
 
