@@ -69,6 +69,11 @@ function export2lammps(fname, IP)
             "rho_core_cutoff" => 100000.000000000000000000)
     end
 
+    # define placeholders here, but values updated below
+    data["cutoffmax"] = 0.0
+    data["nradmax"] = 0
+    data["lmax"] = 0
+
     # bonds
     data["bonds"] = OrderedDict()
     radialsplines = ACE1.Splines.RadialSplines(V3.pibasis.basis1p.J; nnodes = 10000)
@@ -88,6 +93,7 @@ function export2lammps(fname, IP)
     for iz1 in 1:size(nodalvals,2), iz2 in 1:size(nodalvals,3)
         data["bonds"][[iz1-1,iz2-1]] = OrderedDict{Any,Any}(
             "radbasename" => "ACE.jl",
+            # TODO: remove this
             "maxn" => length(V3.pibasis.basis1p.J.J.A),
             # TODO: note hardcoded [1,iz1,iz2]
             "rcut" => ranges[1,iz1,iz2][end],
@@ -98,6 +104,8 @@ function export2lammps(fname, IP)
         nodalderivs_map = OrderedDict([i-1 => nodalderivs[i,iz1,iz2] for i in 1:size(nodalvals,1)])
         data["bonds"][[iz1-1,iz2-1]]["splinenodalderivs"] = nodalderivs_map
     end
+    data["cutoffmax"] = maximum([d["rcut"] for d in values(data["bonds"])])
+    data["nradmax"] = length(V3.pibasis.basis1p.J.J.A)
 
     functions, lmax = export_ACE_functions(V3, species, reversed_species_dict)
     data["functions"] = functions
