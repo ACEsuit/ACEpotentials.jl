@@ -4,7 +4,7 @@ using LinearAlgebra: I, Diagonal
 import ACE1x 
 import ACE1x: ACE1Model, acemodel, _set_params!, smoothness_prior
 
-export acefit!
+export acefit!, export2json, export2lammps
 
 import JuLIP: energy, forces, virial, cutoff
 import ACE1.Utils: get_maxn
@@ -43,6 +43,10 @@ the label of the data to which the parameters will be fitted.
    set that effectively introduces a restraints encouraging repulsion 
    in the limit rij -> 0.
 * `restraint_weight` specifies the weight of the repulsion restraint.
+* `export_lammps` : path to a file to which the fitted potential will be exported 
+   in a LAMMPS compatible format (yace)
+* `export_json` : path to a file to which the fitted potential will be exported 
+   in a JSON format, which can be read from Julia or Python
 """
 function acefit!(model::ACE1Model, raw_data;
                 solver = ACEfit.BLR(),
@@ -53,7 +57,9 @@ function acefit!(model::ACE1Model, raw_data;
                 smoothness = 2, 
                 prior = nothing, 
                 repulsion_restraint = false, 
-                restraint_weight = 0.01) 
+                restraint_weight = 0.01, 
+                export_lammps = nothing, 
+                export_json = nothing)
 
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
@@ -71,6 +77,13 @@ function acefit!(model::ACE1Model, raw_data;
    result = ACEfit.solve(solver, Ap, Y)
    coeffs = P \ result["C"]
    ACE1x._set_params!(model, coeffs)
+
+   if export_lammps != nothing 
+      export2lammps(export_lammps, model)
+   end
+   if export_json != nothing 
+      export2json(export_json, model)
+   end
 
    return model 
 end
@@ -134,4 +147,35 @@ function _rep_dimer_data(model;
    end
    
    return restraints
+end
+
+# TODO: Chuck and Cas please check and document?!
+function export2lammps(pathtofile, model)
+   if pathtofile[end-4:end] != ".yace"
+      @warn("the lammps potential filename should end in .yace")
+   end
+   @warn("this will likely fail for now, but we are working on it.")
+   ACE1pack.ExportMulti.export_ACE(pathtofile, model.potential, export_pairpot_as_table=true)
+end
+
+
+"""
+`export2json(pathtofile, model; meta = Dict())` : exports the fitted potential to a dictionary 
+and then saves that to a JSON or YAML file, depending on the ending in the 
+filename. The dictionary will be of the form 
+```julia
+Dict{String, Any}("potential" => Dict( ... ), "meta" => Dict( ... ) )
+```
+where `potdict` is the dictionary specifies the fitted potential. The `meta` 
+dictionary may contain additional information e.g. about the dataset or the 
+basis or the parameters. Its contents are entirely user specified. 
+"""
+function export2json(pathtofile, model; 
+                     meta = Dict{String, Any}())
+   if !(pathtofile[end-4:end] in [".json", ".yaml"])
+      @warn("the json potential filename should end in .json or .yaml")
+   end
+   potdict = write_dict(model.potential)
+   save_dict(pathtofile, Dict{String, Any}("potential" => potdict, 
+                                               "meta" => meta ))
 end
