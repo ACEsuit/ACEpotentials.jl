@@ -66,6 +66,8 @@ function acefit!(model::ACE1Model, raw_data;
                           v_ref = model.Vref) 
             for at in raw_data ] 
 
+   assess_dataset(data)
+
    if repulsion_restraint 
       append!(data, _rep_dimer_data(model, weight = restraint_weight))
    end
