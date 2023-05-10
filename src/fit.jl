@@ -59,7 +59,7 @@ function fit_ace(params::Dict)
         (Vref != nothing) && (IP_com = JuLIP.MLIPs.SumIP(Vref, IP_com))
         results["IP_com"] = IP_com
         if !(params["ACE_fname"] == "") && !isnothing(params["ACE_fname"])
-            save_fit("committee_"*params["ACE_fname"], IP_com, Dict("errors" => errors, "params" => params))
+            save_fit(chop(params["ACE_fname"],tail=5)*"-committee.json", IP_com, Dict("errors" => errors, "params" => params))
         end
     end
 
