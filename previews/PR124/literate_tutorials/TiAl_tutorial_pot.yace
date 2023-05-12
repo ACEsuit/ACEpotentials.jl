@@ -1,0 +1,4741 @@
+deltaSplineBins: 0.001
+E0:
+  - -105.5954
+  - -1586.0195
+bonds:
+  [0, 0]:
+    rcut: 5.5
+    xl: 0.3563171597633136
+    recursion_coefficients:
+      B:
+        - 0.0
+        - -4.73481930186265
+        - -3.8173333603235706
+        - -3.470303054839643
+        - -3.2904594135665945
+        - -3.1823771658251654
+      A:
+        - 3.253577614437167
+        - 3.980146542617523
+        - 3.208896730258186
+        - 2.9171788456892846
+        - 2.7660000991755456
+        - 2.675144850592528
+      C:
+        - 0.0
+        - 0.0
+        - -0.8062257748298494
+        - -0.9090909090909248
+        - -0.9481763873554918
+        - -0.9671528397232971
+    pl: 2
+    radbasename: "ACE.jl.base"
+    r0: 2.88
+    xr: 2.022901419836431
+    maxn: 6
+    pr: 2
+    p: 2
+  [1, 1]:
+    rcut: 5.5
+    xl: 0.3563171597633136
+    recursion_coefficients:
+      B:
+        - 0.0
+        - -4.73481930186265
+        - -3.8173333603235706
+        - -3.470303054839643
+        - -3.2904594135665945
+        - -3.1823771658251654
+      A:
+        - 3.253577614437167
+        - 3.980146542617523
+        - 3.208896730258186
+        - 2.9171788456892846
+        - 2.7660000991755456
+        - 2.675144850592528
+      C:
+        - 0.0
+        - 0.0
+        - -0.8062257748298494
+        - -0.9090909090909248
+        - -0.9481763873554918
+        - -0.9671528397232971
+    pl: 2
+    radbasename: "ACE.jl.base"
+    r0: 2.88
+    xr: 2.022901419836431
+    maxn: 6
+    pr: 2
+    p: 2
+  [1, 0]:
+    rcut: 5.5
+    xl: 0.3563171597633136
+    recursion_coefficients:
+      B:
+        - 0.0
+        - -4.73481930186265
+        - -3.8173333603235706
+        - -3.470303054839643
+        - -3.2904594135665945
+        - -3.1823771658251654
+      A:
+        - 3.253577614437167
+        - 3.980146542617523
+        - 3.208896730258186
+        - 2.9171788456892846
+        - 2.7660000991755456
+        - 2.675144850592528
+      C:
+        - 0.0
+        - 0.0
+        - -0.8062257748298494
+        - -0.9090909090909248
+        - -0.9481763873554918
+        - -0.9671528397232971
+    pl: 2
+    radbasename: "ACE.jl.base"
+    r0: 2.88
+    xr: 2.022901419836431
+    maxn: 6
+    pr: 2
+    p: 2
+  [0, 1]:
+    rcut: 5.5
+    xl: 0.3563171597633136
+    recursion_coefficients:
+      B:
+        - 0.0
+        - -4.73481930186265
+        - -3.8173333603235706
+        - -3.470303054839643
+        - -3.2904594135665945
+        - -3.1823771658251654
+      A:
+        - 3.253577614437167
+        - 3.980146542617523
+        - 3.208896730258186
+        - 2.9171788456892846
+        - 2.7660000991755456
+        - 2.675144850592528
+      C:
+        - 0.0
+        - 0.0
+        - -0.8062257748298494
+        - -0.9090909090909248
+        - -0.9481763873554918
+        - -0.9671528397232971
+    pl: 2
+    radbasename: "ACE.jl.base"
+    r0: 2.88
+    xr: 2.022901419836431
+    maxn: 6
+    pr: 2
+    p: 2
+lmax: 1
+embeddings:
+  0:
+    ndensity: 1
+    FS_parameters:
+      - 1.0
+      - 1.0
+    npoti: "FinnisSinclairShiftedScaled"
+    drho_core_cutoff: 1.0
+    rho_core_cutoff: 100000.0
+  1:
+    ndensity: 1
+    FS_parameters:
+      - 1.0
+      - 1.0
+    npoti: "FinnisSinclairShiftedScaled"
+    drho_core_cutoff: 1.0
+    rho_core_cutoff: 100000.0
+elements:
+  - "Al"
+  - "Ti"
+functions:
+  0:
+    - rank: 1
+      ctildes:
+        - -0.008078967484977523
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 6
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.11419043027661627
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.054574802192753784
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.003438529562819609
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - -0.05094259329684444
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - -0.033549537922228104
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - -0.03977672871062521
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.6133271655830506
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.046573627157633746
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 6
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.004277242643513441
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - -3.1098277164098866
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.34412525190052945
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.005591644135826978
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.005591644135826978
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.005591644135826978
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0014701133746674894
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0014701133746674894
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0014701133746674894
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0025908686153982736
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0025908686153982736
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0025908686153982736
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.00142571762993449
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 5
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.11894020962446405
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.11894020962446405
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.11894020962446405
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.07760686778379536
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.15451310292708334
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.07725655146354167
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.004440886148240773
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.001196465769393268
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.012686908756567413
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 5
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.05757750347258762
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.12889782092489913
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.0016285058849057929
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0013770996333914334
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.0013770996333914334
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.0013770996333914334
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.11589024534255063
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.03026041818508168
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.005329346814895894
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.005976705585927528
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0012707224893223363
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 5
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.014020453846864825
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.021271072498801426
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.20095961155232223
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.01140664957842411
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.048744110877359054
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.032804146758487134
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.016402073379243567
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.001629367017018629
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.09217680433628941
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -2.4943598612910707e-5
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.020878250003276255
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.02117088033595058
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.003756683732559538
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.01584843335726873
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.03357576372410437
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.028893654465397767
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.04253478737949357
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.022977304635452202
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.05095739788201804
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.030834623218502617
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.1267258440609174
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.14336980278622527
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -1.7154395942842744e-5
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.002557248164633037
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.005243786090129457
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004925339741477736
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0017471550714845253
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00149557712837566
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00708654421395936
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0016141271804824848
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0004264741451016161
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0027693281829120815
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0027693281829120806
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0027693281829120806
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 1
+        - -1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.008476790160105694
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.01061495732044851
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005307478660224254
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0014593220168689274
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0008056841088477185
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002335123560573485
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005364794485455043
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002052757355834922
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.006358091306673724
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0031790456533368613
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00419968286519484
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0005937190086273217
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0009877689543919014
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0012933137613875827
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0011332185680856988
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0024316906585250325
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.001215845329262516
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.008767656147025292
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.009054009710176432
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 0
+        - 1
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.009054009710176432
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.009054009710176432
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 1
+        - 0
+        - -1
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002213906502239451
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0010942629708541108
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.00035267540668838966
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.003533646533133683
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0003364040355956909
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0019087306729785578
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0010607639072882844
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.001336891832879186
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.01304853755737249
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0002976700054970093
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -4.0548324352693045e-5
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.003966259605902357
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - -1
+        - 1
+        - 0
+      ls:
+        - 1
+        - 1
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0019831298029511783
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005208035837768495
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0003849847896084001
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0006733385787927763
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0004517942474350427
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004114416271546888
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.002216622882014411
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0004558604806379149
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.00373985814190315
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 0
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+  1:
+    - rank: 1
+      ctildes:
+        - 0.04657362715763312
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 6
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.004277242643513545
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - -0.0009205895847247448
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.27121588723368956
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.026438794542144987
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.0034385295628149666
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.11419043025247307
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 0.05457480219276781
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - 1.207440598641051
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.028127495917604595
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 6
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 1
+      ctildes:
+        - 0.344125251900955
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 0
+    - rank: 1
+      ctildes:
+        - -0.015646372709725482
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+      mu0: 1
+      ms_combs:
+        - 0
+      ls:
+        - 0
+      mus:
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.010855559256425241
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.010855559256425241
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.010855559256425241
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.08213148449205024
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.08213148449205024
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.08213148449205024
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.012640407315309358
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.010293881810091889
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0009549851904175465
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.009650957768222548
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.009650957768222548
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.009650957768222548
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.031556554321592926
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.0023700941708327764
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.04517037797636026
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0022806734477590555
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 5
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.13973194567616273
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.015412457309696079
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.01033755849572246
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.014318214646324014
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.18405422259401638
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.19959366481208737
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.17842896905524402
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.08921448452762201
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.009241077276332908
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0038140651072653036
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.0038140651072653036
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.0038140651072653036
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.035685961755350944
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0012215902231433955
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 5
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.008051100135128147
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.009372416142726495
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.009372416142726495
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.009372416142726495
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 1
+        - -1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.10911083549642077
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.054555417748210384
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0013419545309961943
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 5
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.060191828239018225
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.030522560223657087
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.0027568251193563326
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.023535848423497725
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.0020109681869216315
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 5
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.007392961750114522
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.005197199598392722
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.014836362688222565
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - -0.0017944754579411017
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.000823163339161004
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.01642354840314208
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+    - rank: 2
+      ctildes:
+        - 0.01831017801808655
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - -0.031694461400902325
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.052306590012620745
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+    - rank: 2
+      ctildes:
+        - 0.1314990048282563
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0003108142213650905
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.004495780136629121
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 0
+        - 1
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004495780136629121
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.004495780136629121
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 1
+        - 0
+        - -1
+      ls:
+        - 1
+        - 0
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004278182149924723
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0011306432556761504
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.004152728245508897
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0020763641227544475
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0036115796978428926
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.004798294556180895
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.001166969960852526
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 3.239684528059085e-5
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0016498608938713937
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0003713497254783977
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00022447760502680253
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0011962140300092903
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.003158674938097117
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004423559442724564
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.002211779721362281
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00041558004283312504
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00018196130288780982
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.00030181119676142505
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0018099113599496482
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0018655089887335795
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0018655089887335788
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0018655089887335788
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 1
+        - -1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002776590730456862
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.003431169711848786
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002767933478486936
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 3
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 4.7114450020308605e-5
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.004861485829222178
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.00048028144884087364
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 4
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.000726456029778044
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0008422391619203257
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 4
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0025173636700203846
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.001999317421799155
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 3
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.005196658279913924
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.00012386841307395955
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - -0.0006234410663650143
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002472779629517298
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.001458820799734446
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.002031201413960772
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.004791562133079842
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - -1
+        - 1
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0023957810665399207
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 1
+        - 1
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.007439346247800115
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - -1
+        - 1
+        - 0
+      ls:
+        - 1
+        - 1
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.0037196731239000575
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 1
+        - 1
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - 0.001711524176587573
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.003921335532433091
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0003017486734320265
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.001761242396770808
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 2
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 0
+        - 0
+    - rank: 3
+      ctildes:
+        - 0.0005435080001804332
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 1
+        - 4
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0030331062189278752
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 2
+        - 1
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0015865279897724395
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 3
+        - 1
+        - 1
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 0
+        - 1
+        - 1
+    - rank: 3
+      ctildes:
+        - -0.0014656026786065285
+      num_ms_combs: 1
+      ndensity: 1
+      ns:
+        - 1
+        - 2
+        - 3
+      mu0: 1
+      ms_combs:
+        - 0
+        - 0
+        - 0
+      ls:
+        - 0
+        - 0
+        - 0
+      mus:
+        - 1
+        - 1
+        - 1
