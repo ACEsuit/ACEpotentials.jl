@@ -180,3 +180,61 @@ function export2json(pathtofile, model;
    save_dict(pathtofile, Dict{String, Any}("potential" => potdict, 
                                                "meta" => meta ))
 end
+
+
+
+# -----------------------------------------------------------
+#  a temporary hack to quickly adapt the training weights \
+
+
+import ACEfit: linear_assemble
+
+function linear_assemble(raw_data, model::ACE1Model; 
+                     weights = default_weights(),
+                     energy_key = "energy", 
+                     force_key = "force", 
+                     virial_key = "virial", 
+                     smoothness = 2, 
+                     prior = nothing, 
+                     repulsion_restraint = false, 
+                     restraint_weight = 0.01, 
+                     mode = :serial, 
+                     weights_only = false)
+
+   data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
+                  virial_key = virial_key, weights = weights, 
+                  v_ref = model.Vref)  for at in raw_data ]
+
+   if repulsion_restraint 
+      append!(data, _rep_dimer_data(model, weight = restraint_weight))
+   end
+        
+   if weights_only
+      W = recompute_weights(data, model.basis)
+      return W
+   end 
+      
+   A, Y, W = linear_assemble(data, model.basis, mode)
+   return A, Y, W
+end
+
+
+function __linear_fill!(W, dat, basis; row_start=1)
+   i1 = row_start
+   i2 = row_start + ACEfit.count_observations(dat) - 1
+   W[i1:i2] .= ACEfit.weight_vector(dat)
+   return nothing
+end
+
+function recompute_weights(data::AbstractVector{<: AtomsData}, basis)
+   row_start, row_count = ACEfit.row_info(data)
+   W = zeros(sum(row_count))
+   f = i -> __linear_fill!(W, data[i], basis; row_start=row_start[i])
+   map(f, 1:length(data))
+   return Array(W)
+end
+
+
+function recompute_weights(model::ACE1Model, raw_data; kwargs...)
+   return linear_assemble(raw_data, model; weights_only = true, kwargs...)
+end
