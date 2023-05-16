@@ -1,4 +1,4 @@
-# # First example (Julia) - `acemodel`
+# # First example
 
 # This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.
 
@@ -10,14 +10,14 @@ using LinearAlgebra: norm, Diagonal
 # ### Step 1: specify the ACE Model
 #
 # The parameters have the following meaning: 
-# * `species`: chemical species, for multiple species provide a list 
-# * `N` : correlation order
-# * `maxdeg`: maximum total polynomial degree 
-# * `rcut` : cutoff radius
+# * `elements`: list of chemical species, symbols 
+# * `order` : correlation order
+# * `totaldegree`: maximum total polynomial degree used for the basis 
+# * `rcut` : cutoff radius (optional, defaults are provided)
 
-model = acemodel(species = :Si,
-                 N = 3,   
-                 maxdeg = 12,           
+model = acemodel(elements = [:Si,], 
+                 order = 3,   
+                 totaldegree = 10,           
                  rcut = 5.0)
 @show length(model.basis);
 
@@ -45,8 +45,8 @@ train = [gen_dat() for _=1:20];
 # We specify a solver and then let `ACEfit.jl` to do all the work for us. More fine-grained control is possible; see the `ACEfit.jl` documentation.
 # For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us. 
 
-solver = ACEfit.RRQR(rtol = 1e-4)   
-acefit!(model, train, solver; data_keys...);
+solver = ACEfit.BL() 
+acefit!(model, train; solver=solver, data_keys...);
 
 # To see the training errors we can use 
 
@@ -70,5 +70,42 @@ model_energies = [energy(potential, at) / length(at) for at in test]
 rmse_energy = norm(test_energies - model_energies) / sqrt(length(test))
 @show rmse_energy;
 
-# But in practice, one should run more extensive test simulations to check how robust the fitted potential is. This is beyond the scope of this tutorial.
+# But in practice, one should run more extensive test simulations to check how robust the fitted potential is.
 
+# ### Step 5: export the model 
+# 
+# The fitted model can be exported to a JSON or YAML file, or to a LAMMPs compatible `yace` file. We won't go through that in this tutoral. See `export2json` and `export2lammps` for further information. 
+
+# ### Step 6: Using the model
+#  Let's do something very simple: relax a vacancy. 
+
+# We create a small Si cell, delete an atom and rattle the rest 
+
+at = bulk(:Si, cubic=true) * 3
+deleteat!(at, 1)
+rattle!(at, 0.03 * rnn(:Si))
+
+# we can now minimize the ACE energy. 
+
+set_calculator!(at, potential);
+minimise!(at)
+E_ace = energy(at)
+
+# If we want a formation energy, we could get it like this. 
+
+at0 = bulk(:Si)
+E0_ace = energy(potential, at0);
+Evac_ace = E_ace - (length(at)-1)/length(at0) * E0_ace
+@show Evac_ace;
+
+# Note that there are no vacancy structures in the training set, so this is a prediction out of sample. We have no guarantee of the accuracy of this prediction. In fact the prediction is quite far off: 
+
+sw = StillingerWeber()
+set_calculator!(at, sw)
+minimise!(at; verbose=false);
+E_sw = energy(at)
+E0_sw = energy(sw, bulk(:Si))
+Evac_sw = E_sw - (length(at)-1)/length(at0) * E0_sw
+@show Evac_sw;
+
+# To obtain accurate predictions on a vacancy structure, we must add it to the training set. This iterative model development process goes beyond the scope of this tutorial.
