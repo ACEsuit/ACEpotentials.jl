@@ -9,5 +9,6 @@
 
 ### NOTE!
 
+- The JSON and command line interface have not been updated to include the most recent advances in ACE models available through the Julia interfaces. Until this changes, we recommend using the Julia interfaces. 
 - ACE1pack is still under development, so the documentation might not be upto date (use dev version).
 - Registry containing ACE has been changed from [MolSim](https://github.com/JuliaMolSim/MolSim) to [ACE](https://github.com/ACEsuit/ACEregistry) - change the registry you are using to get updates.

@@ -1,4 +1,4 @@
-# # Fitting a TiAl potential (Julia) - `acemodel`
+# # The `acemodel` interface from Julia (TiAl potential)
 #
 # Start by importing the required libraries 
 

@@ -1,6 +1,8 @@
 # # ACE Descriptors
 #
 # This tutorial demonstrates a simple use of ACE descriptors.
+#
+# WARN: This tutorial is currently broken. It requires an update to the pair potential implementation. 
 
 using ACE1pack, LazyArtifacts, MultivariateStats, Plots
 
@@ -8,17 +10,15 @@ using ACE1pack, LazyArtifacts, MultivariateStats, Plots
 # configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
 # configurations.
 
-dataset = JuLIP.read_extxyz(joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"));
+dataset = read_extxyz(joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"));
 
 # Define a basis.
 
-basis = ace_basis(species = [:Si],
-      N = 3,        # correlation order = body-order - 1
-      maxdeg = 12,  # polynomial degree
+basis = ACE1x.ace_basis(species = [:Si,],
+      order = 3,        # correlation order = body-order - 1
+      totaldegree = 12,  # polynomial degree
       r0 = 2.3,     # estimate for NN distance
-      rin = 0.1,
-      rcut = 5.5,
-      pin = 2)
+      rcut = 5.5,)
 
 # Compute an averaged structural descriptor for each configuration.
 
