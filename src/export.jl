@@ -221,7 +221,7 @@ function write_pairpot_table(fname, V2, species_dict)
             rout = V2.basis.J.ru
         end
 
-        rin = 0.1
+        rin = 0.001
         spacing = 0.001
         rs = rin:spacing:rout
 
