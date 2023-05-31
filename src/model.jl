@@ -150,13 +150,12 @@ function _rep_dimer_data(model;
    return restraints
 end
 
-# TODO: Chuck and Cas please check and document?!
-function export2lammps(pathtofile, model)
+function export2lammps(pathtofile, model::::ACE1Model)
    if pathtofile[end-4:end] != ".yace"
       @warn("the lammps potential filename should end in .yace")
    end
    @warn("this will likely fail for now, but we are working on it.")
-   ACE1pack.ExportMulti.export_ACE(pathtofile, model.potential, export_pairpot_as_table=true)
+   export2lammps(pathtofile, model.potential)
 end
 
 
