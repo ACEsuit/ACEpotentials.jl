@@ -150,7 +150,7 @@ function _rep_dimer_data(model;
    return restraints
 end
 
-function export2lammps(pathtofile, model::::ACE1Model)
+function export2lammps(pathtofile, model::ACE1Model)
    if pathtofile[end-4:end] != ".yace"
       @warn("the lammps potential filename should end in .yace")
    end
