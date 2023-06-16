@@ -2,12 +2,13 @@
 
 An ACE1 potential can be used LAMMPS via the ML-PACE LAMMPS package. General installation details from LAMMPS are [here](https://docs.lammps.org/Build_extras.html#ml-pace) and [here](https://github.com/ICAMS/lammps-user-pace). However, at the moment, one must install LAMMPS as follows:
 ```
-git clone https://github.com/lammps/lammps
+git clone -b stable https://github.com/lammps/lammps
 cd lammps
 mkdir build
 cd build
 wget -O libpace.tar.gz https://github.com/wcwitt/lammps-user-pace/archive/main.tar.gz
 cmake \
+    -D BUILD_MPI=yes \
     -D BUILD_SHARED_LIBS=yes \
     -D LAMMPS_EXCEPTIONS=yes \
     -D PKG_ML-PACE=yes \
