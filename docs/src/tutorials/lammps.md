@@ -18,6 +18,7 @@ cmake \
     ../cmake
 make -j 4
 ```
+The `BUILD_SHARED_LIBS` and `LAMMPS_EXCEPTIONS` options allow use of LAMMPS from Python.
 
 ### Convert an ACE1pack model to `yace` format
 
@@ -53,18 +54,3 @@ pair_coeff      2 3 table potential_pairpot.table Cs_Pb
 pair_coeff      3 3 table potential_pairpot.table Pb_Pb
 ```
 where we are using the ordering I, Cs, Pb.
-
-#### 2. Calling LAMMPS from python
-#
-#Calling LAMMPS from python to evaluate an ACE potential is not recommended, but can be done. When calling LAMMPS pace from python, the species must be specified in alphabetical order in the `pair_coef` command. This is because python does not expect the species to appear as a string literal in the `pair_coef`, which would be specied like this in python:
-#
-#```python
-#parameters = {'pair_style': 'pace',
-#             'pair_coeff': ['* * potential.yace I Cs Pb']}
-#
-#files = ["potential.yace"]
-#
-#calc1 = LAMMPS(parameters=parameters, files=files)
-#```
-#
-#When python calls lammps, it makes a .data file in which the numeric atom types correspond to alphabetically ordered species by chemical symbol. To make python agree, the species must therefore be in alphabetical order (Cs, I, Pb)
