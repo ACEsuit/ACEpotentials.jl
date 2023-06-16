@@ -154,7 +154,6 @@ function export2lammps(pathtofile, model::ACE1Model)
    if pathtofile[end-4:end] != ".yace"
       @warn("the lammps potential filename should end in .yace")
    end
-   @warn("this will likely fail for now, but we are working on it.")
    export2lammps(pathtofile, model.potential)
 end
 
