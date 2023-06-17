@@ -2,7 +2,7 @@
 
 ### Install LAMMPS with the ML-PACE package
 
-An ACE1pack potential can be used in LAMMPS if the latter is built with the ML-PACE package. However, at present, a patched version of that package is required and one must install LAMMPS as follows:
+An ACE1pack potential can be used in LAMMPS if the latter is built with the ML-PACE package. At present, a patched version of that package is required which may be installed as follows:
 ```
 git clone -b stable https://github.com/lammps/lammps
 cd lammps
@@ -10,19 +10,16 @@ mkdir build
 cd build
 wget -O libpace.tar.gz https://github.com/wcwitt/lammps-user-pace/archive/main.tar.gz
 cmake \
-    -D BUILD_MPI=yes \
-    -D BUILD_SHARED_LIBS=yes \
-    -D LAMMPS_EXCEPTIONS=yes \
     -D PKG_ML-PACE=yes \
     -D PACELIB_MD5=$(md5sum libpace.tar.gz | awk '{print $1}') \
     ../cmake
 make -j 4
 ```
-The `BUILD_SHARED_LIBS` and `LAMMPS_EXCEPTIONS` options allow use of LAMMPS from Python.
+See the [LAMMPS documentation](https://docs.lammps.org/Build.html) for more build options.
 
 ### Convert an ACE1pack model to `yace` format
 
-The ML-PACE package requires a potential in the `.yace` format. To convert a model saved as `.json` use the following:
+The ML-PACE package requires a potential in the `.yace` format. To convert a model saved as `.json`, use the following:
 
 ```julia
 using ACE1pack
