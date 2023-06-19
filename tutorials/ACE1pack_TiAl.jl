@@ -99,4 +99,4 @@ results = ACE1pack.fit_ace(ace_fit_params)
 # The potential will also be saved to the file `ACE.json` which can be read in python or julia. 
 # If you want to export the potential to LAMMPS, use
 
-ACE1pack.ExportMulti.export_ACE("TiAl_tutorial_pot.yace", results["IP"], export_pairpot_as_table=true)
+## NB : export2lammps is currently broken but will be fixed urgently

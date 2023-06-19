@@ -4,15 +4,18 @@ CurrentModule = ACE1pack
 
 # ACE1 and ACE1pack Documentation 
 
-`ACE1.jl` is a Julia package for parameterising interatomic potentials in terms of the atomic cluster expansion, i.e., body-ordered invariant polynomials. `ACE1pack.jl` provides a user-oriented and compatibility layer. These pages document `ACE1pack` and to some limited extent also the packages it depend on.
+`ACE1.jl` and `ACE1x.jl` are Julia packages for parameterising interatomic potentials in terms of the atomic cluster expansion, i.e., body-ordered invariant polynomials. 
+`ACE1pack.jl` provides a user-oriented and convenience and compatibility layer. 
+These pages document `ACE1pack` and to some limited extent also the packages it depends on.
 
 ### Three Ways to Work with `ACE1.jl`
 
-1. Fitting from the Command line: `ACE1pack` provides scripts to fit potentials from the command line. Fitting is controlled by a dictionary of parameters in a `.json` file to specify the model and fitting options.
 
-2. Using the `ACE1pack` wrapper functions in julia: `ACE1pack` also provides helper functions which wrap the functionality of `ACE1.jl` in julia. 
-
-3. Use `ACE1.jl` directly: for maximal fine-grained control.
+1. Via Julia scripts: 
+   - `ACE1.jl` can be used directly for maximal fine-grained control over the model parameter. Some extensions are implemented in `ACE1x.jl`. 
+   - `ACE1x.jl` also provides an intermediate convenience layer with many default parameters that have proven successful for a range of applications.
+2. JSON interface: `ACE1pack` provides wrapper functions to generate ACE models from dictionaries of model parameters. **WARNING:** This JSON interface will not always be up to date with the latest modeling options provided in `ACE1x.jl`.
+3. From the Command line: `ACE1pack` provides scripts to fit potentials from the command line. Fitting is controlled by a dictionary of parameters in a `.json` or `.yaml` file to specify the model and fitting options. Only functionality supported by the JSON interface is available. 
 
 
 ### References
