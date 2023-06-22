@@ -4,7 +4,7 @@
 
 An ACE1pack potential can be used in LAMMPS if the latter is built with the ML-PACE package. At present, a patched version of that package is required which may be installed as follows:
 ```
-git clone -b stable https://github.com/lammps/lammps
+git clone -b release https://github.com/lammps/lammps
 cd lammps
 mkdir build
 cd build
