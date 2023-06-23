@@ -1,0 +1,8 @@
+[deps]
+ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
+ACE1x = "5cc4c08c-8782-4a30-af6d-550b302e9707"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
+LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
