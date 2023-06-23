@@ -36,6 +36,7 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 [compat]
 ACE1 = "0.11.1, 0.11"
 ACE1x = "0.1"
+ACEfit = "=0.1.0"
 ASE = "= 0.5.4"
 JuLIP = "0.13.9, 0.14.0"
 PrettyTables = "1.3, 2.0"

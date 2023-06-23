@@ -1,0 +1,23 @@
+[ACE1pack_test_files]
+git-tree-sha1 = "9b3562a2b25e2580fe9d16f3ba8d613eddd29dd1"
+lazy = true
+
+    [[ACE1pack_test_files.download]]
+    sha256 = "56290709a859cabac2875804d550e5b088a63644040c6386f504be7b4d17dc82"
+    url = "https://github.com/ACEsuit/ACEData/blob/master/tests/ACE1pack_test_files.tar.gz?raw=true"
+
+[Si_tiny_dataset]
+git-tree-sha1 = "819e985e3a8e8f87dc26139af3389542839706a7"
+lazy = true
+
+    [[Si_tiny_dataset.download]]
+    sha256 = "02c9403b5ab17f07e065065f07dc15e9aaa67867842e4e21304837a325c25e8c"
+    url = "https://github.com/wcwitt/ACEData/blob/master/trainingsets/Si_tiny.tar.gz?raw=true"
+
+[TiAl_tiny_dataset]
+git-tree-sha1 = "86fd99369720539181edb3f27e0a265ae0c696df"
+lazy = true
+
+    [[TiAl_tiny_dataset.download]]
+    sha256 = "3b286227cbd705a7d6f1a695c2decacda9981be588bcc5ce288e479f9e60db5e"
+    url = "https://github.com/ACEsuit/ACEData/blob/master/trainingsets/TiAl_tiny.tar.gz?raw=true"
