@@ -61,33 +61,33 @@ acefit!(model, data_train; solver=solver, prior = P);</code></pre><pre class="do
 [ Info: Assembling linear problem.
 [ Info:   - Creating feature matrix with size (1770, 190).
 [ Info:   - Beginning assembly with processor count:  1.
-Progress:   3%|█▎                                       |  ETA: 0:01:58Progress:  64%|██████████████████████████▏              |  ETA: 0:00:02Progress: 100%|█████████████████████████████████████████| Time: 0:00:04
+Progress:   3%|█▎                                       |  ETA: 0:01:26Progress: 100%|█████████████████████████████████████████| Time: 0:00:03
 [ Info:   - Assembly completed.
 ┌ Warning: Need to apply preconditioner in LSQR.
-└ @ ACEfit ~/.julia/packages/ACEfit/HFeH9/src/solvers.jl:93
+└ @ ACEfit ~/.julia/packages/ACEfit/ID48n/src/solvers.jl:93
 damp  0.01
 atol  1.0e-6
 maxiter  100000
-Converged after 468 iterations.
-relative RMS error  0.003663405556468096</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
+Converged after 471 iterations.
+relative RMS error  0.0036619446322114367</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
 ACE1pack.linear_errors(data_train, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Training Error Table
 [ Info: RMSE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │       Type │ E [meV] │ F [eV/A] │ V [meV] │
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   9.288 │    0.076 │  94.554 │
-│ TiAl_T5000 │   1.379 │    0.377 │  39.108 │
+│   FLD_TiAl │   9.349 │    0.074 │  95.676 │
+│ TiAl_T5000 │   1.092 │    0.377 │  37.676 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   9.080 │    0.321 │  92.755 │
+│        set │   9.137 │    0.321 │  93.821 │
 └────────────┴─────────┴──────────┴─────────┘
 [ Info: MAE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │       Type │ E [meV] │ F [eV/A] │ V [meV] │
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   6.403 │    0.047 │  58.112 │
-│ TiAl_T5000 │   1.377 │    0.294 │  28.535 │
+│   FLD_TiAl │   6.370 │    0.046 │  57.746 │
+│ TiAl_T5000 │   1.080 │    0.294 │  27.637 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   6.174 │    0.222 │  56.768 │
+│        set │   6.130 │    0.222 │  56.377 │
 └────────────┴─────────┴──────────┴─────────┘</code></pre><p>We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions.</p><pre><code class="language-julia hljs">@info(&quot;Test Error Table&quot;)
 test_data = data[2:10:end]
 ACE1pack.linear_errors(test_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Test Error Table
@@ -95,17 +95,17 @@ ACE1pack.linear_errors(test_data, model; weights=weights);</code></pre><pre clas
 ┌────────────┬─────────┬──────────┬─────────┐
 │       Type │ E [meV] │ F [eV/A] │ V [meV] │
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │  10.859 │    0.112 │ 103.140 │
-│ TiAl_T5000 │   0.217 │    0.410 │ 110.034 │
+│   FLD_TiAl │  10.740 │    0.113 │ 106.668 │
+│ TiAl_T5000 │   0.106 │    0.410 │ 102.550 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │  10.693 │    0.290 │ 103.355 │
+│        set │  10.576 │    0.290 │ 106.546 │
 └────────────┴─────────┴──────────┴─────────┘
 [ Info: MAE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │       Type │ E [meV] │ F [eV/A] │ V [meV] │
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   7.910 │    0.064 │  58.293 │
-│ TiAl_T5000 │   0.217 │    0.328 │  89.241 │
+│   FLD_TiAl │   7.721 │    0.063 │  58.278 │
+│ TiAl_T5000 │   0.106 │    0.328 │  81.153 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   7.677 │    0.185 │  59.231 │
-└────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an <code>ACE1.jl</code> compatible potential, while the second line exports it to a format that can be ready by the <code>pacemaker</code> code to be used within LAMMPS.</p><pre><code class="language-julia hljs">export2json(&quot;./TiAl_tutorial_pot.json&quot;, model)</code></pre><p>export to lammps is currently broken:</p><pre><code class="language-julia hljs"># export2lammps(&quot;./TiAl_tutorial_pot.yace&quot;, model)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../first_example_model/">« First example</a><a class="docs-footer-nextpage" href="../TiAl_basis/">The <code>ace_basis</code> interface from Julia (TiAl) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 23 June 2023 08:46">Friday 23 June 2023</span>. Using Julia version 1.9.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+│        set │   7.491 │    0.184 │  58.971 │
+└────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an <code>ACE1.jl</code> compatible potential, while the second line exports it to a format that can be ready by the <code>pacemaker</code> code to be used within LAMMPS.</p><pre><code class="language-julia hljs">export2json(&quot;./TiAl_tutorial_pot.json&quot;, model)</code></pre><p>export to lammps is currently broken:</p><pre><code class="language-julia hljs"># export2lammps(&quot;./TiAl_tutorial_pot.yace&quot;, model)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../first_example_model/">« First example</a><a class="docs-footer-nextpage" href="../TiAl_basis/">The <code>ace_basis</code> interface from Julia (TiAl) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 26 June 2023 13:37">Monday 26 June 2023</span>. Using Julia version 1.9.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
