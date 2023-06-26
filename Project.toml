@@ -34,7 +34,7 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 [compat]
 ACE1 = "0.11.1, 0.11"
 ACE1x = "0.1"
-ACEfit = "=0.1.0"
+ACEfit = "0.1.1"
 ArgParse = "1"
 DistributedArrays = "0.6"
 Elemental = "0.6"
