@@ -25,7 +25,6 @@ OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
-PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
@@ -33,7 +32,6 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
-julia = "1.8"
 ACE1 = "0.11.1, 0.11"
 ACE1x = "0.1"
 ACEfit = "=0.1.0"
@@ -54,6 +52,7 @@ StaticArrays = "1"
 Suppressor = "0.2"
 TimerOutputs = "0.5"
 YAML = "0.4"
+julia = "1.8"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
