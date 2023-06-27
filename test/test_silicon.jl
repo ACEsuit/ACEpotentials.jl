@@ -1,7 +1,7 @@
 using Distributed
 using Test
 using LazyArtifacts
-using PyCall  # necessary for the PyCall solvers
+using PythonCall
 using ACE1pack
 
 ## ----- set up params -----

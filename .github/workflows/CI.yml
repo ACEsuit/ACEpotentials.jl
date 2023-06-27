@@ -19,7 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         julia-version:
-          - '1.8'
+          - '1.9'
+          - '1'
           - 'nightly'
         python-version: 
           - '3.8'
@@ -60,9 +61,6 @@ jobs:
           using Pkg
           Pkg.precompile()
         shell: bash -c "julia --color=yes {0}"
-      - name: "Add dev ACEfit"
-        run: |
-          julia --project=@. -e 'using Pkg; Pkg.develop("ACEfit")'
       - uses: julia-actions/julia-runtest@v1
 #  test_mpi:
 #    name: Julia MPI ${{ matrix.julia-version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }} x Python ${{ matrix.python-version }}
@@ -136,9 +134,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-      - run: |
-          # TODO: restore normal ACEfit
-          julia --project=docs -e 'using Pkg; Pkg.develop("ACEfit")'
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
