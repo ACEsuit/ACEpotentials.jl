@@ -106,7 +106,10 @@ function ACEfit.target_vector(d::AtomsData)
         i += 3*length(d.atoms)
     end
     if !isnothing(d.virial_key)
-        v = vec(d.atoms.data[d.virial_key].data)
+        # the following hack is necessary for 3-atom cells:
+        #   https://github.com/JuliaMolSim/JuLIP.jl/issues/166
+        #v = vec(d.atoms.data[d.virial_key].data)
+        v = vec(hcat(d.atoms.data[d.virial_key].data...))
         y[i:i+5] .= v[SVector(1,5,9,6,3,2)]
         i += 6
     end
@@ -189,7 +192,10 @@ function linear_errors(data, model; group_key="config_type")
        # virial errors
        if !isnothing(d.virial_key)
            estim = virial(model, d.atoms)[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
-           exact = d.atoms.data[d.virial_key].data[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
+           # the following hack is necessary for 3-atom cells:
+           #   https://github.com/JuliaMolSim/JuLIP.jl/issues/166
+           #exact = d.atoms.data[d.virial_key].data[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
+           exact = hcat(d.atoms.data[d.virial_key].data...)[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
            mae["V"] += sum(abs.(estim-exact))
            rmse["V"] += sum((estim-exact).^2)
            num["V"] += 6
