@@ -2,8 +2,11 @@
 # ------------------------------------------
 #    ACE Fitting
 
-import ACEfit, ACE1pack, ACE1, ExtXYZ
-using Dates, Base 
+import ACE1
+import ACE1pack
+import ACEfit
+import ExtXYZ
+using Base 
 
 export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
