@@ -6,6 +6,11 @@ at_dimer(r, z1, z0) = Atoms(X = [ SVector(0.0,0.0,0.0), SVector(r, 0.0, 0.0)],
                             Z = [z0, z1], pbc = false, 
                             cell = [r+1 0 0; 0 1 0; 0 0 1])
 
+at_trimer(r1, r2, θ, z0, z1, z2) = Atoms(X = [SVector(0.0, 0.0, 0.0), SVector(r1, 0.0, 0.0), SVector(r2 * cos(θ), r2 * sin(θ), 0.0)],
+                            Z = [z0, z1, z2], pbc = false, #
+                            cell = [ 1.0 + maximum([r1, r2]) 0.0 0.0;
+                            0.0 (1 + r2) 0.0;
+                            0.0 0.0 1])
 
 function dimer_energy(IP, r, z1, z0)
    at = at_dimer(r, z1, z0)
@@ -14,6 +19,16 @@ function dimer_energy(IP, r, z1, z0)
    return energy(IP, at) - energy(IP, at1) - energy(IP, at2)
 end
 
+function trimer_energy(IP, r1, r2, θ, z0, z1, z2)
+   at = at_trimer(r1, r2, θ, z0, z1, z2)
+   at0 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z0, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
+   at1 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z1, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
+   at2 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z2, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
+   dr1r2 = sqrt(r1 ^ 2 + r2 ^ 2 - 2 * r1 * r2 * cos(θ))
+   return energy(IP, at) - 
+         ACE1pack.dimer_energy(IP, r1, z0, z1) - ACE1pack.dimer_energy(IP, r2, z0, z2) - ACE1pack.dimer_energy(IP, dr1r2, z1, z2)
+         - energy(IP, at0) - energy(IP, at1) - energy(IP, at2)
+end
 
 _cutoff(potential) = cutoff(potential)
 _cutoff(potential::JuLIP.MLIPs.SumIP) = maximum(_cutoff.(potential.components))
