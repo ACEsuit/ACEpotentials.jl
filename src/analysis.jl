@@ -1,12 +1,6 @@
 
 using JuLIP: Atoms, energy, cutoff
 
-
-at_dimer(r, z1, z0) = Atoms(X = [ SVector(0.0,0.0,0.0), SVector(r, 0.0, 0.0)], 
-                            Z = [z0, z1], pbc = false, 
-                            cell = [r+1 0 0; 0 1 0; 0 0 1])
-
-
 function dimer_energy(IP, r, z1, z0)
    at = at_dimer(r, z1, z0)
    at1 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z1, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0]) 
