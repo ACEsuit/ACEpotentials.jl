@@ -38,9 +38,6 @@ jobs:
       - uses: actions/setup-python@v2
         with: 
           python-version: ${{ matrix.python-version }}
-      - name: install Python packages
-        run: |
-          pip install ase scikit-learn
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
@@ -86,8 +83,6 @@ jobs:
 #      - uses: actions/setup-python@v2
 #        with: 
 #          python-version: ${{ matrix.python-version }}
-#      - name: Install Python packages
-#        run: pip install ase scikit-learn
 #      - uses: actions/cache@v1
 #        env:
 #          cache-name: cache-artifacts
@@ -126,9 +121,6 @@ jobs:
       - uses: actions/setup-python@v2
         with: 
           python-version: ${{ matrix.python-version }}
-      - name: install Python packages
-        run: |
-          pip install ase scikit-learn
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:

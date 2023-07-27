@@ -59,14 +59,15 @@ function acefit!(model::ACE1Model, raw_data;
                 repulsion_restraint = false, 
                 restraint_weight = 0.01, 
                 export_lammps = nothing, 
-                export_json = nothing)
+                export_json = nothing, 
+                verbose=true)
 
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
                           v_ref = model.Vref) 
             for at in raw_data ] 
 
-   assess_dataset(data)
+   if verbose; assess_dataset(data); end 
 
    if repulsion_restraint 
       append!(data, _rep_dimer_data(model, weight = restraint_weight))
@@ -143,8 +144,12 @@ function _rep_dimer_data(model;
       at = at_dimer(_rin, z1, z2)
       set_data!(at, "REF_energy", env_rin)
       set_data!(at, "config_type", "restraint")
-      dat = ACE1pack.AtomsData(at, "REF_energy", "REF_forces", "REF_virial", 
-                                 restraint_weights, model.Vref)
+      #  AtomsData(atoms::Atoms; energy_key, force_key, virial_key, weights, v_ref, weight_key)
+      dat = ACE1pack.AtomsData(at, energy_key = "REF_energy", 
+                                   force_key = "REF_forces", 
+                                   virial_key = "REF_virial", 
+                                   weights = restraint_weights, 
+                                   v_ref = model.Vref)
       push!(restraints, dat) 
    end
    
