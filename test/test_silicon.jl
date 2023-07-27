@@ -6,6 +6,7 @@ using Test
 
 ### ----- setup -----
 
+@warn "test_silicon not fully converted yet."
 model = acemodel(elements = [:Si],
                  Eref = [:Si => -158.54496821],
                  rcut = 5.5,
