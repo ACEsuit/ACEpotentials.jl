@@ -1,6 +1,7 @@
 module ACE1pack
 
 using Reexport 
+@reexport using JuLIP
 @reexport using ACE1
 @reexport using ACE1x
 @reexport using ACEfit
