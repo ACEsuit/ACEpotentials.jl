@@ -1,38 +1,70 @@
 
 using JuLIP: Atoms, energy, cutoff
 
+__2z(z::AtomicNumber) = z 
+__2z(s::Symbol) = AtomicNumber(s)
+__2z(s::String) = AtomicNumber(Symbol(s))
 
+
+"""
+`function at_dimer(r, z1, z0)` : generates a dimer with separation `r` and 
+atomic numbers `z1` and `z0`.  (can also use symbols or strings)
+"""
 at_dimer(r, z1, z0) = Atoms(X = [ SVector(0.0,0.0,0.0), SVector(r, 0.0, 0.0)], 
-                            Z = [z0, z1], pbc = false, 
+                            Z = __2z.([z0, z1]), pbc = false, 
                             cell = [r+1 0 0; 0 1 0; 0 0 1])
 
+"""
+`function at_trimer(r1, r2, θ, z0, z1, z2)` : generates a trimer with
+separations `r1` and `r2`, angle `θ` and atomic numbers `z0`, `z1` and `z2` 
+(can also use symbols or strings),  where `z0` is the species of the central 
+atom, `z1` at distance `r1` and `z2` at distance `r2`.
+"""
 at_trimer(r1, r2, θ, z0, z1, z2) = Atoms(X = [SVector(0.0, 0.0, 0.0), SVector(r1, 0.0, 0.0), SVector(r2 * cos(θ), r2 * sin(θ), 0.0)],
                             Z = [z0, z1, z2], pbc = false, #
                             cell = [ 1.0 + maximum([r1, r2]) 0.0 0.0;
                             0.0 (1 + r2) 0.0;
                             0.0 0.0 1])
 
+"""
+`function atom_energy(IP, z0)` : energy of an isolated atom
+"""                            
+function atom_energy(IP, z0)
+   at = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z0, ], 
+              pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
+   return energy(IP, at)                  
+end
+
+"""
+`function dimer_energy(pot, r, z1, z0)` : energy of a dimer 
+with separation `r` and atomic numbers `z1` and `z0` using the potential `pot`; 
+subtracting the 1-body contributions. 
+"""
 function dimer_energy(IP, r, z1, z0)
    at = at_dimer(r, z1, z0)
-   at1 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z1, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0]) 
-   at2 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z0, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0]) 
-   return energy(IP, at) - energy(IP, at1) - energy(IP, at2)
+   return energy(IP, at) - atom_energy(IP, z0) - atom_energy(IP, z1)
 end
 
+"""
+`function trimer_energy(IP, r1, r2, θ, z0, z1, z2)` : computes the energy of a
+trimer, subtracting the 2-body and 1-body contributions.
+"""
 function trimer_energy(IP, r1, r2, θ, z0, z1, z2)
    at = at_trimer(r1, r2, θ, z0, z1, z2)
-   at0 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z0, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
-   at1 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z1, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
-   at2 = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z2, ], pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
    dr1r2 = sqrt(r1 ^ 2 + r2 ^ 2 - 2 * r1 * r2 * cos(θ))
-   return energy(IP, at) - 
-         ACE1pack.dimer_energy(IP, r1, z0, z1) - ACE1pack.dimer_energy(IP, r2, z0, z2) - ACE1pack.dimer_energy(IP, dr1r2, z1, z2)
-         - energy(IP, at0) - energy(IP, at1) - energy(IP, at2)
+   return ( energy(IP, at) 
+            - dimer_energy(IP, r1, z1, z0) 
+            - dimer_energy(IP, r2, z2, z0) 
+            - dimer_energy(IP, dr1r2, z1, z2)
+            - atom_energy(IP, z0) 
+            - atom_energy(IP, z1) 
+            - atom_energy(IP, z2) )
 end
 
+# TODO: this needs a PR to JuLIP 
 _cutoff(potential) = cutoff(potential)
 _cutoff(potential::JuLIP.MLIPs.SumIP) = maximum(_cutoff.(potential.components))
-_cutoff(potential::JuLIP.OneBody) = 0.0
+_cutoff(potential::JuLIP.OneBody) = 0.1   # not sure how 0.0 will behave
 
 
 """
@@ -76,10 +108,20 @@ function trimers(potential, elements; r1 = 0.5:3:_cutoff(potential), r2 = 0.5:3:
    return trimers
 end
 
+
 """
-Produce a list of all r values that occur in the dataset 
+`function get_rdf(data::AbstractVector{<: Atoms}, r_cut; kwargs...)` : 
+
+Produce a list of r values that occur in the dataset, restricted to the cutoff 
+radius `r_cut`. Keyword arguments: 
+* `resample = true` : resample the data to account for volume scaling, i.e. a distance r will be kept with probability `min(1, (r0/r)^2)`.
+* `r0 = :min` : parameter for resampling. If `:min` then the minimum r occuring in the dataset is taken. 
+* `maxsamples = 100_000` : maximum number of samples to return. 
 """
-function get_rdf(data::AbstractVector{<: Atoms})
+function get_rdf(data::AbstractVector{<: Atoms}, r_cut; 
+                 resample = true, 
+                 r0 = :min, 
+                 maxsamples = 100_000)
    R = Float64[] 
    for at in data 
       nlist = JuLIP.neighbourlist(at, r_cut)
@@ -88,9 +130,23 @@ function get_rdf(data::AbstractVector{<: Atoms})
    end
    sort!(R) 
 
-   # todo - filter by 1/r^2 prob
+   R1 = Float64[]
+   if resample 
+      # choose a minimum r value relative to which we resample. 
+      _r0 = (r0 == :auto) ? R[1] : r0
+      for r in R 
+         if rand() < min(1, (_r0/r)^2)
+            push!(R1, r)
+         end
+      end
+   end
 
-   return R 
+   if length(R1) > maxsamples 
+      Ikeep = floor.(Int, range(1, length(R1), length = maxsamples))
+      R1 = R1[Ikeep]
+   end
+
+   return R1
 end
 
 
