@@ -191,9 +191,9 @@ end
 #  a temporary hack to quickly adapt the training weights \
 
 
-import ACEfit: linear_assemble
+import ACEfit: assemble
 
-function linear_assemble(raw_data, model::ACE1Model; 
+function assemble(raw_data, model::ACE1Model; 
                      weights = default_weights(),
                      energy_key = "energy", 
                      force_key = "force", 
@@ -218,7 +218,7 @@ function linear_assemble(raw_data, model::ACE1Model;
       return W
    end 
       
-   A, Y, W = linear_assemble(data, model.basis, mode)
+   A, Y, W = assemble(data, model.basis, mode)
    return A, Y, W
 end
 
@@ -240,5 +240,5 @@ end
 
 
 function recompute_weights(model::ACE1Model, raw_data; kwargs...)
-   return linear_assemble(raw_data, model; weights_only = true, kwargs...)
+   return assemble(raw_data, model; weights_only = true, kwargs...)
 end
