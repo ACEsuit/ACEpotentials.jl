@@ -74,7 +74,8 @@ function acefit!(model::ACE1Model, raw_data;
    end
                   
    P = _make_prior(model, smoothness, prior)
-   A, Y, W = ACEfit.assemble(data, model.basis)
+   A, Y = ACEfit.assemble(data, model.basis)
+   W = ACEfit.assemble_weights(data)
    Ap = Diagonal(W) * (A / P) 
    Y = W .* Y
    result = ACEfit.solve(solver, Ap, Y)
