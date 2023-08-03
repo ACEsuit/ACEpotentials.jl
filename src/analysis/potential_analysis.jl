@@ -109,45 +109,6 @@ function trimers(potential, elements; r1 = 0.5:3:_cutoff(potential), r2 = 0.5:3:
 end
 
 
-"""
-`function get_rdf(data::AbstractVector{<: Atoms}, r_cut; kwargs...)` : 
-
-Produce a list of r values that occur in the dataset, restricted to the cutoff 
-radius `r_cut`. Keyword arguments: 
-* `resample = true` : resample the data to account for volume scaling, i.e. a distance r will be kept with probability `min(1, (r0/r)^2)`.
-* `r0 = :min` : parameter for resampling. If `:min` then the minimum r occuring in the dataset is taken. 
-* `maxsamples = 100_000` : maximum number of samples to return. 
-"""
-function get_rdf(data::AbstractVector{<: Atoms}, r_cut; 
-                 resample = true, 
-                 r0 = :min, 
-                 maxsamples = 100_000)
-   R = Float64[] 
-   for at in data 
-      nlist = JuLIP.neighbourlist(at, r_cut)
-      r = [ norm(rr) for (i, j, rr) in pairs(nlist) ] 
-      append!(R, r)
-   end
-   sort!(R) 
-
-   R1 = Float64[]
-   if resample 
-      # choose a minimum r value relative to which we resample. 
-      _r0 = (r0 == :auto) ? R[1] : r0
-      for r in R 
-         if rand() < min(1, (_r0/r)^2)
-            push!(R1, r)
-         end
-      end
-   end
-
-   if length(R1) > maxsamples 
-      Ikeep = floor.(Int, range(1, length(R1), length = maxsamples))
-      R1 = R1[Ikeep]
-   end
-
-   return R1
-end
 
 
 """
@@ -193,3 +154,37 @@ function decohesion_curve(at0, pot;
    return E, dE 
 end   
 
+
+
+function get_transforms(model::ACE1x.ACE1Model)
+   mb_transforms = Dict() 
+   pair_transforms = Dict()
+
+   pair_basis = model.basis.BB[1] 
+   @assert typeof(pair_basis) <: PolyPairBasis
+   for iz0 = 1:JuLIP.numz(pair_basis), iz = 1:JuLIP.numz(pair_basis)
+      Pr = pair_basis.J[iz0,iz]
+      z = JuLIP.i2z(pair_basis, iz)
+      z0 = JuLIP.i2z(pair_basis, iz0)
+      s = chemical_symbol(z)
+      s0 = chemical_symbol(z0)
+      mb_transforms[(z0, z)] = Pr.trans
+      mb_transforms[(s0, s)] = Pr.trans
+   end
+
+   ace_basis = model.basis.BB[2] 
+   @assert typeof(ace_basis) <: RPIBasis
+   basis1p = ace_basis.pibasis.basis1p 
+   mtrans = basis1p.J.trans
+   @assert mtrans isa ACE1.Transforms.MultiTransform
+   for iz0 = 1:JuLIP.numz(basis1p), iz = 1:JuLIP.numz(basis1p)
+      z = JuLIP.i2z(basis1p, iz)
+      z0 = JuLIP.i2z(basis1p, iz0)
+      s = chemical_symbol(z)
+      s0 = chemical_symbol(z0)
+      mb_transforms[(z0, z)] = mtrans.transforms[iz0,iz]
+      mb_transforms[(s0, s)] = mtrans.transforms[iz0,iz] 
+   end
+
+   return mb_transforms, pair_transforms 
+end

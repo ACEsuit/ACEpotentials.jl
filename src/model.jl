@@ -109,9 +109,6 @@ end
 
 # ---------------- Implementaiton of the repuslion restraint 
 
-at_dimer(r, z1, z0) = Atoms(X = [ SVector(0.0,0.0,0.0), SVector(r, 0.0, 0.0)], 
-                            Z = [z0, z1], pbc = false, 
-                            cell = [r+1 0 0; 0 1 0; 0 0 1])
 
 function _rep_dimer_data(model; 
                          weight = 0.01, 
