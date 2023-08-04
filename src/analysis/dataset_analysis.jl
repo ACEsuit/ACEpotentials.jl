@@ -1,6 +1,23 @@
 
 using JuLIP: Atoms, energy, cutoff
+using JuLIP.Potentials: AbstractZList
 
+# z_pairs(obj) = z_pairs(zlist(obj))
+
+# function z_pairs(zlist::AbstractZList)
+#    zz = Tuple{AtomicNumber, AtomicNumber}[]
+#    for iz0 = 1:length(zlist), iz = 1:length(zlist)
+#       z0 = i2z(zlist, iz0); z = i2z(zlist, iz)
+#       push!(zz, (z0, z))
+#    end   
+# end
+
+function copy_zz_sym!(D::Dict)
+   for z12 in keys(D) 
+      sym12 = chemical_symbol.(z12) 
+      D[sym12] = D[z12]
+   end
+end
 
 """
 `function get_rdf(data::AbstractVector{<: Atoms}, r_cut; kwargs...)` : 
@@ -15,31 +32,57 @@ function get_rdf(data::AbstractVector{<: Atoms}, r_cut;
                  rescale = true, 
                  r0 = :min, 
                  maxsamples = 100_000)
-   R = Float64[] 
+
+   zz = AtomicNumber[] 
+   for at in data 
+      zz = unique(append!(zz, unique(at.Z)))
+   end        
+            
+   zz_pairs = [ (z0, z) for z0 in zz for z in zz ]
+   R0 = Dict{Any, Vector{Float64}}([ z12 => Float64[] for z12 in zz_pairs ]...)
+   R = deepcopy(R0)         
+
    for at in data 
       nlist = JuLIP.neighbourlist(at, r_cut; recompute=true)
-      r = [ norm(rr) for (i, j, rr) in pairs(nlist) ] 
-      append!(R, r)
+      for (i, j, rr) in pairs(nlist) 
+         z12 = (at.Z[i], at.Z[j])
+         push!(R[z12], norm(rr))
+      end
    end
-   sort!(R) 
+   for z12 in zz_pairs 
+      sort!(R[z12])
+   end
 
-   R1 = Float64[]
+   # drop random samples with probability selected to adjust for 
+   # volume scaling. 
    if rescale 
-      # choose a minimum r value relative to which we resample. 
-      _r0 = (r0 == :min) ? R[1] : r0
-      for r in R 
-         if rand() < min(1, (_r0/r)^2)
-            push!(R1, r)
+      R1 = deepcopy(R0)
+      for z12 in keys(R)
+         rr = R[z12]
+         # choose a minimum r value relative to which we resample. 
+         _r0 = (r0 == :min) ? rr[1] : r0
+         for r in rr
+            if rand() < min(1, (_r0/r)^2)
+               push!(R1[z12], r)
+            end
          end
       end
    else
       R1 = R 
    end 
 
-   if length(R1) > maxsamples 
-      Ikeep = floor.(Int, range(1, length(R1), length = maxsamples))
-      R1 = R1[Ikeep]
+   # sub-select uniformly to get only #maxsamples samples for each 
+   # pair of atomic numbers.
+   for z12 in keys(R1)
+      rr = R1[z12]
+      if length(rr) > maxsamples 
+         Ikeep = floor.(Int, range(1, length(rr), length = maxsamples))
+         R1[z12] = rr[Ikeep]
+      end
    end
+
+   ## allow access to the rdf via z or via symbols
+   copy_zz_sym!(R1)
 
    return R1
 end
