@@ -13,7 +13,8 @@ using JuLIP.Potentials: AbstractZList
 # end
 
 function copy_zz_sym!(D::Dict)
-   for z12 in keys(D) 
+   _zz = collect(keys(D))
+   for z12 in _zz
       sym12 = chemical_symbol.(z12) 
       D[sym12] = D[z12]
    end
