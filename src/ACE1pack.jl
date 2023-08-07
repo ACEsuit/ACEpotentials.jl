@@ -5,6 +5,7 @@ using Reexport
 @reexport using ACE1
 @reexport using ACE1x
 @reexport using ACEfit
+@reexport using ACEmd
 
 include("atoms_data.jl")
 include("fit.jl")

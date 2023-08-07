@@ -68,7 +68,8 @@ makedocs(;
             "literate_tutorials/descriptor.md",
             "literate_tutorials/committee.md",
             "tutorials/lammps.md",
-            "tutorials/python_ase.md"
+            "tutorials/python_ase.md",
+            "tutorials/molly.md"
         ],
         # "Using ACE potentials" => Any[
         #     "Using_ACE/python_ase.md",
