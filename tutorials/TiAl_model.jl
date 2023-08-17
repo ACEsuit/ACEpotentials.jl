@@ -4,13 +4,15 @@
 
 using ACE1pack
 
-# We need a dataset `TiAl_tutorial.xyz` for this tutorial which is provided as an artifact. Normally we would get the path to a datset via `artifact"TiAl_tutorial` but for these tutorial to run from anywhere it is easiest to let `ACE1pack` load the data for us. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
+# We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
+# ```julia
+#    data_file = "path/to/TiAl_tutorial.xyz"
+#    data = read_extxyz(data_file)
+# ```
+# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACE1pack.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
 
-data_file = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz")
-
-# We can now use `JuLIP.read_extxyz` to load in the training set. We keep only a small subset of the training structures to keep the regression problem small.
-
-data = read_extxyz(data_file)
+data = ACE1pack.example_dataset("TiAl_tutorial")
+train_data = data[1:5:end];
 
 # The next step is to generate a model
 # * `order = 3` : We take 3-correlation, i.e. a 4-body potential, 
