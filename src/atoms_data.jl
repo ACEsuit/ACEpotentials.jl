@@ -144,7 +144,7 @@ function group_type(d::AtomsData; group_key="config_type")
     return group_type
 end
 
-function linear_errors(data, model; group_key="config_type")
+function linear_errors(data, model; group_key="config_type", verbose=true)
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
    rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
@@ -228,34 +228,36 @@ function linear_errors(data, model; group_key="config_type")
     merge!(config_errors["mae"], Dict("set"=>mae))
     merge!(config_errors["rmse"], Dict("set"=>rmse))
 
-    @info "RMSE Table"
-    header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
-    table = hcat(
-        config_types,
-        [1000*config_errors["rmse"][c_t]["E"] for c_t in config_types],
-        [config_errors["rmse"][c_t]["F"] for c_t in config_types],
-        [1000*config_errors["rmse"][c_t]["V"] for c_t in config_types],
-    )
-    pretty_table(
-        table; header=header,
-        body_hlines=[length(config_types)-1],
-        formatters=ft_printf("%5.3f"),
-        crop = :horizontal)
+    if verbose
+        @info "RMSE Table"
+        header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
+        table = hcat(
+            config_types,
+            [1000*config_errors["rmse"][c_t]["E"] for c_t in config_types],
+            [config_errors["rmse"][c_t]["F"] for c_t in config_types],
+            [1000*config_errors["rmse"][c_t]["V"] for c_t in config_types],
+        )
+        pretty_table(
+            table; header=header,
+            body_hlines=[length(config_types)-1],
+            formatters=ft_printf("%5.3f"),
+            crop = :horizontal)
 
-    @info "MAE Table"
-    header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
-    table = hcat(
-        config_types,
-        [1000*config_errors["mae"][c_t]["E"] for c_t in config_types],
-        [config_errors["mae"][c_t]["F"] for c_t in config_types],
-        [1000*config_errors["mae"][c_t]["V"] for c_t in config_types],
-    )
-    pretty_table(
-        table; header=header,
-        body_hlines=[length(config_types)-1],
-        formatters=ft_printf("%5.3f"),
-        crop = :horizontal)
-
+        @info "MAE Table"
+        header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
+        table = hcat(
+            config_types,
+            [1000*config_errors["mae"][c_t]["E"] for c_t in config_types],
+            [config_errors["mae"][c_t]["F"] for c_t in config_types],
+            [1000*config_errors["mae"][c_t]["V"] for c_t in config_types],
+        )
+        pretty_table(
+            table; header=header,
+            body_hlines=[length(config_types)-1],
+            formatters=ft_printf("%5.3f"),
+            crop = :horizontal)
+    end 
+    
     return config_errors
 end
 
