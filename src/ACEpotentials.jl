@@ -1,4 +1,4 @@
-module ACE1pack
+module ACEpotentials
 
 using Reexport 
 @reexport using JuLIP
