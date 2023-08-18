@@ -4,13 +4,14 @@
 
 using ACE1pack
 
-# We need a dataset `TiAl_tutorial.xyz` for this tutorial which is provided as an artifact. Normally we would get the path to a datset via `artifact"TiAl_tutorial` but for these tutorial to run from anywhere it is easiest to let `ACE1pack` load the data for us. The following line will download the dataset, store is somewhere inside `~/.julia/...` and return a string with the absolute path to the file.
+# We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
+# ```julia
+# data_file = "path/to/TiAl_tutorial.xyz"
+# data = read_extxyz(data_file)
+# ```
+# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACE1pack.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
 
-data_file = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz")
-
-# We can now use `JuLIP.read_extxyz` to load in the training set. We keep only a small subset of the training structures to keep the regression problem small.
-
-data = JuLIP.read_extxyz(data_file)
+data, _, meta = ACE1pack.example_dataset("TiAl_tutorial")
 train_data = data[1:5:end];
 
 # The next step is to generate a basis set:  
@@ -48,7 +49,7 @@ weights = Dict(
 
 datakeys = (energy_key = "energy", force_key = "force", virial_key = "virial")
 train = [ACE1pack.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for t in train_data] 
-A, Y, W = ACEfit.linear_assemble(train, basis)
+A, Y, W = ACEfit.assemble(train, basis)
 
 # ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
 
@@ -57,7 +58,7 @@ P = smoothness_prior(basis; p = 3)
 # Once all the solver parameters have been determined, we use `ACEfit` to estimate the parameters. This routine will return the fitted interatomic potential `IP` as well as the a dictionary `lsqfit` with some information about the fitting process. 
 
 solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6, P = P)
-results = ACEfit.linear_solve(solver, W .* A, W .* Y)
+results = ACEfit.solve(solver, W .* A, W .* Y)
 pot_1 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
 
 # The advantage of working with the ACE basis rather than the ACE model interface is that we can now make some changes to the fitting parameters and refit. For example, we might want different weights, change the smoothness prior, and switch to a RRQR solver. 
@@ -65,7 +66,7 @@ pot_1 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
 weights["FLD_TiAl"]["E"] = 20.0
 W = ACE1pack.recompute_weights(train, basis)
 solver = ACEfit.RRQR(; rtol = 1e-8, P = smoothness_prior(basis; p = 2))
-results = ACEfit.linear_solve(solver, W .* A, W .* Y)
+results = ACEfit.solve(solver, W .* A, W .* Y)
 pot_2 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
 
 
@@ -82,5 +83,5 @@ ACE1pack.linear_errors(test, pot_2);
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
 
-save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(potential)))
+save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(pot_1)))
 ## NB: export2lammps is current broken but about to be fixed.
