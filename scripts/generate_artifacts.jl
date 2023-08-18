@@ -1,4 +1,4 @@
-using ACE1pack
+using ACEpotentials
 using ArtifactUtils
 using Pkg.Artifacts
 
@@ -11,14 +11,14 @@ function safe_add_artifact!(label, url, artifacts_toml)
 end
 
 
-artifacts_toml = joinpath(pathof(ACE1pack)[1:end-16], "Artifacts.toml")
+artifacts_toml = joinpath(pathof(ACEpotentials)[1:end-16], "Artifacts.toml")
 
 label = "TiAl_tiny_dataset"
 url = "https://github.com/ACEsuit/ACEData/blob/master/trainingsets/TiAl_tiny.tar.gz?raw=true"
 safe_add_artifact!(label, url, artifacts_toml)
 
 
-label = "ACE1pack_test_files"
-url = "https://github.com/ACEsuit/ACEData/blob/master/tests/ACE1pack_test_files.tar.gz?raw=true"
+label = "ACEpotentials_test_files"
+url = "https://github.com/ACEsuit/ACEData/blob/master/tests/ACEpotentials_test_files.tar.gz?raw=true"
 safe_add_artifact!(label, url, artifacts_toml)
 
