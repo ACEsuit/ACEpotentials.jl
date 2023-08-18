@@ -170,7 +170,7 @@ function decohesion_curve(at0, pot;
    E = decoh_energy.(aa)
    dE = [[0.0]; (E[2:end] - E[1:end-1])/(aa[2]-aa[1])]
 
-   return E, dE 
+   return aa, E, dE 
 end   
 
 

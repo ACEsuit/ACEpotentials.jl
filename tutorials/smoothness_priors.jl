@@ -13,7 +13,7 @@ rcut = 6.0     # cut off distance
 r_nn = 2.3     # typical nearest neighbour distance
 
 model = ACE1x.acemodel(elements = [:Si],
-                       order = 3, totaldegree = 10,
+                       order = 3, totaldegree = 12,
                        rcut = rcut, r0 = r_nn, 
                        Eref = Dict("Si" => -158.54496821))
 
@@ -64,7 +64,7 @@ display(rmse)
 
 # On the other hand, we expect the stronger priors to generalize better. A typical intuition is that smooth potentials with similar accuracy will be more transferable than rougher potentials. We will show three one-dimensional slices through the fitted potentials: dimer curves, trimer curves and a decohesion curve. 
 
-# First, the dimer curves: the utility function `ACE1pack.dimers` can be used to generate the data for those curves, which are then plotted using `Plots.jl`. We also add a vertical line to indicate the nearest neighbour distance. The standard identity prior gives a completely unrealistic dimer curve. The three smoothness priors all give physically sensible dimer curve shapes. 
+# First, the dimer curves: the utility function `ACE1pack.dimers` can be used to generate the data for those curves, which are then plotted using `Plots.jl`. We also add a vertical line to indicate the nearest neighbour distance. The standard identity prior gives a completely unrealistic dimer curve. The `Algebraic(2)` regularised potential is missing a repulsive core behaviour. The two remaining smoothness priors give physically sensible dimer curve shapes. 
 
 labels = sort(collect(keys(priors)))[[4,1,2,3]]
 plt_dim = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "E [eV]", 
@@ -76,7 +76,7 @@ end
 vline!([r_nn,], lw=2, ls=:dash, label = L"r_{\rm nn}")
 plt_dim
 
-# Next, we look at a trimer curve. This is generated using `ACE1pack.trimers`. All models are smooth on this slice. 
+# Next, we look at a trimer curve. This is generated using `ACE1pack.trimers`. Both the `Id` and `Algebraic(2)` regularised models contain fairly significant oscillations while the `Algebraic(4)` and `Gaussian` models are much smoother. In addition, it appears that the `Gaussian` regularised model is somewhat more physically realistic on this slice with high energy at small bond-angles (thought the low energy at angle π seems somewhat strange).
 
 plt_trim = plot(legend = :topright, xlabel = L"\theta", ylabel = "E [eV]", 
                xlims = (0, pi), ylims = (-0.35, 0.8))
@@ -84,8 +84,17 @@ for l in labels
     D = ACE1pack.trimers(pots[l], [:Si,], r_nn,  r_nn)
     plot!(plt_trim, D[(:Si, :Si, :Si)]..., label = l, lw=2)
 end
-vline!(plt_trim, [1.90241,])
+vline!(plt_trim, [1.90241,], lw=2, label = "equilibrium angle")
 plt_trim
 
+# Finally, we plot a decohesion curve, which contains more significant many-body effects. Arguably, none of our potentials perform very well on this test. Usually larger datasets, and longer cutoffs help in this case. 
 
-# Finally, we plot a decohesion curve, which contains more significant many-body effects. 
+at0 = bulk(:Si, cubic=true)
+plt_dec = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "strain [eV/Å]", 
+                xlim = (0.0, 5.0))
+for l in labels
+    aa, E, dE = ACE1pack.decohesion_curve(at0, pots[l])
+    plot!(plt_dec, aa, dE, label = l, lw=2)
+end
+plt_dec
+
