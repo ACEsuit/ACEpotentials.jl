@@ -106,27 +106,6 @@ function trimers(potential, elements, r1, r2;
    return trimers
 end
 
-# function trimers(potential, elements; r1 = 0.5:3:_cutoff(potential), r2 = 0.5:3:_cutoff(potential),
-#                 θ = range(deg2rad(-180), deg2rad(180), length = 200), 
-#                 minE = -1e10, maxE = 1e10, )
-#    zz = AtomicNumber.(elements)
-#    trimers = Dict() 
-#    for i = 1:length(zz), j = 1:i, k = 1:j
-#       z0 = zz[i]
-#       z1 = zz[j]
-#       z2 = zz[k]
-#       for ri in r1
-#          for rj in r2
-#             v01 = trimer_energy.(Ref(potential), ri, rj, θ, z0, z1, z2)
-#             v01 = max.(min.(v01, maxE), minE)
-#             trimers[(z0, z1, z2, ri, rj)] = (θ, v01)
-#          end
-#       end
-#    end
-#    return trimers
-# end
-
-
 
 
 

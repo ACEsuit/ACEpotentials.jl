@@ -2,15 +2,6 @@
 using JuLIP: Atoms, energy, cutoff
 using JuLIP.Potentials: AbstractZList
 
-# z_pairs(obj) = z_pairs(zlist(obj))
-
-# function z_pairs(zlist::AbstractZList)
-#    zz = Tuple{AtomicNumber, AtomicNumber}[]
-#    for iz0 = 1:length(zlist), iz = 1:length(zlist)
-#       z0 = i2z(zlist, iz0); z = i2z(zlist, iz)
-#       push!(zz, (z0, z))
-#    end   
-# end
 
 function copy_zz_sym!(D::Dict)
    _zz = collect(keys(D))
