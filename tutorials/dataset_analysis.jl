@@ -37,7 +37,7 @@ plot(plt_rdf, plt_adf, layout = (2,1), size = (800, 400))
 # First, we generate a default Si model. 
 
 model = acemodel(elements = [:Si,], order = 3,   
-                 totaldegree = 10, rcut = r_cut )
+                 totaldegree = 10, rcut = r_cut );
 
 # We have a utility function `get_transforms` that extracts the transforms from the model. We can then plot the transform gradients. In regions of r space with high gradient we have higher resolution. We see that the transforms concentrate resolution near the nearest neighbour distance and ensure there is no resolution at all near ``r = 0``.
 
@@ -61,10 +61,9 @@ plot(plt_t, plt_rdf, layout=grid(2, 1, heights=[0.7, 0.3]), size = (800, 400))
 # To finish this tutorial, we quickly demonstrate what happens when there is more than one chemical species present in a dataset. 
 
 using LazyArtifacts
-data_file = joinpath(artifact"TiAl_tutorial", "TiAl_tutorial.xyz")
-tial_data = read_extxyz(data_file)
+tial_data, _, _ = ACE1pack.example_dataset("TiAl_tutorial")
 
-rdf = ACE1pack.get_rdf(data, r_cut)
+rdf = ACE1pack.get_rdf(tial_data, r_cut)
 plt_TiTi = histogram(rdf[(:Ti, :Ti)], bins=100, xlabel = "", 
          ylabel = "RDF - TiTi", label = "", yticks = [], xlims = (0, r_cut) )
 plt_TiAl = histogram(rdf[(:Ti, :Ti)], bins=100, xlabel = "", 
