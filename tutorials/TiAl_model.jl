@@ -6,12 +6,12 @@ using ACE1pack
 
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
 # ```julia
-#    data_file = "path/to/TiAl_tutorial.xyz"
-#    data = read_extxyz(data_file)
+# data_file = "path/to/TiAl_tutorial.xyz"
+# data = read_extxyz(data_file)
 # ```
 # For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACE1pack.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
 
-data = ACE1pack.example_dataset("TiAl_tutorial")
+data, _, meta = ACE1pack.example_dataset("TiAl_tutorial")
 train_data = data[1:5:end];
 
 # The next step is to generate a model
