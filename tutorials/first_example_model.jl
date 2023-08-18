@@ -45,7 +45,7 @@ train = [gen_dat() for _=1:20];
 # We specify a solver and then let `ACEfit.jl` to do all the work for us. More fine-grained control is possible; see the `ACEfit.jl` documentation.
 # For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us. 
 
-solver = ACEfit.BL() 
+solver = ACEfit.BLR() 
 acefit!(model, train; solver=solver, data_keys...);
 
 # To see the training errors we can use 

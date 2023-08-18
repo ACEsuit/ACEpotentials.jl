@@ -26,30 +26,30 @@ basis = ACE1x.ace_basis(elements = [:Ti, :Al],
                   order = 3,
                   totaldegree = 6, 
                   rcut = 5.5, 
-                  r0 = r0,);
+                  r0 = r0,)
 @show length(basis);
 
 # `Vref` specifies a reference potential, which is subtracted from the training data and the ACE parameters are then estimated from the difference. This reference potential will in the end be added to the ACE model. Here we use a one-body potential i.e. a reference atom energy for each individual species. Usage of a one-body reference potential generally results in very slightly reduced fit accuracy but significantly improved 2-body potentials with a realistic dimer shape. 
 
-Vref = OneBody(:Ti => -1586.0195, :Al => -105.5954)
+Vref = OneBody(:Ti => -1586.0195, :Al => -105.5954);
 
 # The next line specifies the regression weights: in the least squares loss different observations are given different weights,
 # ```math 
-#   \sum_{R} \Big( w_^E_R | E(R) - y_R^E |^2
-#            + w_F^R | {\rm forces}(R) - y_R^F |^2 
-#            + w_V^R | {\rm virial}(R) - y_R^V |^2 \Big),
+#   \sum_{R} \Big( w^E_R | E(R) - y_R^E |^2
+#            + w^F_R | {\rm forces}(R) - y_R^F |^2 
+#            + w^V_R | {\rm virial}(R) - y_R^V |^2 \Big),
 # ```
 # and this is specificed via the following dictionary. The keys correspond to the `config_type` of the training structures. 
 
 weights = Dict(
         "FLD_TiAl" => Dict("E" => 60.0, "F" => 1.0 , "V" => 1.0 ),
-        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ))
+        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ));
 
 # The next step is to evaluate the basis on the training set. Precomputing the basis once (and possibly save it to disk) makes experimenting with different regression parameters much more efficient. This is demonstrated below by showing various different solver options. Similarly once could also explore different data weights (see `weights` below). 
 
 datakeys = (energy_key = "energy", force_key = "force", virial_key = "virial")
 train = [ACE1pack.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for t in train_data] 
-A, Y, W = ACEfit.assemble(train, basis)
+A, Y, W = ACEfit.assemble(train, basis);
 
 # ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
 
@@ -64,7 +64,7 @@ pot_1 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
 # The advantage of working with the ACE basis rather than the ACE model interface is that we can now make some changes to the fitting parameters and refit. For example, we might want different weights, change the smoothness prior, and switch to a RRQR solver. 
 
 weights["FLD_TiAl"]["E"] = 20.0
-W = ACE1pack.recompute_weights(train, basis)
+W = ACEfit.assemble_weights(train)
 solver = ACEfit.RRQR(; rtol = 1e-8, P = smoothness_prior(basis; p = 2))
 results = ACEfit.solve(solver, W .* A, W .* Y)
 pot_2 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))

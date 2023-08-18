@@ -1,7 +1,7 @@
 using ACE1
 using ACE1: PIBasis, PIBasisFcn, PIPotential
 using ACE1: rand_radial, cutoff, numz, ZList
-using Interpolations
+import Interpolations
 using JuLIP: energy, bulk, i2z, z2i, chemical_symbol, SMatrix
 using OrderedCollections
 using YAML
