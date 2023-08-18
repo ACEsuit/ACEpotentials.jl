@@ -16,7 +16,10 @@ include("solver.jl")
 include("regularizer.jl")
 include("read_params.jl")
 include("export.jl")
-include("analysis.jl")
+
+include("analysis/potential_analysis.jl")
+include("analysis/dataset_analysis.jl")
+
 include("example_data.jl")
 
 end

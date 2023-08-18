@@ -1,6 +1,6 @@
 # # Committee Potentials
 
-using ACE1pack, Plots
+using Plots, ACE1pack
 
 # ### Perform the fit
 
