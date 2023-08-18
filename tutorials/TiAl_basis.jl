@@ -64,7 +64,7 @@ pot_1 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
 # The advantage of working with the ACE basis rather than the ACE model interface is that we can now make some changes to the fitting parameters and refit. For example, we might want different weights, change the smoothness prior, and switch to a RRQR solver. 
 
 weights["FLD_TiAl"]["E"] = 20.0
-W = ACE1pack.recompute_weights(train, basis)
+W = ACE1pack.recompute_weights(basis, train)
 solver = ACEfit.RRQR(; rtol = 1e-8, P = smoothness_prior(basis; p = 2))
 results = ACEfit.solve(solver, W .* A, W .* Y)
 pot_2 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))

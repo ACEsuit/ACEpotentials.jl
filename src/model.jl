@@ -214,7 +214,7 @@ function assemble(raw_data, model::ACE1Model;
    end
         
    if weights_only
-      W = recompute_weights(data, model.basis)
+      W = recompute_weights(model.basis, data)
       return W
    end 
       
@@ -223,21 +223,8 @@ function assemble(raw_data, model::ACE1Model;
 end
 
 
-function __linear_fill!(W, dat, basis; row_start=1)
-   i1 = row_start
-   i2 = row_start + ACEfit.count_observations(dat) - 1
-   W[i1:i2] .= ACEfit.weight_vector(dat)
-   return nothing
-end
-
-function recompute_weights(data::AbstractVector{<: AtomsData}, basis)
-   row_start, row_count = ACEfit.row_info(data)
-   W = zeros(sum(row_count))
-   f = i -> __linear_fill!(W, data[i], basis; row_start=row_start[i])
-   map(f, 1:length(data))
-   return Array(W)
-end
-
+recompute_weights(basis, data::AbstractVector{<: AtomsData}) = 
+      ACEfit.assemble_weights(data)
 
 function recompute_weights(model::ACE1Model, raw_data; kwargs...)
    return assemble(raw_data, model; weights_only = true, kwargs...)
