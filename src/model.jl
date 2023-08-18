@@ -212,7 +212,7 @@ function assemble(raw_data, model::ACE1Model;
    end
         
    if weights_only
-      W = recompute_weights(model.basis, data)
+      W = ACEfit.assemble_weights(data)
       return W
    end 
       
@@ -221,9 +221,10 @@ function assemble(raw_data, model::ACE1Model;
 end
 
 
-recompute_weights(basis, data::AbstractVector{<: AtomsData}) = 
-      ACEfit.assemble_weights(data)
-
-function recompute_weights(model::ACE1Model, raw_data; kwargs...)
-   return assemble(raw_data, model; weights_only = true, kwargs...)
+function recompute_weights(raw_data;
+                           energy_key=nothing, force_key=nothing, virial_key=nothing,
+                           weights=Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)))
+    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key,
+                   virial_key = virial_key, weights = weights) for at in raw_data ]
+    return ACEfit.assemble_weights(data)
 end
