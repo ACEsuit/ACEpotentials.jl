@@ -34,7 +34,7 @@ A, Y, W = ACEfit.assemble(data, model.basis)
 
 Pa2 = algebraic_smoothness_prior(model.basis; p=2)
 Pa4 = algebraic_smoothness_prior(model.basis; p=4)
-Pg = gaussian_smoothness_prior(model.basis, σl = (2/rcut)^2, σn = 0.2*(2/r_nn)^2)
+Pg  = gaussian_smoothness_prior( model.basis, σl = (2/rcut)^2, σn = 0.2*(2/r_nn)^2)
 
 # For each prior constructed above we now solve the regularised least squares problem. Note how design matrix need only be assembled once if we want to play with many different priors. Most of the time we would just use defaults however and then these steps are all taken care of behind the scenes. 
 
