@@ -68,7 +68,13 @@ _cutoff(potential::JuLIP.OneBody) = 0.1   # not sure how 0.0 will behave
 
 
 """
+`dimers(potential, elements; kwargs...)` : 
 Generate a dictionary of dimer curves for a given potential. 
+* `potential` : potential to use to evaluate energy
+* `elements` : list of chemical species, symbols for which the dimers are to be computed
+
+The function returns a dictionary `Ddim` such that `D[(s1, s2)]` contains
+pairs or arrays `(rr, E)` which can be plotted `plot(rr, E)`. 
 """
 function dimers(potential, elements; 
                 rr = range(1e-3, _cutoff(potential), length=200), 
@@ -87,7 +93,15 @@ function dimers(potential, elements;
 end
 
 """
-Generate a dictionary of trimer curves for a given potential.
+`trimers(potential, elements, r1, r2; kwargs...)` : 
+Generate a dictionary of trimer curves for a given potential. 
+
+* `potential` : potential to use to evaluate energy 
+* `elements` : list of chemical species, symbols for which the trimers are to be computed
+* `r1, r2` : distance between the central atom and the first, second neighbour
+
+The function returns a dictionary `Dtri` such that `D[(s1, s2, s3)]` contains 
+pairs or arrays `(θ, E)` which can be plotted `plot(θ, E)`. 
 """
 function trimers(potential, elements, r1, r2; 
                 θ = range(-pi, pi, length = 200), 
