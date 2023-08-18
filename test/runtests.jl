@@ -16,6 +16,8 @@ using ACE1pack, Test, LazyArtifacts
 
     @testset "Test silicon" begin include("test_silicon.jl") end
 
+    @testset "Test recomputation of weights" begin include("test_recompw.jl") end
+
 #    @testset "Test ace_fit.jl script" begin include("test_ace_fit.jl") end
 
 end
