@@ -17,5 +17,6 @@ include("regularizer.jl")
 include("read_params.jl")
 include("export.jl")
 include("analysis.jl")
+include("example_data.jl")
 
 end
