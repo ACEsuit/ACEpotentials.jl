@@ -111,7 +111,8 @@ function get_adf(data::AbstractVector{<: Atoms}, r_cut;
          for a1 = 1:length(Js)-1, a2 = a1+1:length(Js)
             r̂1 = Rs[a1] / norm(Rs[a1])
             r̂2 = Rs[a2] / norm(Rs[a2])
-            push!(A, acos(dot(r̂1, r̂2)))
+            d = min(max(dot(r̂1, r̂2), -1.0), 1.0)
+            push!(A, acos(d))
          end
       end 
    end 

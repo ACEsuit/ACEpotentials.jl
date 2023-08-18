@@ -1,6 +1,6 @@
 # # Smoothness Priors
 
-using ACE1pack, LinearAlgebra, Plots
+using ACE1pack, LinearAlgebra, Plots, LaTeXStrings
 
 # ACE1pack models make heavy use of smoothness priors, i.e., prior parameter distributions that impose smoothness on the fitted potential. This tutorial demonstrates how to use the smoothness priors implemented in ACE1pack.
 # We start by reading in a tiny testing dataset, and bring the data into a format
@@ -62,5 +62,30 @@ end
 @info("Force RMSE")
 display(rmse)
 
-# On the other hand, we expect the stronger priors to generalize better. A typical intuition is that smooth potentials with similar accuracy will be more transferable than rougher potentials. 
+# On the other hand, we expect the stronger priors to generalize better. A typical intuition is that smooth potentials with similar accuracy will be more transferable than rougher potentials. We will show three one-dimensional slices through the fitted potentials: dimer curves, trimer curves and a decohesion curve. 
 
+# First, the dimer curves: the utility function `ACE1pack.dimers` can be used to generate the data for those curves, which are then plotted using `Plots.jl`. We also add a vertical line to indicate the nearest neighbour distance. The standard identity prior gives a completely unrealistic dimer curve. The three smoothness priors all give physically sensible dimer curve shapes. 
+
+labels = sort(collect(keys(priors)))[[4,1,2,3]]
+plt_dim = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "E [eV]", 
+               xlims = (0, rcut), ylims = (-2, 5))
+for l in labels
+    D = ACE1pack.dimers(pots[l], [:Si,])
+    plot!(plt_dim, D[(:Si, :Si)]..., label = l, lw=2)
+end
+vline!([r_nn,], lw=2, ls=:dash, label = L"r_{\rm nn}")
+plt_dim
+
+# Next, we look at a trimer curve. This is generated using `ACE1pack.trimers`. All models are smooth on this slice. 
+
+plt_trim = plot(legend = :topright, xlabel = L"\theta", ylabel = "E [eV]", 
+               xlims = (0, pi), ylims = (-0.35, 0.8))
+for l in labels
+    D = ACE1pack.trimers(pots[l], [:Si,], r_nn,  r_nn)
+    plot!(plt_trim, D[(:Si, :Si, :Si)]..., label = l, lw=2)
+end
+vline!(plt_trim, [1.90241,])
+plt_trim
+
+
+# Finally, we plot a decohesion curve, which contains more significant many-body effects. 
