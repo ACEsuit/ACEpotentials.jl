@@ -79,7 +79,7 @@ makedocs(;
             "tutorials/command_line_old.md",
         ],
         "ACEpotentials Internals" => Any[
-            "ACEpotentials/ace1pack_overview.md",
+            "ACEpotentials/acepotentials_overview.md",
             "ACEpotentials/fit.md",    
             "ACEpotentials/helpers.md",
             "ACEpotentials/data.md",

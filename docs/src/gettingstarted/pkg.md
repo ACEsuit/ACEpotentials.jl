@@ -1,7 +1,7 @@
 # Using the Julia Package Manager
 
 This is a very brief introduction to the [Julia package manager](https://github.com/JuliaLang/Pkg.jl), intended for newcomers to Julia who are here primarily to use the `ACEsuit`. But it is not really ACE specific at all. 
-<!-- If you plan to use `ACE1pack.jl` from Python or the command line, then you need not read this. -->
+<!-- If you plan to use `ACEpotentials.jl` from Python or the command line, then you need not read this. -->
 
 The package manager provides functionality to organize reproducable Julia projects. A project is specified by a `Project.toml` where the user specifies which packages are required, and version bounds on those packages. The Package manager can then *resolve* these dependencies which results in a `Manifest.toml` where the full Julia environment is precisely specified. This can be used in a workflow as follows:
 
@@ -9,7 +9,7 @@ The package manager provides functionality to organize reproducable Julia projec
 
 2. You now have an empty project. Start adding the packages you need, e.g., 
     ```
-    add ACE1pack, JuLIP
+    add ACEpotentials, JuLIP
     ```
     Type `status` to see your required packages listed. (Note this is only a subset of the installed packages!). Exit the REPL and type `ls`; you will then see a new file `Project.toml` which lists the project requirements, and a `Manifest.toml` which lists the actually packages and the version that have been installed.
 

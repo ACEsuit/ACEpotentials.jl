@@ -2,7 +2,7 @@
 
 [Molly](https://github.com/JuliaMolSim/Molly.jl) is pure Julia MD program that is in development.
 ACE support for Molly is currently in [ACEmd](https://github.com/ACEsuit/ACEmd.jl) package,
-which is exported by ACE1pack. 
+which is exported by ACEpotentials. 
 
 
 ## Things to know about Molly
@@ -37,7 +37,7 @@ To start Molly you need to prepare Molly system. With ACE there are still some A
 
 ```julia
 using Molly
-using ACE1pack # or ACEmd
+using ACEpotentials # or ACEmd
 using ExtXYZ
 
 # Load initial structure
