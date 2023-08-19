@@ -1,8 +1,8 @@
-using ACE1pack, Test, LazyArtifacts
+using ACEpotentials, Test, LazyArtifacts
 
 ##
 
-@testset "ACE1pack.jl" begin
+@testset "ACEpotentials.jl" begin
 
     @testset "Read data" begin include("test_data.jl") end 
 

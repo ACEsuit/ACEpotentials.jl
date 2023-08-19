@@ -1,7 +1,7 @@
 
 
 
-using ACE1pack, Test, LazyArtifacts
+using ACEpotentials, Test, LazyArtifacts
 
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
 

@@ -1,4 +1,4 @@
-using ACE1pack
+using ACEpotentials
 using Distributed
 using LazyArtifacts
 using PythonCall
@@ -46,7 +46,7 @@ end
 
     # repeat with distributed assembly
     addprocs(3, exeflags="--project=$(Base.active_project())")
-    @everywhere using ACE1pack
+    @everywhere using ACEpotentials
     acefit!(model, data;
             data_keys...,
             weights = weights,

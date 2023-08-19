@@ -1,6 +1,6 @@
 # tests scripts/ace_fit.jl
 
-using ACE1pack, JuLIP, LazyArtifacts, Test
+using ACEpotentials, JuLIP, LazyArtifacts, Test
 
 ### create the param file
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")

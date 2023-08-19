@@ -2,7 +2,7 @@
 @info("Some consistency tests for model interface")
 
 # I'd like to start putting some simple consistency tests in here.
-using Test, ACE1pack
+using Test, ACEpotentials
 using ACE1.Testing: println_slim
 
 N = 4
