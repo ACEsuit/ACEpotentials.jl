@@ -1,24 +1,33 @@
 # # ACE Descriptors
 #
 # This tutorial demonstrates a simple use of ACE descriptors.
-#
-# WARN: This tutorial is currently broken. It requires an update to the pair potential implementation. 
 
-using ACE1pack, LazyArtifacts, MultivariateStats, Plots
+using ACE1pack, MultivariateStats, Plots
 
 # Load a (tiny) silicon dataset, which has the isolated atom, 25 diamond-like
 # configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
 # configurations.
 
-dataset = read_extxyz(joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"));
+dataset, _, _ = ACE1pack.example_dataset("Si_tiny")
 
 # Define a basis.
 
-basis = ACE1x.ace_basis(species = [:Si,],
-      order = 3,        # correlation order = body-order - 1
-      totaldegree = 12,  # polynomial degree
-      r0 = 2.3,     # estimate for NN distance
-      rcut = 5.5,)
+# TODO: requires an update to the pair potential implementation 
+#basis = ACE1x.ace_basis(
+#      elements = [:Si],
+#      order = 3,         # correlation order = body-order - 1
+#      totaldegree = 12,  # polynomial degree
+#      r0 = 2.3,          # estimate for NN distance
+#      rcut = 5.5,)
+
+basis = ACE1.ace_basis(
+    species = [:Si],
+    N = 3,        # correlation order = body-order - 1
+    maxdeg = 12,  # polynomial degree
+    r0 = 2.3,     # estimate for NN distance
+    rin = 0.1,
+    rcut = 5.5,
+    pin = 2)
 
 # Compute an averaged structural descriptor for each configuration.
 
