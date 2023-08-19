@@ -11,8 +11,9 @@ using ACE1pack
 # First, we need to construct various parameters' dictionaries that define various aspects of fitting an ACE potential. We use various `*params()` functions that return these dictionaries and let us only specify mandatory and non-default parameter values. 
 
 # TODO: this is not a very nice artifact approach, but we may drop this tutorial anyway
-using LazyArtifacts
+using Artifacts
 _artifact_toml = pathof(ACE1pack)[1:end-15]*"Artifacts.toml"
+Artifacts.ensure_artifact_installed("TiAl_tutorial", _artifact_toml)
 _hash = artifact_hash("TiAl_tutorial", _artifact_toml)
 _TiAl_tutorial = artifact_path(_hash)
 
