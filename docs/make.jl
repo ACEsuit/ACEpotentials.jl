@@ -48,6 +48,7 @@ makedocs(;
         canonical="https://ACEsuit.github.io/ACEpotentials.jl",
         assets=String[],
     ),
+    strict=true,
     pages=[
         "Home" => "index.md",
         "Getting Started" => Any[

@@ -5,8 +5,9 @@ using Plots, ACEpotentials
 # ### Perform the fit
 
 # TODO: improve this artifact approach
-using LazyArtifacts
-_artifact_toml = pathof(ACEpotentials)[1:end-15]*"Artifacts.toml"
+using Pkg.Artifacts
+_artifact_toml = pathof(ACE1pack)[1:end-15]*"Artifacts.toml"
+ensure_artifact_installed("Si_tiny_dataset", _artifact_toml)
 _hash = artifact_hash("Si_tiny_dataset", _artifact_toml)
 _artifact = artifact_path(_hash)
 
