@@ -5,7 +5,7 @@
 
 These tutorials use the direct Julia interface provided by `ACE1.jl, ACE1x.jl, ACEfit.jl, ACEpotentials.jl`. They are provided in [Literate.jl](https://github.com/fredrikekre/Literate.jl) format in `ACEpotentials/tutorials/`.
 
-* [First Example - Model Interface](../literate_tutorials/first_example_basis.md)
+* [First Example - Model Interface](../literate_tutorials/first_example_model.md)
 * [TiAl Potential - Model Interface](../literate_tutorials/TiAl_model.md)
 * [TiAl Potential - Basis Interface](../literate_tutorials/TiAl_basis.md)
 
