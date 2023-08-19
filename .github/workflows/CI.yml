@@ -129,6 +129,6 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using ACE1pack
-            DocMeta.setdocmeta!(ACE1pack, :DocTestSetup, :(using ACE1pack); recursive=true)
-            doctest(ACE1pack)'
+            using ACEpotentials
+            DocMeta.setdocmeta!(ACEpotentials, :DocTestSetup, :(using ACEpotentials); recursive=true)
+            doctest(ACEpotentials)'
