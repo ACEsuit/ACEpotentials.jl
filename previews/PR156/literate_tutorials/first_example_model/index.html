@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>First example · ACE1pack.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://ACEsuit.github.io/ACE1pack.jl/literate_tutorials/first_example_model/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACE1pack.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation Instructions</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li class="is-active"><a class="tocitem" href>First example</a></li><li><a class="tocitem" href="../TiAl_model/">The <code>acemodel</code> interface from Julia (TiAl potential)</a></li><li><a class="tocitem" href="../TiAl_basis/">The <code>ace_basis</code> interface from Julia (TiAl)</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li><a class="tocitem" href="../committee/">Committee Potentials</a></li><li><a class="tocitem" href="../../tutorials/lammps/">ACE1pack potentials in LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li><li><a class="tocitem" href="../../tutorials/molly/">Using ACE potentials in Molly</a></li></ul></li><li><span class="tocitem">Command line</span><ul><li><a class="tocitem" href="../../tutorials/command_line_old/">OLD (!) Command line interface</a></li></ul></li><li><span class="tocitem">ACE1pack Internals</span><ul><li><a class="tocitem" href="../../ACE1pack/ace1pack_overview/">Overview</a></li><li><a class="tocitem" href="../../ACE1pack/fit/">Fitting ACE</a></li><li><a class="tocitem" href="../../ACE1pack/helpers/">Helper Functions</a></li><li><a class="tocitem" href="../../ACE1pack/data/">Handling Data</a></li><li><a class="tocitem" href="../../ACE1pack/basis/">Constructing Basis</a></li><li><a class="tocitem" href="../../ACE1pack/solver/">Solvers</a></li><li><a class="tocitem" href="../../ACE1pack/all_exported/">All ACE1pack functions</a></li></ul></li><li><span class="tocitem">ACEfit Internals</span><ul><li><a class="tocitem" href="../../ACEfit/Fitting/">ACE1 and ACEfit</a></li><li><a class="tocitem" href="../../ACEfit/Solvers/">Least squares solvers</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>First example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>First example</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ACEsuit/ACE1pack.jl/blob/main/tutorials/first_example_model.jl#" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="First-example"><a class="docs-heading-anchor" href="#First-example">First example</a><a id="First-example-1"></a><a class="docs-heading-anchor-permalink" href="#First-example" title="Permalink"></a></h1><p>This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.</p><p>Make sure to first read the installation notes. Now start by importing the required packages:</p><pre><code class="language-julia hljs">using ACE1pack
+import Random
+using LinearAlgebra: norm, Diagonal</code></pre><h3 id="Step-1:-specify-the-ACE-Model"><a class="docs-heading-anchor" href="#Step-1:-specify-the-ACE-Model">Step 1: specify the ACE Model</a><a id="Step-1:-specify-the-ACE-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-1:-specify-the-ACE-Model" title="Permalink"></a></h3><p>The parameters have the following meaning:</p><ul><li><code>elements</code>: list of chemical species, symbols</li><li><code>order</code> : correlation order</li><li><code>totaldegree</code>: maximum total polynomial degree used for the basis</li><li><code>rcut</code> : cutoff radius (optional, defaults are provided)</li></ul><pre><code class="language-julia hljs">model = acemodel(elements = [:Si,],
+                 order = 3,
+                 totaldegree = 10,
+                 rcut = 5.0)
+@show length(model.basis);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">length(model.basis) = 110</code></pre><h3 id="Step-2:-Generate-a-training-set"><a class="docs-heading-anchor" href="#Step-2:-Generate-a-training-set">Step 2: Generate a training set</a><a id="Step-2:-Generate-a-training-set-1"></a><a class="docs-heading-anchor-permalink" href="#Step-2:-Generate-a-training-set" title="Permalink"></a></h3><p>Next we need to generate some training data to estimate the model parameters. Normally one would generate a training set using DFT data, stored as an <code>.xyz</code> file. Here, we create a random training set for simplicity. Please note that this is generally <em>not</em> a good strategy to generate data!</p><ul><li><code>gen_dat()</code> generates a single training configuration wrapped in an <code>ACE1pack.AtomsData</code> structure. Each <code>d::AtomsData</code> contains the structure <code>d.atoms</code>, and energy value and a force vector to train against.</li><li><code>train</code> is then a collection of such random training configurations.</li></ul><pre><code class="language-julia hljs">data_keys = (energy_key = &quot;energy&quot;, force_key = &quot;forces&quot;)
+
+function gen_dat()
+   sw = StillingerWeber()
+   at = rattle!(bulk(:Si, cubic=true) * rand(2:3), 0.3)
+   set_data!(at, data_keys.energy_key, energy(sw,at))
+   set_data!(at, data_keys.force_key, forces(sw,at))
+   return at
+end
+
+Random.seed!(0)
+train = [gen_dat() for _=1:20];</code></pre><h3 id="Step-3:-Estimate-Parameters"><a class="docs-heading-anchor" href="#Step-3:-Estimate-Parameters">Step 3: Estimate Parameters</a><a id="Step-3:-Estimate-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Step-3:-Estimate-Parameters" title="Permalink"></a></h3><p>We specify a solver and then let <code>ACEfit.jl</code> to do all the work for us. More fine-grained control is possible; see the <code>ACEfit.jl</code> documentation. For sake of illustration we use a Bayesian Ridge Regression solver. This will automatically determine the regularisation for us.</p><pre><code class="language-julia hljs">solver = ACEfit.BLR()
+acefit!(model, train; solver=solver, data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌─────────┬──────────┬───────┬────┬──────┬─────┐
+│    Type │ #Configs │ #Envs │ #E │   #F │  #V │
+├─────────┼──────────┼───────┼────┼──────┼─────┤
+│ default │       20 │  2648 │ 20 │ 7944 │   0 │
+├─────────┼──────────┼───────┼────┼──────┼─────┤
+│   total │       20 │  2648 │ 20 │ 7944 │   0 │
+│ missing │        0 │     0 │  0 │    0 │ 120 │
+└─────────┴──────────┴───────┴────┴──────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (7964, 110).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:  10%|████▏                                    |  ETA: 0:00:28Progress:  60%|████████████████████████▋                |  ETA: 0:00:07Progress: 100%|█████████████████████████████████████████| Time: 0:00:14
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Iter     Function value   Gradient norm
+     0     7.463740e+03     7.880474e+03
+ * time: 0.02660202980041504
+     1     4.301957e+03     1.173475e+04
+ * time: 1.1687891483306885
+     2    -1.398829e+04     9.680222e+04
+ * time: 1.1838369369506836
+     3    -1.408954e+04     4.387304e+04
+ * time: 1.196146011352539
+     4    -1.422406e+04     1.407894e+04
+ * time: 1.200376033782959
+     5    -1.423460e+04     7.196082e+02
+ * time: 1.203003168106079
+     6    -1.423470e+04     8.179315e+02
+ * time: 1.2077319622039795
+     7    -1.439878e+04     4.535426e+04
+ * time: 1.2172181606292725
+     8    -1.457767e+04     2.937787e+04
+ * time: 1.2221331596374512
+     9    -1.465718e+04     4.099561e+02
+ * time: 1.2273740768432617
+    10    -1.468895e+04     2.019802e+04
+ * time: 1.2326760292053223
+    11    -1.471363e+04     6.866020e+03
+ * time: 1.2380340099334717
+    12    -1.472036e+04     3.618144e+03
+ * time: 1.2430000305175781
+    13    -1.472237e+04     1.752013e+03
+ * time: 1.2481920719146729
+    14    -1.472254e+04     1.116617e+02
+ * time: 1.253283977508545
+    15    -1.472254e+04     4.856210e+00
+ * time: 1.2581379413604736
+    16    -1.472254e+04     1.644264e-01
+ * time: 1.2614669799804688
+    17    -1.472254e+04     2.391675e-02
+ * time: 1.2665140628814697
+    18    -1.472253e+04     2.893786e-01
+ * time: 1.2748141288757324
+    19    -1.472254e+04     2.331243e-01
+ * time: 1.2782740592956543
+    20    -1.472254e+04     2.172751e-02
+ * time: 1.3142659664154053
+    21    -1.472254e+04     1.068617e-01
+ * time: 1.3186631202697754
+    22    -1.472254e+04     5.280498e-02
+ * time: 1.324221134185791
+    23    -1.472254e+04     6.558101e-02
+ * time: 1.328434944152832
+    24    -1.472254e+04     2.996143e-02
+ * time: 1.3311259746551514
+    25    -1.472254e+04     6.491317e-02
+ * time: 1.3339509963989258
+    26    -1.472254e+04     1.536819e-02
+ * time: 1.3367459774017334
+    27    -1.472254e+04     6.704235e-03
+ * time: 1.3395769596099854
+    28    -1.472254e+04     2.687456e-02
+ * time: 1.342376947402954
+    29    -1.472254e+04     4.330541e-02
+ * time: 1.349142074584961
+    30    -1.472254e+04     8.742163e-03
+ * time: 1.3543691635131836
+    31    -1.472254e+04     8.590209e-03
+ * time: 1.3583500385284424
+    32    -1.472254e+04     3.202511e-02
+ * time: 1.3674261569976807
+    33    -1.472254e+04     5.955875e-02
+ * time: 1.3740451335906982
+    34    -1.472254e+04     9.623232e-03
+ * time: 1.376734972000122
+    35    -1.472254e+04     2.618615e-02
+ * time: 1.3823699951171875
+    36    -1.472254e+04     1.741932e-03
+ * time: 1.387869119644165
+    37    -1.472254e+04     7.485132e-03
+ * time: 1.3920271396636963
+    38    -1.472254e+04     1.115795e-02
+ * time: 1.3962030410766602
+    39    -1.472254e+04     1.526257e-02
+ * time: 1.400339126586914
+    40    -1.472254e+04     1.818175e-02
+ * time: 1.4031009674072266
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     -1.472254e+04
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x&#39;|               = 5.98e-09 ≤ 1.0e-08
+    |x - x&#39;|/|x&#39;|          = 1.13e-09 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|         = 1.94e-03 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|/|f(x&#39;)| = 1.32e-07 ≰ 0.0e+00
+    |g(x)|                 = 1.82e-02 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   1  (vs limit Inf)
+    Iterations:    40
+    f(x) calls:    166
+    ∇f(x) calls:   166</code></pre><p>To see the training errors we can use</p><pre><code class="language-julia hljs">@info(&quot;Training Errors&quot;)
+ACE1pack.linear_errors(train, model; data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Training Errors
+[ Info: RMSE Table
+┌─────────┬─────────┬──────────┬─────────┐
+│    Type │ E [meV] │ F [eV/A] │ V [meV] │
+├─────────┼─────────┼──────────┼─────────┤
+│ default │   0.230 │    0.035 │   0.000 │
+├─────────┼─────────┼──────────┼─────────┤
+│     set │   0.230 │    0.035 │   0.000 │
+└─────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌─────────┬─────────┬──────────┬─────────┐
+│    Type │ E [meV] │ F [eV/A] │ V [meV] │
+├─────────┼─────────┼──────────┼─────────┤
+│ default │   0.193 │    0.027 │   0.000 │
+├─────────┼─────────┼──────────┼─────────┤
+│     set │   0.193 │    0.027 │   0.000 │
+└─────────┴─────────┴──────────┴─────────┘</code></pre><h3 id="Step-4:-Run-some-tests"><a class="docs-heading-anchor" href="#Step-4:-Run-some-tests">Step 4: Run some tests</a><a id="Step-4:-Run-some-tests-1"></a><a class="docs-heading-anchor-permalink" href="#Step-4:-Run-some-tests" title="Permalink"></a></h3><p>At a minimum one should have a test set, check the errors on that test set, and confirm that they are similar as the training errors.</p><pre><code class="language-julia hljs">@info(&quot;Test Errors&quot;)
+test =  [gen_dat() for _=1:20]
+ACE1pack.linear_errors(test, model; data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Test Errors
+[ Info: RMSE Table
+┌─────────┬─────────┬──────────┬─────────┐
+│    Type │ E [meV] │ F [eV/A] │ V [meV] │
+├─────────┼─────────┼──────────┼─────────┤
+│ default │   0.363 │    0.037 │   0.000 │
+├─────────┼─────────┼──────────┼─────────┤
+│     set │   0.363 │    0.037 │   0.000 │
+└─────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌─────────┬─────────┬──────────┬─────────┐
+│    Type │ E [meV] │ F [eV/A] │ V [meV] │
+├─────────┼─────────┼──────────┼─────────┤
+│ default │   0.275 │    0.028 │   0.000 │
+├─────────┼─────────┼──────────┼─────────┤
+│     set │   0.275 │    0.028 │   0.000 │
+└─────────┴─────────┴──────────┴─────────┘</code></pre><p>If we wanted to perform such a test ``manually&#39;&#39; it might look like this:</p><pre><code class="language-julia hljs">@info(&quot;Manual RMSE Test&quot;)
+potential = model.potential
+test_energies = [ JuLIP.get_data(at, &quot;energy&quot;) / length(at) for at in test]
+model_energies = [energy(potential, at) / length(at) for at in test]
+rmse_energy = norm(test_energies - model_energies) / sqrt(length(test))
+@show rmse_energy;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Manual RMSE Test
+rmse_energy = 0.00036272257966648793</code></pre><p>But in practice, one should run more extensive test simulations to check how robust the fitted potential is.</p><h3 id="Step-5:-export-the-model"><a class="docs-heading-anchor" href="#Step-5:-export-the-model">Step 5: export the model</a><a id="Step-5:-export-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5:-export-the-model" title="Permalink"></a></h3><p>The fitted model can be exported to a JSON or YAML file, or to a LAMMPs compatible <code>yace</code> file. We won&#39;t go through that in this tutoral. See <code>export2json</code> and <code>export2lammps</code> for further information.</p><h3 id="Step-6:-Using-the-model"><a class="docs-heading-anchor" href="#Step-6:-Using-the-model">Step 6: Using the model</a><a id="Step-6:-Using-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6:-Using-the-model" title="Permalink"></a></h3><p>Let&#39;s do something very simple: relax a vacancy.</p><p>We create a small Si cell, delete an atom and rattle the rest</p><pre><code class="language-julia hljs">at = bulk(:Si, cubic=true) * 3
+deleteat!(at, 1)
+rattle!(at, 0.03 * rnn(:Si))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">JuLIP.Atoms with 215 atoms</code></pre><p>we can now minimize the ACE energy.</p><pre><code class="language-julia hljs">set_calculator!(at, potential);
+minimise!(at)
+E_ace = energy(at)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-925.5045970171703</code></pre><p>If we want a formation energy, we could get it like this.</p><pre><code class="language-julia hljs">at0 = bulk(:Si)
+E0_ace = energy(potential, at0);
+Evac_ace = E_ace - (length(at)-1)/length(at0) * E0_ace
+@show Evac_ace;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_ace = 2.127177696378112</code></pre><p>Note that there are no vacancy structures in the training set, so this is a prediction out of sample. We have no guarantee of the accuracy of this prediction. In fact the prediction is quite far off:</p><pre><code class="language-julia hljs">sw = StillingerWeber()
+set_calculator!(at, sw)
+minimise!(at; verbose=false);
+E_sw = energy(at)
+E0_sw = energy(sw, bulk(:Si))
+Evac_sw = E_sw - (length(at)-1)/length(at0) * E0_sw
+@show Evac_sw;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_sw = -1.1122920341222198e-5</code></pre><p>To obtain accurate predictions on a vacancy structure, we must add it to the training set. This iterative model development process goes beyond the scope of this tutorial.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../TiAl_model/">The <code>acemodel</code> interface from Julia (TiAl potential) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Saturday 19 August 2023 14:14">Saturday 19 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
