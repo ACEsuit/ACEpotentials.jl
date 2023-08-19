@@ -8,7 +8,7 @@ using ACEpotentials, MultivariateStats, Plots
 # configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
 # configurations.
 
-dataset, _, _ = ACE1pack.example_dataset("Si_tiny")
+dataset, _, _ = ACEpotentials.example_dataset("Si_tiny")
 
 # Define a basis.
 
