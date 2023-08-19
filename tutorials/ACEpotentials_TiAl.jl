@@ -12,7 +12,7 @@ using ACEpotentials
 
 # TODO: this is not a very nice artifact approach, but we may drop this tutorial anyway
 using Pkg.Artifacts
-_artifact_toml = pathof(ACEpotentials)[1:end-15]*"Artifacts.toml"
+_artifact_toml = pathof(ACEpotentials)[1:end-20]*"Artifacts.toml"
 ensure_artifact_installed("TiAl_tutorial", _artifact_toml)
 _hash = artifact_hash("TiAl_tutorial", _artifact_toml)
 _TiAl_tutorial = artifact_path(_hash)
