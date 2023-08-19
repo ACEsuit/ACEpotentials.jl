@@ -2,16 +2,16 @@
 #
 # Start by importing the required libraries 
 
-using ACE1pack
+using ACEpotentials
 
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
 # ```julia
 # data_file = "path/to/TiAl_tutorial.xyz"
 # data = read_extxyz(data_file)
 # ```
-# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACE1pack.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
+# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
 
-data, _, meta = ACE1pack.example_dataset("TiAl_tutorial")
+data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
 train_data = data[1:5:end];
 
 # The next step is to generate a model
@@ -56,13 +56,13 @@ acefit!(model, data_train; solver=solver, prior = P);
 # We can display an error table as follows:
 
 @info("Training Error Table")
-ACE1pack.linear_errors(data_train, model; weights=weights);
+ACEpotentials.linear_errors(data_train, model; weights=weights);
 
 # We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions. 
 
 @info("Test Error Table")
 test_data = data[2:10:end]
-ACE1pack.linear_errors(test_data, model; weights=weights);
+ACEpotentials.linear_errors(test_data, model; weights=weights);
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
 

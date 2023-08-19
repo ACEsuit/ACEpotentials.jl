@@ -1,17 +1,17 @@
-# # TiAl potential (ACE1pack-julia) 
+# # TiAl potential (ACEpotentials-julia) 
 #
-# In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACE1pack. 
+# In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACEpotentials. 
 
-# `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACE1pack overview](../ACE1pack/ace1pack_overview.md).
+# `ACEpotentials.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACEpotentials overview](../ACEpotentials/ace1pack_overview.md).
 
-# First import ACE1pack
+# First import ACEpotentials
 
-using ACE1pack
+using ACEpotentials
 
 # First, we need to construct various parameters' dictionaries that define various aspects of fitting an ACE potential. We use various `*params()` functions that return these dictionaries and let us only specify mandatory and non-default parameter values. 
 
 data_param_dict = data_params(
-    fname = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz"), 
+    fname = joinpath(ACEpotentials.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz"), 
     energy_key = "energy",
     force_key = "force", 
     virial_key = "virial")
@@ -94,7 +94,7 @@ ace_fit_params = fit_params(
     ACE_fname = "ACE.json"  # change to `nothing` if you don't want to save the potential
 )
 
-results = ACE1pack.fit_ace(ace_fit_params)
+results = ACEpotentials.fit_ace(ace_fit_params)
 
 # The potential will also be saved to the file `ACE.json` which can be read in python or julia. 
 # If you want to export the potential to LAMMPS, use

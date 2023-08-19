@@ -4,13 +4,13 @@
 #
 # WARN: This tutorial is currently broken. It requires an update to the pair potential implementation. 
 
-using ACE1pack, LazyArtifacts, MultivariateStats, Plots
+using ACEpotentials, LazyArtifacts, MultivariateStats, Plots
 
 # Load a (tiny) silicon dataset, which has the isolated atom, 25 diamond-like
 # configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
 # configurations.
 
-dataset = read_extxyz(joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"));
+dataset = read_extxyz(joinpath(ACEpotentials.artifact("Si_tiny_dataset"), "Si_tiny.xyz"));
 
 # Define a basis.
 
