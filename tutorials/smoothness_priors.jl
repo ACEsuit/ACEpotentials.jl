@@ -1,12 +1,12 @@
 # # Smoothness Priors
 
-using ACE1pack, LinearAlgebra, Plots, LaTeXStrings
+using ACEpotentials, LinearAlgebra, Plots, LaTeXStrings
 
-# ACE1pack models make heavy use of smoothness priors, i.e., prior parameter distributions that impose smoothness on the fitted potential. This tutorial demonstrates how to use the smoothness priors implemented in ACE1pack.
+# ACEpotentials models make heavy use of smoothness priors, i.e., prior parameter distributions that impose smoothness on the fitted potential. This tutorial demonstrates how to use the smoothness priors implemented in ACEpotentials.
 # We start by reading in a tiny testing dataset, and bring the data into a format
 # that ACEfit likes. Note that using a very limited dataset makes the use of priors particularlty important. In general, the larger and more diverse the dataset, the less important the prior becomes.
 
-rawdata, _, _ = ACE1pack.example_dataset("Si_tiny")
+rawdata, _, _ = ACEpotentials.example_dataset("Si_tiny")
 datakeys = (energy_key = "dft_energy", force_key = "dft_force", virial_key = "dft_virial")
 
 rcut = 6.0     # cut off distance 
@@ -52,7 +52,7 @@ for (prior_name, P) in priors
     ACE1x._set_params!(model, P \ c̃)
 
     # 
-    errs = ACE1pack.linear_errors(rawdata, model; verbose=false, datakeys...)
+    errs = ACEpotentials.linear_errors(rawdata, model; verbose=false, datakeys...)
     rmse[prior_name] = errs["rmse"]["set"]["F"]
     pots[prior_name] = model.potential
 end
@@ -64,24 +64,24 @@ display(rmse)
 
 # On the other hand, we expect the stronger priors to generalize better. A typical intuition is that smooth potentials with similar accuracy will be more transferable than rougher potentials. We will show three one-dimensional slices through the fitted potentials: dimer curves, trimer curves and a decohesion curve. 
 
-# First, the dimer curves: the utility function `ACE1pack.dimers` can be used to generate the data for those curves, which are then plotted using `Plots.jl`. We also add a vertical line to indicate the nearest neighbour distance. The standard identity prior gives a completely unrealistic dimer curve. The `Algebraic(2)` regularised potential is missing a repulsive core behaviour. The two remaining smoothness priors give physically sensible dimer curve shapes. 
+# First, the dimer curves: the utility function `ACEpotentials.dimers` can be used to generate the data for those curves, which are then plotted using `Plots.jl`. We also add a vertical line to indicate the nearest neighbour distance. The standard identity prior gives a completely unrealistic dimer curve. The `Algebraic(2)` regularised potential is missing a repulsive core behaviour. The two remaining smoothness priors give physically sensible dimer curve shapes. 
 
 labels = sort(collect(keys(priors)))[[4,1,2,3]]
 plt_dim = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "E [eV]", 
                xlims = (0, rcut), ylims = (-2, 5))
 for l in labels
-    D = ACE1pack.dimers(pots[l], [:Si,])
+    D = ACEpotentials.dimers(pots[l], [:Si,])
     plot!(plt_dim, D[(:Si, :Si)]..., label = l, lw=2)
 end
 vline!([r_nn,], lw=2, ls=:dash, label = L"r_{\rm nn}")
 plt_dim
 
-# Next, we look at a trimer curve. This is generated using `ACE1pack.trimers`. Both the `Id` and `Algebraic(2)` regularised models contain fairly significant oscillations while the `Algebraic(4)` and `Gaussian` models are much smoother. In addition, it appears that the `Gaussian` regularised model is somewhat more physically realistic on this slice with high energy at small bond-angles (thought the low energy at angle π seems somewhat strange).
+# Next, we look at a trimer curve. This is generated using `ACEpotentials.trimers`. Both the `Id` and `Algebraic(2)` regularised models contain fairly significant oscillations while the `Algebraic(4)` and `Gaussian` models are much smoother. In addition, it appears that the `Gaussian` regularised model is somewhat more physically realistic on this slice with high energy at small bond-angles (thought the low energy at angle π seems somewhat strange).
 
 plt_trim = plot(legend = :topright, xlabel = L"\theta", ylabel = "E [eV]", 
                xlims = (0, pi), ylims = (-0.35, 0.8))
 for l in labels
-    D = ACE1pack.trimers(pots[l], [:Si,], r_nn,  r_nn)
+    D = ACEpotentials.trimers(pots[l], [:Si,], r_nn,  r_nn)
     plot!(plt_trim, D[(:Si, :Si, :Si)]..., label = l, lw=2)
 end
 vline!(plt_trim, [1.90241,], lw=2, label = "equilibrium angle")
@@ -93,7 +93,7 @@ at0 = bulk(:Si, cubic=true)
 plt_dec = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "strain [eV/Å]", 
                 xlim = (0.0, 5.0))
 for l in labels
-    aa, E, dE = ACE1pack.decohesion_curve(at0, pots[l])
+    aa, E, dE = ACEpotentials.decohesion_curve(at0, pots[l])
     plot!(plt_dec, aa, dE, label = l, lw=2)
 end
 plt_dec

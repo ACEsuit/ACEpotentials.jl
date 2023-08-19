@@ -1,11 +1,11 @@
 # # Committee Potentials
 
-using Plots, ACE1pack
+using Plots, ACEpotentials
 
 # ### Perform the fit
 
 data = data_params(
-    fname=joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"),
+    fname=joinpath(ACEpotentials.artifact("Si_tiny_dataset"), "Si_tiny.xyz"),
     energy_key="dft_energy", force_key="dft_force", virial_key="dft_virial")
 ace_basis = basis_params(
     type="ace",

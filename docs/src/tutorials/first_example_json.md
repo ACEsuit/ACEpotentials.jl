@@ -1,12 +1,12 @@
 # Command Line JSON (TiAl)
 
-In this tutorial we will fit a TiAl potential using the ACE fitting script of ACE1pack and a JSON file with all the mandatory and non-default parameters. The fitting itself is simply
+In this tutorial we will fit a TiAl potential using the ACE fitting script of ACEpotentials and a JSON file with all the mandatory and non-default parameters. The fitting itself is simply
 
 ```bash
-julia .../ACE1pack.jl/scripts/ace_fit.jl --params ace_params.json
+julia .../ACEpotentials.jl/scripts/ace_fit.jl --params ace_params.json
 ```
 
-For this example, the parameters file contains the following. For more details see section on "Command line interface" and "ACE1pack Internals". 
+For this example, the parameters file contains the following. For more details see section on "Command line interface" and "ACEpotentials Internals". 
 
 ```json
 {

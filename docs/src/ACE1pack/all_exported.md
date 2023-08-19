@@ -1,5 +1,5 @@
-# All ACE1pack functions
+# All ACEpotentials functions
 
 ```@autodocs
-Modules = [ACE1pack]
+Modules = [ACEpotentials]
 ``` 

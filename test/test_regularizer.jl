@@ -1,12 +1,12 @@
 
 @testset "Regularizer" begin
 
-using ACE1pack
+using ACEpotentials
 
 @info("Test generating laplacian regularizer")
 # construct basis
-ACE_basis = ACE1pack.generate_ace_basis(ace_basis_params(species = :Si, N = 2, maxdeg = 10))
-pair_basis = ACE1pack.generate_pair_basis(pair_basis_params(species = :Si, maxdeg = 4))
+ACE_basis = ACEpotentials.generate_ace_basis(ace_basis_params(species = :Si, N = 2, maxdeg = 10))
+pair_basis = ACEpotentials.generate_pair_basis(pair_basis_params(species = :Si, maxdeg = 4))
 basis = JuLIP.MLIPs.IPSuperBasis([pair_basis, ACE_basis])
 
 rlap_scal = 2.0

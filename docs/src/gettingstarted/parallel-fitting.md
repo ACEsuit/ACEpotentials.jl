@@ -1,6 +1,6 @@
 # Parallel Fitting
 
-`ACE1pack` and `ACEfit` may be accelerated with one or more parallelization options.
+`ACEpotentials` and `ACEfit` may be accelerated with one or more parallelization options.
 
 ### Distributed fitting (multiple processes)
 
@@ -16,7 +16,7 @@ Alternatively, one may create workers directly within a `Julia` script. The `exe
 ```julia
 using Distributed
 addprocs(7, exeflags="--project=$(Base.active_project())")
-@everywhere using ACE1pack
+@everywhere using ACEpotentials
 ```
 
 ### Parallel `BLAS` or `LAPACK`

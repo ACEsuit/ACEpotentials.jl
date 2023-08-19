@@ -3,7 +3,7 @@
 # This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.
 
 # Make sure to first read the installation notes. Now start by importing the required packages: 
-using ACE1pack 
+using ACEpotentials 
 import Random
 using LinearAlgebra: norm, Diagonal
 
@@ -24,7 +24,7 @@ model = acemodel(elements = [:Si,],
 # ### Step 2: Generate a training set 
 #
 # Next we need to generate some training data to estimate the model parameters. Normally one would generate a training set using DFT data, stored as an `.xyz` file. Here, we create a random training set for simplicity. Please note that this is generally *not* a good strategy to generate data!
-# * `gen_dat()` generates a single training configuration wrapped in an `ACE1pack.AtomsData` structure. Each `d::AtomsData` contains the structure `d.atoms`, and energy value and a force vector to train against. 
+# * `gen_dat()` generates a single training configuration wrapped in an `ACEpotentials.AtomsData` structure. Each `d::AtomsData` contains the structure `d.atoms`, and energy value and a force vector to train against. 
 # * `train` is then a collection of such random training configurations.
 
 data_keys = (energy_key = "energy", force_key = "forces")
@@ -51,7 +51,7 @@ acefit!(model, train; solver=solver, data_keys...);
 # To see the training errors we can use 
 
 @info("Training Errors")
-ACE1pack.linear_errors(train, model; data_keys...);
+ACEpotentials.linear_errors(train, model; data_keys...);
 
 # ### Step 4: Run some tests 
 #
@@ -59,7 +59,7 @@ ACE1pack.linear_errors(train, model; data_keys...);
 
 @info("Test Errors")
 test =  [gen_dat() for _=1:20]
-ACE1pack.linear_errors(test, model; data_keys...);
+ACEpotentials.linear_errors(test, model; data_keys...);
 
 # If we wanted to perform such a test ``manually'' it might look like this: 
 
