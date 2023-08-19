@@ -10,8 +10,15 @@ using ACE1pack
 
 # First, we need to construct various parameters' dictionaries that define various aspects of fitting an ACE potential. We use various `*params()` functions that return these dictionaries and let us only specify mandatory and non-default parameter values. 
 
+# TODO: this is not a very nice artifact approach, but we may drop this tutorial anyway
+using Pkg.Artifacts
+_artifact_toml = pathof(ACE1pack)[1:end-15]*"Artifacts.toml"
+ensure_artifact_installed("TiAl_tutorial", _artifact_toml)
+_hash = artifact_hash("TiAl_tutorial", _artifact_toml)
+_TiAl_tutorial = artifact_path(_hash)
+
 data_param_dict = data_params(
-    fname = joinpath(ACE1pack.artifact("TiAl_tutorial"), "TiAl_tutorial.xyz"), 
+    fname = joinpath(_TiAl_tutorial, "TiAl_tutorial.xyz"),
     energy_key = "energy",
     force_key = "force", 
     virial_key = "virial")

@@ -4,8 +4,15 @@ using Plots, ACE1pack
 
 # ### Perform the fit
 
+# TODO: improve this artifact approach
+using Pkg.Artifacts
+_artifact_toml = pathof(ACE1pack)[1:end-15]*"Artifacts.toml"
+ensure_artifact_installed("Si_tiny_dataset", _artifact_toml)
+_hash = artifact_hash("Si_tiny_dataset", _artifact_toml)
+_artifact = artifact_path(_hash)
+
 data = data_params(
-    fname=joinpath(ACE1pack.artifact("Si_tiny_dataset"), "Si_tiny.xyz"),
+    fname=joinpath(_artifact, "Si_tiny.xyz"),
     energy_key="dft_energy", force_key="dft_force", virial_key="dft_virial")
 ace_basis = basis_params(
     type="ace",
@@ -30,7 +37,7 @@ weights = Dict(
 
 # Give a nonzero committee_size to the solver
 
-solver = solver_params(type=:blr, committee_size=10)
+solver = solver_params(type=:blr, committee_size=10, factorization=:svd)
 
 params = fit_params(
     data = data,
