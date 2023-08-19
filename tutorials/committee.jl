@@ -5,9 +5,9 @@ using Plots, ACE1pack
 # ### Perform the fit
 
 # TODO: improve this artifact approach
-using Artifacts
+using Pkg.Artifacts
 _artifact_toml = pathof(ACE1pack)[1:end-15]*"Artifacts.toml"
-Artifacts.ensure_artifact_installed("Si_tiny_dataset", _artifact_toml)
+ensure_artifact_installed("Si_tiny_dataset", _artifact_toml)
 _hash = artifact_hash("Si_tiny_dataset", _artifact_toml)
 _artifact = artifact_path(_hash)
 
