@@ -3,7 +3,7 @@
 #    ACE Fitting
 
 import ACE1
-import ACE1pack
+import ACEpotentials
 import ACEfit
 import ExtXYZ
 using Base 
@@ -19,7 +19,7 @@ dictionary with all the parameters. See `?fit_params` for details.
 """
 function fit_ace(params::Dict)
 
-    basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
+    basis = [ACEpotentials.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
 
     Vref = OneBody(Dict(Symbol(k) => v for (k,v) in params["e0"]))
@@ -45,7 +45,7 @@ function fit_ace(params::Dict)
     if isnothing(params["P"])
         P = nothing
     else
-        P = ACE1pack.generate_regularizer(basis, params["P"])
+        P = ACEpotentials.generate_regularizer(basis, params["P"])
     end
     fit = ACEfit.linear_fit(data, basis, solver; P)
     C = fit["C"]
@@ -176,10 +176,10 @@ end
 #`params` specification, of which `data` and `basis` aren't needed (are ignored).
 #"""
 #function fit_ace_db(db::IPFitting.LsqDB, params::Dict)
-#    solver = ACE1pack.generate_solver(params["solver"])
+#    solver = ACEpotentials.generate_solver(params["solver"])
 #
 #    if !isnothing(params["P"]) 
-#        solver["P"] = ACE1pack.generate_regularizer(db.basis, params["P"])
+#        solver["P"] = ACEpotentials.generate_regularizer(db.basis, params["P"])
 #    end
 #
 #    if typeof(params["e0"]) == Dict{Any, Any}
@@ -225,8 +225,8 @@ Makes a LsqDB from given parameters' dictionary. For `params` see
 unnecessary entries will be ignored. Returns `IPFitting.LsqDB`
 """
 function make_ace_db(params::Dict)
-    data =  ACE1pack.read_data(params["data"])
-    basis = [ACE1pack.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
+    data =  ACEpotentials.read_data(params["data"])
+    basis = [ACEpotentials.generate_basis(basis_params) for (basis_name, basis_params) in params["basis"]]
     basis = JuLIP.MLIPs.IPSuperBasis(basis);
     db = LsqDB(params["LSQ_DB_fname_stem"], basis, data)
     return db

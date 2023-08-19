@@ -143,11 +143,11 @@ function _rep_dimer_data(model;
       set_data!(at, "REF_energy", env_rin)
       set_data!(at, "config_type", "restraint")
       #  AtomsData(atoms::Atoms; energy_key, force_key, virial_key, weights, v_ref, weight_key)
-      dat = ACE1pack.AtomsData(at, energy_key = "REF_energy", 
-                                   force_key = "REF_forces", 
-                                   virial_key = "REF_virial", 
-                                   weights = restraint_weights, 
-                                   v_ref = model.Vref)
+      dat = ACEpotentials.AtomsData(at, energy_key = "REF_energy", 
+                                    force_key = "REF_forces", 
+                                    virial_key = "REF_virial", 
+                                    weights = restraint_weights, 
+                                    v_ref = model.Vref)
       push!(restraints, dat) 
    end
    
