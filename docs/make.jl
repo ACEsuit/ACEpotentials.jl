@@ -1,7 +1,7 @@
-using ACE1pack
+using ACEpotentials
 using Documenter, Literate 
 
-DocMeta.setdocmeta!(ACE1pack, :DocTestSetup, :(using ACE1pack); recursive=true)
+DocMeta.setdocmeta!(ACEpotentials, :DocTestSetup, :(using ACEpotentials); recursive=true)
 
 
 # ~~~~~~~~~~ Generate the tutorial files  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -21,7 +21,7 @@ Literate.markdown(_tutorial_src * "/TiAl_model.jl",
 Literate.markdown(_tutorial_src * "/TiAl_basis.jl", 
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/ACE1pack_TiAl.jl", 
+Literate.markdown(_tutorial_src * "/ACEpotentials_TiAl.jl", 
                   _tutorial_out; documenter = true)
 
 Literate.markdown(_tutorial_src * "/descriptor.jl",
@@ -39,13 +39,13 @@ Literate.markdown(_tutorial_src * "/committee.jl",
 
 
 makedocs(;
-    modules=[ACE1pack],
+    modules=[ACEpotentials],
     authors="Christoph Ortner <christophortner0@gmail.com> and contributors",
-    repo="https://github.com/ACEsuit/ACE1pack.jl/blob/{commit}{path}#{line}",
-    sitename="ACE1pack.jl",
+    repo="https://github.com/ACEsuit/ACEpotentials.jl/blob/{commit}{path}#{line}",
+    sitename="ACEpotentials.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://ACEsuit.github.io/ACE1pack.jl",
+        canonical="https://ACEsuit.github.io/ACEpotentials.jl",
         assets=String[],
     ),
     pages=[
@@ -64,7 +64,7 @@ makedocs(;
             "literate_tutorials/first_example_model.md",
             "literate_tutorials/TiAl_model.md",
             "literate_tutorials/TiAl_basis.md",
-            # "literate_tutorials/ACE1pack_TiAl.md",
+            # "literate_tutorials/ACEpotentials_TiAl.md",
             "literate_tutorials/descriptor.md",
             "literate_tutorials/committee.md",
             "tutorials/lammps.md",
@@ -78,14 +78,14 @@ makedocs(;
         "Command line" => Any[
             "tutorials/command_line_old.md",
         ],
-        "ACE1pack Internals" => Any[
-            "ACE1pack/ace1pack_overview.md",
-            "ACE1pack/fit.md",    
-            "ACE1pack/helpers.md",
-            "ACE1pack/data.md",
-            "ACE1pack/basis.md",   
-            "ACE1pack/solver.md",
-            "ACE1pack/all_exported.md",
+        "ACEpotentials Internals" => Any[
+            "ACEpotentials/ace1pack_overview.md",
+            "ACEpotentials/fit.md",    
+            "ACEpotentials/helpers.md",
+            "ACEpotentials/data.md",
+            "ACEpotentials/basis.md",   
+            "ACEpotentials/solver.md",
+            "ACEpotentials/all_exported.md",
         ],
         # "ACE" => Any[
         #     # "ACE/datatypes.md",
@@ -102,7 +102,7 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/ACEsuit/ACE1pack.jl",
+    repo="github.com/ACEsuit/ACEpotentials.jl",
     devbranch="main",
     push_preview=true,
 )
