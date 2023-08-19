@@ -2,7 +2,7 @@
 #
 # In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACEpotentials. 
 
-# `ACEpotentials.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACEpotentials overview](../ACEpotentials/ace1pack_overview.md).
+# `ACEpotentials.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACEpotentials overview](../ACEpotentials/acepotentials_overview.md).
 
 # First import ACEpotentials
 
