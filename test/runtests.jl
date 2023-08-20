@@ -20,4 +20,6 @@ using ACEpotentials, Test, LazyArtifacts
 
 #    @testset "Test ace_fit.jl script" begin include("test_ace_fit.jl") end
 
+    @testset "Tutorials" begin include("test_tutorials.jl") end
+
 end
