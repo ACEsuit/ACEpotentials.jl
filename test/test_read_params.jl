@@ -1,7 +1,7 @@
 
 
 
-using ACE1pack, Test, JuLIP, LazyArtifacts
+using ACEpotentials, Test, JuLIP, LazyArtifacts
 using ACE1.Testing: println_slim
 using JuLIP.Testing: print_tf
 
@@ -13,7 +13,7 @@ data = Dict(
     "virial_key"   => "virial")
 
 @info("Quick test for filling in missing param entries with defaults")
-data = ACE1pack.fill_defaults(data, param_key = "data")
+data = ACEpotentials.fill_defaults(data, param_key = "data")
 println_slim(@test "force_key" in collect(keys(data)))
 
 @info("Test multitransform (it's a bit trickier)")

@@ -1,12 +1,12 @@
 
 # Overview
 
-`ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). 
+`ACEpotentials.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). 
 
-A short summary of packages behind `ACE1pack`:
+A short summary of packages behind `ACEpotentials`:
 
 * `ACE1.jl` specifies the parameterisation of interatomic potentials in terms of the (linear) atomic cluster expansion; it provides functions to generate invariant basis sets, and to evaluate the resulting interatomic potentials.
-* `ACEfit.jl` supplies the functionality for parameter estimation. Presently, it focuses purely on linear models and linear observations. ACE1pack provides various tools to deal with the typical data to which interatomic potentials are fitted (total energies, forces, virials, etc) and the reading and transforming of training data. A broad range of solvers are available through this ACEfit. 
+* `ACEfit.jl` supplies the functionality for parameter estimation. Presently, it focuses purely on linear models and linear observations. ACEpotentials provides various tools to deal with the typical data to which interatomic potentials are fitted (total energies, forces, virials, etc) and the reading and transforming of training data. A broad range of solvers are available through this ACEfit. 
 * `JuLIP.jl` is a simple molecular simulation code in pure Julia, focusing primarily on an infrastructure to develop interatomic potentials. It provides various generic functions on top of which all our packages on this page build.
 
 ## General structure
@@ -19,7 +19,7 @@ The main convenience functions are:
 
 See [Fitting ACE](fit.md) for more information. 
 
-All of these functions take nested dictionaries that specify various parameters in making ACE. For convenience, there are a number of `*params` functions exported by ACE1pack that return these dictionaries with complete set of parameters specified. These are: 
+All of these functions take nested dictionaries that specify various parameters in making ACE. For convenience, there are a number of `*params` functions exported by ACEpotentials that return these dictionaries with complete set of parameters specified. These are: 
 
 * `fit_params()` - highest-level parameters' dictionary, compatible with all of `make_ace_db()`, `fit_ace_db()` and `fit_ace()`, see [fit.md];
 * `basis_params()` - parameters for constructing various bases for the design matrix of the ACE least squares database, see [Fitting ACE](fit.md);

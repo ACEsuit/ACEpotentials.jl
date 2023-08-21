@@ -5,7 +5,7 @@
 The most minimal way of generating an ACE potential is 
 
 ```julia
-using ACE1pack
+using ACEpotentials
 params = ... # see below 
 fit_ace()
 ```

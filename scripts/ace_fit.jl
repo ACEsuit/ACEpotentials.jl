@@ -1,4 +1,4 @@
-using ACE1pack
+using ACEpotentials
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin
@@ -14,7 +14,7 @@ parser = ArgParseSettings(description="Fit an ACE potential from parameters file
 end
 
 get_basis_size(d::Dict) = 
-    sum([length(ACE1pack.generate_basis(basis_params)) for (basis_name, basis_params) in d])
+    sum([length(ACEpotentials.generate_basis(basis_params)) for (basis_name, basis_params) in d])
 
 function get_num_observations(d::Dict)
 
@@ -58,8 +58,8 @@ if args["dry-run"]
     save_dry_run_info(fit_params)
 end
 
-results = ACE1pack.fit_ace(fit_params)
+results = ACEpotentials.fit_ace(fit_params)
 
 # export to a .yace automatically, also need to generate the new name.
 yace_name = replace(fit_params["ACE_fname"], ".json" => ".yace")
-ACE1pack.ExportMulti.export_ACE(yace_name, results["IP"]; export_pairpot_as_table=true)
+ACEpotentials.ExportMulti.export_ACE(yace_name, results["IP"]; export_pairpot_as_table=true)

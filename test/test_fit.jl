@@ -1,4 +1,4 @@
-using ACE1pack, JuLIP, LazyArtifacts, Test
+using ACEpotentials, JuLIP, LazyArtifacts, Test
 using JuLIP.Testing: print_tf
 
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")

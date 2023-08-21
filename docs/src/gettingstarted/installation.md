@@ -8,17 +8,17 @@ If these instructions don't make sense please see the detailed instructions belo
 
 1. Install Julia if you haven't already. Make sure the `General` registry is installed and up to date. 
 
-2. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACE1pack` code requires. Start julia, activate the project and add `ACEregistry` that includes `ACE1pack`, which is the package that we want to install:
+2. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACEpotentials` code requires. Start julia, activate the project and add `ACEregistry` that includes `ACEpotentials`, which is the package that we want to install:
 
    ```julia
    using Pkg
    Pkg.activate(".")
    Pkg.Registry.add("General")  # only needed when installing Julia for the first time
    Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-   Pkg.add("ACE1pack")
+   Pkg.add("ACEpotentials")
    ```
 
-   `ACE1pack` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`.
+   `ACEpotentials` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`.
 
 3. You need to activate the project folder when starting julia.
 This can be done by starting julia with `julia --project=pathtoproject` command,
@@ -69,9 +69,9 @@ Create a folder for your new project and change to it. Start the Julia REPL and 
 ```julia 
 activate .
 ```
-Now you can install `ACE1pack`. Remaining in the package manager, use
+Now you can install `ACEpotentials`. Remaining in the package manager, use
 ```julia
-add ACE1pack
+add ACEpotentials
 ```
 
 Depending on your usage you may also need to add other packages. 

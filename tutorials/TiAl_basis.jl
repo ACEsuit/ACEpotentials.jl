@@ -2,16 +2,16 @@
 #
 # Start by importing the required libraries 
 
-using ACE1pack
+using ACEpotentials
 
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
 # ```julia
 # data_file = "path/to/TiAl_tutorial.xyz"
 # data = read_extxyz(data_file)
 # ```
-# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACE1pack.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
+# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the training structures to keep the regression problem small.
 
-data, _, meta = ACE1pack.example_dataset("TiAl_tutorial")
+data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
 train_data = data[1:5:end];
 
 # The next step is to generate a basis set:  
@@ -48,7 +48,7 @@ weights = Dict(
 # The next step is to evaluate the basis on the training set. Precomputing the basis once (and possibly save it to disk) makes experimenting with different regression parameters much more efficient. This is demonstrated below by showing various different solver options. Similarly once could also explore different data weights (see `weights` below). 
 
 datakeys = (energy_key = "energy", force_key = "force", virial_key = "virial")
-train = [ACE1pack.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for t in train_data] 
+train = [ACEpotentials.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for t in train_data] 
 A, Y, W = ACEfit.assemble(train, basis);
 
 # ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
@@ -72,14 +72,14 @@ pot_2 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
 
 # We can now compare the errors in a nice table. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions. 
 
-test = [ACE1pack.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for t in data[2:10:end]] 
+test = [ACEpotentials.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for t in data[2:10:end]] 
 
 @info("Test Error Tables")
 @info("First Potential: ")
-ACE1pack.linear_errors(test, pot_1);
+ACEpotentials.linear_errors(test, pot_1);
 
 @info("Second Potential: ")
-ACE1pack.linear_errors(test, pot_2);
+ACEpotentials.linear_errors(test, pot_2);
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
 

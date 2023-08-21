@@ -1,18 +1,18 @@
-# # TiAl potential (ACE1pack-julia) 
+# # TiAl potential (ACEpotentials-julia) 
 #
-# In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACE1pack. 
+# In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACEpotentials. 
 
-# `ACE1pack.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACE1pack overview](../ACE1pack/ace1pack_overview.md).
+# `ACEpotentials.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACEfit.jl`, `JuLIP.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (`ACE1.jl` & `JuLIP.jl`) and solving it (`ACEfit.jl`). For full documentation see [ACEpotentials overview](../ACEpotentials/acepotentials_overview.md).
 
-# First import ACE1pack
+# First import ACEpotentials
 
-using ACE1pack
+using ACEpotentials
 
 # First, we need to construct various parameters' dictionaries that define various aspects of fitting an ACE potential. We use various `*params()` functions that return these dictionaries and let us only specify mandatory and non-default parameter values. 
 
 # TODO: this is not a very nice artifact approach, but we may drop this tutorial anyway
 using Pkg.Artifacts
-_artifact_toml = pathof(ACE1pack)[1:end-15]*"Artifacts.toml"
+_artifact_toml = pathof(ACEpotentials)[1:end-20]*"Artifacts.toml"
 ensure_artifact_installed("TiAl_tutorial", _artifact_toml)
 _hash = artifact_hash("TiAl_tutorial", _artifact_toml)
 _TiAl_tutorial = artifact_path(_hash)
@@ -101,7 +101,7 @@ ace_fit_params = fit_params(
     ACE_fname = "ACE.json"  # change to `nothing` if you don't want to save the potential
 )
 
-results = ACE1pack.fit_ace(ace_fit_params)
+results = ACEpotentials.fit_ace(ace_fit_params)
 
 # The potential will also be saved to the file `ACE.json` which can be read in python or julia. 
 # If you want to export the potential to LAMMPS, use

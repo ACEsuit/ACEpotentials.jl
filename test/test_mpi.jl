@@ -1,9 +1,9 @@
-# With JULIA_PROJECT set to ACE1pack base directory.
-using ACE1pack
+# With JULIA_PROJECT set to ACEpotentials base directory.
+using ACEpotentials
 using LazyArtifacts
 using Test
 
-include("../scripts/ACE1packMPI.jl")
+include("../scripts/ACEpotentialsMPI.jl")
 
 ### ----- set up params -----
 
@@ -63,4 +63,4 @@ end
     test_rmse(errors["rmse"], rmse_qr, 1e-5)
 end
 
-ACE1packMPI_finalize()
+ACEpotentialsMPI_finalize()

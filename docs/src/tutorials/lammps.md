@@ -1,8 +1,8 @@
-# ACE1pack potentials in LAMMPS
+# ACEpotentials potentials in LAMMPS
 
 ### Install LAMMPS with the ML-PACE package
 
-An ACE1pack potential can be used in LAMMPS if the latter is built with the ML-PACE package. At present, a patched version of that package is required which may be installed as follows:
+An ACEpotentials potential can be used in LAMMPS if the latter is built with the ML-PACE package. At present, a patched version of that package is required which may be installed as follows:
 ```
 git clone -b release https://github.com/lammps/lammps
 cd lammps
@@ -17,12 +17,12 @@ make -j 4
 ```
 See the [LAMMPS documentation](https://docs.lammps.org/Build.html) for more build options.
 
-### Convert an ACE1pack model to `yace` format
+### Convert an ACEpotentials model to `yace` format
 
 The ML-PACE package requires a potential in the `.yace` format. To convert a model saved as `.json`, use the following:
 
 ```julia
-using ACE1pack
+using ACEpotentials
 potential_json = "Si.json"    # example json filename
 potential_yace = "Si.yace"    # example yace filename
 export2lammps(potential_yace, read_dict(load_dict(potential_json)["IP"]))
@@ -37,7 +37,7 @@ pair_coeff      * * potential.yace I Cs Pb
 ```
 The species ordering after `pair_coeff` must match the numerical ordering in any `.data` geometry file. 
 
-By default, ACE1pack models have separate two-body and many-body components.
+By default, ACEpotentials models have separate two-body and many-body components.
 At present, the two-body component is exported via a lookup table which LAMMPs reads directly, meaning two files are created: a `potentialname_pairpot.table` file for the two-body contribution and a `potentialname.yace` file for the many-body contribution.
 The `.table` file contains a set of lookup tables with a fixed number `N` (written in the file) of interpolation points. To use the full model in LAMMPS, read N from the file and use the syntax:
 ```

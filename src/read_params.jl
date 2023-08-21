@@ -2,7 +2,7 @@
 # ------------------------------------------
 #   Read ACE fit parameters from file 
 
-using ACE1pack
+using ACEpotentials
 
 export  fill_defaults, parse_ace_basis_keys
 
@@ -14,16 +14,16 @@ Recursively updates any missing entries with default parameters.
 Accepted `param_key` values and corresponding functions: 
 
 ```julia 
-    "fit_params" => ACE1pack.fit_params,
-    "data" => ACE1pack.data_params,
-    "solver" => ACE1pack.solver_params,
-    "basis" => ACE1pack.basis_params,
-    "ace" => ACE1pack.ace_basis_params,  
-    "pair" => ACE1pack.pair_basis_params,
-    "radial" => ACE1pack.radial_basis_params,
-    "transform" => ACE1pack.transform_params, 
-    "degree" => ACE1pack.degree_params,
-    "P" => ACE1pack.regularizer_params
+    "fit_params" => ACEpotentials.fit_params,
+    "data" => ACEpotentials.data_params,
+    "solver" => ACEpotentials.solver_params,
+    "basis" => ACEpotentials.basis_params,
+    "ace" => ACEpotentials.ace_basis_params,  
+    "pair" => ACEpotentials.pair_basis_params,
+    "radial" => ACEpotentials.radial_basis_params,
+    "transform" => ACEpotentials.transform_params, 
+    "degree" => ACEpotentials.degree_params,
+    "P" => ACEpotentials.regularizer_params
 ```
 
 """
@@ -53,16 +53,16 @@ _makesymbol(p::Pair) = (Symbol(p.first) => (p.second))
 _makesymbol(D::Dict) = Dict(_makesymbol.([D...])...)   
 
 _dict_constructors = Dict(
-    "fit_params" => ACE1pack.fit_params,
-    "data" => ACE1pack.data_params,
-    "solver" => ACE1pack.solver_params,
-    "basis" => ACE1pack.basis_params,
-    "ace" => ACE1pack.ace_basis_params,  
-    "pair" => ACE1pack.pair_basis_params,
-    "radial" => ACE1pack.radial_basis_params,
-    "transform" => ACE1pack.transform_params, 
-    "degree" => ACE1pack.degree_params,
-    "P" => ACE1pack.regularizer_params)
+    "fit_params" => ACEpotentials.fit_params,
+    "data" => ACEpotentials.data_params,
+    "solver" => ACEpotentials.solver_params,
+    "basis" => ACEpotentials.basis_params,
+    "ace" => ACEpotentials.ace_basis_params,  
+    "pair" => ACEpotentials.pair_basis_params,
+    "radial" => ACEpotentials.radial_basis_params,
+    "transform" => ACEpotentials.transform_params, 
+    "degree" => ACEpotentials.degree_params,
+    "P" => ACEpotentials.regularizer_params)
 
 
 """
