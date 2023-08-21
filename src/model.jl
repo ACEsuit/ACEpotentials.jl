@@ -54,7 +54,7 @@ function acefit!(model::ACE1Model, raw_data;
                 energy_key = "energy", 
                 force_key = "force", 
                 virial_key = "virial", 
-                smoothness = 2, 
+                smoothness = 4, 
                 prior = nothing, 
                 repulsion_restraint = false, 
                 restraint_weight = 0.01, 
