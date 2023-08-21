@@ -1,7 +1,6 @@
 name = "ACEpotentials"
-uuid = "8c4e8d19-0bd6-4234-8309-7210652e3178"
-authors = ["Christoph Ortner <christophortner0@gmail.com> and contributors"]
-version = "0.5.0"
+uuid = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
+version = "0.6.0"
 
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
