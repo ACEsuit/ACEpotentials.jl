@@ -1,5 +1,5 @@
 name = "ACEpotentials"
-uuid = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
+uuid = "8c4e8d19-0bd6-4234-8309-7210652e3178"
 version = "0.6.0"
 
 [deps]
