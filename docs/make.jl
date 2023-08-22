@@ -13,7 +13,7 @@ DocMeta.setdocmeta!(ACEpotentials, :DocTestSetup, :(using ACEpotentials); recurs
 # ~~~~~~~~~~ Generate the tutorial files  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 _tutorial_out = joinpath(@__DIR__(), "src", "literate_tutorials")
-_tutorial_src = joinpath(@__DIR__(), "..", "tutorials")
+_tutorial_src = joinpath(@__DIR__(), "src", "tutorials")
 
 
 Literate.markdown(_tutorial_src * "/first_example_model.jl", 
