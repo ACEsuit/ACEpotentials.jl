@@ -6,6 +6,7 @@ using ACEpotentials
 
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
 # ```julia
+# # (don't execute this block)
 # data_file = "path/to/TiAl_tutorial.xyz"
 # data = read_extxyz(data_file)
 # ```
@@ -46,7 +47,7 @@ solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6);
 
 # ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
 
-P = smoothness_prior(model; p = 3)
+P = smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)
 
 # We are now ready to estimate the parameters. We take a subset of the training data to speed up the tutorial. The prior is passed to the `acefit!` function via the `prior` keyword argument.
 
@@ -68,6 +69,7 @@ ACEpotentials.linear_errors(test_data, model; weights=weights);
 
 export2json("./TiAl_tutorial_pot.json", model)
 
-# export to lammps is currently broken: 
-## export2lammps("./TiAl_tutorial_pot.yace", model)
+# export to lammps (ML-PACE):
+
+export2lammps("./TiAl_tutorial_pot.yace", model)
 

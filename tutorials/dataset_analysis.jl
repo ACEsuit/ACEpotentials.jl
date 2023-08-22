@@ -9,7 +9,7 @@ using ACEpotentials, Plots, LaTeXStrings
 # Let's generate a naive dataset, just some random bulk Si structures that are rattled a bit.
 
 rand_Si() = rattle!(bulk(:Si, cubic=true) * rand([2,3,4]), 0.25)
-Si_data = [ rand_Si() for _=1:50 ]
+Si_data = [ rand_Si() for _=1:50 ];
 
 # Two basic distributions we can look at to see how well the data fills in space are the radial and angular distribution functions. For the radial distribution function we use the cutoff of the model (see below). For the angular distribution we use a cutoff just above the nearest neighbour distance to we can clearly see the equilibrium bond-angles. 
 
@@ -17,7 +17,7 @@ r_cut = 6.0  #
 rdf = ACEpotentials.get_rdf(Si_data, r_cut; rescale = true)
 
 r_cut_adf = 1.25 * rnn(:Si)
-adf = ACEpotentials.get_adf(Si_data, 1.25 * rnn(:Si))
+adf = ACEpotentials.get_adf(Si_data, 1.25 * rnn(:Si));
 
 # We can plot these distributions using the `histogram` function in `Plots.jl`. For the RDF we add some vertical lines to indicate the distances and first, second neighbours and so forth to confirm that the peaks are in the right place. For the ADF we add a vertical line to indicate the equilibrium bond angle.
 
@@ -26,7 +26,7 @@ plt_rdf = histogram(rdf[(:Si, :Si)], bins=150, label = "rdf",
 vline!(rnn(:Si) * [1.0, 1.633, 1.915, 2.3, 2.5], label = "r1, r2, ...", lw=3)
 
 eq_angle = 1.91 # radians 
-plt_adf = histogram(adf, bins=25, label = "adf", yticks = [], 
+plt_adf = histogram(adf, bins=25, label = "adf", yticks = [], c = 3, 
                   xlabel = L"\theta", ylabel = "ADF", xlims = (0, π))
 vline!([ eq_angle,], label = "109.5˚", lw=3)
 
@@ -67,7 +67,6 @@ plot(plt_t, plt_rdf, layout=grid(2, 1, heights=[0.7, 0.3]), size = (800, 400))
 
 # To finish this tutorial, we quickly demonstrate what happens when there is more than one chemical species present in a dataset. 
 
-using LazyArtifacts
 tial_data, _, _ = ACEpotentials.example_dataset("TiAl_tutorial")
 
 rdf = ACEpotentials.get_rdf(tial_data, r_cut)

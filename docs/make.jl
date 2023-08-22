@@ -25,6 +25,12 @@ Literate.markdown(_tutorial_src * "/TiAl_model.jl",
 Literate.markdown(_tutorial_src * "/TiAl_basis.jl", 
                   _tutorial_out; documenter = true)
 
+Literate.markdown(_tutorial_src * "/smoothness_priors.jl", 
+                  _tutorial_out; documenter = true)
+
+Literate.markdown(_tutorial_src * "/dataset_analysis.jl", 
+                  _tutorial_out; documenter = true)
+
 Literate.markdown(_tutorial_src * "/ACEpotentials_TiAl.jl", 
                   _tutorial_out; documenter = true)
 
@@ -68,11 +74,13 @@ makedocs(;
             "literate_tutorials/first_example_model.md",
             "literate_tutorials/TiAl_model.md",
             "literate_tutorials/TiAl_basis.md",
+            "literate_tutorials/smoothness_priors.md", 
+            "literate_tutorials/dataset_analysis.md", 
             "literate_tutorials/committee.md",
             "literate_tutorials/descriptor.md",
             "tutorials/lammps.md",
             "tutorials/python_ase.md",
-            "tutorials/molly.md"
+            "tutorials/molly.md",
         ],
         "ACEpotentials Internals" => Any[
             "ACEpotentials/acepotentials_overview.md",

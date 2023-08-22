@@ -53,7 +53,7 @@ A, Y, W = ACEfit.assemble(train, basis);
 
 # ACE1.jl has a heuristic smoothness prior built in which assigns to each basis function `Bi` a scaling parameter `si` that estimates how "rough" that basis function is. The following line generates a regularizer (prior) with `si^q` on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential. 
 
-P = smoothness_prior(basis; p = 3)
+P = smoothness_prior(basis; p = 4)
 
 # Once all the solver parameters have been determined, we use `ACEfit` to estimate the parameters. This routine will return the fitted interatomic potential `IP` as well as the a dictionary `lsqfit` with some information about the fitting process. 
 
@@ -84,4 +84,8 @@ ACEpotentials.linear_errors(test, pot_2);
 # If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
 
 save_dict("./TiAl_tutorial_pot.json", Dict("IP" => write_dict(pot_1)))
-## NB: export2lammps is current broken but about to be fixed.
+
+# The fitted potential can also be exported to a format compatible with LAMMPS (ML-PACE)
+
+export2lammps("./TiAl_tutorial_pot.yace", pot_1)
+

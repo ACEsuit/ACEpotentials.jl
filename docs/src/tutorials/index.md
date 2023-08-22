@@ -9,6 +9,12 @@ These tutorials use the direct Julia interface provided by `ACEpotentials.jl` (i
 * [Model Interface](../literate_tutorials/TiAl_model.md)
 * [Basis Interface](../literate_tutorials/TiAl_basis.md)
 
+The next two tutorials show some additional techniques to better understand how to make good hyperparameter choices. 
+
+* [Smoothness Priors](../literate_tutorials/smoothness_priors.md) : a basic introduction to smoothness priors 
+* [Dataset Analysis](../literate_tutorials/dataset_analysis.md) : some basic techniques to visualize training datasets and correlate such observations to the choice of geometric priors
+
+
 ### Using `ACEpotentials` Potentials in External Software
 
 * [LAMMPS](lammps.md)
