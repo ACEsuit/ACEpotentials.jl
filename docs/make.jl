@@ -37,7 +37,7 @@ Literate.markdown(_tutorial_src * "/ACEpotentials_TiAl.jl",
 Literate.markdown(_tutorial_src * "/descriptor.jl",
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/committee.jl",
+Literate.markdown(_tutorial_src * "/committee_old.jl",
                   _tutorial_out; documenter = true)
 
 # ???? cf Jump.jl docs, they do also this: 
@@ -76,7 +76,6 @@ makedocs(;
             "literate_tutorials/TiAl_basis.md",
             "literate_tutorials/smoothness_priors.md", 
             "literate_tutorials/dataset_analysis.md", 
-            "literate_tutorials/committee.md",
             "literate_tutorials/descriptor.md",
             "tutorials/lammps.md",
             "tutorials/python_ase.md",
@@ -102,6 +101,7 @@ makedocs(;
             "tutorials/command_line_old.md",
             "tutorials/first_example_json.md",
             "literate_tutorials/ACEpotentials_TiAl.md",
+            "literate_tutorials/committee_old.md",
         ],
     ],
 )
