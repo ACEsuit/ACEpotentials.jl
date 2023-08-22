@@ -21,7 +21,7 @@ where ``y_i`` are the observations of the true function, and ``\Psi_{i \nu} = B_
 ```julia
 dB = LsqDB(save_name, basis, train)
 ```
-If `save_name` is the empty string, the least squares system, which can be very large, is not saved to disk. Otherwise, `save_name` should be a string not including any file extension, which is added by... `basis` is the ACE1 basis. `train` is a `Vector` of ACEpotentials `AtomsData` objects representing the training set. TODO also provides tools for reading and saving the atomic structures see [File io (TO-ADD, currently points to ACEpotentials data handling)](../ACEpotentials/data.md). 
+If `save_name` is the empty string, the least squares system, which can be very large, is not saved to disk. Otherwise, `save_name` should be a string not including any file extension, which is added by... `basis` is the ACE1 basis. `train` is a `Vector` of ACEpotentials `AtomsData` objects representing the training set. 
 
 ### Structure of the Linear System.
 
