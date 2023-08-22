@@ -14,7 +14,7 @@ dataset, _, _ = ACEpotentials.example_dataset("Si_tiny");
 
 basis = ACE1x.ace_basis( elements = [:Si],
                           order = 3,        # body-order - 1
-                          totaldegree = 8, )
+                          totaldegree = 8, ); 
 
 # Compute an averaged structural descriptor for each configuration.
 
