@@ -10,8 +10,9 @@ For a quick start, we recommend reading the installation instructions, followed 
 
 
 !!! warning "JSON interface"
-   `ACEpotentials.jl` contains JSON and command line interfaces that can be used to fit ACE potentials without needing to write Julia scripts. These have not been updated to include the most recent advances in ACE models available through the Julia interfaces. Until this changes, we recommend using `ACEpotentials.jl` only through the Julia interfaces. If this is a feature important to you, please file an issue or bump an existing issue to accelerate us updating this feature.
+    `ACEpotentials.jl` contains JSON and command line interfaces that can be used to fit ACE potentials without needing to write Julia scripts. These have not been updated to include the most recent advances in ACE models available through the Julia interfaces. Until this changes, we recommend using `ACEpotentials.jl` only through the Julia interfaces. If this is a feature important to you, please file an issue or bump an existing issue to accelerate us updating this feature.
 
+```@raw html
 <!---
 ### Three Ways to Work with `ACEpotentials.jl`
 1. Via Julia scripts: 
@@ -20,6 +21,7 @@ For a quick start, we recommend reading the installation instructions, followed 
 2. JSON interface: `ACEpotentials.jl` provides wrapper functions to generate ACE models from dictionaries of model parameters. **WARNING:** This JSON interface will not always be up to date with the latest modeling options provided in `ACE1x.jl`.
 3. From the Command line: `ACEpotentials` provides scripts to fit potentials from the command line. Fitting is controlled by a dictionary of parameters in a `.json` or `.yaml` file to specify the model and fitting options. Only functionality supported by the JSON interface is available. 
 --->
+```
 
 ### References
 

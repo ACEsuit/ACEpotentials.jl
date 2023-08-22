@@ -28,10 +28,15 @@ The next two tutorials show some additional techniques to better understand how 
 
 * [Committee Potentials](../literate_tutorials/committee.md)
 
---- 
+
+```@raw html 
+<!---
 ### JSON Interface and Command line (OUTDATED)
 
 ACE potentials can be fitted from the command line using a dictionary stored in a `.json` or `.yaml` file to specify the parameters:
 
 * [TiAl Potential (ACEpotentials)](../literate_tutorials/ACEpotentials_TiAl.md)
 * [TiAl Potential (command line JSON)](../outdated/first_example_json.md)
+
+-->
+```

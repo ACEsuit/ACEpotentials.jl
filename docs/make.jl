@@ -71,7 +71,6 @@ makedocs(;
         ],
         "Tutorials" => Any[
             "tutorials/index.md",
-            # "literate_tutorials/first_example_basis.md",
             "literate_tutorials/first_example_model.md",
             "literate_tutorials/TiAl_model.md",
             "literate_tutorials/TiAl_basis.md",

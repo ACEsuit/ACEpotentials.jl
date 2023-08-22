@@ -1,4 +1,4 @@
-# # The `ace_basis` interface from Julia (TiAl)
+# # The `ace_basis` interface
 #
 # Start by importing the required libraries 
 

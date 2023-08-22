@@ -46,7 +46,7 @@ returns:
 
 ### Solvers
 
-Once the linear system has been formed, several methods exist for solving it. Some involve modifying the above minimisation statement but still require the design matrix and observation vector. Currently there are 4 solvers implemented in IPFitting which are discussed in [solvers](Solvers.md).
+Once the linear system has been formed, several methods exist for solving it. Some involve modifying the above minimisation statement but still require the design matrix and observation vector. Currently there are 4 solvers implemented in IPFitting which are discussed in [solvers](../tutorials/Solvers.md).
 
 ### Weights
 
