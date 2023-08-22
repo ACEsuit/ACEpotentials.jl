@@ -1,4 +1,4 @@
-# # The `acemodel` interface from Julia (TiAl potential)
+# # The `acemodel` interface
 #
 # Start by importing the required libraries 
 

@@ -1,4 +1,4 @@
-# All ACEpotentials functions
+# Reference
 
 ```@autodocs
 Modules = [ACEpotentials]

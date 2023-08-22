@@ -1,7 +1,7 @@
 
 # Tutorials Overview 
 
-### Fitting potentials from Julia 
+### Fitting potentials from Julia scripts
 
 These tutorials use the direct Julia interface provided by `ACEpotentials.jl` (interfacing with `ACE1.jl, ACE1x.jl, ACEfit.jl`). They are provided in [Literate.jl](https://github.com/fredrikekre/Literate.jl) format and can also be run as scripts if that is preferred. 
 
@@ -28,10 +28,15 @@ The next two tutorials show some additional techniques to better understand how 
 
 * [Committee Potentials](../literate_tutorials/committee.md)
 
---- 
+
+```@raw html 
+<!---
 ### JSON Interface and Command line (OUTDATED)
 
 ACE potentials can be fitted from the command line using a dictionary stored in a `.json` or `.yaml` file to specify the parameters:
 
 * [TiAl Potential (ACEpotentials)](../literate_tutorials/ACEpotentials_TiAl.md)
-* [TiAl Potential (command line JSON)](./first_example_json.md)
+* [TiAl Potential (command line JSON)](../outdated/first_example_json.md)
+
+-->
+```
