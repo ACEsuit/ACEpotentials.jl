@@ -20,7 +20,7 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 
 [compat]
-ACE1 = "0.11.14"
+ACE1 = "0.11.15"
 ACE1x = "0.1.8"
 ACEfit = "0.1.4"
 ACEmd = "0.1.4"
