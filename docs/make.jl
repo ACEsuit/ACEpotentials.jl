@@ -1,3 +1,9 @@
+# Instructions for building docs locally: 
+#   - activate and resolve/up docs Project
+#   - ] dev ..  to link to the *current* version of ACEpotentials
+#   - julia --project=. make.jl  or   julia --project=docs docs/make.jl
+#
+
 using ACEpotentials
 using Documenter, Literate 
 
@@ -9,8 +15,6 @@ DocMeta.setdocmeta!(ACEpotentials, :DocTestSetup, :(using ACEpotentials); recurs
 _tutorial_out = joinpath(@__DIR__(), "src", "literate_tutorials")
 _tutorial_src = joinpath(@__DIR__(), "..", "tutorials")
 
-# Literate.markdown(_tutorial_src * "/first_example_basis.jl", 
-#                   _tutorial_out; documenter = true)
 
 Literate.markdown(_tutorial_src * "/first_example_model.jl", 
                   _tutorial_out; documenter = true)
@@ -60,24 +64,15 @@ makedocs(;
         ],
         "Tutorials" => Any[
             "tutorials/index.md",
-            # "tutorials/first_example_json.md",
             # "literate_tutorials/first_example_basis.md",
             "literate_tutorials/first_example_model.md",
             "literate_tutorials/TiAl_model.md",
             "literate_tutorials/TiAl_basis.md",
-            # "literate_tutorials/ACEpotentials_TiAl.md",
-            "literate_tutorials/descriptor.md",
             "literate_tutorials/committee.md",
+            "literate_tutorials/descriptor.md",
             "tutorials/lammps.md",
             "tutorials/python_ase.md",
             "tutorials/molly.md"
-        ],
-        # "Using ACE potentials" => Any[
-        #     "Using_ACE/python_ase.md",
-        #     "Using_ACE/openmm.md",
-        # ],
-        "Command line" => Any[
-            "tutorials/command_line_old.md",
         ],
         "ACEpotentials Internals" => Any[
             "ACEpotentials/acepotentials_overview.md",
@@ -88,19 +83,30 @@ makedocs(;
             "ACEpotentials/solver.md",
             "ACEpotentials/all_exported.md",
         ],
+        "ACEfit Internals" => Any[
+            "ACEfit/Fitting.md",
+            "ACEfit/Solvers.md",
+            # "ACEfit/File IO.md",
+            # "ACEfit/Atomic Configurations in Julia.md",
+            # "ACEfit/Manipulating potentials.md",
+        ],
+        "Outdated" => Any[
+            "tutorials/command_line_old.md",
+            "tutorials/first_example_json.md",
+            "literate_tutorials/ACEpotentials_TiAl.md",
+        ],
+    ],
+)
+
+        # "Using ACE potentials" => Any[
+        #     "Using_ACE/python_ase.md",
+        #     "Using_ACE/openmm.md",
+        # ],
         # "ACE" => Any[
         #     # "ACE/datatypes.md",
         #     # "ACE/create_ACE.md",
         # ],
-        "ACEfit Internals" => Any[
-            "ACEfit/Fitting.md",
-            # "ACEfit/File IO.md",
-            # "ACEfit/Atomic Configurations in Julia.md",
-            "ACEfit/Solvers.md",
-            # "ACEfit/Manipulating potentials.md",
-        ],
-    ],
-)
+
 
 deploydocs(;
     repo="github.com/ACEsuit/ACEpotentials.jl",
