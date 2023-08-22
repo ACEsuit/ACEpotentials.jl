@@ -5,15 +5,15 @@ ACE support for Molly is currently in [ACEmd](https://github.com/ACEsuit/ACEmd.j
 which is exported by ACEpotentials. 
 
 
-## Things to know about Molly
+### Things to know about Molly
 
-Molly expects units to be defined. Our fitting procedure does not define units,
+Molly expects units to be defined. Our fitting procedure does not define units (implicitly we use eV and eV and Å),
 so in order to use Molly, units need to be defined. This is done by wrapping potentials to
 a structure that holds units in addition to the potential. The units used are defined in [Unitful](https://github.com/PainterQubits/Unitful.jl), which is exported by default.
 
 To wrap units for a potential you can use `load_ace_model` function, which can take in
-a potential you have just fitted as an input. You can also load `json` or `yace` potential
-files.
+a potential you have just fitted as an input. You can also load `json` or `yaml` potential
+files exported from `ACEpotentials.jl` or `ACE1.jl`.
 
 ```julia
 pot_with_units = load_ace_model( potential_with_no_units )
@@ -31,9 +31,9 @@ load_ace_model( "path to potential file";
                 cutoff_unit = u"pm" )
 ```
 
-## System setup
+### System setup
 
-To start Molly you need to prepare Molly system. With ACE there are still some ACE specific complications with this. But please refer for Molly documentation 
+#To start Molly you need to prepare the Molly system. There are still some ACE specific complications with this. But please refer to Molly documentation 
 
 ```julia
 using Molly
@@ -77,7 +77,7 @@ sys = System(
        )
 ```
 
-## Set up simulation
+### Set up simulation
 
 To setup Molly simulation you need to create simulation object
 

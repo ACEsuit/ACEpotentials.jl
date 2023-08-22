@@ -1,15 +1,15 @@
 # python-`ase`
 
-An ACE1 potential can be used in python as an `ase` calculator. To do this, you will need to install two python packages, `julia` and `pyjulip` as documented on the [installation page](../gettingstarted/installation.md). 
+An `ACEpotentials.jl` model can be used in python as an `ase` calculator. To do this, you will need to install two python packages, `julia` and `pyjulip` as documented on the [installation page](../gettingstarted/installation.md). 
 
-Python reads the `potential.json` file directly. To load and use an ACE potential, use the following syntax:
+Python reads the `potential.json` file directly. To load an ACE potential as an `ase` calculator, use the following syntax:
 
 ```python
 import pyjulip
 calc = pyjulip.ACE1("first_potential.json")
 ```
 
-evaluation is then:
+Using that calculator, we can then evaluatuate energies, forces, etc, e.g., 
 ```python
 ats = ase.io.read('atoms_object.xyz')
 ats.calc = calc
