@@ -1,4 +1,4 @@
-# # The `ace_basis` interface from Julia (TiAl)
+# # The `ace_basis` interface
 #
 # Start by importing the required libraries 
 
@@ -59,7 +59,7 @@ P = smoothness_prior(basis; p = 4)
 
 solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6, P = P)
 results = ACEfit.solve(solver, W .* A, W .* Y)
-pot_1 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
+pot_1 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]));
 
 # The advantage of working with the ACE basis rather than the ACE model interface is that we can now make some changes to the fitting parameters and refit. For example, we might want different weights, change the smoothness prior, and switch to a RRQR solver. 
 
@@ -67,7 +67,7 @@ weights["FLD_TiAl"]["E"] = 20.0
 W = ACEfit.assemble_weights(train)
 solver = ACEfit.RRQR(; rtol = 1e-8, P = smoothness_prior(basis; p = 2))
 results = ACEfit.solve(solver, W .* A, W .* Y)
-pot_2 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]))
+pot_2 = JuLIP.MLIPs.SumIP(Vref, JuLIP.MLIPs.combine(basis, results["C"]));
 
 
 # We can now compare the errors in a nice table. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions. 

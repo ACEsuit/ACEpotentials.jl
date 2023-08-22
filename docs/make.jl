@@ -31,8 +31,9 @@ Literate.markdown(_tutorial_src * "/smoothness_priors.jl",
 Literate.markdown(_tutorial_src * "/dataset_analysis.jl", 
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/ACEpotentials_TiAl.jl", 
-                  _tutorial_out; documenter = true)
+# bring back once we fix the JSON interface 
+# Literate.markdown(_tutorial_src * "/ACEpotentials_TiAl.jl", 
+#                   _tutorial_out; documenter = true)
 
 Literate.markdown(_tutorial_src * "/descriptor.jl",
                   _tutorial_out; documenter = true)
@@ -70,41 +71,38 @@ makedocs(;
         ],
         "Tutorials" => Any[
             "tutorials/index.md",
-            # "literate_tutorials/first_example_basis.md",
             "literate_tutorials/first_example_model.md",
             "literate_tutorials/TiAl_model.md",
             "literate_tutorials/TiAl_basis.md",
             "literate_tutorials/smoothness_priors.md", 
             "literate_tutorials/dataset_analysis.md", 
             "literate_tutorials/descriptor.md",
+            "tutorials/molly.md",
             "tutorials/lammps.md",
             "tutorials/python_ase.md",
-            "tutorials/molly.md",
+            "tutorials/Solvers.md",
         ],
         "ACEpotentials Internals" => Any[
-            "ACEpotentials/acepotentials_overview.md",
-            "ACEpotentials/fit.md",    
-            "ACEpotentials/helpers.md",
-            "ACEpotentials/data.md",
-            "ACEpotentials/basis.md",   
-            "ACEpotentials/solver.md",
             "ACEpotentials/all_exported.md",
         ],
-        "ACEfit Internals" => Any[
-            "ACEfit/Fitting.md",
-            "ACEfit/Solvers.md",
+        "Outdated" => Any[
+            "outdated/acepotentials_overview.md",
+            "outdated/fit.md",    
+            "outdated/helpers.md",
+            "outdated/data.md",
+            "outdated/basis.md",   
+            "outdated/solver.md",
+            "outdated/command_line_old.md",
+            "outdated/first_example_json.md",
+            # "literate_tutorials/ACEpotentials_TiAl.md",
             # "ACEfit/File IO.md",
             # "ACEfit/Atomic Configurations in Julia.md",
             # "ACEfit/Manipulating potentials.md",
-        ],
-        "Outdated" => Any[
-            "tutorials/command_line_old.md",
-            "tutorials/first_example_json.md",
-            "literate_tutorials/ACEpotentials_TiAl.md",
+            "outdated/Fitting.md",
             "literate_tutorials/committee_old.md",
         ],
-    ],
-)
+      ],
+    )
 
         # "Using ACE potentials" => Any[
         #     "Using_ACE/python_ase.md",
