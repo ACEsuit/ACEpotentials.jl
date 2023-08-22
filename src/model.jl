@@ -81,6 +81,17 @@ function acefit!(model::ACE1Model, raw_data;
    coeffs = P \ result["C"]
    ACE1x._set_params!(model, coeffs)
 
+   if haskey(result, "committee")
+       co_coeffs = result["committee"]
+       for i in 1:size(co_coeffs,2)
+          co_coeffs[:,i] = P \ co_coeffs[:,i]
+       end
+       IP_com = ACE1.committee_potential(model.basis, coeffs, co_coeffs)
+       (model.Vref != nothing) && (IP_com = JuLIP.MLIPs.SumIP(model.Vref, IP_com))
+       # possibly too drastic to overwrite potential with committee potential?
+       model.potential = IP_com
+   end
+
    if export_lammps != nothing 
       export2lammps(export_lammps, model)
    end
