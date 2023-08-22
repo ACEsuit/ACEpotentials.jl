@@ -8,26 +8,13 @@ using ACEpotentials, MultivariateStats, Plots
 # configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
 # configurations.
 
-dataset, _, _ = ACEpotentials.example_dataset("Si_tiny")
+dataset, _, _ = ACEpotentials.example_dataset("Si_tiny");
 
-# Define a basis.
+# An ACE basis specifies a vector of invariant features of atomic environments and can therefore be used as a general descriptor.
 
-# TODO: requires an update to the pair potential implementation 
-#basis = ACE1x.ace_basis(
-#      elements = [:Si],
-#      order = 3,         # correlation order = body-order - 1
-#      totaldegree = 12,  # polynomial degree
-#      r0 = 2.3,          # estimate for NN distance
-#      rcut = 5.5,)
-
-basis = ACE1.ace_basis(
-    species = [:Si],
-    N = 3,        # correlation order = body-order - 1
-    maxdeg = 12,  # polynomial degree
-    r0 = 2.3,     # estimate for NN distance
-    rin = 0.1,
-    rcut = 5.5,
-    pin = 2)
+basis = ACE1x.ace_basis( elements = [:Si],
+                          order = 3,        # body-order - 1
+                          totaldegree = 8, ); 
 
 # Compute an averaged structural descriptor for each configuration.
 
@@ -43,12 +30,11 @@ for atoms in dataset
     push!(config_types, atoms.data["config_type"].data)
 end
 
-# Finally, extract the descriptor principal components and plot. Note the
-# segregation by configuration type.
+# Finally, extract the descriptor principal components and plot. Note the segregation by configuration type.
 
-descriptors = hcat(descriptors...)
-M = fit(PCA, descriptors; maxoutdim=3, pratio=1)
-descriptors_trans = transform(M, descriptors)
+descriptors1 = hcat(descriptors...)
+M = fit(PCA, descriptors1; maxoutdim=3, pratio=1)
+descriptors_trans = transform(M, descriptors1)
 p = scatter(
     descriptors_trans[1,:], descriptors_trans[2,:], descriptors_trans[3,:],
     marker=:circle, linewidth=0, group=config_types, legend=:right)

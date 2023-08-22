@@ -12,7 +12,7 @@ export JULIA_PROJECT=/path/to/project
 julia --project=path/to/project -p 7
 ```
 
-Alternatively, one may create workers directly within a `Julia` script. The `exeflags` argument to `addprocs` propogates project information, and the `@everywhere` macro is necessary to ensure all processes load the module. 
+Alternatively, one may create workers directly within a `Julia` script. The `exeflags` argument to `addprocs` propagates project information, and the `@everywhere` macro is necessary to ensure all processes load the module. 
 ```julia
 using Distributed
 addprocs(7, exeflags="--project=$(Base.active_project())")
@@ -28,3 +28,5 @@ export MKL_NUM_THREADS=8
 export OPENBLAS_NUM_THREADS=8
 export VECLIB_MAXIMUM_THREADS=8
 ```
+
+Distributed solution of the linear least squares systems is currently not supported. We would welcome collaboration on this with interested developers. 

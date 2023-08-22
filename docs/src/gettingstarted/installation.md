@@ -75,7 +75,10 @@ add ACEpotentials
 ```
 
 Depending on your usage you may also need to add other packages. 
+
+```@raw html
 <!-- the following packages: `ACE1, JuLIP, ACEfit, ASE`. -->
+```
 
 #### Returning to a project
 
