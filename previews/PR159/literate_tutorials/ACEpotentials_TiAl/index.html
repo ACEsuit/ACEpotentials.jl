@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>TiAl potential (ACEpotentials-julia) · ACEpotentials.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/ACEpotentials_TiAl/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation Instructions</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../first_example_model/">First example</a></li><li><a class="tocitem" href="../TiAl_model/">The <code>acemodel</code> interface from Julia (TiAl potential)</a></li><li><a class="tocitem" href="../TiAl_basis/">The <code>ace_basis</code> interface from Julia (TiAl)</a></li><li><a class="tocitem" href="../committee/">Committee Potentials</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li><a class="tocitem" href="../../tutorials/lammps/">ACEpotentials potentials in LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li><li><a class="tocitem" href="../../tutorials/molly/">Using ACE potentials in Molly</a></li></ul></li><li><span class="tocitem">ACEpotentials Internals</span><ul><li><a class="tocitem" href="../../ACEpotentials/acepotentials_overview/">Overview</a></li><li><a class="tocitem" href="../../ACEpotentials/fit/">Fitting ACE</a></li><li><a class="tocitem" href="../../ACEpotentials/helpers/">Helper Functions</a></li><li><a class="tocitem" href="../../ACEpotentials/data/">Handling Data</a></li><li><a class="tocitem" href="../../ACEpotentials/basis/">Constructing Basis</a></li><li><a class="tocitem" href="../../ACEpotentials/solver/">Solvers</a></li><li><a class="tocitem" href="../../ACEpotentials/all_exported/">All ACEpotentials functions</a></li></ul></li><li><span class="tocitem">ACEfit Internals</span><ul><li><a class="tocitem" href="../../ACEfit/Fitting/">ACE1 and ACEfit</a></li><li><a class="tocitem" href="../../ACEfit/Solvers/">Least squares solvers</a></li></ul></li><li><span class="tocitem">Outdated</span><ul><li><a class="tocitem" href="../../tutorials/command_line_old/">OLD (!) Command line interface</a></li><li><a class="tocitem" href="../../tutorials/first_example_json/">Command Line JSON (TiAl)</a></li><li class="is-active"><a class="tocitem" href>TiAl potential (ACEpotentials-julia)</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Outdated</a></li><li class="is-active"><a href>TiAl potential (ACEpotentials-julia)</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>TiAl potential (ACEpotentials-julia)</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/tutorials/ACEpotentials_TiAl.jl#" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="TiAl-potential-(ACEpotentials-julia)"><a class="docs-heading-anchor" href="#TiAl-potential-(ACEpotentials-julia)">TiAl potential (ACEpotentials-julia)</a><a id="TiAl-potential-(ACEpotentials-julia)-1"></a><a class="docs-heading-anchor-permalink" href="#TiAl-potential-(ACEpotentials-julia)" title="Permalink"></a></h1><p>In this tutorial we repeat what was done in [Fitting a TiAL potential][TiAl.md], but only using ACEpotentials.</p><p><code>ACEpotentials.jl</code> has two purposes: (1) to import and re-export <code>ACE1.jl</code>, <code>ACEfit.jl</code>, <code>JuLIP.jl</code> with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem (<code>ACE1.jl</code> &amp; <code>JuLIP.jl</code>) and solving it (<code>ACEfit.jl</code>). For full documentation see <a href="../../ACEpotentials/acepotentials_overview/">ACEpotentials overview</a>.</p><p>First import ACEpotentials</p><pre><code class="language-julia hljs">using ACEpotentials</code></pre><p>First, we need to construct various parameters&#39; dictionaries that define various aspects of fitting an ACE potential. We use various <code>*params()</code> functions that return these dictionaries and let us only specify mandatory and non-default parameter values.</p><p>TODO: this is not a very nice artifact approach, but we may drop this tutorial anyway</p><pre><code class="language-julia hljs">using Pkg.Artifacts
+_artifact_toml = pathof(ACEpotentials)[1:end-20]*&quot;Artifacts.toml&quot;
+ensure_artifact_installed(&quot;TiAl_tutorial&quot;, _artifact_toml)
+_hash = artifact_hash(&quot;TiAl_tutorial&quot;, _artifact_toml)
+_TiAl_tutorial = artifact_path(_hash)
+
+data_param_dict = data_params(
+    fname = joinpath(_TiAl_tutorial, &quot;TiAl_tutorial.xyz&quot;),
+    energy_key = &quot;energy&quot;,
+    force_key = &quot;force&quot;,
+    virial_key = &quot;virial&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, String} with 5 entries:
+  &quot;force_key&quot;  =&gt; &quot;force&quot;
+  &quot;weight_key&quot; =&gt; &quot;config_type&quot;
+  &quot;energy_key&quot; =&gt; &quot;energy&quot;
+  &quot;fname&quot;      =&gt; &quot;/home/runner/.julia/artifacts/b437d7d5fac4424b8203d0afc31732…
+  &quot;virial_key&quot; =&gt; &quot;virial&quot;</code></pre><p>N.B. there is no way to sub-select data (should there be?) and here this tutorial diverges from [Fitting a TiAL potential][TiAl.md], but the the .xyz file is small enough.</p><pre><code class="language-julia hljs">r0 = 2.88
+species = [&quot;Ti&quot;, &quot;Al&quot;]     # symbols (:Ti, :Al) also work</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{String}:
+ &quot;Ti&quot;
+ &quot;Al&quot;</code></pre><p><code>basis_params</code> of <code>type=&quot;ace&quot;</code> can optionally have radial part defined.</p><pre><code class="language-julia hljs">ace_radial_params = basis_params(
+    type = &quot;radial&quot;,
+    r0 = r0,
+    rin = 0.6 * r0,
+    rcut = 5.5)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 5 entries:
+  &quot;rcut&quot; =&gt; 5.5
+  &quot;rin&quot;  =&gt; 1.728
+  &quot;pin&quot;  =&gt; 2
+  &quot;pcut&quot; =&gt; 2
+  &quot;type&quot; =&gt; &quot;radial&quot;</code></pre><p>Construct ACE basis</p><pre><code class="language-julia hljs">ACE_basis_param_dict = basis_params(
+    type = &quot;ace&quot;,
+    species = species,
+    N = 3,
+    maxdeg = 6,
+    r0 = r0,
+    radial = ace_radial_params)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 7 entries:
+  &quot;N&quot;         =&gt; 3
+  &quot;maxdeg&quot;    =&gt; 6
+  &quot;radial&quot;    =&gt; Dict{String, Any}(&quot;rcut&quot;=&gt;5.5, &quot;rin&quot;=&gt;1.728, &quot;pin&quot;=&gt;2, &quot;pcut&quot;=…
+  &quot;degree&quot;    =&gt; Dict{String, Any}(&quot;csp&quot;=&gt;1.0, &quot;chc&quot;=&gt;0.0, &quot;wL&quot;=&gt;1.5, &quot;bhc&quot;=&gt;0.…
+  &quot;type&quot;      =&gt; &quot;ace&quot;
+  &quot;transform&quot; =&gt; Dict{String, Any}(&quot;r0&quot;=&gt;2.88, &quot;type&quot;=&gt;&quot;polynomial&quot;, &quot;p&quot;=&gt;2)
+  &quot;species&quot;   =&gt; [&quot;Ti&quot;, &quot;Al&quot;]</code></pre><p>and pair basis.</p><pre><code class="language-julia hljs">pair_basis_param_dict = basis_params(
+    type = &quot;pair&quot;,
+    species = species,
+    maxdeg = 6,
+    r0 = r0,
+    rcut = 7.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 8 entries:
+  &quot;rcut&quot;      =&gt; 7.0
+  &quot;rin&quot;       =&gt; 0.0
+  &quot;maxdeg&quot;    =&gt; 6
+  &quot;pin&quot;       =&gt; 0
+  &quot;pcut&quot;      =&gt; 2
+  &quot;type&quot;      =&gt; &quot;pair&quot;
+  &quot;transform&quot; =&gt; Dict{String, Any}(&quot;r0&quot;=&gt;2.88, &quot;type&quot;=&gt;&quot;polynomial&quot;, &quot;p&quot;=&gt;2)
+  &quot;species&quot;   =&gt; [&quot;Ti&quot;, &quot;Al&quot;]</code></pre><p>The keys in the following dictionary are for reference, the basis function kind is defined by the <code>type</code> parameter. This way, it&#39;s possible to specify multiple &quot;ACE&quot; and/or &quot;pair&quot;, etc basis.</p><pre><code class="language-julia hljs">basis_param_dicts = Dict(
+    &quot;pair&quot; =&gt; pair_basis_param_dict,
+    &quot;ace&quot; =&gt; ACE_basis_param_dict)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Dict{String, Any}} with 2 entries:
+  &quot;ace&quot;  =&gt; Dict(&quot;N&quot;=&gt;3, &quot;maxdeg&quot;=&gt;6, &quot;radial&quot;=&gt;Dict{String, Any}(&quot;rcut&quot;=&gt;5.5, …
+  &quot;pair&quot; =&gt; Dict(&quot;rcut&quot;=&gt;7.0, &quot;rin&quot;=&gt;0.0, &quot;maxdeg&quot;=&gt;6, &quot;pin&quot;=&gt;0, &quot;pcut&quot;=&gt;2, &quot;ty…</code></pre><p>We also need to give the &quot;isolated atom&quot; energies that will be subtracted from total energies before the fit.</p><pre><code class="language-julia hljs">e0 = Dict(
+    &quot;Ti&quot; =&gt; -1586.0195,
+    &quot;Al&quot; =&gt;  -105.5954)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Float64} with 2 entries:
+  &quot;Ti&quot; =&gt; -1586.02
+  &quot;Al&quot; =&gt; -105.595</code></pre><p>weights are given in a dictionary as before</p><pre><code class="language-julia hljs">weights = Dict(
+        &quot;FLD_TiAl&quot; =&gt; Dict(&quot;E&quot; =&gt; 30.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ),
+        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Dict{String, Float64}} with 2 entries:
+  &quot;FLD_TiAl&quot;   =&gt; Dict(&quot;V&quot;=&gt;1.0, &quot;E&quot;=&gt;30.0, &quot;F&quot;=&gt;1.0)
+  &quot;TiAl_T5000&quot; =&gt; Dict(&quot;V&quot;=&gt;1.0, &quot;E&quot;=&gt;5.0, &quot;F&quot;=&gt;1.0)</code></pre><p>The fit will be done using LSQR solver. <code>lsqr_atol</code> has a default value of 1e-6, so we can skip it here.</p><pre><code class="language-julia hljs">solver_param_dict = solver_params(
+    type = &quot;lsqr&quot;,
+    damp = 1e-2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 6 entries:
+  &quot;maxiter&quot; =&gt; 100000
+  &quot;verbose&quot; =&gt; false
+  &quot;atol&quot;    =&gt; 1.0e-6
+  &quot;damp&quot;    =&gt; 0.01
+  &quot;type&quot;    =&gt; &quot;lsqr&quot;
+  &quot;conlim&quot;  =&gt; 1.0e8</code></pre><p>and define parameters for smoothness prior.</p><pre><code class="language-julia hljs">smoothness_prior_params = regularizer_params(
+    type = &quot;laplacian&quot;,
+    rlap_scal = 3.0)        # default</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 2 entries:
+  &quot;rlap_scal&quot; =&gt; 3.0
+  &quot;type&quot;      =&gt; &quot;laplacian&quot;</code></pre><p>Finally, let&#39;s put everything together.</p><pre><code class="language-julia hljs">ace_fit_params = fit_params(
+    data = data_param_dict,
+    basis = basis_param_dicts,
+    solver = solver_param_dict,
+    e0 = e0,
+    weights = weights,
+    P = smoothness_prior_params,
+    ACE_fname = &quot;ACE.json&quot;  # change to `nothing` if you don&#39;t want to save the potential
+)
+
+results = ACEpotentials.fit_ace(ace_fit_params)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 2 entries:
+  &quot;errors&quot; =&gt; Dict{String, Dict{String, Any}}(&quot;rmse&quot;=&gt;Dict(&quot;set&quot;=&gt;Dict(&quot;V&quot;=&gt;0.1…
+  &quot;IP&quot;     =&gt; SumIP{Any}(Any[OneBody{Float64}(Dict(:Al=&gt;-105.595, :Ti=&gt;-1586.02…</code></pre><p>The potential will also be saved to the file <code>ACE.json</code> which can be read in python or julia. If you want to export the potential to LAMMPS, use</p><pre><code class="language-julia hljs"># NB : export2lammps is currently broken but will be fixed urgently</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/first_example_json/">« Command Line JSON (TiAl)</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 22 August 2023 05:27">Tuesday 22 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
