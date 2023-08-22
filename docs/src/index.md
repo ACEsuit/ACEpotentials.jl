@@ -29,7 +29,7 @@ For a quick start, we recommend reading the installation instructions, followed 
 
 * G. Dusson, M. Bachmayr, G. Csanyi, S. Etter, C. van der Oord, and C. Ortner. Atomic cluster expansion: Completeness, efficiency and stability. J. Comp. Phys. 454, 110946, 2022. [[DOI]](https://doi.org/10.1016/j.jcp.2022.110946) [[arxiv]](https://arxiv.org/abs/1911.03550)
 
-### Detailed Overview 
+### Overview 
 
 `ACEpotentials.jl` has two purposes: (1) to import and re-export `ACE1.jl`, `ACE1x.jl`, `ACEfit.jl`, `JuLIP.jl`, `ACEmd.jl` with guaranteed version compatibility; and (2) to have several convenience wrappers for setting up the least-squares problem and solving it.
 

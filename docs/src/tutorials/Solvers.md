@@ -37,7 +37,7 @@ solver = Dict(
         "tol" => 1e-3)
 ```
 
-## Automatic Relevance Determination (ARD)
+### Automatic Relevance Determination (ARD)
 
 ```julia
 solver= Dict(

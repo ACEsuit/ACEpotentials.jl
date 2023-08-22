@@ -78,9 +78,9 @@ makedocs(;
             "literate_tutorials/dataset_analysis.md", 
             "literate_tutorials/committee.md",
             "literate_tutorials/descriptor.md",
+            "tutorials/molly.md",
             "tutorials/lammps.md",
             "tutorials/python_ase.md",
-            "tutorials/molly.md",
             "tutorials/Solvers.md",
         ],
         "ACEpotentials Internals" => Any[

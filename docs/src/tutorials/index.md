@@ -1,7 +1,7 @@
 
 # Tutorials Overview 
 
-### Fitting potentials from Julia 
+### Fitting potentials from Julia scripts
 
 These tutorials use the direct Julia interface provided by `ACEpotentials.jl` (interfacing with `ACE1.jl, ACE1x.jl, ACEfit.jl`). They are provided in [Literate.jl](https://github.com/fredrikekre/Literate.jl) format and can also be run as scripts if that is preferred. 
 
