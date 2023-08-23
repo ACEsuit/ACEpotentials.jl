@@ -41,7 +41,7 @@ By default, ACEpotentials models have separate two-body and many-body components
 At present, the two-body component is exported via a lookup table which LAMMPs reads directly, meaning two files are created: a `potentialname_pairpot.table` file for the two-body contribution and a `potentialname.yace` file for the many-body contribution.
 The `.table` file contains a set of lookup tables with a fixed number `N` (written in the file) of interpolation points. To use the full model in LAMMPS, read N from the file and use the syntax:
 ```
-pair_style      hybrid/overlay pace table linear <N>
+pair_style      hybrid/overlay pace table spline <N>
 pair_coeff      * * pace potential.yace I Cs Pb
 pair_coeff      1 1 table potential_pairpot.table I_I
 pair_coeff      1 2 table potential_pairpot.table I_Cs
