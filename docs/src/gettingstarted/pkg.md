@@ -17,7 +17,7 @@ The package manager provides functionality to organize reproducable Julia projec
     will suffice. 
     Type `status` to see your required packages listed. (Note this is only a subset of the installed packages!). Exit the REPL and type `ls`; you will then see a new file `Project.toml` which lists the project requirements, and a `Manifest.toml` which lists the actually packages and the version that have been installed.
 
-3. Specify version bounds: Open `Project.toml` in an editor and under the [compat] section you can now add version bounds, e.g. `ACEpotentials = "0.6.1"` following semver. Please see the [Pkg.jl docs](https://pkgdocs.julialang.org/dev/compatibility/) for details on how to specify those bounds. Start a Julia REPL again, type `]` to switch to the package manager and then `up` to up- or down-grade all installed packages to the latest version compatible with your bounds.
+3. Specify version bounds: **We strongly encourage doing this rigorously!** Open `Project.toml` in an editor and under the [compat] section you can now add version bounds, e.g. `ACEpotentials = "0.6.1"` following semver. Please see the [Pkg.jl docs](https://pkgdocs.julialang.org/dev/compatibility/) for details on how to specify those bounds. Start a Julia REPL again, type `]` to switch to the package manager and then `up` to up- or down-grade all installed packages to the latest version compatible with your bounds.
 
 #### Using a Development Branch (rarely required)
 
