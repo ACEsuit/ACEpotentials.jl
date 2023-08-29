@@ -9,5 +9,6 @@ For a quick start, we recommend reading the installation instructions, followed 
 
 ### NOTE!
 
-- The JSON and command line interface have not been updated to include the most recent advances in ACE models available through the Julia interfaces. Until this changes, we recommend using `ACEpotentials.jl` only through the Julia interfaces. 
-- `ACEpotentials.jl` is still under development, so the documentation might not be upto date (use dev version).
+In the past we provided a JSON and command line interface for constructing ACE models without needing to use Julia scripts. These have are currently not up to date with the latest improvements to ACE model defaults. For the time being we recommend using `ACEpotentials.jl` only through the Julia interfaces.
+
+<!-- - `ACEpotentials.jl` is still under development, so the documentation might not be upto date (use dev version). -->
