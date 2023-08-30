@@ -178,7 +178,7 @@ end
 make_dimer(s1, s2, rr) = Atoms(
     [[0.0,0.0,0.0],[rr,0.0,0.0]], 
     [[0.0,0.0,0.0],[0.0,0.0,0.0]],
-    [atomic_mass(s1), atomic_mass(s2)],
+    [JuLIP.atomic_mass(s1), JuLIP.atomic_mass(s2)],
     [AtomicNumber(s1), AtomicNumber(s2)],
     [100.0,100.0,100.0],
     [false, false, false])
