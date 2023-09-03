@@ -66,8 +66,6 @@ makedocs(;
             "gettingstarted/installation.md",
             "tutorials/index.md",
             # "gettingstarted/readinglist.md",
-            "gettingstarted/aceintro.md",
-            "gettingstarted/parallel-fitting.md",
         ],
         #"Tutorials" => Any[
         #    "tutorials/index.md",
@@ -83,7 +81,9 @@ makedocs(;
         #    "tutorials/python_ase.md",
         #    "tutorials/Solvers.md",
         #],
-        "ACEpotentials Internals" => Any[
+        "Additional Topics" => Any[
+            "gettingstarted/parallel-fitting.md",
+            "gettingstarted/aceintro.md",
             "ACEpotentials/all_exported.md",
         ],
         "Outdated" => Any[
