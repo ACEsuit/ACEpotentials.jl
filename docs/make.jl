@@ -41,9 +41,6 @@ Literate.markdown(_tutorial_src * "/descriptor.jl",
 Literate.markdown(_tutorial_src * "/committee.jl",
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/committee_old.jl",
-                  _tutorial_out; documenter = true)
-
 # ???? cf Jump.jl docs, they do also this: 
 # postprocess = _link_example,
 # # Turn off the footer. We manually add a modified one.

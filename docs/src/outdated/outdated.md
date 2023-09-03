@@ -6,7 +6,6 @@ Several guides and tutorials have become outdated, but may still be of some use.
 * [Basis](basis.md)
 * [Command Line](command_line.md)
 * [Command Line (old)](command_line_old.md)
-* [Committee (old)](../literate_tutorials/committee_old.md)
 * [Data](data.md)
 * [First Example (JSON)](first_example_json.md)
 * [Fit](fit.md)
