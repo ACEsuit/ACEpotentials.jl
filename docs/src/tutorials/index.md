@@ -1,5 +1,5 @@
 
-# Tutorials Overview 
+# Tutorials
 
 ### Fitting potentials from Julia scripts
 
