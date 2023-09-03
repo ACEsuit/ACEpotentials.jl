@@ -4,7 +4,7 @@ CurrentModule = ACEpotentials
 
 # ACEpotentials.jl Documentation 
 
-`ACEpotentials.jl` provides a user-oriented and interface to a collection of several Julia packages that interoperate to fit models for atomic cluster expansion (ACE) interatomic potentials. ACE models are defined in terms of body-ordered polynomial invariant features of atomic environment. For details we refer to [our brief introduction](gettingstarted/aceintro.md) and to the references listed below. 
+`ACEpotentials.jl` provides a user-oriented interface to a collection of Julia packages facilitating the generation and use of atomic cluster expansion (ACE) interatomic potentials. ACE models are defined in terms of body-ordered invariant features of atomic environments. For details we refer to [our brief introduction](gettingstarted/aceintro.md) and to the references listed below. 
 
 For a quick start, we recommend reading the installation instructions, followed by the tutorials. 
 
