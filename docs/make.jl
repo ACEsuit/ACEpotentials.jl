@@ -109,9 +109,9 @@ makedocs(;
       ],
     )
 
-        # "Using ACE potentials" => Any[
-        #     "Using_ACE/python_ase.md",
-        #     "Using_ACE/openmm.md",
+        # "using_ace potentials" => Any[
+        #     "using_ace/python_ase.md",
+        #     "using_ace/openmm.md",
         # ],
         # "ACE" => Any[
         #     # "ACE/datatypes.md",
