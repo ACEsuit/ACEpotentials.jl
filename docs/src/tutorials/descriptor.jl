@@ -21,12 +21,8 @@ basis = ACE1x.ace_basis( elements = [:Si],
 descriptors = []
 config_types = []
 for atoms in dataset
-    descriptor = zeros(length(basis))
-    for i in 1:length(atoms)
-        descriptor += site_energy(basis, atoms, i)
-    end
-    descriptor /= length(atoms)
-    push!(descriptors, descriptor)
+    struct_descriptor = sum(site_descriptors(basis, atoms)) / length(atoms)
+    push!(descriptors, struct_descriptor)
     push!(config_types, atoms.data["config_type"].data)
 end
 
