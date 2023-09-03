@@ -119,7 +119,7 @@ function linear_errors(raw_data::AbstractVector{<: Atoms}, model::ACE1Model;
 end
 
 
-# ---------------- Implementaiton of the repuslion restraint 
+# ---------------- Implementation of the repulsion restraint 
 
 
 function _rep_dimer_data(model; 
