@@ -230,12 +230,3 @@ function assemble(raw_data, model::ACE1Model;
    A, Y, W = assemble(data, model.basis, mode)
    return A, Y, W
 end
-
-
-function recompute_weights(raw_data;
-                           energy_key=nothing, force_key=nothing, virial_key=nothing,
-                           weights=Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)))
-    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key,
-                   virial_key = virial_key, weights = weights) for at in raw_data ]
-    return ACEfit.assemble_weights(data)
-end
