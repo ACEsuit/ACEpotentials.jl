@@ -9,5 +9,5 @@ ACEpotentials.solver_params
 Additional regularizers (currently only "laplacian") are given via `regularizer_params()`
 
 ```@docs
-regularizer_params
+ACEpotentials.regularizer_params
 ```
