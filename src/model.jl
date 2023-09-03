@@ -9,8 +9,6 @@ export acefit!, export2json, export2lammps
 import JuLIP: energy, forces, virial, cutoff
 import ACE1.Utils: get_maxn
 
-_mean(x) = sum(x) / length(x)
-
 
 default_weights() = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0))
 
