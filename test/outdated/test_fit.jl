@@ -9,24 +9,24 @@ expected_errors_json = joinpath(artifact"ACE1pack_test_files", "expected_fit_err
 species = [:Ti, :Al]
 r0 = 2.88 
 
-data = data_params(fname = test_train_set,
+data = ACEpotentials.data_params(fname = test_train_set,
     energy_key = "energy",
     force_key = "force",
     virial_key = "virial")
 
-ace_basis = basis_params(
+ace_basis = ACEpotentials.basis_params(
     type = "ace",
     species = species, 
     N = 3, 
     maxdeg = 6, 
     r0 = r0, 
-    radial = basis_params(
+    radial = ACEpotentials.basis_params(
         type = "radial", 
         rcut = 5.0, 
         rin = 1.44,
         pin = 2))
 
-pair_basis = basis_params(
+pair_basis = ACEpotentials.basis_params(
     type = "pair", 
     species = species, 
     maxdeg = 6,
@@ -41,7 +41,7 @@ basis = Dict(
     "pair" => pair_basis
 )
 
-solver = solver_params(type = :lsqr)
+solver = ACEpotentials.solver_params(type = :lsqr)
 
 # symbols for species (e.g. :Ti) would work as well
 e0 = Dict("Ti" => -1586.0195, "Al" => -105.5954)
@@ -51,9 +51,9 @@ weights = Dict(
     "FLD_TiAl" => Dict("E" => 5.0, "F" => 1.0, "V" => 1.0),
     "TiAl_T5000" => Dict("E" => 30.0, "F" => 1.0, "V" => 1.0))
 
-P = regularizer_params(type = "laplacian", rlap_scal = 3.0)
+P = ACEpotentials.regularizer_params(type = "laplacian", rlap_scal = 3.0)
 
-params = fit_params(
+params = ACEpotentials.fit_params(
     data = data,
     basis = basis,
     solver = solver,
@@ -64,7 +64,7 @@ params = fit_params(
 
 ##    
 
-results = fit_ace(params)
+results = ACEpotentials.fit_ace(params)
 
 ##
 
