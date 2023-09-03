@@ -4,7 +4,7 @@
 
 using ACEfit, ACE1, LinearAlgebra, JuLIP
 
-export solver_params   
+#export solver_params   
 
 
 """

@@ -4,7 +4,7 @@
 
 using ACEpotentials
 
-export  fill_defaults, parse_ace_basis_keys
+#export  fill_defaults, parse_ace_basis_keys
 
 """ 
 
