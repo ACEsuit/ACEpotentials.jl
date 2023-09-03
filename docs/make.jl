@@ -64,6 +64,7 @@ makedocs(;
         "Home" => "index.md",
         "Getting Started" => Any[
             "gettingstarted/installation.md",
+            "tutorials/index.md",
             "gettingstarted/pkg.md",
             # "gettingstarted/readinglist.md",
             "gettingstarted/aceintro.md",
