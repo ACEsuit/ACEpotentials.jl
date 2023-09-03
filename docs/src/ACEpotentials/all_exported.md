@@ -11,5 +11,5 @@ Private = false
 
 ```@autodocs
 Modules = [ACEpotentials]
-Private = true
+Public = false
 ``` 
