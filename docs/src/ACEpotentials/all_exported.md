@@ -1,4 +1,4 @@
-# Reference
+# ACEpotentials API
 
 ```@autodocs
 Modules = [ACEpotentials]
