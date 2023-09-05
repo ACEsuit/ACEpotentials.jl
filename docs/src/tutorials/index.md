@@ -19,6 +19,7 @@ The next two tutorials show some additional techniques to better understand how 
 
 * [LAMMPS](lammps.md)
 * [Python with `ase`](python_ase.md)
+* [`Molly.jl`](molly.md)
 
 ### Structure analysis with ACE1 descriptors
 
