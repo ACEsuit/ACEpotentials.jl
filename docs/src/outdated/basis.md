@@ -4,7 +4,7 @@ The top-level function specifying the parameters needed to construct ACE & pair 
 
 
 ```@docs
-basis_params
-degree_params
-transform_params
+ACEpotentials.basis_params
+ACEpotentials.degree_params
+ACEpotentials.transform_params
 ```

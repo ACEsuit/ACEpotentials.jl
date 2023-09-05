@@ -4,7 +4,7 @@
 
 using ACE1
 
-export regularizer_params
+#export regularizer_params
 
 """
 `regularizer_params(; type = "laplacian", kwargs...)` : returns a dictionary containing the

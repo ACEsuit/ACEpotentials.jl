@@ -1,5 +1,5 @@
 
-# Installation Instructions
+# Installation
 
 ### Short Version
 
@@ -30,6 +30,10 @@ pkg"activate pathtoproject"
 ```
 
 ### Setting up the Python ASE calculator
+
+!!! warning
+    At present, it is necessary to have `ASE`, `JuLIP` and `ACE1` installed in your Julia project to use `pyjulip`.
+
 
 We use a wrapper called `pyjulip` to call julia and evaluate ACE potentials. In a terminal, with the correct julia project and python environment selected, run the following code:
 

@@ -130,50 +130,6 @@ function export_reppot(Vrep, reversed_species_dict)
     return reppot
 end
 
-function export_polypairpot(V2, reversed_species_dict)
-    Pr = V2.basis.J
-
-    p = Pr.trans.p
-    r0 = Pr.trans.r0
-    xr = Pr.J.tr
-    xl = Pr.J.tl
-    pr = Pr.J.pr
-    pl = Pr.J.pl
-    rcut = cutoff(Pr)
-    maxn = length(Pr)
-
-    if length(keys(reversed_species_dict)) == 1
-        num_coeffs = length(V2.coeffs)
-    else
-        num_coeffs = vcat(V2.basis.bidx0...)[2]
-    end
-
-    zlist_dict = Dict(zip(1:length(V2.basis.zlist.list), [string(chemical_symbol(z)) for z in V2.basis.zlist.list]))
-
-    polypairpot = Dict( "p" => p,
-                        "r0" => r0,
-                        "xr" => xr,
-                        "xl" => xl,
-                        "pr" => pr,
-                        "pl" => pl,
-                        "rcut" => rcut,
-                        "maxn"=> maxn,
-                        "recursion_coefficients" => Dict("A" => [Pr.J.A[i] for i in 1:maxn],
-                                                         "B" => [Pr.J.B[i] for i in 1:maxn],
-                                                         "C" => [Pr.J.C[i] for i in 1:maxn],),
-                        "coefficients" => Dict())
-
-    for (index1, element1) in zlist_dict
-        for (index2, element2) in zlist_dict
-            pair = [reversed_species_dict[element1], reversed_species_dict[element2]]
-            ind = V2.basis.bidx0[index1, index2]
-            polypairpot["coefficients"][pair] = V2.coeffs[ind+1:ind+num_coeffs]
-        end
-    end
-    
-    return polypairpot
-end
-
 
 make_dimer(s1, s2, rr) = Atoms(
     [[0.0,0.0,0.0],[rr,0.0,0.0]], 

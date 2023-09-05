@@ -41,9 +41,6 @@ Literate.markdown(_tutorial_src * "/descriptor.jl",
 Literate.markdown(_tutorial_src * "/committee.jl",
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/committee_old.jl",
-                  _tutorial_out; documenter = true)
-
 # ???? cf Jump.jl docs, they do also this: 
 # postprocess = _link_example,
 # # Turn off the footer. We manually add a modified one.
@@ -67,50 +64,48 @@ makedocs(;
         "Home" => "index.md",
         "Getting Started" => Any[
             "gettingstarted/installation.md",
-            "gettingstarted/pkg.md",
-            # "gettingstarted/readinglist.md",
-            "gettingstarted/aceintro.md",
+            "Tutorials" => Any[
+                "tutorials/index.md",
+                "literate_tutorials/first_example_model.md",
+                "literate_tutorials/TiAl_model.md",
+                "literate_tutorials/TiAl_basis.md",
+                "literate_tutorials/smoothness_priors.md",
+                "literate_tutorials/dataset_analysis.md",
+                "tutorials/lammps.md",
+                "tutorials/python_ase.md",
+                "tutorials/molly.md",
+                "literate_tutorials/descriptor.md",
+                "literate_tutorials/committee.md",
+            ],
+        ],
+        "Additional Topics" => Any[
             "gettingstarted/parallel-fitting.md",
-        ],
-        "Tutorials" => Any[
-            "tutorials/index.md",
-            "literate_tutorials/first_example_model.md",
-            "literate_tutorials/TiAl_model.md",
-            "literate_tutorials/TiAl_basis.md",
-            "literate_tutorials/smoothness_priors.md", 
-            "literate_tutorials/dataset_analysis.md", 
-            "literate_tutorials/descriptor.md",
-            "literate_tutorials/committee.md",
-            "tutorials/molly.md",
-            "tutorials/lammps.md",
-            "tutorials/python_ase.md",
-            "tutorials/Solvers.md",
-        ],
-        "ACEpotentials Internals" => Any[
+            "gettingstarted/aceintro.md",
             "ACEpotentials/all_exported.md",
         ],
         "Outdated" => Any[
-            "outdated/acepotentials_overview.md",
-            "outdated/fit.md",    
-            "outdated/helpers.md",
-            "outdated/data.md",
-            "outdated/basis.md",   
-            "outdated/solver.md",
-            "outdated/command_line_old.md",
-            "outdated/first_example_json.md",
+            "outdated/outdated.md",
+            #"outdated/acepotentials_overview.md",
+            #"outdated/fit.md",    
+            #"outdated/helpers.md",
+            #"outdated/data.md",
+            #"outdated/basis.md",   
+            #"outdated/solver.md",
+            #"outdated/command_line_old.md",
+            #"outdated/first_example_json.md",
             # "literate_tutorials/ACEpotentials_TiAl.md",
             # "ACEfit/File IO.md",
             # "ACEfit/Atomic Configurations in Julia.md",
             # "ACEfit/Manipulating potentials.md",
-            "outdated/Fitting.md",
-            "literate_tutorials/committee_old.md",
+            #"outdated/Fitting.md",
+            #"literate_tutorials/committee_old.md",
         ],
       ],
     )
 
-        # "Using ACE potentials" => Any[
-        #     "Using_ACE/python_ase.md",
-        #     "Using_ACE/openmm.md",
+        # "using_ace potentials" => Any[
+        #     "using_ace/python_ase.md",
+        #     "using_ace/openmm.md",
         # ],
         # "ACE" => Any[
         #     # "ACE/datatypes.md",

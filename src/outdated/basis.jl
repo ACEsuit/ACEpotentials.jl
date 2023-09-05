@@ -6,7 +6,7 @@ import ACE1.PairPotentials: PolyPairBasis
 import ACE1.Transforms: PolyTransform, MultiTransform
 
 
-export basis_params, degree_params, transform_params
+#export basis_params, degree_params, transform_params
 
 
 """

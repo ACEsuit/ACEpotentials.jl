@@ -2,7 +2,7 @@
 # ------------------------------------------
 #    Data to fit
 
-export data_params
+#export data_params
 
 """
 data_params(; kwargs...)` : returns a dictionary containing the 
