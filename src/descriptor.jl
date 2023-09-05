@@ -12,7 +12,7 @@ end
 
 
 """
-    site_descriptor(basis, atoms::AbstractAtoms)
+    site_descriptors(basis, atoms::AbstractAtoms)
 
 Compute site descriptors for all atoms in `atoms`, returning them as a list.
 """
