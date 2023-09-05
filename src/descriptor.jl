@@ -14,7 +14,8 @@ end
 """
     site_descriptors(basis, atoms::AbstractAtoms)
 
-Compute site descriptors for all atoms in `atoms`, returning them as a list.
+Compute site descriptors for all atoms in `atoms`, returning them as
+a vector of vectors.
 """
 function site_descriptors(basis, atoms::AbstractAtoms)
     return [site_descriptor(basis, atoms, i) for i in 1:length(atoms)]
