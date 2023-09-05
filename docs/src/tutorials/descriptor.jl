@@ -29,9 +29,9 @@ end
 
 # Finally, extract the descriptor principal components and plot. Note the segregation by configuration type.
 
-descriptors1 = hcat(descriptors...)
-M = fit(PCA, descriptors1; maxoutdim=3, pratio=1)
-descriptors_trans = transform(M, descriptors1)
+descriptors = hcat(descriptors...)
+M = fit(PCA, descriptors; maxoutdim=3, pratio=1)
+descriptors_trans = transform(M, descriptors)
 p = scatter(
     descriptors_trans[1,:], descriptors_trans[2,:], descriptors_trans[3,:],
     marker=:circle, linewidth=0, group=config_types, legend=:right)
