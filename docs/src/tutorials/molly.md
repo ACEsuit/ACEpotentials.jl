@@ -7,12 +7,12 @@ which is exported by ACEpotentials.
 
 ### Things to know about Molly
 
-Molly expects units to be defined. Our fitting procedure does not define units (implicitly we use eV and eV and Å),
+Molly expects units to be defined. Our fitting procedure does not define units (implicitly we use eV for energy and Å length),
 so in order to use Molly, units need to be defined. This is done by wrapping potentials to
 a structure that holds units in addition to the potential. The units used are defined in [Unitful](https://github.com/PainterQubits/Unitful.jl), which is exported by default.
 
 To wrap units for a potential you can use `load_ace_model` function, which can take in
-a potential you have just fitted as an input. You can also load `json` or `yaml` potential
+a potential you have just fitted as an input. You can also load `json` or `yace` potential
 files exported from `ACEpotentials.jl` or `ACE1.jl`.
 
 ```julia
@@ -38,44 +38,32 @@ load_ace_model( "path to potential file";
 ```julia
 using Molly
 using ACEpotentials # or ACEmd
-using ExtXYZ
+using AtomsIO
 
 # Load initial structure
-data = FastSystem(ExtXYZ.Atoms(read_frame("initial structure in xyz file")))
+data = AtomsIO.load_system("initial structure file")
 # or use whatever AtomsBase structure
+# need to have velocity return other than missing
 
 # Load ACE potential
 pot = load_ace_model("some ace potential")
 
-# Prepare data to Molly compatible format
-atoms = [Molly.Atom( index=i, mass=AtomsBase.atomic_mass(data, i) ) for i in 1:length(data) ]
-
-# Create boundary conditions
-boundary = begin
-    box = bounding_box(data)
-    CubicBoundary(box[1][1], box[2][2], box[3][3])
-end
-
-# Prepare atomic number data. This is an ACE specific customization for older Molly versions.
-atom_data = [ (; :Z=>z,:element=>s)  for (z,s) in zip(AtomsBase.atomic_number(data), AtomsBase.atomic_symbol(data))  ]
+# Pack data to Molly compatible format
+sys = Molly.System(data, pot)
 
 # Set up temperature and velocities
 temp = 298.0u"K"
-velocities = [random_velocity(m, temp) for m in atomic_mass(data)]
+vel = random_velocities!(sys, temp)
 
-# Set up Molly system it self
-sys = System(
-           atoms=atoms,
-           atoms_data = atom_data,
-           coords=position(data),
-           velocities=velocities,
-           general_inters = (pot,),
-           boundary=boundary,
-           loggers=(temp=TemperatureLogger(100),), # add more loggers here
-           energy_units=u"eV",  # Molly simulation units
-           force_units=u"eV/Å",
-       )
+# Add loggers
+# need at least Molly v0.17 for this
+sys = Molly.System(
+    sys;
+    loggers=(temp=TemperatureLogger(100),) # add more loggers here
+)
 ```
+
+You can also customize system more. For details refer [Molly documentation](https://juliamolsim.github.io/Molly.jl/stable/).
 
 ### Set up simulation
 

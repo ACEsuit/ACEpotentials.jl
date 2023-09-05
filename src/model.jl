@@ -9,8 +9,6 @@ export acefit!, export2json, export2lammps
 import JuLIP: energy, forces, virial, cutoff
 import ACE1.Utils: get_maxn
 
-_mean(x) = sum(x) / length(x)
-
 
 default_weights() = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0))
 
@@ -119,7 +117,7 @@ function linear_errors(raw_data::AbstractVector{<: Atoms}, model::ACE1Model;
 end
 
 
-# ---------------- Implementaiton of the repuslion restraint 
+# ---------------- Implementation of the repulsion restraint 
 
 
 function _rep_dimer_data(model; 
@@ -165,6 +163,11 @@ function _rep_dimer_data(model;
    return restraints
 end
 
+
+"""
+`export2lammps(pathtofile, model::ACE1Model)` : exports the potential to the
+`.yace` format for use in LAMMPS.
+"""
 function export2lammps(pathtofile, model::ACE1Model)
    if pathtofile[end-4:end] != ".yace"
       @warn("the lammps potential filename should end in .yace")
@@ -229,13 +232,4 @@ function assemble(raw_data, model::ACE1Model;
       
    A, Y, W = assemble(data, model.basis, mode)
    return A, Y, W
-end
-
-
-function recompute_weights(raw_data;
-                           energy_key=nothing, force_key=nothing, virial_key=nothing,
-                           weights=Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)))
-    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key,
-                   virial_key = virial_key, weights = weights) for at in raw_data ]
-    return ACEfit.assemble_weights(data)
 end

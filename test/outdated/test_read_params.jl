@@ -28,7 +28,7 @@ multitransform_params = Dict(
         ("H", "H") => Dict("type" => "polynomial")),
     "type" => "multitransform") 
 
-out = fill_defaults(multitransform_params, param_key="transform")
+out = ACEpotentials.fill_defaults(multitransform_params, param_key="transform")
 for (key, val) in out["transforms"]
     for extra_key in ["r0", "p"]
         print_tf(@test haskey(val, extra_key))
@@ -45,7 +45,7 @@ ace_params = Dict(
         "rin" => 2.0,
         "rcut" => 7.0
     ))
-out = fill_defaults(ace_params, param_key="ace")
+out = ACEpotentials.fill_defaults(ace_params, param_key="ace")
 
 
 @info("Test parsing string of tuple into tuple of strings in basis")
@@ -64,7 +64,7 @@ ace_basis_params = Dict(
                     "type" => "polynomial")),
             "type" => "multitransform"))
 
-out = parse_ace_basis_keys(ace_basis_params)
+out = ACEpotentials.parse_ace_basis_keys(ace_basis_params)
 print_tf(@test haskey(out["degree"]["Dd"], (4, "C")))
 print_tf(@test haskey(out["transform"]["transforms"], ("C", "C")))
 print_tf(@test haskey(out["transform"]["cutoffs"], ("C", "C")))
@@ -92,7 +92,7 @@ minimal_params = Dict(
         "type" => "rrqr"),
     "e0" => "something")
 
-filled_params = fill_defaults(minimal_params)
+filled_params = ACEpotentials.fill_defaults(minimal_params)
 for extra_key in ["ACE_fname", "LSQ_DB_fname_stem", "fit_from_LSQ_DB"]
     print_tf(@test haskey(filled_params, extra_key))
 end

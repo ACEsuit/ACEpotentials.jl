@@ -8,7 +8,7 @@ import ACEfit
 import ExtXYZ
 using Base 
 
-export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
+#export fit_params, fit_ace, make_ace_db, db_params, fit_ace_db, save_fit
 
 """
 `fit_ace(params::Dict) -> IP, lsqinfo` 

@@ -135,6 +135,14 @@ function ACEfit.weight_vector(d::AtomsData)
     return w
 end
 
+function recompute_weights(raw_data;
+                           energy_key=nothing, force_key=nothing, virial_key=nothing,
+                           weights=Dict("default"=>Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)))
+    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key,
+                   virial_key = virial_key, weights = weights) for at in raw_data ]
+    return ACEfit.assemble_weights(data)
+end
+
 function group_type(d::AtomsData; group_key="config_type")
     group_type = "default"
     for (k,v) in d.atoms.data
