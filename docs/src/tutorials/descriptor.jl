@@ -4,8 +4,8 @@
 
 using ACEpotentials, MultivariateStats, Plots
 
-# Load a (tiny) silicon dataset, which has the isolated atom, 25 diamond-like
-# configurations (dia), 25 beta-tin-like configurations and 2 liquid (liq)
+# Load a tiny silicon dataset, which has the isolated atom, 25 diamond-like (dia)
+# configurations, 25 beta-tin-like (bt) configurations, and 2 liquid (liq)
 # configurations.
 
 dataset, _, _ = ACEpotentials.example_dataset("Si_tiny");
