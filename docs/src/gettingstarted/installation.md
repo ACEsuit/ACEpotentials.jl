@@ -58,7 +58,7 @@ If you have any difficulties with the following setup process, please file an is
 
 #### Installing Julia
 
-Download and unpack [Julia](https://julialang.org). We recommend v1.8 or upwards. Add the `julia` executable to your path with something like `export PATH=<julia-directory>/bin:$PATH`.
+Download and unpack [Julia](https://julialang.org). We require v1.9 or upwards. Add the `julia` executable to your path with something like `export PATH=<julia-directory>/bin:$PATH`.
 
 Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then install the General registry and the [`ACE` registry](https://github.com/ACEsuit/ACEregistry):
 ```julia
