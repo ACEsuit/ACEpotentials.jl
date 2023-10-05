@@ -58,21 +58,43 @@ function acefit!(model::ACE1Model, raw_data;
                 restraint_weight = 0.01, 
                 export_lammps = nothing, 
                 export_json = nothing, 
-                verbose=true)
+                verbose=true,
+                kwargs...
+)
 
-   data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
-                          virial_key = virial_key, weights = weights, 
-                          v_ref = model.Vref) 
-            for at in raw_data ] 
+   data = map( raw_data ) do data_point
+      _apply_weight(
+         data_point;
+         energy_key = energy_key, 
+         force_key=force_key, 
+         virial_key = virial_key, 
+         weights = weights, 
+         v_ref = model.Vref
+      )
+   end
 
    if verbose; assess_dataset(data); end 
 
    if repulsion_restraint 
-      append!(data, _rep_dimer_data(model, weight = restraint_weight))
+      if eltype(data) == AtomsData
+         append!(data, _rep_dimer_data(model, weight = restraint_weight))
+      else
+         error("Repulsion restraint not implemented for AtomsBase")
+      end
    end
                   
    P = _make_prior(model, smoothness, prior)
-   A, Y, W = ACEfit.assemble(data, model.basis)
+   # We need to this to allow control over new and old assembly
+   A, Y, W = _dispatch_to_assebly(
+      data, 
+      model.basis;
+      energy_key= Symbol(energy_key),
+      force_key = Symbol(force_key),
+      virial_key= Symbol(virial_key),
+      energy_ref= model.Vref,
+      kwargs... 
+   )
+
    Ap = Diagonal(W) * (A / P) 
    Y = W .* Y
    result = ACEfit.solve(solver, Ap, Y)
@@ -100,7 +122,52 @@ function acefit!(model::ACE1Model, raw_data;
    return model 
 end
 
+function _apply_weight(
+   data::JuLIP.Atoms;
+   energy_key = nothing, 
+   force_key = nothing, 
+   virial_key = nothing, 
+   weights = nothing, 
+   v_ref = nothing,
+   kwargs...
+)
+   return AtomsData(
+      data;
+      energy_key = energy_key,
+      force_key  = force_key,
+      virial_key = virial_key,
+      weights    = weights,
+      v_ref      = v_ref,
+   )
+end
 
+function _apply_weight(data; config_key=:config_type, kwargs...)
+   w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
+   if haskey(kwargs, :weights)
+      weights = kwargs[:weights]
+      if haskey(data, config_key) && haskey(weights, data[config_key])
+         w = weights[ data[config_key] ]
+      elseif haskey(weights, "defaults")
+         w = weights["defaults"]
+      end
+   end
+   return FlexibleSystem(
+      data;
+      energy_weight = w["E"],
+      force_weight  = w["F"],
+      virial_weight = w["V"]
+   )
+end
+
+function _dispatch_to_assebly(data::AbstractArray{AtomsData}, basis; kwargs...)
+   if haskey(kwargs, :new_assembly) && kwargs[:new_assembly] == true
+      return ACEfit.assemble(data, basis; new_assembly=true)
+   else
+      return ACEfit.assemble(data, basis)
+   end
+end
+
+_dispatch_to_assebly(data, basis; kwargs...) = ACEfit.assemble(data, basis; kwargs...)
 
 function linear_errors(raw_data::AbstractVector{<: Atoms}, model::ACE1Model; 
                        energy_key = "energy", 
@@ -205,7 +272,7 @@ end
 
 import ACEfit: assemble
 
-function assemble(raw_data, model::ACE1Model; 
+function assemble(raw_data::AbstractArray{JuLIP.Atoms}, model::ACE1Model; 
                      weights = default_weights(),
                      energy_key = "energy", 
                      force_key = "force", 

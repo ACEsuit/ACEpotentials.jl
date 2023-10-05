@@ -69,7 +69,7 @@ function ACEfit.count_observations(d::AtomsData)
            6*!isnothing(d.virial_key)
 end
 
-function ACEfit.feature_matrix(d::AtomsData, basis)
+function ACEfit.feature_matrix(d::AtomsData, basis; kwargs...)
     dm = Array{Float64}(undef, ACEfit.count_observations(d), length(basis))
     i = 1
     if !isnothing(d.energy_key)
@@ -93,7 +93,7 @@ function ACEfit.feature_matrix(d::AtomsData, basis)
     return dm
 end
 
-function ACEfit.target_vector(d::AtomsData)
+function ACEfit.target_vector(d::AtomsData; kwargs...)
     y = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
@@ -117,7 +117,7 @@ function ACEfit.target_vector(d::AtomsData)
     return y
 end
 
-function ACEfit.weight_vector(d::AtomsData)
+function ACEfit.weight_vector(d::AtomsData; kwargs...)
     w = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
@@ -153,7 +153,7 @@ function group_type(d::AtomsData; group_key="config_type")
     return group_type
 end
 
-function linear_errors(data, model; group_key="config_type", verbose=true)
+function linear_errors(data::AbstractArray{AtomsData}, model; group_key="config_type", verbose=true)
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
    rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
@@ -279,7 +279,7 @@ function print_mae_table(config_errors::Dict; header=true)
 end
 
 
-function assess_dataset(data)
+function assess_dataset(data::AbstractArray{AtomsData})
     config_types = []
 
     n_configs = OrderedDict{String,Integer}()

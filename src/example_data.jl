@@ -32,14 +32,22 @@ function list_example_datasets()
    return sort(collect(keys(_example_data)))
 end   
 
-function example_dataset(id::Union{String, Symbol})
+function example_dataset(id::Union{String, Symbol}; atoms_base=false)
    art = _example_data[id].art
    path = (@artifact_str "$art")
    train_path = joinpath(path, _example_data[id].train)
-   train = read_extxyz(train_path)
+   if atoms_base
+      train = ExtXYZ.load(train_path)
+   else
+      train = read_extxyz(train_path)
+   end
    if _example_data[id].test != nothing
       test_path = joinpath(path, _example_data[id].test)
-      test = read_extxyz(test_path)
+      if atoms_base
+         test = ExtXYZ.load(test_path)
+      else
+         test = read_extxyz(test_path)
+      end
    else
       test = nothing
    end
