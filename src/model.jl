@@ -73,7 +73,15 @@ function acefit!(model::ACE1Model, raw_data;
       )
    end
 
-   if verbose; assess_dataset(data); end 
+   if verbose
+      assess_dataset(
+         data;
+         energy_key = energy_key, 
+         force_key  = force_key, 
+         virial_key = virial_key,
+         kwargs...
+      )
+    end 
 
    if repulsion_restraint 
       if eltype(data) == AtomsData
@@ -141,12 +149,12 @@ function _apply_weight(
    )
 end
 
-function _apply_weight(data; config_key=:config_type, kwargs...)
+function _apply_weight(data; group_key=:config_type, kwargs...)
    w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
    if haskey(kwargs, :weights)
       weights = kwargs[:weights]
-      if haskey(data, config_key) && haskey(weights, data[config_key])
-         w = weights[ data[config_key] ]
+      if haskey(data, group_key) && haskey(weights, data[group_key])
+         w = weights[ data[group_key] ]
       elseif haskey(weights, "defaults")
          w = weights["defaults"]
       end
