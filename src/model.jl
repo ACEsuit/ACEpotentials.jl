@@ -194,9 +194,46 @@ end
 
 # ---------------- Implementation of the repulsion restraint 
 
+function _rep_dimer_data_atomsbase(model; weight=0.01, name_E_weight = "E...") 
+   zz = model.basis.BB[1].zlist.list
+   restraints = [] 
+   restraint_weights = Dict("restraint" => Dict("E" => weight, "F" => 0.0, "V" => 0.0))
+   B_pair = model.basis.BB[1] 
+   if !isa(B_pair, ACE1.PolyPairBasis)
+      error("repulsion restraints only implemented for PolyPairBasis")
+   end
+
+   for i = 1:length(zz), j = i:length(zz)
+      z1, z2 = zz[i], zz[j]
+      s1, s2 = chemical_symbol.((z1, z2))
+      r0_est = 1.0   # could try to get this from the model meta-data 
+      _rin = r0_est / 100  # can't take 0 since we'd end up with ∞ / ∞
+      Pr_ij = B_pair.J[i, j]
+      if !isa(Pr_ij, ACE1.OrthPolys.TransformedPolys)
+         error("repulsion restraints only implemented for TransformedPolys")
+      end
+      envfun = Pr_ij.envelope 
+      if !isa(envfun, ACE1.OrthPolys.PolyEnvelope)
+         error("repulsion restraints only implemented for PolyEnvelope")
+      end
+      if !(envfun.p >= 0)
+         error("repulsion restraints only implemented for PolyEnvelope with p >= 0")
+      end
+      env_rin = ACE1.evaluate(envfun, _rin)
+
+      # at = at_dimer(_rin, z1, z2)
+      # X = [ [0,0,0], [_rin, 0, 0] ] 
+      # Z = [z1, z2]
+      # cell = [ _rin+1 0 0; 0 1 0; 0 0 1]
+      # pbc = fff 
+
+      # add weight to the structure 
+
+
+end
 
 function _rep_dimer_data(model; 
-                         weight = 0.01, 
+                         weight = 0.01;
                          )
    zz = model.basis.BB[1].zlist.list
    restraints = [] 
