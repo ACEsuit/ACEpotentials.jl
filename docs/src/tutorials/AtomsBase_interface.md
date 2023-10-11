@@ -126,3 +126,5 @@ V = ace_virial(system, pot)
 ```
 
 where `system` is an AtomsBase structure.
+
+For more details on using AtomsBase look [ACEmd](https://github.com/ACEsuit/ACEmd.jl).
