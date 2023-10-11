@@ -14,6 +14,11 @@ function linear_errors(data, model::ACE1x.ACE1Model; kwargs...)
 end
 
 
+function ACEmd.ACEpotential(model::ACE1x.ACE1Model; kwargs...)
+    return ACEmd.ACEpotential(model.potential.components; kwargs...)
+end
+
+
 function linear_errors(
     data, 
     model::ACEmd.ACEpotential; 

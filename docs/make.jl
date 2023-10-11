@@ -76,6 +76,7 @@ makedocs(;
                 "tutorials/molly.md",
                 "literate_tutorials/descriptor.md",
                 "literate_tutorials/committee.md",
+                "tutorials/AtomsBase_interface.md",
             ],
         ],
         "Additional Topics" => Any[
