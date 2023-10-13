@@ -30,7 +30,7 @@ data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial"; atoms_base=true)
 
 There are no changes to the training methods when using AtomsBase. You only need to have the training data in AtomsBase format for the training to work. Here is the `acemodel` style training tutorial using AtomsBase
 
-```@example
+```julia
 using ACEpotentials
 
 
@@ -63,18 +63,32 @@ ACEpotentials.linear_errors(data_train, model; weights=weights);
 
 ### Weights with AtomsBase
 
-With AtomsBase weights are stored in AtomsBase structures and there is no need to create `AtomsData` structures. Weight for a structure can be accessed with keyword `:weight`
+With AtomsBase weights are stored in AtomsBase structures and there is no need to create `AtomsData` structures. Weights can be given for either energy, forces or virial and for structure itself. Each of these have an associated keyword
+
+- `:energy_weight` for energy
+- `:force_weight` for forces
+- `virial_weight` for virial
+- `:weight` a general weight for the structure that multiply other weights
+
+To access the weights you can call
 
 ```julia
-# return weight for a structure 
+data_point[:energy_weight]
+data_point[:force_weight]
+data_point[:virial_weight] 
 data_point[:weight]
 ```
 
 To set a weight by hand on an individual structure you can use
 
 ```julia
-# Set weight
+# Set general weight
 data_point[:weight] = 60
+
+# Set weight for energy
+data_point[:energy_weight] = 60
+
+# etc.
 ```
 
 When you use acemodel interface (call `acefit!`) the weights are applied by overwriting any existing weights.
