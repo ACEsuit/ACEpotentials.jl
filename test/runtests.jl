@@ -4,6 +4,7 @@ using ACEpotentials, Test, LazyArtifacts
 
     @testset "Test silicon" begin include("test_silicon.jl") end
     @testset "Test recomputation of weights" begin include("test_recompw.jl") end
+    @testset "AtomsBase interface" begin include("atomsbase.jl") end
 
     # outdated
     @testset "Read data" begin include("outdated/test_data.jl") end 
