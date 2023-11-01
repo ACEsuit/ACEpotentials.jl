@@ -183,7 +183,7 @@ end
 
 _dispatch_to_assebly(data, basis; kwargs...) = ACEfit.assemble(data, basis; kwargs...)
 
-function linear_errors(raw_data::AbstractArray{JuLIP.Atoms}, model::ACE1Model; 
+function linear_errors(raw_data::AbstractArray{<:JuLIP.Atoms}, model::ACE1Model; 
                        energy_key = "energy", 
                        force_key = "force", 
                        virial_key = "virial", 
