@@ -20,7 +20,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
-ACE1 = "0.11.15"
+ACE1 = "0.12"
 ACE1x = "0.1.8"
 ACEfit = "0.1.4"
 ACEmd = "0.1.5"

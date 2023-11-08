@@ -30,7 +30,7 @@ weights = Dict("default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
     )
     fname = tempname() * ".json" 
     pot = ACEpotential(model.potential.components)
-    save_ace_potential(fname, model)
-    npot = load_ace_potential(fname; new_format=true)
+    save_potential(fname, model)
+    npot = load_potential(fname; new_format=true)
     @test ace_energy(pot, data[1]) ≈ ace_energy(npot, data[1])
 end

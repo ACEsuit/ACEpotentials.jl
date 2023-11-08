@@ -1,10 +1,10 @@
 using Pkg
 
-export load_ace_potential
-export save_ace_potential
+export load_potential
+export save_potential
 
 """
-    function load_ace_potential(fname::AbstractString; new_format=false, verbose=true)
+    function load_potential(fname::AbstractString; new_format=false, verbose=true)
 
 Load ACE potential from given file `fname`.
 
@@ -12,7 +12,7 @@ Load ACE potential from given file `fname`.
 - `new_format=false` - If true returns potential as `ACEmd.ACEpotential` format, else use old JuLIP format
 - `verbose=true`     - Display version info on load
 """
-function load_ace_potential(
+function load_potential(
     fname::AbstractString;
     new_format=false,
     verbose=true
@@ -42,22 +42,22 @@ end
 
 
 """
-    save_ace_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true)
+    save_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true)
 
 Save ACE potentials. Prefix is either .json, .yml or .yace, which also determines file format.
 
 # Kwargs
 - save_version_numbers=true  : If true save version information or relevant packages
 """
-function save_ace_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true)
-    return save_ace_potential(fname, potential.potential; save_version_numbers=save_version_numbers)
+function save_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true)
+    return save_potential(fname, potential.potential; save_version_numbers=save_version_numbers)
 end
 
-function save_ace_potential( fname, potential::ACEmd.ACEpotential; save_version_numbers=true)
-    return save_ace_potential(fname, potential.potentials; save_version_numbers=save_version_numbers)
+function save_potential( fname, potential::ACEmd.ACEpotential; save_version_numbers=true)
+    return save_potential(fname, potential.potentials; save_version_numbers=save_version_numbers)
 end
 
-function save_ace_potential(fname, potential; save_version_numbers=true)
+function save_potential(fname, potential; save_version_numbers=true)
     if save_version_numbers
         versions = Dict()
         versions["ACEpotentials"] = extract_version("ACEpotentials")
