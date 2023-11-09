@@ -91,5 +91,5 @@ end
 
 ## Deprecations
 
-@deprecate export2json(fname, model; meta) save_potential(fname, model)
+@deprecate export2json(fname, model; meta=nothing) save_potential(fname, model)
 
