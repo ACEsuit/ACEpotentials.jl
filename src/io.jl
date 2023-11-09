@@ -87,3 +87,9 @@ function extract_version(name::AbstractString)
     hit = filter(x->x.name==name, vals) |> only
     return hit.version
 end
+
+
+## Deprecations
+
+@deprecate export2json(fname, model; meta) save_potential(fname, model)
+
