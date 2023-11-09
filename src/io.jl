@@ -42,22 +42,23 @@ end
 
 
 """
-    save_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true)
+    save_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true, meta=nothing)
 
 Save ACE potentials. Prefix is either .json, .yml or .yace, which also determines file format.
 
 # Kwargs
 - save_version_numbers=true  : If true save version information or relevant packages
+- `meta=nothing`             : Seve some metadata with the potential (needs to be `Dict{String, Any}`)
 """
-function save_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true)
-    return save_potential(fname, potential.potential; save_version_numbers=save_version_numbers)
+function save_potential( fname, potential::ACE1x.ACE1Model; save_version_numbers=true, meta=nothing)
+    return save_potential(fname, potential.potential; save_version_numbers=save_version_numbers, meta=meta)
 end
 
-function save_potential( fname, potential::ACEmd.ACEpotential; save_version_numbers=true)
-    return save_potential(fname, potential.potentials; save_version_numbers=save_version_numbers)
+function save_potential( fname, potential::ACEmd.ACEpotential; save_version_numbers=true, meta=nothing)
+    return save_potential(fname, potential.potentials; save_version_numbers=save_version_numbers, meta=meta)
 end
 
-function save_potential(fname, potential; save_version_numbers=true)
+function save_potential(fname, potential; save_version_numbers=true, meta=nothing)
     if save_version_numbers
         versions = Dict()
         versions["ACEpotentials"] = extract_version("ACEpotentials")
@@ -77,6 +78,10 @@ function save_potential(fname, potential; save_version_numbers=true)
             "IP" => write_dict(potential)
         )
     end
+    if !isnothing(meta)
+        @assert isa(meta, Dict{String, <:Any}) "meta needs to be a Dict{String, Any}"
+        data["meta"] = convert(Dict{String, Any}, meta)
+    end
     save_dict(fname, data)
 end
 
@@ -91,5 +96,5 @@ end
 
 ## Deprecations
 
-@deprecate export2json(fname, model; meta=nothing) save_potential(fname, model)
+@deprecate export2json(fname, model; meta=nothing) save_potential(fname, model; meta=meta)
 
