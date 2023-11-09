@@ -44,7 +44,7 @@ acefit!(model, data_train; solver=solver, prior = P);</code></pre><pre class="do
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (1770, 190).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:00:37</span><span class="sgr32">Progress:   8%|███▏                                     |  ETA: 0:00:28</span><span class="sgr32">Progress:  23%|█████████▍                               |  ETA: 0:00:20</span><span class="sgr32">Progress:  27%|███████████▏                             |  ETA: 0:00:18</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:17</span><span class="sgr32">Progress:  47%|███████████████████▎                     |  ETA: 0:00:13</span><span class="sgr32">Progress:  62%|█████████████████████████▌               |  ETA: 0:00:09</span><span class="sgr32">Progress:  77%|███████████████████████████████▋         |  ETA: 0:00:05</span><span class="sgr32">Progress:  82%|█████████████████████████████████▌       |  ETA: 0:00:04</span><span class="sgr32">Progress:  86%|███████████████████████████████████▍     |  ETA: 0:00:03</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:23</span>
+<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:00:23</span><span class="sgr32">Progress:   8%|███▏                                     |  ETA: 0:00:18</span><span class="sgr32">Progress:  12%|█████                                    |  ETA: 0:00:15</span><span class="sgr32">Progress:  17%|██████▉                                  |  ETA: 0:00:14</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:11</span><span class="sgr32">Progress:  47%|███████████████████▎                     |  ETA: 0:00:08</span><span class="sgr32">Progress:  52%|█████████████████████▏                   |  ETA: 0:00:08</span><span class="sgr32">Progress:  56%|███████████████████████                  |  ETA: 0:00:07</span><span class="sgr32">Progress:  71%|█████████████████████████████▎           |  ETA: 0:00:05</span><span class="sgr32">Progress:  76%|███████████████████████████████          |  ETA: 0:00:04</span><span class="sgr32">Progress:  80%|████████████████████████████████▉        |  ETA: 0:00:03</span><span class="sgr32">Progress:  95%|███████████████████████████████████████▏ |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:15</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 <span class="sgr33"><span class="sgr1">┌ Warning: </span></span>Need to apply preconditioner in LSQR.
@@ -53,25 +53,25 @@ damp  0.01
 atol  1.0e-6
 maxiter  100000
 Converged after 272 iterations.
-relative RMS error  0.004318817305860809</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
+relative RMS error  0.004366331534230653</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
 ACEpotentials.linear_errors(data_train, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Training Error Table
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │  10.767 │    0.098 │ 104.313 │
-│ TiAl_T5000 │   1.409 │    0.446 │  49.943 │
+│   FLD_TiAl │  11.006 │    0.104 │ 110.580 │
+│ TiAl_T5000 │   1.544 │    0.448 │  51.207 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │  10.523 │    0.379 │ 102.469 │
+│        set │  10.758 │    0.382 │ 108.588 │
 └────────────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   7.761 │    0.061 │  65.092 │
-│ TiAl_T5000 │   1.386 │    0.348 │  37.490 │
+│   FLD_TiAl │   8.150 │    0.065 │  69.187 │
+│ TiAl_T5000 │   1.511 │    0.350 │  37.733 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   7.471 │    0.265 │  63.837 │
+│        set │   7.848 │    0.268 │  67.757 │
 └────────────┴─────────┴──────────┴─────────┘</code></pre><p>We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions.</p><pre><code class="language-julia hljs">@info(&quot;Test Error Table&quot;)
 test_data = data[2:10:end]
 ACEpotentials.linear_errors(test_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Test Error Table
@@ -79,17 +79,17 @@ ACEpotentials.linear_errors(test_data, model; weights=weights);</code></pre><pre
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │  19.936 │    0.174 │ 115.665 │
-│ TiAl_T5000 │  25.655 │    0.508 │ 101.252 │
+│   FLD_TiAl │  20.768 │    0.174 │ 121.603 │
+│ TiAl_T5000 │  26.260 │    0.520 │  99.731 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │  20.133 │    0.367 │ 115.255 │
+│        set │  20.955 │    0.374 │ 120.998 │
 └────────────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │  11.395 │    0.087 │  66.497 │
-│ TiAl_T5000 │  25.655 │    0.418 │  77.757 │
+│   FLD_TiAl │  11.908 │    0.091 │  71.276 │
+│ TiAl_T5000 │  26.260 │    0.430 │  79.962 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │  11.827 │    0.239 │  66.838 │
-└────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an <code>ACE1.jl</code> compatible potential, while the second line exports it to a format that can be ready by the <code>pacemaker</code> code to be used within LAMMPS.</p><pre><code class="language-julia hljs">export2json(&quot;./TiAl_tutorial_pot.json&quot;, model)</code></pre><p>export to lammps (ML-PACE):</p><pre><code class="language-julia hljs">export2lammps(&quot;./TiAl_tutorial_pot.yace&quot;, model)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../first_example_model/">« First example</a><a class="docs-footer-nextpage" href="../TiAl_basis/">The <code>ace_basis</code> interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Thursday 9 November 2023 01:06">Thursday 9 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+│        set │  12.343 │    0.246 │  71.539 │
+└────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an <code>ACE1.jl</code> compatible potential, while the second line exports it to a format that can be ready by the <code>pacemaker</code> code to be used within LAMMPS.</p><pre><code class="language-julia hljs">export2json(&quot;./TiAl_tutorial_pot.json&quot;, model)</code></pre><p>export to lammps (ML-PACE):</p><pre><code class="language-julia hljs">export2lammps(&quot;./TiAl_tutorial_pot.yace&quot;, model)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../first_example_model/">« First example</a><a class="docs-footer-nextpage" href="../TiAl_basis/">The <code>ace_basis</code> interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Thursday 9 November 2023 01:23">Thursday 9 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
