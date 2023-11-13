@@ -12,6 +12,7 @@ include("model.jl")
 include("export.jl")
 include("example_data.jl")
 include("descriptor.jl")
+include("atoms_base.jl")
 include("io.jl")
 
 include("analysis/potential_analysis.jl")

@@ -69,7 +69,7 @@ function ACEfit.count_observations(d::AtomsData)
            6*!isnothing(d.virial_key)
 end
 
-function ACEfit.feature_matrix(d::AtomsData, basis)
+function ACEfit.feature_matrix(d::AtomsData, basis; kwargs...)
     dm = Array{Float64}(undef, ACEfit.count_observations(d), length(basis))
     i = 1
     if !isnothing(d.energy_key)
@@ -93,7 +93,7 @@ function ACEfit.feature_matrix(d::AtomsData, basis)
     return dm
 end
 
-function ACEfit.target_vector(d::AtomsData)
+function ACEfit.target_vector(d::AtomsData; kwargs...)
     y = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
@@ -117,7 +117,7 @@ function ACEfit.target_vector(d::AtomsData)
     return y
 end
 
-function ACEfit.weight_vector(d::AtomsData)
+function ACEfit.weight_vector(d::AtomsData; kwargs...)
     w = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
@@ -153,7 +153,7 @@ function group_type(d::AtomsData; group_key="config_type")
     return group_type
 end
 
-function linear_errors(data, model; group_key="config_type", verbose=true)
+function linear_errors(data::AbstractArray{AtomsData}, model; group_key="config_type", verbose=true)
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
    rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
@@ -279,7 +279,7 @@ function print_mae_table(config_errors::Dict; header=true)
 end
 
 
-function assess_dataset(data)
+function assess_dataset(data; kwargs...)
     config_types = []
 
     n_configs = OrderedDict{String,Integer}()
@@ -289,7 +289,11 @@ function assess_dataset(data)
     n_virials = OrderedDict{String,Integer}()
 
     for d in data
-        c_t = group_type(d)
+        if haskey(kwargs, :group_key)
+            c_t = group_type(d; group_key=kwargs[:group_key])
+        else
+            c_t = group_type(d)
+        end
         if !(c_t in config_types)
             push!(config_types, c_t)
             n_configs[c_t] = 0
@@ -299,10 +303,10 @@ function assess_dataset(data)
             n_virials[c_t] = 0
         end
         n_configs[c_t] += 1
-        n_environments[c_t] += length(d.atoms)
-        !isnothing(d.energy_key) && (n_energies[c_t] += 1)
-        !isnothing(d.force_key) && (n_forces[c_t] += 3*length(d.atoms))
-        !isnothing(d.virial_key) && (n_virials[c_t] += 6)
+        n_environments[c_t] += length(d)
+        _has_energy(d; kwargs...) && (n_energies[c_t] += 1)
+        _has_forces(d; kwargs...) && (n_forces[c_t] += 3*length(d))
+        _has_virial(d; kwargs...) && (n_virials[c_t] += 6)
     end
 
     n_configs = collect(values(n_configs))
@@ -325,3 +329,10 @@ function assess_dataset(data)
     pretty_table(table; header=header, body_hlines=[length(n_configs)], crop = :horizontal)
 
 end
+
+_has_energy(data::AtomsData; kwargs...) = !isnothing(data.energy_key)
+_has_forces(data::AtomsData; kwargs...) = !isnothing(data.force_key)
+_has_virial(data::AtomsData; kwargs...) = !isnothing(data.virial_key)
+
+
+Base.length(a::AtomsData) = length(a.atoms)
