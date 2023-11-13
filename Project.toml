@@ -1,6 +1,6 @@
 name = "ACEpotentials"
 uuid = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
-version = "0.6.3"
+version = "0.6.4"
 
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
@@ -13,14 +13,14 @@ JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
-
 [compat]
-ACE1 = "0.11.15"
+ACE1 = "0.12"
 ACE1x = "0.1.8"
 ACEfit = "0.1.4"
 ACEmd = "0.1.6"

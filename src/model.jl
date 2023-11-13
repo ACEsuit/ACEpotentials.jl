@@ -308,29 +308,6 @@ function export2lammps(pathtofile, model::ACE1Model)
 end
 
 
-"""
-`export2json(pathtofile, model; meta = Dict())` : exports the fitted potential to a dictionary 
-and then saves that to a JSON or YAML file, depending on the ending in the 
-filename. The dictionary will be of the form 
-```julia
-Dict{String, Any}("potential" => Dict( ... ), "meta" => Dict( ... ) )
-```
-where `potdict` is the dictionary specifies the fitted potential. The `meta` 
-dictionary may contain additional information e.g. about the dataset or the 
-basis or the parameters. Its contents are entirely user specified. 
-"""
-function export2json(pathtofile, model; 
-                     meta = Dict{String, Any}())
-   if !(pathtofile[end-4:end] in [".json", ".yaml"])
-      @warn("the json potential filename should end in .json or .yaml")
-   end
-   potdict = write_dict(model.potential)
-   save_dict(pathtofile, Dict{String, Any}("potential" => potdict, 
-                                               "meta" => meta ))
-end
-
-
-
 # -----------------------------------------------------------
 #  a temporary hack to quickly adapt the training weights \
 
