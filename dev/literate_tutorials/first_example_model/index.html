@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>First example · ACEpotentials.jl</title><meta name="title" content="First example · ACEpotentials.jl"/><meta property="og:title" content="First example · ACEpotentials.jl"/><meta property="twitter:title" content="First example · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/first_example_model/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/first_example_model/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/first_example_model/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li class="is-active"><a class="tocitem" href>First example</a></li><li><a class="tocitem" href="../TiAl_model/">The <code>acemodel</code> interface</a></li><li><a class="tocitem" href="../TiAl_basis/">The <code>ace_basis</code> interface</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Elementary Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/lammps/">ACEpotentials potentials in LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li><li><a class="tocitem" href="../../tutorials/molly/">Using ACE potentials in Molly</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li><a class="tocitem" href="../committee/">Committee Potentials</a></li></ul></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../ACEpotentials/all_exported/"><code>ACEpotentials.jl</code> API</a></li></ul></li><li><span class="tocitem">Outdated</span><ul><li><a class="tocitem" href="../../outdated/outdated/">Outdated</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Getting Started</a></li><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>First example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>First example</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/first_example_model.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="First-example"><a class="docs-heading-anchor" href="#First-example">First example</a><a id="First-example-1"></a><a class="docs-heading-anchor-permalink" href="#First-example" title="Permalink"></a></h1><p>This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.</p><p>Make sure to first read the installation notes. Now start by importing the required packages:</p><pre><code class="language-julia hljs">using ACEpotentials
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>First example · ACEpotentials.jl</title><meta name="title" content="First example · ACEpotentials.jl"/><meta property="og:title" content="First example · ACEpotentials.jl"/><meta property="twitter:title" content="First example · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/first_example_model/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/first_example_model/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/first_example_model/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li class="is-active"><a class="tocitem" href>First example</a></li><li><a class="tocitem" href="../TiAl_model/">The <code>acemodel</code> interface</a></li><li><a class="tocitem" href="../TiAl_basis/">The <code>ace_basis</code> interface</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Elementary Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/lammps/">ACEpotentials potentials in LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li><li><a class="tocitem" href="../../tutorials/molly/">Using ACE potentials in Molly</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li><a class="tocitem" href="../committee/">Committee Potentials</a></li><li><a class="tocitem" href="../../tutorials/AtomsBase_interface/">AtomsBase Interface</a></li></ul></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../ACEpotentials/all_exported/"><code>ACEpotentials.jl</code> API</a></li></ul></li><li><span class="tocitem">Outdated</span><ul><li><a class="tocitem" href="../../outdated/outdated/">Outdated</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Getting Started</a></li><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>First example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>First example</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/first_example_model.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="First-example"><a class="docs-heading-anchor" href="#First-example">First example</a><a id="First-example-1"></a><a class="docs-heading-anchor-permalink" href="#First-example" title="Permalink"></a></h1><p>This very simple tutorial constructs an ACE1 model for Si by fitting to an empirical potential.</p><p>Make sure to first read the installation notes. Now start by importing the required packages:</p><pre><code class="language-julia hljs">using ACEpotentials
 import Random
 using LinearAlgebra: norm, Diagonal</code></pre><h3 id="Step-1:-specify-the-ACE-Model"><a class="docs-heading-anchor" href="#Step-1:-specify-the-ACE-Model">Step 1: specify the ACE Model</a><a id="Step-1:-specify-the-ACE-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-1:-specify-the-ACE-Model" title="Permalink"></a></h3><p>The parameters have the following meaning:</p><ul><li><code>elements</code>: list of chemical species, symbols</li><li><code>order</code> : correlation order</li><li><code>totaldegree</code>: maximum total polynomial degree used for the basis</li><li><code>rcut</code> : cutoff radius (optional, defaults are provided)</li></ul><pre><code class="language-julia hljs">model = acemodel(elements = [:Si,],
                  order = 3,
@@ -28,85 +28,69 @@ acefit!(model, train; solver=solver, data_keys...);</code></pre><pre class="docu
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (7964, 110).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:08</span><span class="sgr32">Progress:  25%|██████████▎                              |  ETA: 0:00:07</span><span class="sgr32">Progress:  40%|████████████████▍                        |  ETA: 0:00:05</span><span class="sgr32">Progress:  55%|██████████████████████▌                  |  ETA: 0:00:04</span><span class="sgr32">Progress:  90%|████████████████████████████████████▉    |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:08</span>
+<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:07</span><span class="sgr32">Progress:  60%|████████████████████████▋                |  ETA: 0:00:03</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:07</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 Iter     Function value   Gradient norm
      0     7.567088e+03     7.679763e+03
- * time: 4.696846008300781e-5
+ * time: 7.319450378417969e-5
      1     4.944071e+03     1.064205e+04
- * time: 0.014858007431030273
-     2    -6.406798e+03     4.819749e+04
- * time: 0.043109893798828125
+ * time: 0.015729188919067383
+     2    -6.406797e+03     4.819750e+04
+ * time: 0.042185068130493164
      3    -6.668974e+03     1.447869e+04
- * time: 0.04704999923706055
-     4    -6.770337e+03     3.623682e+03
- * time: 0.04869484901428223
+ * time: 0.04607200622558594
+     4    -6.770337e+03     3.623687e+03
+ * time: 0.04763913154602051
      5    -6.789970e+03     3.874859e+03
- * time: 0.05029797554016113
-     6    -7.159480e+03     2.644664e+04
- * time: 0.052919864654541016
-     7    -7.648782e+03     3.437385e+04
- * time: 0.05503487586975098
-     8    -1.264772e+04     6.980151e+04
- * time: 0.0576629638671875
-     9    -1.335604e+04     3.885777e+04
- * time: 0.059721946716308594
-    10    -1.343218e+04     2.328469e+04
- * time: 0.06071901321411133
-    11    -1.347535e+04     1.649003e+03
- * time: 0.06170487403869629
-    12    -1.405680e+04     5.091985e+04
- * time: 0.06411480903625488
-    13    -1.423779e+04     1.977773e+04
- * time: 0.06546187400817871
-    14    -1.446836e+04     2.561359e+04
- * time: 0.06734395027160645
-    15    -1.459817e+04     2.396881e+04
- * time: 0.06870794296264648
-    16    -1.465823e+04     2.865355e+03
- * time: 0.07001399993896484
-    17    -1.468557e+04     1.500702e+04
- * time: 0.07138180732727051
-    18    -1.469529e+04     1.627961e+03
- * time: 0.07274794578552246
-    19    -1.469644e+04     1.447398e+03
- * time: 0.07434797286987305
-    20    -1.469654e+04     7.299929e+01
- * time: 0.0758199691772461
-    21    -1.469654e+04     4.241083e+00
- * time: 0.07716798782348633
-    22    -1.469655e+04     8.929976e-02
- * time: 0.0780799388885498
-    23    -1.469654e+04     6.277269e-01
- * time: 0.07945489883422852
-    24    -1.469654e+04     1.801246e-01
- * time: 0.08037900924682617
-    25    -1.469653e+04     4.730567e-02
- * time: 0.08128595352172852
-    26    -1.469653e+04     1.230050e-01
- * time: 0.08218097686767578
-    27    -1.469653e+04     1.095367e-01
- * time: 0.08361291885375977
-    28    -1.469654e+04     4.705446e-02
- * time: 0.08494782447814941
-    29    -1.469654e+04     3.135885e-02
- * time: 0.10350298881530762
-    30    -1.469655e+04     1.051782e-02
- * time: 0.10487484931945801
-    31    -1.469655e+04     3.090508e-02
- * time: 0.11044788360595703
-    32    -1.469653e+04     4.044254e-03
- * time: 0.11263298988342285
-    33    -1.469655e+04     1.048136e-01
- * time: 0.1143789291381836
-    34    -1.469655e+04     7.085829e-02
- * time: 0.12195897102355957
-    35    -1.469654e+04     4.143093e-03
- * time: 0.12445402145385742
-    36    -1.469654e+04     3.887267e-02
- * time: 0.12691783905029297
- * Status: success
+ * time: 0.04921317100524902
+     6    -7.159481e+03     2.644645e+04
+ * time: 0.05172610282897949
+     7    -7.648756e+03     3.437305e+04
+ * time: 0.05378222465515137
+     8    -1.265257e+04     6.973115e+04
+ * time: 0.05633807182312012
+     9    -1.335492e+04     3.897179e+04
+ * time: 0.05835223197937012
+    10    -1.343169e+04     2.336286e+04
+ * time: 0.05938220024108887
+    11    -1.347504e+04     1.582179e+03
+ * time: 0.06046700477600098
+    12    -1.404168e+04     4.972955e+04
+ * time: 0.06290221214294434
+    13    -1.422540e+04     2.342497e+04
+ * time: 0.06429815292358398
+    14    -1.443484e+04     2.566337e+04
+ * time: 0.0656731128692627
+    15    -1.458557e+04     2.462292e+04
+ * time: 0.0670461654663086
+    16    -1.465215e+04     2.946460e+03
+ * time: 0.0684671401977539
+    17    -1.468166e+04     1.698614e+04
+ * time: 0.06981921195983887
+    18    -1.469442e+04     2.409795e+03
+ * time: 0.07117915153503418
+    19    -1.469629e+04     2.089236e+03
+ * time: 0.07256102561950684
+    20    -1.469653e+04     2.254742e+02
+ * time: 0.07420802116394043
+    21    -1.469653e+04     2.090245e+01
+ * time: 0.0758512020111084
+    22    -1.469654e+04     4.206274e-01
+ * time: 0.07723307609558105
+    23    -1.469654e+04     1.234789e-04
+ * time: 0.07900810241699219
+    24    -1.469654e+04     2.901856e-02
+ * time: 0.07986712455749512
+    25    -1.469654e+04     1.130473e-01
+ * time: 0.09885716438293457
+    26    -1.469654e+04     1.975544e+00
+ * time: 0.09977006912231445
+    27    -1.469654e+04     5.947234e-02
+ * time: 0.10115814208984375
+    28    -1.469654e+04     3.236595e-02
+ * time: 0.10202312469482422
+ * Status: success (objective increased between iterations)
 
  * Candidate solution
     Final objective value:     -1.469654e+04
@@ -115,17 +99,17 @@ Iter     Function value   Gradient norm
     Algorithm:     L-BFGS
 
  * Convergence measures
-    |x - x&#39;|               = 2.14e-11 ≤ 1.0e-08
-    |x - x&#39;|/|x&#39;|          = 2.07e-13 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|         = 8.19e-03 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|/|f(x&#39;)| = 5.58e-07 ≰ 0.0e+00
-    |g(x)|                 = 3.89e-02 ≰ 0.0e+00
+    |x - x&#39;|               = 4.22e-09 ≤ 1.0e-08
+    |x - x&#39;|/|x&#39;|          = 4.08e-11 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|         = 3.97e-03 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|/|f(x&#39;)| = 2.70e-07 ≰ 0.0e+00
+    |g(x)|                 = 3.24e-02 ≰ 0.0e+00
 
  * Work counters
     Seconds run:   0  (vs limit Inf)
-    Iterations:    36
-    f(x) calls:    177
-    ∇f(x) calls:   177</code></pre><p>To see the training errors we can use</p><pre><code class="language-julia hljs">@info(&quot;Training Errors&quot;)
+    Iterations:    28
+    f(x) calls:    125
+    ∇f(x) calls:   125</code></pre><p>To see the training errors we can use</p><pre><code class="language-julia hljs">@info(&quot;Training Errors&quot;)
 ACEpotentials.linear_errors(train, model; data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Training Errors
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌─────────┬─────────┬──────────┬─────────┐
@@ -166,17 +150,17 @@ test_energies = [ JuLIP.get_data(at, &quot;energy&quot;) / length(at) for at in 
 model_energies = [energy(potential, at) / length(at) for at in test]
 rmse_energy = norm(test_energies - model_energies) / sqrt(length(test))
 @show rmse_energy;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Manual RMSE Test
-rmse_energy = 0.0003641783492166867</code></pre><p>But in practice, one should run more extensive test simulations to check how robust the fitted potential is.</p><h3 id="Step-5:-export-the-model"><a class="docs-heading-anchor" href="#Step-5:-export-the-model">Step 5: export the model</a><a id="Step-5:-export-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5:-export-the-model" title="Permalink"></a></h3><p>The fitted model can be exported to a JSON or YAML file, or to a LAMMPs compatible <code>yace</code> file. We won&#39;t go through that in this tutoral. See <code>export2json</code> and <code>export2lammps</code> for further information.</p><h3 id="Step-6:-Using-the-model"><a class="docs-heading-anchor" href="#Step-6:-Using-the-model">Step 6: Using the model</a><a id="Step-6:-Using-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6:-Using-the-model" title="Permalink"></a></h3><p>Let&#39;s do something very simple: relax a vacancy.</p><p>We create a small Si cell, delete an atom and rattle the rest</p><pre><code class="language-julia hljs">at = bulk(:Si, cubic=true) * 3
+rmse_energy = 0.00036418016531113514</code></pre><p>But in practice, one should run more extensive test simulations to check how robust the fitted potential is.</p><h3 id="Step-5:-export-the-model"><a class="docs-heading-anchor" href="#Step-5:-export-the-model">Step 5: export the model</a><a id="Step-5:-export-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5:-export-the-model" title="Permalink"></a></h3><p>The fitted model can be exported to a JSON or YAML file, or to a LAMMPs compatible <code>yace</code> file. We won&#39;t go through that in this tutoral. See <code>export2json</code> and <code>export2lammps</code> for further information.</p><h3 id="Step-6:-Using-the-model"><a class="docs-heading-anchor" href="#Step-6:-Using-the-model">Step 6: Using the model</a><a id="Step-6:-Using-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6:-Using-the-model" title="Permalink"></a></h3><p>Let&#39;s do something very simple: relax a vacancy.</p><p>We create a small Si cell, delete an atom and rattle the rest</p><pre><code class="language-julia hljs">at = bulk(:Si, cubic=true) * 3
 deleteat!(at, 1)
 rattle!(at, 0.03 * rnn(:Si))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">JuLIP.Atoms with 215 atoms</code></pre><p>we can now minimize the ACE energy.</p><pre><code class="language-julia hljs">set_calculator!(at, potential);
 minimise!(at)
-E_ace = energy(at)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-925.558515515928</code></pre><p>If we want a formation energy, we could get it like this.</p><pre><code class="language-julia hljs">at0 = bulk(:Si)
+E_ace = energy(at)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-925.5585277721239</code></pre><p>If we want a formation energy, we could get it like this.</p><pre><code class="language-julia hljs">at0 = bulk(:Si)
 E0_ace = energy(potential, at0);
 Evac_ace = E_ace - (length(at)-1)/length(at0) * E0_ace
-@show Evac_ace;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_ace = 2.0899923348454195</code></pre><p>Note that there are no vacancy structures in the training set, so this is a prediction out of sample. We have no guarantee of the accuracy of this prediction. In fact the prediction is quite far off:</p><pre><code class="language-julia hljs">sw = StillingerWeber()
+@show Evac_ace;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_ace = 2.0899853579919636</code></pre><p>Note that there are no vacancy structures in the training set, so this is a prediction out of sample. We have no guarantee of the accuracy of this prediction. In fact the prediction is quite far off:</p><pre><code class="language-julia hljs">sw = StillingerWeber()
 set_calculator!(at, sw)
 minimise!(at; verbose=false);
 E_sw = energy(at)
 E0_sw = energy(sw, bulk(:Si))
 Evac_sw = E_sw - (length(at)-1)/length(at0) * E0_sw
-@show Evac_sw;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_sw = -1.1122918976980145e-5</code></pre><p>To obtain accurate predictions on a vacancy structure, we must add it to the training set. This iterative model development process goes beyond the scope of this tutorial.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../TiAl_model/">The <code>acemodel</code> interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Monday 13 November 2023 16:47">Monday 13 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+@show Evac_sw;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_sw = -1.1122919545414334e-5</code></pre><p>To obtain accurate predictions on a vacancy structure, we must add it to the training set. This iterative model development process goes beyond the scope of this tutorial.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../TiAl_model/">The <code>acemodel</code> interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Monday 13 November 2023 18:17">Monday 13 November 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
