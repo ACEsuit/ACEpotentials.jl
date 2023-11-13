@@ -20,7 +20,7 @@ To load potential use
 potential = load_potential("my-potential-file.json")
 ```
 
-By default this should print information about version in use when the potential was saved. E.g. like following
+By default this should print information about versions in use when the potential was saved. E.g. like following
 
 ```txt
 This potential was saved with following versions:

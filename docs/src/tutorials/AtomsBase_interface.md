@@ -4,7 +4,7 @@ ACEpotentials has a new [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl)
 
 AtomsBase allows easy communication between different Julia programs. In the future this interface will became the default one and JuLIP interface will be retired.
 
-AtomsBase interface has not been rigorously tested yet. So, expect some issues here and there. But you are recommended to git it a try.
+AtomsBase interface has not been rigorously tested yet. So, expect some issues here and there. But you are recommended to give it a try.
 
 ## Loading Training Data
 
