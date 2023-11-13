@@ -67,7 +67,7 @@ ACEpotentials.linear_errors(test_data, model; weights=weights);
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
 
-export2json("./TiAl_tutorial_pot.json", model)
+save_potential("./TiAl_tutorial_pot.json", model)
 
 # export to lammps (ML-PACE):
 
