@@ -7,6 +7,9 @@ using ACEpotentials, Test, LazyArtifacts
     @testset "AtomsBase interface" begin include("atomsbase.jl") end
     @testset "Test IO" begin include("test_io.jl")  end
 
+    # experimental 
+    @testset "UF_ACE" begin include("test_uface.jl") end
+
     # outdated
     @testset "Read data" begin include("outdated/test_data.jl") end 
     @testset "Basis" begin include("outdated/test_basis.jl") end 
