@@ -3,7 +3,7 @@ using ACEpotentials
 using LazyArtifacts
 using Test
 
-### ----- setup -----
+## ----- setup -----
 
 @info("Test UF_ACE evaluator")
 
@@ -43,6 +43,48 @@ for ntest = 1:30
    E1 = energy(model.potential, at) 
    E2 = energy(fpot, at)
    # @show abs(E1 - E2) < tolerance
+   @test abs(E1 - E2) < tolerance
+end
+
+##
+
+@info("construct a TiAl model and fit parameters using RRQR")
+
+
+model = acemodel(elements = [:Ti, :Al],
+					  order = 3,
+					  totaldegree = 6, 
+					  rcut = 5.5, 
+					  Eref = [:Ti => -1586.0195, :Al => -105.5954])
+@show length(model.basis);	
+
+weights = Dict(
+        "FLD_TiAl" => Dict("E" => 60.0, "F" => 1.0 , "V" => 1.0 ),
+        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ));
+
+solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6);
+P = smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)
+
+data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
+data_train = data[1:5:end]
+acefit!(model, data_train; solver=solver, prior = P);
+
+##
+@info("convert to UF_ACE format")      
+fpot = ACEpotentials.Experimental.fast_evaluator(model)
+
+##
+@info("confirm that predictions are identical")
+
+tolerance = 1e-8 
+rattle = 0.01 
+
+for ntest = 1:30
+   at = rand(data) 
+   rattle!(at, rattle)
+   E1 = energy(model.potential, at) 
+   E2 = energy(fpot, at)
+   # @show abs(E1 - E2)  < tolerance
    @test abs(E1 - E2) < tolerance
 end
 
