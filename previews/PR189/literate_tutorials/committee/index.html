@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Committee Potentials · ACEpotentials.jl</title><meta name="title" content="Committee Potentials · ACEpotentials.jl"/><meta property="og:title" content="Committee Potentials · ACEpotentials.jl"/><meta property="twitter:title" content="Committee Potentials · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/committee/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/committee/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/committee/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../first_example_model/">First example</a></li><li><a class="tocitem" href="../TiAl_model/">The <code>acemodel</code> interface</a></li><li><a class="tocitem" href="../TiAl_basis/">The <code>ace_basis</code> interface</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Elementary Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/lammps/">ACEpotentials potentials in LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li><li><a class="tocitem" href="../../tutorials/molly/">Using ACE potentials in Molly</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li class="is-active"><a class="tocitem" href>Committee Potentials</a></li><li><a class="tocitem" href="../../tutorials/AtomsBase_interface/">AtomsBase Interface</a></li></ul></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../ACEpotentials/all_exported/"><code>ACEpotentials.jl</code> API</a></li></ul></li><li><span class="tocitem">Outdated</span><ul><li><a class="tocitem" href="../../outdated/outdated/">Outdated</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Getting Started</a></li><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Committee Potentials</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Committee Potentials</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/committee.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Committee-Potentials"><a class="docs-heading-anchor" href="#Committee-Potentials">Committee Potentials</a><a id="Committee-Potentials-1"></a><a class="docs-heading-anchor-permalink" href="#Committee-Potentials" title="Permalink"></a></h1><pre><code class="language-julia hljs">using Plots, ACEpotentials, Statistics</code></pre><h3 id="Perform-the-fit"><a class="docs-heading-anchor" href="#Perform-the-fit">Perform the fit</a><a id="Perform-the-fit-1"></a><a class="docs-heading-anchor-permalink" href="#Perform-the-fit" title="Permalink"></a></h3><p>load some example training data</p><pre><code class="language-julia hljs">train, _, _ = ACEpotentials.example_dataset(&quot;Si_tiny&quot;)
 data_keys = (energy_key = &quot;dft_energy&quot;, force_key = &quot;dft_force&quot;);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: Si_tiny_dataset
+<span class="sgr31"><span class="sgr1">     Failure</span></span> artifact: Si_tiny_dataset
 <span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: Si_tiny_dataset</code></pre><p>create model</p><pre><code class="language-julia hljs">model = acemodel(elements = [:Si,], order = 3, totaldegree = 8);</code></pre><p>create solver, setting a nonzero committee size at present, the SVD factorization is required for committees</p><pre><code class="language-julia hljs">solver = ACEfit.BLR(committee_size=10, factorization=:svd);</code></pre><p>perform the fit</p><pre><code class="language-julia hljs">acefit!(model, train; solver=solver, data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌───────────────┬──────────┬───────┬────┬─────┬─────┐
 │<span class="sgr1">          Type </span>│<span class="sgr1"> #Configs </span>│<span class="sgr1"> #Envs </span>│<span class="sgr1"> #E </span>│<span class="sgr1">  #F </span>│<span class="sgr1">  #V </span>│
 ├───────────────┼──────────┼───────┼────┼─────┼─────┤
@@ -15,7 +16,7 @@ data_keys = (energy_key = &quot;dft_energy&quot;, force_key = &quot;dft_force&qu
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (740, 54).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:   4%|█▌                                       |  ETA: 0:00:52</span><span class="sgr32">Progress:   6%|██▍                                      |  ETA: 0:00:39</span><span class="sgr32">Progress:   8%|███▏                                     |  ETA: 0:00:33</span><span class="sgr32">Progress:   9%|███▉                                     |  ETA: 0:00:29</span><span class="sgr32">Progress:  11%|████▋                                    |  ETA: 0:00:26</span><span class="sgr32">Progress:  13%|█████▍                                   |  ETA: 0:00:24</span><span class="sgr32">Progress:  15%|██████▎                                  |  ETA: 0:00:22</span><span class="sgr32">Progress:  17%|███████                                  |  ETA: 0:00:21</span><span class="sgr32">Progress:  19%|███████▊                                 |  ETA: 0:00:20</span><span class="sgr32">Progress:  21%|████████▌                                |  ETA: 0:00:19</span><span class="sgr32">Progress:  23%|█████████▎                               |  ETA: 0:00:18</span><span class="sgr32">Progress:  25%|██████████                               |  ETA: 0:00:17</span><span class="sgr32">Progress:  26%|██████████▉                              |  ETA: 0:00:16</span><span class="sgr32">Progress:  28%|███████████▋                             |  ETA: 0:00:16</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:15</span><span class="sgr32">Progress:  32%|█████████████▏                           |  ETA: 0:00:14</span><span class="sgr32">Progress:  34%|█████████████▉                           |  ETA: 0:00:14</span><span class="sgr32">Progress:  36%|██████████████▊                          |  ETA: 0:00:13</span><span class="sgr32">Progress:  38%|███████████████▌                         |  ETA: 0:00:13</span><span class="sgr32">Progress:  40%|████████████████▎                        |  ETA: 0:00:12</span><span class="sgr32">Progress:  42%|█████████████████                        |  ETA: 0:00:12</span><span class="sgr32">Progress:  43%|█████████████████▊                       |  ETA: 0:00:11</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:11</span><span class="sgr32">Progress:  47%|███████████████████▍                     |  ETA: 0:00:10</span><span class="sgr32">Progress:  49%|████████████████████▏                    |  ETA: 0:00:10</span><span class="sgr32">Progress:  51%|████████████████████▉                    |  ETA: 0:00:10</span><span class="sgr32">Progress:  53%|█████████████████████▋                   |  ETA: 0:00:09</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:09</span><span class="sgr32">Progress:  57%|███████████████████████▎                 |  ETA: 0:00:08</span><span class="sgr32">Progress:  58%|████████████████████████                 |  ETA: 0:00:08</span><span class="sgr32">Progress:  60%|████████████████████████▊                |  ETA: 0:00:08</span><span class="sgr32">Progress:  62%|█████████████████████████▌               |  ETA: 0:00:07</span><span class="sgr32">Progress:  64%|██████████████████████████▎              |  ETA: 0:00:07</span><span class="sgr32">Progress:  66%|███████████████████████████▏             |  ETA: 0:00:06</span><span class="sgr32">Progress:  68%|███████████████████████████▉             |  ETA: 0:00:06</span><span class="sgr32">Progress:  70%|████████████████████████████▋            |  ETA: 0:00:06</span><span class="sgr32">Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:05</span><span class="sgr32">Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:05</span><span class="sgr32">Progress:  75%|███████████████████████████████          |  ETA: 0:00:05</span><span class="sgr32">Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:04</span><span class="sgr32">Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:04</span><span class="sgr32">Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:04</span><span class="sgr32">Progress:  83%|██████████████████████████████████       |  ETA: 0:00:03</span><span class="sgr32">Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:03</span><span class="sgr32">Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:02</span><span class="sgr32">Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:02</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:02</span><span class="sgr32">Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:01</span><span class="sgr32">Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:01</span><span class="sgr32">Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:01</span><span class="sgr32">Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:00</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:18</span>
+<span class="sgr32">Progress:   4%|█▌                                       |  ETA: 0:00:43</span><span class="sgr32">Progress:   6%|██▍                                      |  ETA: 0:00:33</span><span class="sgr32">Progress:   8%|███▏                                     |  ETA: 0:00:27</span><span class="sgr32">Progress:   9%|███▉                                     |  ETA: 0:00:24</span><span class="sgr32">Progress:  11%|████▋                                    |  ETA: 0:00:22</span><span class="sgr32">Progress:  13%|█████▍                                   |  ETA: 0:00:20</span><span class="sgr32">Progress:  15%|██████▎                                  |  ETA: 0:00:19</span><span class="sgr32">Progress:  17%|███████                                  |  ETA: 0:00:18</span><span class="sgr32">Progress:  19%|███████▊                                 |  ETA: 0:00:17</span><span class="sgr32">Progress:  21%|████████▌                                |  ETA: 0:00:16</span><span class="sgr32">Progress:  23%|█████████▎                               |  ETA: 0:00:15</span><span class="sgr32">Progress:  25%|██████████                               |  ETA: 0:00:14</span><span class="sgr32">Progress:  26%|██████████▉                              |  ETA: 0:00:14</span><span class="sgr32">Progress:  28%|███████████▋                             |  ETA: 0:00:13</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:13</span><span class="sgr32">Progress:  32%|█████████████▏                           |  ETA: 0:00:12</span><span class="sgr32">Progress:  34%|█████████████▉                           |  ETA: 0:00:12</span><span class="sgr32">Progress:  36%|██████████████▊                          |  ETA: 0:00:11</span><span class="sgr32">Progress:  38%|███████████████▌                         |  ETA: 0:00:11</span><span class="sgr32">Progress:  40%|████████████████▎                        |  ETA: 0:00:10</span><span class="sgr32">Progress:  42%|█████████████████                        |  ETA: 0:00:10</span><span class="sgr32">Progress:  43%|█████████████████▊                       |  ETA: 0:00:10</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:09</span><span class="sgr32">Progress:  47%|███████████████████▍                     |  ETA: 0:00:09</span><span class="sgr32">Progress:  49%|████████████████████▏                    |  ETA: 0:00:08</span><span class="sgr32">Progress:  51%|████████████████████▉                    |  ETA: 0:00:08</span><span class="sgr32">Progress:  53%|█████████████████████▋                   |  ETA: 0:00:08</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:07</span><span class="sgr32">Progress:  57%|███████████████████████▎                 |  ETA: 0:00:07</span><span class="sgr32">Progress:  58%|████████████████████████                 |  ETA: 0:00:07</span><span class="sgr32">Progress:  60%|████████████████████████▊                |  ETA: 0:00:06</span><span class="sgr32">Progress:  62%|█████████████████████████▌               |  ETA: 0:00:06</span><span class="sgr32">Progress:  64%|██████████████████████████▎              |  ETA: 0:00:06</span><span class="sgr32">Progress:  66%|███████████████████████████▏             |  ETA: 0:00:05</span><span class="sgr32">Progress:  68%|███████████████████████████▉             |  ETA: 0:00:05</span><span class="sgr32">Progress:  70%|████████████████████████████▋            |  ETA: 0:00:05</span><span class="sgr32">Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:05</span><span class="sgr32">Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:04</span><span class="sgr32">Progress:  75%|███████████████████████████████          |  ETA: 0:00:04</span><span class="sgr32">Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:04</span><span class="sgr32">Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:03</span><span class="sgr32">Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:03</span><span class="sgr32">Progress:  83%|██████████████████████████████████       |  ETA: 0:00:03</span><span class="sgr32">Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:02</span><span class="sgr32">Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:02</span><span class="sgr32">Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:02</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:01</span><span class="sgr32">Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:01</span><span class="sgr32">Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:01</span><span class="sgr32">Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:01</span><span class="sgr32">Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:00</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:15</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Entering bayesian_linear_regression_svd
@@ -25,69 +26,69 @@ data_keys = (energy_key = &quot;dft_energy&quot;, force_key = &quot;dft_force&qu
 <span class="sgr36"><span class="sgr1">│ </span></span>   LinearAlgebra.BLAS.LBTConfig
 <span class="sgr36"><span class="sgr1">│ </span></span>   Libraries:
 <span class="sgr36"><span class="sgr1">└ </span></span>   └ [ILP64] libopenblas64_.so
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>SVD completed after 3.5764833333333334e-5 minutes
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>SVD completed after 3.3885183333333335e-5 minutes
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Beginning to maximize marginal likelihood
 Iter     Function value   Gradient norm
      0     1.155681e+07     2.291558e+07
- * time: 0.01603388786315918
+ * time: 0.01520991325378418
      1     1.323055e+04     3.211203e-05
- * time: 0.6832728385925293
+ * time: 0.8607809543609619
      2     1.104783e+04     6.894847e-04
- * time: 0.6835019588470459
+ * time: 0.8610329627990723
      3     1.085204e+04     9.054319e-04
- * time: 0.6835858821868896
+ * time: 0.8611218929290771
      4     9.406472e+03     7.122083e-03
- * time: 0.6836299896240234
+ * time: 0.861177921295166
      5     8.339838e+03     3.316252e-02
- * time: 0.6837029457092285
-     6     8.060071e+03     4.969369e-02
- * time: 0.6837499141693115
-     7     5.440912e+03     1.550841e+00
- * time: 0.6838598251342773
-     8     5.433622e+03     7.435018e-01
- * time: 0.6839578151702881
-     9     5.424060e+03     1.996811e-01
- * time: 0.6839919090270996
-    10     5.423534e+03     5.711527e-03
- * time: 0.68402099609375
-    11     5.423533e+03     2.621277e-03
- * time: 0.6840569972991943
-    12     5.372015e+03     3.509317e+00
- * time: 0.684147834777832
-    13     5.365262e+03     1.587572e+00
- * time: 0.6841878890991211
-    14     5.293552e+03     9.456909e-01
- * time: 0.6842539310455322
-    15     5.167422e+03     8.455412e-01
- * time: 0.6843018531799316
-    16     5.122812e+03     8.048239e-01
- * time: 0.6843738555908203
-    17     5.081900e+03     5.004522e-01
- * time: 0.6844029426574707
-    18     5.039923e+03     2.160437e-01
- * time: 0.6844499111175537
-    19     4.996629e+03     1.004647e-01
- * time: 0.6844778060913086
-    20     4.988857e+03     2.495487e-02
- * time: 0.684506893157959
-    21     4.949429e+03     4.541781e-02
- * time: 0.684553861618042
-    22     4.932854e+03     9.497784e-01
- * time: 0.6846067905426025
-    23     4.932706e+03     9.597186e-01
- * time: 0.6846818923950195
-    24     4.925298e+03     8.416403e-03
- * time: 0.6847128868103027
-    25     4.925294e+03     2.933193e-03
- * time: 0.6847419738769531
-    26     4.925294e+03     3.290369e-06
- * time: 0.6847758293151855
-    27     4.925294e+03     3.293454e-08
- * time: 0.6848049163818359
-    28     4.925294e+03     9.074436e-14
- * time: 0.6848328113555908
-    29     4.925294e+03     2.095124e-17
- * time: 0.6848688125610352
+ * time: 0.8612639904022217
+     6     8.060072e+03     4.969368e-02
+ * time: 0.8613278865814209
+     7     5.440917e+03     1.551105e+00
+ * time: 0.8614530563354492
+     8     5.433634e+03     7.438427e-01
+ * time: 0.8615660667419434
+     9     5.424061e+03     1.999041e-01
+ * time: 0.8616170883178711
+    10     5.423534e+03     5.729820e-03
+ * time: 0.8616619110107422
+    11     5.423533e+03     2.612958e-03
+ * time: 0.8617079257965088
+    12     5.369498e+03     3.489910e+00
+ * time: 0.8618149757385254
+    13     5.366860e+03     1.564889e+00
+ * time: 0.8618700504302979
+    14     5.278598e+03     9.472700e-01
+ * time: 0.8619530200958252
+    15     5.220441e+03     8.583325e-01
+ * time: 0.8620100021362305
+    16     5.203432e+03     5.419165e-01
+ * time: 0.8620550632476807
+    17     5.057543e+03     1.455316e-01
+ * time: 0.8621261119842529
+    18     5.018711e+03     1.573835e-01
+ * time: 0.862220048904419
+    19     4.986555e+03     7.618684e-02
+ * time: 0.8622639179229736
+    20     4.951634e+03     5.227255e-02
+ * time: 0.8623089790344238
+    21     4.936646e+03     6.737596e-02
+ * time: 0.8623778820037842
+    22     4.927367e+03     4.178210e-01
+ * time: 0.8624188899993896
+    23     4.926356e+03     2.842118e-01
+ * time: 0.8624780178070068
+    24     4.925365e+03     5.867476e-02
+ * time: 0.862523078918457
+    25     4.925294e+03     2.537726e-03
+ * time: 0.8625741004943848
+    26     4.925294e+03     4.758798e-05
+ * time: 0.8626189231872559
+    27     4.925294e+03     3.600184e-08
+ * time: 0.8626630306243896
+    28     4.925294e+03     9.020265e-13
+ * time: 0.8627080917358398
+    29     4.925294e+03     6.225166e-16
+ * time: 0.8627510070800781
 <span class="sgr36"><span class="sgr1">┌ Info: </span></span>Optimization complete
 <span class="sgr36"><span class="sgr1">│ </span></span>  Results =
 <span class="sgr36"><span class="sgr1">│ </span></span>    * Status: success
@@ -99,17 +100,17 @@ Iter     Function value   Gradient norm
 <span class="sgr36"><span class="sgr1">│ </span></span>       Algorithm:     L-BFGS
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>    * Convergence measures
-<span class="sgr36"><span class="sgr1">│ </span></span>       |x - x&#39;|               = 1.07e-11 ≤ 1.0e-08
-<span class="sgr36"><span class="sgr1">│ </span></span>       |x - x&#39;|/|x&#39;|          = 5.97e-14 ≰ 0.0e+00
+<span class="sgr36"><span class="sgr1">│ </span></span>       |x - x&#39;|               = 2.03e-11 ≤ 1.0e-08
+<span class="sgr36"><span class="sgr1">│ </span></span>       |x - x&#39;|/|x&#39;|          = 1.13e-13 ≰ 0.0e+00
 <span class="sgr36"><span class="sgr1">│ </span></span>       |f(x) - f(x&#39;)|         = 0.00e+00 ≤ 0.0e+00
 <span class="sgr36"><span class="sgr1">│ </span></span>       |f(x) - f(x&#39;)|/|f(x&#39;)| = 0.00e+00 ≤ 0.0e+00
-<span class="sgr36"><span class="sgr1">│ </span></span>       |g(x)|                 = 2.10e-17 ≰ 0.0e+00
+<span class="sgr36"><span class="sgr1">│ </span></span>       |g(x)|                 = 6.23e-16 ≰ 0.0e+00
 <span class="sgr36"><span class="sgr1">│ </span></span>
 <span class="sgr36"><span class="sgr1">│ </span></span>    * Work counters
 <span class="sgr36"><span class="sgr1">│ </span></span>       Seconds run:   1  (vs limit Inf)
 <span class="sgr36"><span class="sgr1">│ </span></span>       Iterations:    29
-<span class="sgr36"><span class="sgr1">│ </span></span>       f(x) calls:    172
-<span class="sgr36"><span class="sgr1">│ </span></span>       ∇f(x) calls:   172
+<span class="sgr36"><span class="sgr1">│ </span></span>       f(x) calls:    166
+<span class="sgr36"><span class="sgr1">│ </span></span>       ∇f(x) calls:   166
 <span class="sgr36"><span class="sgr1">└ </span></span></code></pre><p>Inspect the total energies vs committee energies and error bars for a few perturbed structures. Note the training set is so small that we don&#39;t expect these committees to be particularly useful; this is only to illustrate how they might be used. Also note that the energy <code>E</code> is <em>not</em> in general the mean of <code>co_E</code> but it is the mean of the exact posterior distribution.</p><pre><code class="language-julia hljs">atoms = bulk(:Si, cubic=true) * 2; rattle = [0.03, 0.1, 0.3]
 plot(; size = (300, 300), xlabel = &quot;rattle&quot;, ylabel = &quot;energy [eV]&quot;, ylims = (-10650, -10250),
       xlims = (0.015, 0.6), xticks = (rattle, string.(rattle)), xscale = :log10)
@@ -119,10 +120,10 @@ for (i, rt) in enumerate(rattle)
    scatter!(rt*ones(10), co_E, c = 1, label=(i==1 ? &quot;committee&quot; : &quot;&quot;))
    scatter!([rt,], [E,], yerror = [std(co_E),], c = 2, ms=6, label=(i==1 ? &quot;mean&quot; : &quot;&quot;))
 end
-plot!()</code></pre><img src="07a7ad10.svg" alt="Example block output"/><p>Committee forces are computed analogously. <code>F</code> is a vector of mean forces (i.e. a vector of 3-vectors), while <code>co_F</code> is a list of vectors of committe forces (i.e. a vector of vectors of 3-vectors).</p><pre><code class="language-julia hljs">F, co_F = ACE1.co_forces(model.potential, atoms)
+plot!()</code></pre><img src="1af72b34.svg" alt="Example block output"/><p>Committee forces are computed analogously. <code>F</code> is a vector of mean forces (i.e. a vector of 3-vectors), while <code>co_F</code> is a list of vectors of committe forces (i.e. a vector of vectors of 3-vectors).</p><pre><code class="language-julia hljs">F, co_F = ACE1.co_forces(model.potential, atoms)
 @show typeof(F)
 @show typeof(co_F);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">typeof(F) = Vector{StaticArraysCore.SVector{3, Float64}}
 typeof(co_F) = StaticArraysCore.SVector{10, Vector{StaticArraysCore.SVector{3, Float64}}}</code></pre><p>The situation is analogous for committee virials</p><pre><code class="language-julia hljs">V, co_V = ACE1.co_virial(model.potential, atoms)
 @show typeof(V)
 @show typeof(co_V);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">typeof(V) = StaticArraysCore.SMatrix{3, 3, Float64, 9}
-typeof(co_V) = StaticArraysCore.SVector{10, StaticArraysCore.SMatrix{3, 3, Float64, 9}}</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../tutorials/AtomsBase_interface/">AtomsBase Interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Friday 24 November 2023 19:17">Friday 24 November 2023</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+typeof(co_V) = StaticArraysCore.SVector{10, StaticArraysCore.SMatrix{3, 3, Float64, 9}}</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../tutorials/AtomsBase_interface/">AtomsBase Interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 2 May 2024 04:30">Thursday 2 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
