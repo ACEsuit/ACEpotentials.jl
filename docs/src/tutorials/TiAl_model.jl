@@ -1,5 +1,8 @@
 # # The `acemodel` interface
 #
+# For most people, this is the easiest interface to work with. The alternative 
+# `acebasis` interface is useful for exploring many different options. 
+#
 # Start by importing the required libraries 
 
 using ACEpotentials
