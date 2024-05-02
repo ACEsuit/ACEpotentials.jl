@@ -41,6 +41,9 @@ Literate.markdown(_tutorial_src * "/descriptor.jl",
 Literate.markdown(_tutorial_src * "/committee.jl",
                   _tutorial_out; documenter = true)
 
+Literate.markdown(_tutorial_src * "/experimental.jl",
+                  _tutorial_out; documenter = true)
+
 # ???? cf Jump.jl docs, they do also this: 
 # postprocess = _link_example,
 # # Turn off the footer. We manually add a modified one.
@@ -77,6 +80,7 @@ makedocs(;
                 "literate_tutorials/descriptor.md",
                 "literate_tutorials/committee.md",
                 "tutorials/AtomsBase_interface.md",
+                "literate_tutorials/experimental.md",
             ],
         ],
         "Additional Topics" => Any[
