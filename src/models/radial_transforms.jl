@@ -80,7 +80,7 @@ function inv_transform(t::NormalizedTransform{T}, x::Number) where {T}
       return convert(T1, t.rcut)
    end
 
-   g = r -> transform(t, r) - x
+   g = r -> evaluate(t, r) - x
    r = find_zero(g, (t.rin, t.rcut), Brent())
    @assert t.rin <= r <= t.rcut
    @assert abs(g(r)) < 1e-12
@@ -100,27 +100,69 @@ read_dict(::Val{:ACEpotentials_NormalizedTransform}, D::Dict) =
 # ---------------------------------------------------------------------------
 
 function test_normalized_transform(t; nx = 1000)
+   fails = 0 
+
    x = range(0.0, 1.0, length = nx)
    r = [inv_transform(t, xi) for xi in x]
-   @assert r[1] == 0.0 
-   @assert r[end] == t.rcut
+   if !(r[1] ≈ t.rin)
+      fails += 1 
+      @error("t⁻¹(0) ≈ rin fails")
+   end
+   if !(r[end] ≈ t.rcut) 
+      fails += 1 
+      @error("t⁻¹(1) ≈ rcut fails")
+   end
    x2 = [t(ri) for ri in r]
    if !all(abs.(x .- x2) .< 1e-10)
-      error("Inverse transform failed!")
+      fails += 1
+      @error("t⁻¹ ∘ t ≈ id failed!")
    end
-   @assert all(r[2:end] - r[1:end-1] .>= 0)
+   if !(all(r[2:end] - r[1:end-1] .>= - eps()))
+      fails += 1 
+      @error("t⁻¹ is not monotonically increasing")
+   end
 
    r = range(0.0, t.rcut, length = nx)
    x = [t(ri) for ri in r]
-   @assert x[1] == t.yin
-   @assert x[end] == t.ycut
+   if !(x[1] ≈ 0.0)
+      fails += 1 
+      @error("t(rin) ≈ yin fails")
+   end
+   if !(x[end] ≈ 1.0)
+      fails += 1 
+      @error("t(rcut) ≈ ycut fails")
+   end
    r2 = [inv_transform(t, xi) for xi in x]
    if !all(abs.(r .- r2) .< 1e-10)
-      error("Inverse transform failed!")
+      fails += 1
+      @error("t ∘ t⁻¹ ≈ id failed!")
    end
-   @assert all(x[2:end] .- x[1:end-1] .>= 0)
+   if !(all(x[2:end] - x[1:end-1] .>= - eps()))
+      fails += 1 
+      @error("t is not monotonically increasing")
+   end
 
-   return true 
+   rr = r[2:end-1]
+   dx = evaluate_d.(Ref(t), rr)
+   adx = ForwardDiff.derivative.(Ref(r -> t(r)), rr)
+   if !all(abs.(dx - adx) .< 1e-10)
+      fails += 1 
+      @error("transform gradient test failed")
+   end
+
+   if fails > 0 
+      @info("$fails transform tests fails")
+   end 
+
+   # TODO: check that the transform doesn't allocate
+   @allocated begin
+      x1 = 0.0;
+      for r1 in rr
+         x1 += evaluate(t, r1)
+      end
+   end
+
+   return (fails == 0) 
 end
 
 # test transform from ACE1 to be merged with the above.

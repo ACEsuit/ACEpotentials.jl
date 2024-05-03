@@ -2,7 +2,7 @@
 using Pkg; Pkg.activate(".");
 using TestEnv; TestEnv.activate();
 
-using ACEpotentials
+using ACEpotentials, Test 
 
 # there are no real tests for envelopes yet. The only thing we have is 
 # a plot of the envelopes to inspect manually.
@@ -45,5 +45,14 @@ plot(plt1, plt2, layout=(1,2), size = (600, 800))
 ##
 
 
+rcut = 6.5 
+r0 = 2.3
 
+trans_2_2 = ACEpotentials.Models.agnesi_transform(r0, rcut, 2, 2)
+trans_2_4 = ACEpotentials.Models.agnesi_transform(r0, rcut, 2, 4)
+trans_1_3 = ACEpotentials.Models.agnesi_transform(r0, rcut, 1, 3)
+
+for trans in [trans_2_2, trans_2_4, trans_1_3] 
+   @test ACEpotentials.Models.test_normalized_transform(trans_2_2)
+end
 
