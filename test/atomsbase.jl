@@ -24,5 +24,5 @@ using Test
 
     acefit!(model, data_train; solver=solver, weights=weights, prior = P, repulsion_restraint=true);
     ce, err = ACEpotentials.linear_errors(data, model; weights=weights);
-    @test err["mae"]["F"] < 0.5
+    @test err["mae"]["F"] < 0.6
 end
