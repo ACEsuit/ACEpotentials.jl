@@ -29,17 +29,17 @@ dy_2_2 = ACEpotentials.Models.evaluate_d.(Ref(trans_2_2), rr)
 dy_2_4 = ACEpotentials.Models.evaluate_d.(Ref(trans_2_4), rr)
 dy_1_3 = ACEpotentials.Models.evaluate_d.(Ref(trans_1_3), rr)
 
-plt1 = plot(rr, y_2_2, label="Agnesi(2,2)", lw=2, legend=:topleft, ylims = (-0.2, 1.2))
+plt1 = plot(rr, y_2_2, label="Agnesi(2,2)", lw=2, legend=:topleft, ylims = (-1.2, 1.2))
 plot!(rr, y_2_4, label="Agnesi(2,4)", lw=2)
 plot!(rr, y_1_3, label="Agnesi(1,3)", lw=2)
 vline!([0.0, r0, rcut], ls=:dash, lw=2, label="rin, r0, rcut")
 
-plt2 = plot(rr, dy_2_2, label="∇Agnesi(2,2)", lw=2, legend=:topright, ylims = (-0.05, 0.35))
+plt2 = plot(rr, dy_2_2, label="∇Agnesi(2,2)", lw=2, legend=:topright, ylims = (-0.05, 0.8))
 plot!(rr, dy_2_4, label="∇Agnesi(2,4)", lw=2)
 plot!(rr, dy_1_3, label="∇Agnesi(1,3)", lw=2)
 vline!([0.0, r0, rcut], ls=:dash, lw=2, label="rin, r0, rcut")
 
-plot(plt1, plt2, layout=(1,2), size = (600, 800))
+plot(plt1, plt2, layout=(2,1), size = (600, 800))
 =#
 
 ##

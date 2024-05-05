@@ -42,6 +42,9 @@ evaluate_d(t::GeneralizedAgnesiTransform, r::Number) =
 # tested a wide range of methods. Brent seems robust + fastest 
 using Roots: find_zero, ITP, Brent 
 
+"""
+Maps the transform `trans` to the standardized interval [-1, 1]
+"""
 struct NormalizedTransform{T, TT}
    trans::TT
    yin::T 
@@ -60,8 +63,9 @@ end
 (t::NormalizedTransform)(r) = evaluate(t, r)
 
 function evaluate(t::NormalizedTransform, r::Number) 
-   y = t.trans(r) 
-   return min(max(zero(y), (y - t.yin) / (t.ycut - t.yin)), one(y))
+   y = t.trans(r)
+   𝟙 = one(typeof(y))
+   return min(max(-𝟙, -𝟙 + 2 * (y - t.yin) / (t.ycut - t.yin)), 𝟙)
 end
 
 # this is the old version from ACE1.jl; a neat idea. We could return to it. 
@@ -74,9 +78,10 @@ evaluate_d(t::NormalizedTransform, r::Number) =
 
 function inv_transform(t::NormalizedTransform{T}, x::Number) where {T} 
    T1 = promote_type(T, typeof(x))
-   if x <= 0 
+   𝟙 = one(T1)
+   if x <= -𝟙 
       return convert(T1, t.rin)
-   elseif x >= 1 
+   elseif x >= 𝟙
       return convert(T1, t.rcut)
    end
 
@@ -102,11 +107,11 @@ read_dict(::Val{:ACEpotentials_NormalizedTransform}, D::Dict) =
 function test_normalized_transform(t; nx = 1000)
    fails = 0 
 
-   x = range(0.0, 1.0, length = nx)
+   x = range(-1.0, 1.0, length = nx)
    r = [inv_transform(t, xi) for xi in x]
    if !(r[1] ≈ t.rin)
       fails += 1 
-      @error("t⁻¹(0) ≈ rin fails")
+      @error("t⁻¹(-1) ≈ rin fails")
    end
    if !(r[end] ≈ t.rcut) 
       fails += 1 
@@ -124,7 +129,7 @@ function test_normalized_transform(t; nx = 1000)
 
    r = range(0.0, t.rcut, length = nx)
    x = [t(ri) for ri in r]
-   if !(x[1] ≈ 0.0)
+   if !(x[1] ≈ -1.0)
       fails += 1 
       @error("t(rin) ≈ yin fails")
    end
@@ -160,36 +165,10 @@ function test_normalized_transform(t; nx = 1000)
       for r1 in rr
          x1 += evaluate(t, r1)
       end
-   end
+   end 
 
    return (fails == 0) 
 end
-
-# test transform from ACE1 to be merged with the above.
-# function test_transform(T, rrange, ntests = 100)
-
-#    rmin, rmax = extrema(rrange)
-#    rr = rmin .+ rand(100) * (rmax-rmin)
-#    xx = [ transform(T, r) for r in rr ]
-#    # check syntactic sugar
-#    xx1 = [ T(r) for r in rr ]
-#    print_tf(@test xx1 == xx)
-#    # check inversion
-#    rr1 =  inv_transform.(Ref(T), xx)
-#    print_tf(@test rr1 ≈ rr)
-#    # check gradient
-#    dx = transform_d.(Ref(T), rr)
-#    adx = ForwardDiff.derivative.(Ref(r -> transform(T, r)), rr)
-#    print_tf(@test dx ≈ adx)
-
-#    # TODO: check that the transform doesn't allocate
-#    @allocated begin
-#       x = 0.0;
-#       for r in rr
-#          x += transform(T, r)
-#       end
-#    end
-# end
 
 
 
@@ -226,4 +205,11 @@ function agnesi_transform(r0, rcut, p, q;
    return NormalizedTransform( 
                   GeneralizedAgnesiTransform(p, q, a, rin, r0), 
                   rin, rcut )
+end
+
+function agnesi_transform(rin0cut::NamedTuple, p, q)
+   rin = rin0cut.rin 
+   r0 = rin0cut.r0
+   rcut = rin0cut.rcut
+   return agnesi_transform(r0, rcut, p, q, rin = rin)
 end
