@@ -1,7 +1,7 @@
 
 
 
-using Pkg; Pkg.activate(".");
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using ACEpotentials
