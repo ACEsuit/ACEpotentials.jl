@@ -90,7 +90,7 @@ function initialparameters(rng::AbstractRNG,
       W  = W ./ sqrt.(sum(W.^2, dims = 2))
    end
 
-   return (W = [ _W() for i = 1:NZ, j = 1:NZ ], )
+   return (Wnlq = [ _W() for i = 1:NZ for j = 1:NZ ], )
 end
 
 function initialstates(rng::AbstractRNG, 
