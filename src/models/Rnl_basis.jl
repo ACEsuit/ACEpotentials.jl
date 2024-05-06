@@ -152,3 +152,20 @@ function evaluate_batched(basis::LearnableRnlrzzBasis,
    return Rnl, st
 end
 
+
+# ----- gradients 
+# because the typical scenario is that we have few r, then moderately 
+# many q and then many (n, l), this seems to be best done in Forward-mode. 
+
+import ForwardDiff
+using ForwardDiff: Dual
+
+function evaluate_ed(basis::LearnableRnlrzzBasis, r::T, Zi, Zj, ps, st) where {T <: Real}
+   d_r = Dual{T}(r, one(T))
+   d_Rnl, st = evaluate(basis, d_r, Zi, Zj, ps, st)
+   Rnl = ForwardDiff.value.(d_Rnl)
+   Rnl_d = ForwardDiff.extract_derivative(T, d_Rnl) 
+   return Rnl, Rnl_d, st 
+end
+
+

@@ -45,3 +45,14 @@ for ntest = 1:50
    print_tf(@test abs(val - val1) < 1e-10)
 end
 println()
+
+##
+
+# # first test shows the performance is not at all awful even without any 
+# # optimizations and reductions in memory allocations. 
+# using BenchmarkTools
+# Rs, Zs, z0 = M.rand_atenv(model, 16)
+# @btime M.evaluate($model, $Rs, $Zs, $Z0, $ps, $st)
+
+##
+
