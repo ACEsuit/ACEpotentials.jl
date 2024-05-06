@@ -39,6 +39,25 @@ function _default_rin0cuts(zlist; rinfactor = 0.0, rcutfactor = 2.5)
    return SMatrix{NZ, NZ}([ rin0cut(zi, zj) for zi in zlist, zj in zlist ])
 end
 
+"""
+Takes an object and converts it to an `SMatrix{NZ, NZ}` via the following rules: 
+- if `obj` is already an `SMatrix{NZ, NZ}` then it just return `obj`
+- if `obj` is an `AbstractMatrix` and `size(obj) == (NZ, NZ)` then it 
+   converts it to an `SMatrix{NZ, NZ}` with the same entries.
+- otherwise it generates an `SMatrix{NZ, NZ}` filled with the value `obj`.
+"""
+function _make_smatrix(obj, NZ) 
+   if obj isa SMatrix{NZ, NZ}
+      return obj
+   end
+   if obj isa AbstractMatrix && size(obj) == (NZ, NZ)
+      return SMatrix{NZ, NZ}(obj)
+   end
+   if obj isa AbstractArray && size(obj) != (NZ, NZ) 
+      error("`_make_smatrix` : if the input `obj` is an `AbstractArray` then it must be of size `(NZ, NZ)`")
+   end
+   return SMatrix{NZ, NZ}(fill(obj, (NZ, NZ)))
+end
 
 # a one-hot embedding for the z variable. 
 # function embed_z(ace, Rs, Zs)

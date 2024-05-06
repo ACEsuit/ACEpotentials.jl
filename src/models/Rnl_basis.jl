@@ -11,16 +11,20 @@ abstract type AbstractRnlzzBasis <: AbstractExplicitLayer end
 #  each smatrix in the types below indexes (i, j) 
 #  where i is the center, j is neighbour
 
+const NT_RIN0CUTS{T} = NamedTuple{(:rin, :r0, :rcut), Tuple{T, T, T}}
+const NT_NL_SPEC = NamedTuple{(:n, :l), Tuple{Int, Int}}
 
-struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW} <: AbstractRnlzzBasis
+struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW, T} <: AbstractRnlzzBasis
    _i2z::NTuple{NZ, Int}
    polys::TPOLY
    transforms::SMatrix{NZ, NZ, TT}
    envelopes::SMatrix{NZ, NZ, TENV}
-   # rcut::SMatrix{NZ, NZ, T}            # matrix of (rin, rout)
-   weights::SMatrix{NZ, NZ, TW}        # learnable weights, nothing when using Lux
-   #--------------
-   # meta should contain spec, rin0cuts
+   # -------------- 
+   weights::SMatrix{NZ, NZ, TW}               # learnable weights, `nothing` when using Lux
+   rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
+   spec::Vector{NT_NL_SPEC}       
+   # --------------
+   # meta
    meta::Dict{String, Any} 
 end
 
@@ -36,48 +40,44 @@ end
 #    meta::Dict{String, Any} 
 # end
 
+
 # a few getter functions for convenient access to those fields of matrices
-_rincut_zz(obj, zi, zj) = obj.rincut[_z2i(obj, zi), _z2i(obj, zj)]
+_rincut_zz(obj, zi, zj) = obj.rin0cut[_z2i(obj, zi), _z2i(obj, zj)]
 _envelope_zz(obj, zi, zj) = obj.envelopes[_z2i(obj, zi), _z2i(obj, zj)]
 _spline_zz(obj, zi, zj) = obj.splines[_z2i(obj, zi), _z2i(obj, zj)]
 _transform_zz(obj, zi, zj) = obj.transforms[_z2i(obj, zi), _z2i(obj, zj)]
-_poly_zz(obj, zi, zj) = obj.poly[_z2i(obj, zi), _z2i(obj, zj)]
+# _polys_zz(obj, zi, zj) = obj.polys[_z2i(obj, zi), _z2i(obj, zj)]
 
 
 # ------------------------------------------------------------ 
 #      CONSTRUCTORS AND UTILITIES 
 # ------------------------------------------------------------ 
 
-# these _auto_trans are very poor and need to take care of a lot more 
+# these _auto_... are very poor and need to take care of a lot more 
 # cases, e.g. we may want to pass in the objects as a Matrix rather than 
 # SMatrix ... 
 
-_auto_trans(t, NZ) = (t isa SMatrix) ? t : SMatrix{NZ, NZ}(fill(t, (NZ, NZ)))
 
-_auto_envel(env, NZ) = (env isa SMatrix) ? env : SMatrix{NZ, NZ}(fill(env, (NZ, NZ)))
-
-_auto_rincut(rincut, NZ) = (rincut isa SMatrix) ? rincut : SMatrix{NZ, NZ}(fill(rincut, (NZ, NZ)))
-
-_auto_weights(weights, NZ) = (weights isa SMatrix) ? weights : SMatrix{NZ, NZ}(fill(weights, (NZ, NZ)))
 
 
 function LearnableRnlrzzBasis(
-            zlist, polys, transforms, envelopes, 
-            rin0cuts, 
-            spec::Vector{<: NamedTuple}; 
+            zlist, polys, transforms, envelopes, rin0cuts, 
+            spec::AbstractVector{NT_NL_SPEC}; 
             weights=nothing, 
             meta=Dict{String, Any}())
-   meta["rin0cuts"] = rin0cuts
-   meta["spec"] = spec          
-   LearnableRnlrzzBasis(_convert_zlist(zlist), polys, 
-                     _auto_trans(transforms, length(zlist)), 
-                     _auto_envel(envelopes, length(zlist)), 
-                     # _auto_rincut(rincut, length(zlist)), 
-                     _auto_weights(weights, length(zlist)), 
-                     meta)
+   NZ = length(zlist)   
+   LearnableRnlrzzBasis(_convert_zlist(zlist), 
+                        polys, 
+                        _make_smatrix(transforms, NZ), 
+                        _make_smatrix(envelopes, NZ), 
+                        # --------------
+                        _make_smatrix(weights, NZ), 
+                        _make_smatrix(rin0cuts, NZ),
+                        collect(spec), 
+                        meta)
 end
 
-Base.length(basis::LearnableRnlrzzBasis) = length(basis.meta["spec"])
+Base.length(basis::LearnableRnlrzzBasis) = length(basis.spec)
 
 function initialparameters(rng::AbstractRNG, 
                            basis::LearnableRnlrzzBasis)
@@ -99,14 +99,6 @@ function initialstates(rng::AbstractRNG,
 end
                   
 
-# function learnable_Rnlrzz_basis(zlist; 
-#                 polys = :auto, 
-#                 transforms = :auto, 
-#                 envelopes = :auto, 
-#                 rincut = :auto, 
-#                 weight = :auto)
-   
-# end                
 
 function splinify(basis::LearnableRnlrzzBasis)
 
