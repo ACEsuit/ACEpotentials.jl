@@ -90,7 +90,7 @@ function initialparameters(rng::AbstractRNG,
       W  = W ./ sqrt.(sum(W.^2, dims = 2))
    end
 
-   return (Wnlq = [ _W() for i = 1:NZ for j = 1:NZ ], )
+   return (Wnlq = [ _W() for i = 1:NZ, j = 1:NZ ], )
 end
 
 function initialstates(rng::AbstractRNG, 
@@ -112,10 +112,23 @@ import Polynomials4ML
 
 (l::LearnableRnlrzzBasis)(args...) = evaluate(l, args...)
 
-function evaluate(basis::LearnableRnlrzzBasis, r, Zi, Zj, ps, st)
+function evaluate!(Rnl, basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    iz = _z2i(basis, Zi)
    jz = _z2i(basis, Zj)
-   Wij = ps.W[iz, jz]
+   Wij = ps.Wnlq[iz, jz]
+   trans_ij = basis.transforms[iz, jz]
+   x = trans_ij(r)
+   P = Polynomials4ML.evaluate(basis.polys, x)
+   env_ij = basis.envelopes[iz, jz]
+   e = evaluate(env_ij, x)   
+   Rnl[:] .= Wij * (P .* e)
+   return Rnl, st 
+end
+
+function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
+   iz = _z2i(basis, Zi)
+   jz = _z2i(basis, Zj)
+   Wij = ps.Wnlq[iz, jz]
    trans_ij = basis.transforms[iz, jz]
    x = trans_ij(r)
    P = Polynomials4ML.evaluate(basis.polys, x)
@@ -123,3 +136,19 @@ function evaluate(basis::LearnableRnlrzzBasis, r, Zi, Zj, ps, st)
    e = evaluate(env_ij, x)   
    return Wij * (P .* e), st 
 end
+
+
+function evaluate_batched(basis::LearnableRnlrzzBasis, 
+                          rs::AbstractVector{<: Real}, zi, zjs, ps, st)
+   @assert length(rs) == length(zjs)                          
+   # evaluate the first one to get the types and size
+   Rnl_1, st = evaluate(basis, rs[1], zi, zjs[1], ps, st)
+   # allocate storage
+   Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
+   # then evaluate the rest in-place 
+   for j = 1:length(rs)
+      evaluate!((@view Rnl[j, :]), basis, rs[j], zi, zjs[j], ps, st)
+   end
+   return Rnl, st
+end
+

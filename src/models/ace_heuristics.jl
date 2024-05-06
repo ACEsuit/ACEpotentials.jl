@@ -1,3 +1,5 @@
+
+
 # --------------------------------------------------
 #   different notions of "level" / total degree.
 
@@ -87,7 +89,7 @@ function ace_model(; elements = nothing,
                      # basis size parameters 
                      level = nothing, 
                      max_level = nothing, 
-                     
+                     init_WB = :zeros, 
                      )
    # construct an rbasis if needed
    if isnothing(rbasis)
@@ -103,7 +105,10 @@ function ace_model(; elements = nothing,
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   return ace_model(rbasis, Ytype, AA_spec, level)                              
+   model = ace_model(rbasis, Ytype, AA_spec, level)
+   model.meta["init_WB"] = String(init_WB)
+
+   return model 
 end
 
 

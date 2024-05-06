@@ -4,8 +4,12 @@ using LuxCore: AbstractExplicitLayer,
                initialparameters, 
                initialstates
 
+using Lux: glorot_normal
+
 using Random: AbstractRNG
 using SparseArrays: SparseMatrixCSC     
+using StaticArrays: SVector
+using LinearAlgebra: norm, dot
 
 import SpheriCart
 using SpheriCart: SolidHarmonics, SphericalHarmonics
@@ -123,12 +127,15 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
 end
 
 # TODO: it is not entirely clear that the `level` is really needed here 
-#       since it is implicitly already encoded in AA_spec 
+#       since it is implicitly already encoded in AA_spec. We need a 
+#       function `auto_level` that generates level automagically from AA_spec.
 function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level)
    return _generate_ace_model(rbasis, Ytype, AA_spec, level)
 end 
 
-# NOTE : a nice convenience constructure is also provided in `ace_heuristics.jl`
+# NOTE : a nicer convenience constructor is also provided in `ace_heuristics.jl`
+#        this is where we should move all defaults, heuristics and other things 
+#        that make life good.
 
 # ------------------------------------------------------------
 #   Lux stuff 
@@ -137,9 +144,20 @@ function initialparameters(rng::AbstractRNG,
                            model::ACEModel)
    NZ = _get_nz(model)
    n_B_params, n_AA_params = size(model.A2Bmap)
+
    # only the B params are parameters, the AA params are uniquely defined 
    # via the B params. 
-   return (WB = [ zeros(n_B_params) for _=1:NZ ], 
+
+   # there are different ways to initialize parameters 
+   if model.meta["init_WB"] == "zeros"
+      winit = zeros 
+   elseif model.meta["init_WB"] == "glorot_normal"
+      winit = glorot_normal
+   else
+      error("unknown `init_WB` = $(model.meta["init_WB"])")
+   end
+
+   return (WB = [ winit(Float64, n_B_params) for _=1:NZ ], 
            rbasis = initialparameters(rng, model.rbasis), )
 end
 
@@ -156,4 +174,43 @@ end
 #   this should possibly be moved to a separate file once it 
 #   gets more complicated.
 
+# these _getlmax and _length should be moved into SpheriCart 
+_getlmax(ybasis::SolidHarmonics{L}) where {L} = L 
+_length(ybasis::SolidHarmonics) = SpheriCart.sizeY(_getlmax(ybasis))
 
+function evaluate(model::ACEModel, 
+                  Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                  ps, st) where {T}
+   # get the radii 
+   rs = [ norm(r) for r in Rs ]   # use Bumper 
+
+   # evaluate the radial basis
+   # use Bumper to pre-allocate 
+   Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
+                              ps.rbasis, st.rbasis)
+
+   # evaluate the Y basis
+   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+   SpheriCart.compute!(Ylm, model.ybasis, Rs)
+
+   # evaluate the A basis
+   TA = promote_type(T, eltype(Rnl))
+   A = zeros(T, length(model.abasis))
+   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
+
+   # evaluate the AA basis
+   _AA = zeros(T, length(model.aabasis))     # use Bumper here
+   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
+   # project to the actual AA basis 
+   proj = model.aabasis.projection
+   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
+
+   # evaluate the coupling coefficients
+   B = model.A2Bmap * AA
+
+   # contract with params 
+   i_z0 = _z2i(model.rbasis, Z0)
+   val = dot(B, ps.WB[i_z0])
+            
+   return val, st 
+end

@@ -77,3 +77,39 @@ function sparse_AA_spec(; order = nothing,
 
    return AA_spec_nlm 
 end
+
+
+
+
+import ACE1 
+
+function rand_atenv(model, Nat)
+   z0 = rand(model._i2z) 
+   zs = rand(model._i2z, Nat) 
+   
+   rs = Float64[] 
+   for zj in zs 
+      iz0 = _z2i(model, z0)
+      izj = _z2i(model, zj)
+      x = 2 * rand() - 1 
+      t_ij = model.rbasis.transforms[iz0, izj] 
+      r_ij = inv_transform(t_ij, x)
+      push!(rs, r_ij)
+   end
+   Rs = [ r * ACE1.Random.rand_sphere() for r in rs ]
+   return Rs, zs, z0 
+end
+
+
+using StaticArrays: @SMatrix 
+using LinearAlgebra: qr
+
+function rand_rot()
+   A = @SMatrix randn(3, 3) 
+   Q, _ = qr(A) 
+   return Q 
+end
+
+rand_iso() = rand([-1,1]) * rand_rot()
+
+
