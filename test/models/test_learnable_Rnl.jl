@@ -33,3 +33,6 @@ Rnl, Rnl_d, st1 = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
 @btime ($basis)(r, Zi, Zj, $ps, $st)
 @btime M.evaluate_ed($basis, r, Zi, Zj, $ps, $st)
 
+rs = [r, r, r]
+Zs = [Zj, Zj, Zj]
+Rnl, Rnl_d, st1 = M.evaluate_ed_batched(basis, rs, Zi, Zs, ps, st)

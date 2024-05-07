@@ -214,3 +214,108 @@ function evaluate(model::ACEModel,
             
    return val, st 
 end
+
+
+
+function evaluate(model::ACEModel, 
+                  Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                  ps, st) where {T}
+   # get the radii 
+   rs = [ norm(r) for r in Rs ]   # use Bumper 
+
+   # evaluate the radial basis
+   # use Bumper to pre-allocate 
+   Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
+                              ps.rbasis, st.rbasis)
+
+   # evaluate the Y basis
+   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+   SpheriCart.compute!(Ylm, model.ybasis, Rs)
+
+   # evaluate the A basis
+   TA = promote_type(T, eltype(Rnl))
+   A = zeros(T, length(model.abasis))
+   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
+
+   # evaluate the AA basis
+   _AA = zeros(T, length(model.aabasis))     # use Bumper here
+   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
+   # project to the actual AA basis 
+   proj = model.aabasis.projection
+   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
+
+   # evaluate the coupling coefficients
+   B = model.A2Bmap * AA
+
+   # contract with params 
+   i_z0 = _z2i(model.rbasis, Z0)
+   val = dot(B, ps.WB[i_z0])
+            
+   return val, st 
+end
+
+
+function evaluate_ed(model::ACEModel, 
+                     Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                     ps, st) where {T}
+
+   # ---------- EMBEDDINGS ------------
+   # (these are done in forward mode, so not part of the fwd, bwd passes)
+
+   # get the radii 
+   rs = [ norm(r) for r in Rs ]   # use Bumper 
+
+   # evaluate the radial basis
+   # use Bumper to pre-allocate 
+   Rnl, dRnl, _st = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
+                                        ps.rbasis, st.rbasis)
+   # evaluate the Y basis
+   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+   dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
+   SpheriCart.compute_with_grad!(Ylm, dYlm, model.ybasis, Rs)
+
+   # ---------- FORWARD PASS ------------
+
+   # evaluate the A basis
+   TA = promote_type(T, eltype(Rnl))
+   A = zeros(T, length(model.abasis))
+   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
+
+   # evaluate the AA basis
+   _AA = zeros(T, length(model.aabasis))     # use Bumper here
+   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
+   # project to the actual AA basis 
+   proj = model.aabasis.projection
+   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
+
+   # evaluate the coupling coefficients
+   B = model.A2Bmap * AA
+
+   # contract with params 
+   i_z0 = _z2i(model.rbasis, Z0)
+   Ei = dot(B, ps.WB[i_z0])
+
+   # ---------- BACKWARD PASS ------------
+
+   # ∂Ei / ∂B = WB[i_z0]
+   ∂B = ps.WB[i_z0]
+
+   # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA 
+   #           = (WB[i_z0]) * A2Bmap
+   ∂AA = model.A2Bmap' * ∂B
+
+   # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A 
+   #          = pullback(aabasis, ∂AA)
+   
+   # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
+
+   
+   # ---------- ASSEMBLE DERIVATIVES ------------
+   # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
+   # as follows: 
+   #    ∂Ei / ∂𝐫ⱼ = ∑_nl ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂𝐫ⱼ 
+   #              + ∑_lm ∂Ei / ∂Ylm[j] * ∂Ylm[j] / ∂𝐫ⱼ
+
+   
+   return val, st 
+end

@@ -169,3 +169,23 @@ function evaluate_ed(basis::LearnableRnlrzzBasis, r::T, Zi, Zj, ps, st) where {T
 end
 
 
+function evaluate_ed_batched(basis::LearnableRnlrzzBasis, 
+                             rs::AbstractVector{T}, Zi, Zs, ps, st
+                             ) where {T <: Real}
+   
+   @assert length(rs) == length(Zs)            
+   Rnl1, st = evaluate(basis, rs[1], Zi, Zs[1], ps, st) 
+   Rnl = zeros(T, length(rs), length(Rnl1))
+   Rnl_d = zeros(T, length(rs), length(Rnl1))
+
+   for j = 1:length(rs)
+      d_r = Dual{T}(rs[j], one(T))   
+      d_Rnl, st = evaluate(basis, d_r, Zi, Zs[j], ps, st)  # should reuse memory here 
+      map!(ForwardDiff.value, (@view Rnl[j, :]), d_Rnl)
+      map!(d -> ForwardDiff.extract_derivative(T, d), (@view Rnl_d[j, :]), d_Rnl)
+   end       
+
+   return Rnl, Rnl_d, st 
+end
+
+
