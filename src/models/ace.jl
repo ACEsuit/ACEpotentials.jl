@@ -263,16 +263,16 @@ function evaluate_ed(model::ACEModel,
    # (these are done in forward mode, so not part of the fwd, bwd passes)
 
    # get the radii 
-   rs = [ norm(r) for r in Rs ]   # use Bumper 
+   rs = [ norm(r) for r in Rs ]   # TODO: use Bumper 
 
    # evaluate the radial basis
-   # use Bumper to pre-allocate 
+   # TODO: use Bumper to pre-allocate 
    Rnl, dRnl, _st = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
                                         ps.rbasis, st.rbasis)
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # TODO: use Bumper
    dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
-   SpheriCart.compute_with_grad!(Ylm, dYlm, model.ybasis, Rs)
+   SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
    # ---------- FORWARD PASS ------------
 
@@ -282,16 +282,18 @@ function evaluate_ed(model::ACEModel,
    Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
 
    # evaluate the AA basis
-   _AA = zeros(T, length(model.aabasis))     # use Bumper here
+   _AA = zeros(T, length(model.aabasis))     # TODO: use Bumper here
    Polynomials4ML.evaluate!(_AA, model.aabasis, A)
    # project to the actual AA basis 
    proj = model.aabasis.projection
-   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
+   AA = _AA[proj]     # TODO: use Bumper here, or view; needs experimentation. 
 
-   # evaluate the coupling coefficients
+   # evaluate the coupling coefficients 
+   # TODO: use Bumper and do it in-place 
    B = model.A2Bmap * AA
 
    # contract with params 
+   # (here we can insert another nonlinearity instead of the simple dot)
    i_z0 = _z2i(model.rbasis, Z0)
    Ei = dot(B, ps.WB[i_z0])
 
@@ -300,22 +302,30 @@ function evaluate_ed(model::ACEModel,
    # ∂Ei / ∂B = WB[i_z0]
    ∂B = ps.WB[i_z0]
 
-   # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA 
-   #           = (WB[i_z0]) * A2Bmap
-   ∂AA = model.A2Bmap' * ∂B
+   # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
+   ∂AA = model.A2Bmap' * ∂B   # TODO: make this in-place 
+   _∂AA = zeros(T, length(_AA)) 
+   _∂AA[proj] = ∂AA
 
-   # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A 
-   #          = pullback(aabasis, ∂AA)
+   # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
+   ∂A = zeros(T, length(model.abasis))
+   Polynomials4ML.pullback_arg!(∂A, _∂AA, model.aabasis, _AA)
    
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
-
+   ∂Rnl = zeros(T, size(Rnl))
+   ∂Ylm = zeros(T, size(Ylm))
+   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, model.abasis, (Rnl, Ylm))
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
    # as follows: 
    #    ∂Ei / ∂𝐫ⱼ = ∑_nl ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂𝐫ⱼ 
    #              + ∑_lm ∂Ei / ∂Ylm[j] * ∂Ylm[j] / ∂𝐫ⱼ
+   ∇Ei = zeros(SVector{3, T}, length(Rs))
+   for j = 1:length(Rs)
+      ∇Ei[j] = dot(∂Rnl[j, :], dRnl[j, :]) * (Rs[j] / rs[j]) + 
+               sum(∂Ylm[j, :] .* dYlm[j, :])
+   end
 
-   
-   return val, st 
+   return Ei, ∇Ei, st 
 end

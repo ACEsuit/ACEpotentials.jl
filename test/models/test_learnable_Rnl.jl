@@ -27,11 +27,23 @@ Zj = basis._i2z[2]
 Rnl, st1 = basis(r, Zi, Zj, ps, st)
 Rnl, Rnl_d, st1 = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
 
+@info("Test derivatives of Rnlrzz basis")
+
+for ntest = 1:20 
+   r = 2.0 + rand() 
+   Zi = rand(basis._i2z)
+   Zj = rand(basis._i2z)
+   U = randn(eltype(Rnl), length(Rnl))
+   F(t) = dot(U, basis(r + t, Zi, Zj, ps, st)[1])
+   dF(t) = dot(U, M.evaluate_ed(basis, r + t, Zi, Zj, ps, st)[2])
+   print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
+end
+println() 
 
 ##
 
-@btime ($basis)(r, Zi, Zj, $ps, $st)
-@btime M.evaluate_ed($basis, r, Zi, Zj, $ps, $st)
+# @btime ($basis)(r, Zi, Zj, $ps, $st)
+# @btime M.evaluate_ed($basis, r, Zi, Zj, $ps, $st)
 
 rs = [r, r, r]
 Zs = [Zj, Zj, Zj]

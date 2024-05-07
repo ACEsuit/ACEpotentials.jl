@@ -8,7 +8,7 @@ using ACEbase.Testing: print_tf
 using ACEpotentials
 M = ACEpotentials.Models
 
-using Random, LuxCore
+using Random, LuxCore, StaticArrays
 rng = Random.MersenneTwister(1234)
 
 ##
@@ -48,11 +48,26 @@ println()
 
 ##
 
-# # first test shows the performance is not at all awful even without any 
-# # optimizations and reductions in memory allocations. 
-# using BenchmarkTools
-# Rs, Zs, z0 = M.rand_atenv(model, 16)
-# @btime M.evaluate($model, $Rs, $Zs, $Z0, $ps, $st)
+Rs, Zs, z0 = M.rand_atenv(model, 16)
+Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
+
+Ei1, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+
+Ei ≈ Ei1
+
+Us = randn(SVector{3, Float64}, length(Rs))
+F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
+dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
+ACEbase.Testing.fdtest(F, dF, 0.0)
+
+##
+
+# first test shows the performance is not at all awful even without any 
+# optimizations and reductions in memory allocations. 
+using BenchmarkTools
+Rs, Zs, z0 = M.rand_atenv(model, 16)
+@btime M.evaluate($model, $Rs, $Zs, $z0, $ps, $st)
+@btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
 
 ##
 
