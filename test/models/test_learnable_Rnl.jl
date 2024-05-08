@@ -7,7 +7,8 @@ using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 using ACEpotentials
 M = ACEpotentials.Models
 
-using Random, LuxCore
+using Random, LuxCore, Test, ACEbase, LinearAlgebra
+using ACEbase.Testing: print_tf
 rng = Random.MersenneTwister(1234)
 
 ##
@@ -48,3 +49,4 @@ println()
 rs = [r, r, r]
 Zs = [Zj, Zj, Zj]
 Rnl, Rnl_d, st1 = M.evaluate_ed_batched(basis, rs, Zi, Zs, ps, st)
+

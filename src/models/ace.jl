@@ -174,6 +174,8 @@ end
 #   this should possibly be moved to a separate file once it 
 #   gets more complicated.
 
+import Zygote
+
 # these _getlmax and _length should be moved into SpheriCart 
 _getlmax(ybasis::SolidHarmonics{L}) where {L} = L 
 _length(ybasis::SolidHarmonics) = SpheriCart.sizeY(_getlmax(ybasis))
@@ -215,44 +217,6 @@ function evaluate(model::ACEModel,
    return val, st 
 end
 
-
-
-function evaluate(model::ACEModel, 
-                  Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
-                  ps, st) where {T}
-   # get the radii 
-   rs = [ norm(r) for r in Rs ]   # use Bumper 
-
-   # evaluate the radial basis
-   # use Bumper to pre-allocate 
-   Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
-                              ps.rbasis, st.rbasis)
-
-   # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
-   SpheriCart.compute!(Ylm, model.ybasis, Rs)
-
-   # evaluate the A basis
-   TA = promote_type(T, eltype(Rnl))
-   A = zeros(T, length(model.abasis))
-   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
-
-   # evaluate the AA basis
-   _AA = zeros(T, length(model.aabasis))     # use Bumper here
-   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
-   # project to the actual AA basis 
-   proj = model.aabasis.projection
-   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
-
-   # evaluate the coupling coefficients
-   B = model.A2Bmap * AA
-
-   # contract with params 
-   i_z0 = _z2i(model.rbasis, Z0)
-   val = dot(B, ps.WB[i_z0])
-            
-   return val, st 
-end
 
 
 function evaluate_ed(model::ACEModel, 
@@ -328,4 +292,84 @@ function evaluate_ed(model::ACEModel,
    end
 
    return Ei, ∇Ei, st 
+end
+
+
+function grad_params(model::ACEModel, 
+                     Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                     ps, st) where {T}
+
+   # ---------- EMBEDDINGS ------------
+   # (these are done in forward mode, so not part of the fwd, bwd passes)
+
+   # get the radii 
+   rs = [ norm(r) for r in Rs ]   # TODO: use Bumper 
+
+   # evaluate the radial basis
+   # TODO: use Bumper to pre-allocate 
+   (Rnl, _st), pb_Rnl = rrule(evaluate_batched, model.rbasis, 
+                              rs, Z0, Zs, ps.rbasis, st.rbasis)
+   # evaluate the Y basis
+   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # TODO: use Bumper
+   dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
+   SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
+
+   # ---------- FORWARD PASS ------------
+
+   # evaluate the A basis
+   TA = promote_type(T, eltype(Rnl))
+   A = zeros(T, length(model.abasis))
+   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
+
+   # evaluate the AA basis
+   _AA = zeros(T, length(model.aabasis))     # TODO: use Bumper here
+   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
+   # project to the actual AA basis 
+   proj = model.aabasis.projection
+   AA = _AA[proj]     # TODO: use Bumper here, or view; needs experimentation. 
+
+   # evaluate the coupling coefficients 
+   # TODO: use Bumper and do it in-place 
+   B = model.A2Bmap * AA
+
+   # contract with params 
+   # (here we can insert another nonlinearity instead of the simple dot)
+   i_z0 = _z2i(model.rbasis, Z0)
+   Ei = dot(B, ps.WB[i_z0])
+
+   # ---------- BACKWARD PASS ------------
+
+   # we need ∂WB = ∂Ei/∂WB -> this goes into the gradient 
+   # but we also need ∂B = ∂Ei / ∂B = WB[i_z0] to backpropagate
+   ∂WB_i = B 
+   ∂B = ps.WB[i_z0]
+
+   # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
+   ∂AA = model.A2Bmap' * ∂B   # TODO: make this in-place 
+   _∂AA = zeros(T, length(_AA)) 
+   _∂AA[proj] = ∂AA
+
+   # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
+   ∂A = zeros(T, length(model.abasis))
+   Polynomials4ML.pullback_arg!(∂A, _∂AA, model.aabasis, _AA)
+   
+   # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
+   ∂Rnl = zeros(T, size(Rnl))
+   ∂Ylm = zeros(T, size(Ylm))   # we could make this a black hole since we don't need it. 
+   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, model.abasis, (Rnl, Ylm))
+   
+   # ---------- ASSEMBLE DERIVATIVES ------------
+   # the first grad_param is ∂WB, which we already have but it needs to be 
+   # written into a vector of vectors 
+   ∂WB = [ zeros(eltype(∂WB_i), size(∂WB_i)) for _=1:_get_nz(model) ]
+   ∂WB[i_z0] = ∂WB_i
+
+   # the second one is the gradient with respect to Rnl params 
+   #
+   # ∂Ei / ∂Wn̄l̄q̄ 
+   #   = ∑_nlj ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂Wn̄l̄q̄
+   #   = pullback(∂Rnl, rbasis, args...)
+   _, _, _, _, ∂Wqnl, _ = pb_Rnl(∂Rnl)  # this should be a named tuple already.
+
+   return Ei, (WB = ∂WB, rbasis = ∂Wqnl), st
 end

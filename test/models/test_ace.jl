@@ -3,12 +3,14 @@ using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using Test, ACEbase
-using ACEbase.Testing: print_tf
+using ACEbase.Testing: print_tf, println_slim
 
 using ACEpotentials
 M = ACEpotentials.Models
 
-using Random, LuxCore, StaticArrays
+using Optimisers
+
+using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
 
 ##
@@ -48,19 +50,43 @@ println()
 
 ##
 
+@info("Test derivatives w.r.t. positions")
 Rs, Zs, z0 = M.rand_atenv(model, 16)
 Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
-
 Ei1, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+println_slim(@test Ei ≈ Ei1)
 
-Ei ≈ Ei1
-
-Us = randn(SVector{3, Float64}, length(Rs))
-F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
-dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
-ACEbase.Testing.fdtest(F, dF, 0.0)
+for ntest = 1:20 
+   Nat = rand(8:16)
+   Rs, Zs, z0 = M.rand_atenv(model, Nat)
+   Us = randn(SVector{3, Float64}, Nat)
+   F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
+   dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
+   print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
+end
+println() 
 
 ##
+
+@info("Test derivatives w.r.t. parameters")
+Nat = 15
+Rs, Zs, z0 = M.rand_atenv(model, Nat)
+Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
+Ei1, ∇Ei, st = M.grad_params(model, Rs, Zs, z0, ps, st)
+println_slim(@test Ei ≈ Ei1)
+
+for ntest = 1:20
+   Nat = rand(8:16)
+   Rs, Zs, z0 = M.rand_atenv(model, Nat)
+   pvec, _restruct = destructure(ps)
+   uvec = randn(length(pvec)) / sqrt(length(pvec))
+   F(t) = M.evaluate(model, Rs, Zs, z0, _restruct(pvec + t * uvec), st)[1]
+   dF0 = dot( destructure( M.grad_params(model, Rs, Zs, z0, ps, st)[2] )[1], uvec )
+   print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose = false))
+end
+
+##
+
 
 # first test shows the performance is not at all awful even without any 
 # optimizations and reductions in memory allocations. 
@@ -68,6 +94,6 @@ using BenchmarkTools
 Rs, Zs, z0 = M.rand_atenv(model, 16)
 @btime M.evaluate($model, $Rs, $Zs, $z0, $ps, $st)
 @btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
+@btime M.grad_params($model, $Rs, $Zs, $z0, $ps, $st)
 
 ##
-
