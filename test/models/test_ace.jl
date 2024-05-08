@@ -87,18 +87,6 @@ end
 
 ##
 
-
-# first test shows the performance is not at all awful even without any 
-# optimizations and reductions in memory allocations. 
-using BenchmarkTools
-Rs, Zs, z0 = M.rand_atenv(model, 16)
-@btime M.evaluate($model, $Rs, $Zs, $z0, $ps, $st)
-@btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
-@btime M.grad_params($model, $Rs, $Zs, $z0, $ps, $st)
-
-
-##
-
 @info("Test second mixed derivatives reverse-over-reverse")
 for ntest = 1:20 
    Nat = rand(8:16)
@@ -122,3 +110,17 @@ for ntest = 1:20
    print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=false))
 end
 
+
+##
+
+
+# # first test shows the performance is not at all awful even without any 
+# # optimizations and reductions in memory allocations. 
+# using BenchmarkTools
+# Nat = 15
+# Rs, Zs, z0 = M.rand_atenv(model, Nat)
+# Us = randn(SVector{3, Float64}, Nat)
+# print("   evaluate : "); @btime M.evaluate($model, $Rs, $Zs, $z0, $ps, $st)
+# print("evaluate_ed : "); @btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
+# print("grad_params : "); @btime M.grad_params($model, $Rs, $Zs, $z0, $ps, $st)
+# print("  reverse^2 : "); @btime M.pullback_2_mixed(rand(), $Us, $model, $Rs, $Zs, $z0, $ps, $st)
