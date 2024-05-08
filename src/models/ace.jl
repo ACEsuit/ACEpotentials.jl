@@ -373,3 +373,41 @@ function grad_params(model::ACEModel,
 
    return Ei, (WB = ∂WB, rbasis = ∂Wqnl), st
 end
+
+
+using Optimisers: destructure 
+using ForwardDiff: Dual, value, extract_derivative
+
+function pullback_2_mixed(Δ, Δd, model::ACEModel, 
+            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, ps, st) where {T}
+   # this is implemented as a directional derivative 
+   # following a wonderful discussion on Discourse with 
+   # Steven G. Johnson and Avik Pal 
+   #
+   # we want the pullback for the pair (Ei, ∇Ei) computed via evaluate_ed 
+   # i.e. for Δ, Δd the output sensitivities we want to compute 
+   #    ∂_w { Δ * Ei + Δd * ∇Ei }
+   # where ∂_w = gradient with respect to parameters. We first rewrite this as 
+   #    Δ * ∂_w Ei + d/dt ∂_w Ei( x + t Δd) |_{t = 0}
+   # Which we can compute from 
+   #      ∂_w Ei( x + Dual(0, 1) * Δd )
+   # Beautiful.
+
+   Rs_d = Rs + Dual{T}(0, 1) * Δd
+   Ei_d, ∂Ei_d, st = grad_params(model, Rs_d, Zs, Z0, ps, st)
+
+   # To make our life easy we can hack the named-tuples a bit 
+   # TODO: this can and probably should be made more efficient 
+   ∂Ei_d_vec, _restruct = destructure(∂Ei_d)
+   # extract the gradient w.r.t. parameters 
+   ∂Ei = value.(∂Ei_d_vec)
+   # extract the directional derivative w.r.t. positions 
+   ∂∇Ei_Δd = extract_derivative.(T, ∂Ei_d_vec) 
+   
+   # combine to produce the output 
+   return _restruct(Δ * ∂Ei + ∂∇Ei_Δd)
+end
+
+
+   
+   

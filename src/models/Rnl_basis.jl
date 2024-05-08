@@ -237,8 +237,10 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
    Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
    
    # output storage for the gradients
-   ∂Wnlq = deepcopy(ps.Wnlq)
-   fill!.(∂Wnlq, 0)
+   T_∂Wnlq = promote_type(eltype(Δ), eltype(rs))
+   NZ = _get_nz(basis)
+   ∂Wnlq = [ zeros(T_∂Wnlq, size(ps.Wnlq[i,j]))
+             for i = 1:NZ, j = 1:NZ ]
 
    # then evaluate the rest in-place 
    for j = 1:length(rs)

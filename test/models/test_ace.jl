@@ -96,4 +96,29 @@ Rs, Zs, z0 = M.rand_atenv(model, 16)
 @btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
 @btime M.grad_params($model, $Rs, $Zs, $z0, $ps, $st)
 
+
 ##
+
+@info("Test second mixed derivatives reverse-over-reverse")
+for ntest = 1:20 
+   Nat = rand(8:16)
+   Rs, Zs, z0 = M.rand_atenv(model, Nat)
+   Us = randn(SVector{3, Float64}, Nat)
+   Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+   Ei, ∂Ei, _ = M.grad_params(model, Rs, Zs, z0, ps, st)
+
+   # test partial derivative w.r.t. the Ei component 
+   ∂2_Ei = M.pullback_2_mixed(1.0, 0*Us, model, Rs, Zs, z0, ps, st)
+   print_tf(@test destructure(∂2_Ei)[1] ≈ destructure(∂Ei)[1])
+
+   # test partial derivative w.r.t. the ∇Ei component 
+   ∂2_∇Ei = M.pullback_2_mixed(0.0, Us, model, Rs, Zs, z0, ps, st)
+   ∂2_∇Ei_vec = destructure(∂2_∇Ei)[1]
+
+   ps_vec, _restruct = destructure(ps)
+   vs_vec = randn(length(ps_vec)) / sqrt(length(ps_vec))
+   F(t) = dot(Us, M.evaluate_ed(model, Rs, Zs, z0, _restruct(ps_vec + t * vs_vec), st)[2])
+   dF0 = dot(∂2_∇Ei_vec, vs_vec)
+   print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=false))
+end
+
