@@ -83,16 +83,18 @@ end
 
 import ACE1 
 
-function rand_atenv(model, Nat)
-   z0 = rand(model._i2z) 
-   zs = rand(model._i2z, Nat) 
+rand_atenv(model::ACEModel, Nat) = rand_atenv(model.rbasis, Nat)
+
+function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat)
+   z0 = rand(rbasis._i2z) 
+   zs = rand(rbasis._i2z, Nat) 
    
    rs = Float64[] 
    for zj in zs 
-      iz0 = _z2i(model, z0)
-      izj = _z2i(model, zj)
+      iz0 = _z2i(rbasis, z0)
+      izj = _z2i(rbasis, zj)
       x = 2 * rand() - 1 
-      t_ij = model.rbasis.transforms[iz0, izj] 
+      t_ij = rbasis.transforms[iz0, izj] 
       r_ij = inv_transform(t_ij, x)
       push!(rs, r_ij)
    end

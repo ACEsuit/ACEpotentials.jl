@@ -43,18 +43,40 @@ println()
 
 ##
 
-# @btime ($basis)(r, Zi, Zj, $ps, $st)
-# @btime M.evaluate_ed($basis, r, Zi, Zj, $ps, $st)
+@info("LearnableRnlrzz : Consistency of single and batched evaluation")
 
-rs = [r, r, r]
-Zs = [Zj, Zj, Zj]
-Rnl, Rnl_d, st1 = M.evaluate_ed_batched(basis, rs, Zi, Zs, ps, st)
+for ntest = 1:20 
+   Nat = rand(8:16)
+   Rs, Zs, Z0 = M.rand_atenv(basis, Nat)
+   rs = norm.(Rs)
 
-# more tests needed to check the correctness of the batched version
-# can we implement some tests that check consistent with ACE1 in special cases? 
+   Rnl = [ M.evaluate(basis, r, Z0, z, ps, st)[1] for (r, z) in zip(rs, Zs) ]
+   Rnl_b, st = M.evaluate_batched(basis, rs, Z0, Zs, ps, st)
+   print_tf(@test all([Rnl_b[j, :] for j = 1:Nat] .≈ Rnl))
+
+   Rnl_b2, ∇Rnl_b, _ = M.evaluate_ed_batched(basis, rs, Z0, Zs, ps, st)
+   ∇Rnl = [ M.evaluate_ed(basis, r, Z0, z, ps, st)[2]
+            for (r, z) in zip(rs, Zs) ] 
+                   
+   print_tf(@test Rnl_b ≈ Rnl_b2)
+   print_tf(@test all(∇Rnl .≈ [∇Rnl_b[j, :] for j = 1:Nat ]))
+end
 
 ## 
 
-basisp = M.set_params(basis, ps)
-splb = M.splinify(basisp)
+basis_p = M.set_params(basis, ps)
+
+basis_spl = M.splinify(basis_p; nnodes = 30)
+ps_spl, st_spl = LuxCore.setup(rng, basis_spl)
+
+Rnl, _ = basis(r, Zi, Zj, ps, st)
+Rnl_spl, _ = basis_spl(r, Zi, Zj, ps_spl, st_spl)
+
+norm(Rnl - Rnl_spl, Inf)
+
+Rnl, ∇Rnl, _ = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
+Rnl_spl, ∇Rnl_spl, _ = M.evaluate_ed(basis_spl, r, Zi, Zj, ps_spl, st_spl)
+
+norm(Rnl - Rnl_spl, Inf)
+norm(∇Rnl - ∇Rnl_spl, Inf)
 
