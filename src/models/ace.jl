@@ -454,6 +454,8 @@ function evaluate_basis(model::ACEModel,
    return B, st
 end
 
+__vec(Rs::AbstractVector{SVector{3, T}}) where {T} = reinterpret(T, Rs)
+__svecs(Rsvec::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, Rsvec)
 
 function evaluate_basis_ed(model::ACEModel, 
                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
@@ -461,15 +463,31 @@ function evaluate_basis_ed(model::ACEModel,
 
    B, st = evaluate_basis(model, Rs, Zs, Z0, ps, st)
 
-   _vec(Rs::AbstractVector{SVector{3, T}}) where {T} = reinterpret(T, Rs)
-   _svecs(Rsvec::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, Rsvec)
-
    dB_vec = ForwardDiff.jacobian( 
-            _Rs -> evaluate_basis(model, _svecs(_Rs),  Zs, Z0, ps, st)[1],
-            _vec(Rs))
-   dB1 = reinterpret(SVector{3, T}, collect(dB_vec')[:])
+            _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st)[1],
+            __vec(Rs))
+   dB1 = __svecs(collect(dB_vec')[:])
    dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
                                (2, 1) ) )
 
    return B, dB, st         
 end
+
+
+
+function jacobian_grad_params(model::ACEModel, 
+                              Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                              ps, st) where {T}
+
+   Ei, ∂Ei, st = grad_params(model, Rs, Zs, Z0, ps, st)
+   ∂∂Ei_vec = ForwardDiff.jacobian( _Rs -> (
+            destructure( grad_params(model, __svecs(_Rs), Zs, Z0, ps, st)[2] )[1]
+         ), 
+         __vec(Rs))
+   ∂Ei_vec = destructure(∂Ei)[1]
+   ∂∂Ei = collect( permutedims( 
+               reshape( __svecs((∂∂Ei_vec')[:]), length(Rs), length(∂Ei_vec) ), 
+               (2, 1) ) )
+   return Ei, ∂Ei_vec, ∂∂Ei, st
+end
+

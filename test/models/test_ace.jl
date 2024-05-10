@@ -8,7 +8,7 @@ using ACEbase.Testing: print_tf, println_slim
 using ACEpotentials
 M = ACEpotentials.Models
 
-using Optimisers
+using Optimisers, ForwardDiff
 
 using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
@@ -131,6 +131,19 @@ for ntest = 1:30
    print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
 end
 
+##
+
+@info("Test the full mixed jacobian")
+
+for ntest = 1:30 
+   Nat = 15
+   Rs, Zs, z0 = M.rand_atenv(model, Nat)
+   Us = randn(SVector{3, Float64}, Nat) / sqrt(Nat)
+   F(t) = destructure( M.grad_params(model, Rs + t * Us, Zs, z0, ps, st)[2] )[1]
+   dF0 = ForwardDiff.derivative(F, 0.0)
+   ∂∂Ei = M.jacobian_grad_params(model, Rs, Zs, z0, ps, st)[3]
+   print_tf(@test dF0 ≈ transpose.(∂∂Ei) * Us)
+end 
 
 
 ##
@@ -151,6 +164,7 @@ print("  reverse^2 : "); @btime M.pullback_2_mixed(rand(), $Us, $model, $Rs, $Zs
 
 @info("Basis evaluation ")
 @info("  NB: this is currently implemented using ForwardDiff and likely inefficient")
-print("evaluate_basis    : "); @btime M.evaluate_basis($model, $Rs, $Zs, $z0, $ps, $st)
-print("evaluate_basis_ed : "); @btime M.evaluate_basis_ed($model, $Rs, $Zs, $z0, $ps, $st)
+print("      evaluate_basis : "); @btime M.evaluate_basis($model, $Rs, $Zs, $z0, $ps, $st)
+print("   evaluate_basis_ed : "); @btime M.evaluate_basis_ed($model, $Rs, $Zs, $z0, $ps, $st)
+print("jacobian_grad_params : "); @btime M.jacobian_grad_params($model, $Rs, $Zs, $z0, $ps, $st)
 
