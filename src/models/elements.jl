@@ -59,6 +59,7 @@ function _make_smatrix(obj, NZ)
    return SMatrix{NZ, NZ}(fill(obj, (NZ, NZ)))
 end
 
+
 # a one-hot embedding for the z variable. 
 # function embed_z(ace, Rs, Zs)
 #    TF = eltype(eltype(Rs))

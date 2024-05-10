@@ -2,19 +2,32 @@
 import LuxCore: AbstractExplicitLayer, 
                 initialparameters, 
                 initialstates
-using StaticArrays: SMatrix 
+using StaticArrays: SMatrix, SVector
 using Random: AbstractRNG
 
-abstract type AbstractRnlzzBasis <: AbstractExplicitLayer end
+import OffsetArrays, Interpolations
+using Interpolations: cubic_spline_interpolation, BSpline, Cubic, Line, OnGrid
+
 
 # NOTEs: 
-#  each smatrix in the types below indexes (i, j) 
+#  each smatrix in the Rnl types indexes (i, j) 
 #  where i is the center, j is neighbour
 
 const NT_RIN0CUTS{T} = NamedTuple{(:rin, :r0, :rcut), Tuple{T, T, T}}
 const NT_NL_SPEC = NamedTuple{(:n, :l), Tuple{Int, Int}}
+const SPL_OF_SVEC{DIM, T} = 
+      Interpolations.Extrapolation{SVector{DIM, T}, 1, 
+         Interpolations.ScaledInterpolation{SVector{DIM, T}, 1, 
+            Interpolations.BSplineInterpolation{SVector{DIM, T}, 1, 
+               OffsetArrays.OffsetVector{SVector{DIM, T}, Vector{SVector{DIM, T}}}, 
+               BSpline{Cubic{Line{OnGrid}}}, Tuple{Base.OneTo{Int}}}, 
+            BSpline{Cubic{Line{OnGrid}}}, 
+            Tuple{StepRangeLen{T, Base.TwicePrecision{T}, Base.TwicePrecision{T}, Int}}}, 
+         BSpline{Cubic{Line{OnGrid}}}, Interpolations.Throw{Nothing}
+      }
 
-struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW, T} <: AbstractRnlzzBasis
+
+struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW, T} <: AbstractExplicitLayer
    _i2z::NTuple{NZ, Int}
    polys::TPOLY
    transforms::SMatrix{NZ, NZ, TT}
@@ -28,248 +41,93 @@ struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW, T} <: AbstractRnlzzBasis
    meta::Dict{String, Any} 
 end
 
+function set_params(basis::LearnableRnlrzzBasis, ps)
+   return LearnableRnlrzzBasis(basis._i2z, 
+                               basis.polys, 
+                               basis.transforms, 
+                               basis.envelopes, 
+                               # ---------------
+                               _make_smatrix(ps.Wnlq, _get_nz(basis)), 
+                               basis.rin0cuts, 
+                               basis.spec, 
+                               # ---------------
+                               basis.meta)
+end
 
-# struct SplineRnlrzzBasis{NZ, SPL, ENV} <: AbstractRnlzzBasis
-#    _i2z::NTuple{NZ, Int}                 # iz -> z mapping
-#    splines::SMatrix{NZ, NZ, SPL}         # matrix of splined radial bases
-#    envelopes::SMatrix{NZ, NZ, ENV}       # matrix of radial envelopes
-#    rincut::SMatrix{NZ, NZ, Tuple{T, T}}  # matrix of (rin, rout)
 
-#    #-------------- 
-#    # meta should contain spec 
-#    meta::Dict{String, Any} 
-# end
+struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractExplicitLayer
+   _i2z::NTuple{NZ, Int}
+   transforms::SMatrix{NZ, NZ, TT}
+   envelopes::SMatrix{NZ, NZ, TENV}
+   splines::SMatrix{NZ, NZ, SPL_OF_SVEC{LEN, T}}
+   # -------------- 
+   rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
+   spec::Vector{NT_NL_SPEC}       
+   # --------------
+   meta::Dict{String, Any} 
+end
+
 
 
 # a few getter functions for convenient access to those fields of matrices
-_rincut_zz(obj, zi, zj) = obj.rin0cut[_z2i(obj, zi), _z2i(obj, zj)]
+_rincut_zz(obj, zi, zj) = obj.rin0cuts[_z2i(obj, zi), _z2i(obj, zj)]
+_rin0cuts_zz(obj, zi, zj) = obj.rin0cuts[_z2i(obj, zi), _z2i(obj, zj)]
+_rcut_zz(obj, zi, zj) = obj.rin0cuts[_z2i(obj, zi), _z2i(obj, zj)].rcut
+_rin_zz(obj, zi, zj) = obj.rin0cuts[_z2i(obj, zi), _z2i(obj, zj)].rin
+_r0_zz(obj, zi, zj) = obj.rin0cuts[_z2i(obj, zi), _z2i(obj, zj)].r0
 _envelope_zz(obj, zi, zj) = obj.envelopes[_z2i(obj, zi), _z2i(obj, zj)]
 _spline_zz(obj, zi, zj) = obj.splines[_z2i(obj, zi), _z2i(obj, zj)]
 _transform_zz(obj, zi, zj) = obj.transforms[_z2i(obj, zi), _z2i(obj, zj)]
-# _polys_zz(obj, zi, zj) = obj.polys[_z2i(obj, zi), _z2i(obj, zj)]
 
+_get_T(basis::LearnableRnlrzzBasis) = typeof(basis.rin0cuts[1,1].rin)
 
-# ------------------------------------------------------------ 
-#      CONSTRUCTORS AND UTILITIES 
-# ------------------------------------------------------------ 
+function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
 
-# these _auto_... are very poor and need to take care of a lot more 
-# cases, e.g. we may want to pass in the objects as a Matrix rather than 
-# SMatrix ... 
+   # transform : r ∈ [rin, rcut] -> x
+   # and then Rnl =  Wnl_q * Pq(x) * env(x) gives the basis. 
+   # The problem with this is that we cannot evaluate the envelope from just 
+   # r coordinates. We therefore keep the transform inside the splinified 
+   # basis and only splinify the last operation, x -> Rnl(x)
+   # this also has the potential advantage that few spline points are needed, 
+   # and that we get access to the same meta-information about the model building.
+   #
+   # in the following we assume all transforms map [rin, rcut] -> [-1, 1]
 
-
-
-
-function LearnableRnlrzzBasis(
-            zlist, polys, transforms, envelopes, rin0cuts, 
-            spec::AbstractVector{NT_NL_SPEC}; 
-            weights=nothing, 
-            meta=Dict{String, Any}())
-   NZ = length(zlist)   
-   LearnableRnlrzzBasis(_convert_zlist(zlist), 
-                        polys, 
-                        _make_smatrix(transforms, NZ), 
-                        _make_smatrix(envelopes, NZ), 
-                        # --------------
-                        _make_smatrix(weights, NZ), 
-                        _make_smatrix(rin0cuts, NZ),
-                        collect(spec), 
-                        meta)
-end
-
-Base.length(basis::LearnableRnlrzzBasis) = length(basis.spec)
-
-function initialparameters(rng::AbstractRNG, 
-                           basis::LearnableRnlrzzBasis)
-   NZ = _get_nz(basis) 
-   len_nl = length(basis)
-   len_q = length(basis.polys)
-
-   function _W()
-      W = randn(rng, len_nl, len_q)
-      W  = W ./ sqrt.(sum(W.^2, dims = 2))
-   end
-
-   return (Wnlq = [ _W() for i = 1:NZ, j = 1:NZ ], )
-end
-
-function initialstates(rng::AbstractRNG, 
-                       basis::LearnableRnlrzzBasis)
-   return NamedTuple()                       
-end
-                  
-
-
-function splinify(basis::LearnableRnlrzzBasis)
-
-end
-
-# ------------------------------------------------------------ 
-#      EVALUATION INTERFACE
-# ------------------------------------------------------------ 
-
-import Polynomials4ML
-
-(l::LearnableRnlrzzBasis)(args...) = evaluate(l, args...)
-
-function evaluate!(Rnl, basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
-   iz = _z2i(basis, Zi)
-   jz = _z2i(basis, Zj)
-   Wij = ps.Wnlq[iz, jz]
-   trans_ij = basis.transforms[iz, jz]
-   x = trans_ij(r)
-   P = Polynomials4ML.evaluate(basis.polys, x)
-   env_ij = basis.envelopes[iz, jz]
-   e = evaluate(env_ij, x)   
-   Rnl[:] .= Wij * (P .* e)
-   return Rnl, st 
-end
-
-function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
-   iz = _z2i(basis, Zi)
-   jz = _z2i(basis, Zj)
-   Wij = ps.Wnlq[iz, jz]
-   trans_ij = basis.transforms[iz, jz]
-   x = trans_ij(r)
-   P = Polynomials4ML.evaluate(basis.polys, x)
-   env_ij = basis.envelopes[iz, jz]
-   e = evaluate(env_ij, x)   
-   return Wij * (P .* e), st 
-end
-
-
-# function evaluate_batched(basis::LearnableRnlrzzBasis, 
-#                           rs::AbstractVector{<: Real}, zi, zjs, ps, st)
-#    @assert length(rs) == length(zjs)                          
-#    # evaluate the first one to get the types and size
-#    Rnl_1, st = evaluate(basis, rs[1], zi, zjs[1], ps, st)
-#    # allocate storage
-#    Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
-#    # then evaluate the rest in-place 
-#    for j = 1:length(rs)
-#       evaluate!((@view Rnl[j, :]), basis, rs[j], zi, zjs[j], ps, st)
-#    end
-#    return Rnl, st
-# end
-
-function evaluate_batched(basis::LearnableRnlrzzBasis, 
-                           rs, zi, zjs, ps, st)
-
-   @assert length(rs) == length(zjs)                          
-   # evaluate the first one to get the types and size
-   Rnl_1, st = evaluate(basis, rs[1], zi, zjs[1], ps, st)
-   # ... and then allocate storage
-   Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
-
-   # then evaluate the rest in-place 
-   for j = 1:length(rs)
-      iz = _z2i(basis, zi)
-      jz = _z2i(basis, zjs[j])
-      trans_ij = basis.transforms[iz, jz]
-      x = trans_ij(rs[j])
-      env_ij = basis.envelopes[iz, jz]
-      e = evaluate(env_ij, x)   
-      P = Polynomials4ML.evaluate(basis.polys, x) .* e
-      Rnl[j, :] = ps.Wnlq[iz, jz] * P
-   end
-
-   return Rnl, st
-end
-
-
-
-
-# ----- gradients 
-# because the typical scenario is that we have few r, then moderately 
-# many q and then many (n, l), this seems to be best done in Forward-mode. 
-
-import ForwardDiff
-using ForwardDiff: Dual
-
-function evaluate_ed(basis::LearnableRnlrzzBasis, r::T, Zi, Zj, ps, st) where {T <: Real}
-   d_r = Dual{T}(r, one(T))
-   d_Rnl, st = evaluate(basis, d_r, Zi, Zj, ps, st)
-   Rnl = ForwardDiff.value.(d_Rnl)
-   Rnl_d = ForwardDiff.extract_derivative(T, d_Rnl) 
-   return Rnl, Rnl_d, st 
-end
-
-
-function evaluate_ed_batched(basis::LearnableRnlrzzBasis, 
-                             rs::AbstractVector{T}, Zi, Zs, ps, st
-                             ) where {T <: Real}
-   
-   @assert length(rs) == length(Zs)            
-   Rnl1, st = evaluate(basis, rs[1], Zi, Zs[1], ps, st) 
-   Rnl = zeros(T, length(rs), length(Rnl1))
-   Rnl_d = zeros(T, length(rs), length(Rnl1))
-
-   for j = 1:length(rs)
-      d_r = Dual{T}(rs[j], one(T))   
-      d_Rnl, st = evaluate(basis, d_r, Zi, Zs[j], ps, st)  # should reuse memory here 
-      map!(ForwardDiff.value, (@view Rnl[j, :]), d_Rnl)
-      map!(d -> ForwardDiff.extract_derivative(T, d), (@view Rnl_d[j, :]), d_Rnl)
-   end       
-
-   return Rnl, Rnl_d, st 
-end
-
-
-
-
-# -------- RRULES 
-
-import ChainRulesCore: rrule, NotImplemented, NoTangent 
-
-# NB : iz = īz = _z2i(z0) throughout
-#
-# Rnl[j, nl] = Wnlq[iz, jz] * Pq * e
-# ∂_Wn̄l̄q̄[īz,j̄z] { ∑_jnl Δ[j,nl] * Rnl[j, nl] } 
-#    = ∑_jnl Δ[j,nl] * Pq * e * δ_q̄q * δ_l̄l * δ_n̄n * δ_{īz,iz} * δ_{j̄z,jz}
-#    = ∑_{jz = j̄z} Δ[j̄z, n̄l̄] * P_q̄ * e
-#
-function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis, 
-                                   rs, zi, zjs, ps, st)
-   @assert length(rs) == length(zjs)                          
-   # evaluate the first one to get the types and size
-   Rnl_1, _ = evaluate(basis, rs[1], zi, zjs[1], ps, st)
-   # ... and then allocate storage
-   Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
-   
-   # output storage for the gradients
-   T_∂Wnlq = promote_type(eltype(Δ), eltype(rs))
    NZ = _get_nz(basis)
-   ∂Wnlq = [ zeros(T_∂Wnlq, size(ps.Wnlq[i,j]))
-             for i = 1:NZ, j = 1:NZ ]
+   T = _get_T(basis)
+   LEN = size(basis.weights[1, 1], 1)
+   _splines = Matrix{SPL_OF_SVEC{LEN, T}}(undef, (NZ, NZ))
+   x_nodes = range(-1.0, 1.0, length = nnodes)
+   polys = basis.polys
 
-   # then evaluate the rest in-place 
-   for j = 1:length(rs)
-      iz = _z2i(basis, zi)
-      jz = _z2i(basis, zjs[j])
-      trans_ij = basis.transforms[iz, jz]
-      x = trans_ij(rs[j])
-      env_ij = basis.envelopes[iz, jz]
-      e = evaluate(env_ij, x)   
-      P = Polynomials4ML.evaluate(basis.polys, x) .* e
-      # TODO: the P shouuld be stored inside a closure in the 
-      #       forward pass and then resused. 
+   for iz0 = 1:NZ, iz1 = 1:NZ
+      rin0cut = basis.rin0cuts[iz0, iz1]
+      rin, rcut = rin0cut.rin, rin0cut.rcut
+      
+      Tij = basis.transforms[iz0, iz1]
+      Wnlq_ij = basis.weights[iz0, iz1]
+      Rnl = [ SVector{LEN}( Wnlq_ij * Polynomials4ML.evaluate(polys, x) )
+              for x in x_nodes ]
 
-      # TODO:  ... and obviously this part here needs to be moved 
-      # to a SIMD loop.
-      ∂Wnlq[iz, jz][:, :] .+= Δ[j, :] * P'
+      # now we need to spline the Rnl
+      splines_ij = cubic_spline_interpolation(x_nodes, Rnl)
+      _splines[iz0, iz1] = splines_ij
    end
 
-   return (Wnql = ∂Wnlq,)
-end
+   splines = SMatrix{NZ, NZ, SPL_OF_SVEC{LEN, T}}(_splines)
 
+   spl_basis = SplineRnlrzzBasis(basis._i2z, 
+                                 basis.transforms,
+                                 basis.envelopes, 
+                                 splines, 
+                                 basis.rin0cuts,
+                                 basis.spec, 
+                                 basis.meta)
 
-function rrule(::typeof(evaluate_batched), 
-               basis::LearnableRnlrzzBasis, 
-               rs, zi, zjs, ps, st)
-   Rnl, st = evaluate_batched(basis, rs, zi, zjs, ps, st)
+   spl_basis.meta["info"] = "constructed from LearnableRnlrzzBasis via `splinify`"
 
-   return (Rnl, st), 
-         Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
-              pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
-              NoTangent())
+   # we should probably store more meta-data from which the splines can be 
+   # easily reconstructed. 
+
+   return spl_basis
 end

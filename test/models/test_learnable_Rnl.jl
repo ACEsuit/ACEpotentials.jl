@@ -50,3 +50,11 @@ rs = [r, r, r]
 Zs = [Zj, Zj, Zj]
 Rnl, Rnl_d, st1 = M.evaluate_ed_batched(basis, rs, Zi, Zs, ps, st)
 
+# more tests needed to check the correctness of the batched version
+# can we implement some tests that check consistent with ACE1 in special cases? 
+
+## 
+
+basisp = M.set_params(basis, ps)
+splb = M.splinify(basisp)
+
