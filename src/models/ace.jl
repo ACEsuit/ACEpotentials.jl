@@ -408,6 +408,68 @@ function pullback_2_mixed(Δ, Δd, model::ACEModel,
    return _restruct(Δ * ∂Ei + ∂∇Ei_Δd)
 end
 
+# ------------------------------------------------------------
+#  ACE basis evaluation 
 
+
+function get_basis_inds(model::ACEModel, Z)
+   len_Bi = size(model.A2Bmap, 1)
+   i_z = _z2i(model.rbasis, Z)
+   return (i_z - 1) * len_Bi .+ (1:len_Bi)
+end
+
+function evaluate_basis(model::ACEModel, 
+                        Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                        ps, st) where {T}
+   # get the radii 
+   rs = [ norm(r) for r in Rs ]   # use Bumper 
+
+   # evaluate the radial basis
+   # use Bumper to pre-allocate 
+   Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
+                              ps.rbasis, st.rbasis)
+
+   # evaluate the Y basis
+   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+   SpheriCart.compute!(Ylm, model.ybasis, Rs)
+
+   # evaluate the A basis
+   TA = promote_type(T, eltype(Rnl))
+   A = zeros(T, length(model.abasis))
+   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
+
+   # evaluate the AA basis
+   _AA = zeros(T, length(model.aabasis))     # use Bumper here
+   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
+   # project to the actual AA basis 
+   proj = model.aabasis.projection
+   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
+
+   # evaluate the coupling coefficients 
+   # TODO: use Bumper and do it in-place 
+   Bi = model.A2Bmap * AA
+   B = zeros(eltype(Bi), length(Bi) * _get_nz(model))
+   B[get_basis_inds(model, Z0)] .= Bi
    
-   
+   return B, st
+end
+
+
+function evaluate_basis_ed(model::ACEModel, 
+                           Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                           ps, st) where {T}
+
+   B, st = evaluate_basis(model, Rs, Zs, Z0, ps, st)
+
+   _vec(Rs::AbstractVector{SVector{3, T}}) where {T} = reinterpret(T, Rs)
+   _svecs(Rsvec::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, Rsvec)
+
+   dB_vec = ForwardDiff.jacobian( 
+            _Rs -> evaluate_basis(model, _svecs(_Rs),  Zs, Z0, ps, st)[1],
+            _vec(Rs))
+   dB1 = reinterpret(SVector{3, T}, collect(dB_vec')[:])
+   dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
+                               (2, 1) ) )
+
+   return B, dB, st         
+end

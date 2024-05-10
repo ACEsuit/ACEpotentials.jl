@@ -113,14 +113,44 @@ end
 
 ##
 
+@info("Test basis implementation")
 
-# # first test shows the performance is not at all awful even without any 
-# # optimizations and reductions in memory allocations. 
-# using BenchmarkTools
-# Nat = 15
-# Rs, Zs, z0 = M.rand_atenv(model, Nat)
-# Us = randn(SVector{3, Float64}, Nat)
-# print("   evaluate : "); @btime M.evaluate($model, $Rs, $Zs, $z0, $ps, $st)
-# print("evaluate_ed : "); @btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
-# print("grad_params : "); @btime M.grad_params($model, $Rs, $Zs, $z0, $ps, $st)
-# print("  reverse^2 : "); @btime M.pullback_2_mixed(rand(), $Us, $model, $Rs, $Zs, $z0, $ps, $st)
+for ntest = 1:30 
+   Nat = 15
+   Rs, Zs, z0 = M.rand_atenv(model, Nat)
+   i_z0 = M._z2i(model, z0)
+   Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
+   B, st = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
+   θ = vcat(ps.WB...)
+   print_tf(@test Ei ≈ dot(B, θ))
+
+   Ei, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+   B, ∇B, st = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
+   θ = vcat(ps.WB...)
+   print_tf(@test Ei ≈ dot(B, θ))
+   print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
+end
+
+
+
+##
+
+@info("Basic performance benchmarks")
+# first test shows the performance is not at all awful even without any 
+# optimizations and reductions in memory allocations. 
+using BenchmarkTools
+Nat = 15
+Rs, Zs, z0 = M.rand_atenv(model, Nat)
+Us = randn(SVector{3, Float64}, Nat)
+
+@info("Evaluation and adjoints")
+print("   evaluate : "); @btime M.evaluate($model, $Rs, $Zs, $z0, $ps, $st)
+print("evaluate_ed : "); @btime M.evaluate_ed($model, $Rs, $Zs, $z0, $ps, $st)
+print("grad_params : "); @btime M.grad_params($model, $Rs, $Zs, $z0, $ps, $st)
+print("  reverse^2 : "); @btime M.pullback_2_mixed(rand(), $Us, $model, $Rs, $Zs, $z0, $ps, $st)
+
+@info("Basis evaluation ")
+@info("  NB: this is currently implemented using ForwardDiff and likely inefficient")
+print("evaluate_basis    : "); @btime M.evaluate_basis($model, $Rs, $Zs, $z0, $ps, $st)
+print("evaluate_basis_ed : "); @btime M.evaluate_basis_ed($model, $Rs, $Zs, $z0, $ps, $st)
+
