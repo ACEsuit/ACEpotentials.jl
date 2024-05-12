@@ -1,8 +1,6 @@
 
 module Models 
 
-include("utils.jl")
-
 include("elements.jl")
 
 include("radial_envelopes.jl")
@@ -16,5 +14,10 @@ include("Rnl_splines.jl")
 
 include("ace_heuristics.jl") 
 include("ace.jl")
+
+include("calculators.jl")
+
+include("utils.jl")
+
 
 end 

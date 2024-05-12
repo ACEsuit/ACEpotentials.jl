@@ -40,6 +40,11 @@ end
 # ------------------------------------------------------------
 #    CONSTRUCTORS AND UTILITIES
 
+# this is terrible : I'm assuming here that there is a unique 
+# output type, which is of course not the case. It is needed temporarily 
+# to make things work with AtomsCalculators and EmpiricalPotentials 
+fl_type(::ACEModel{NZ, TRAD, TY, TA, TAA, T}) where {NZ, TRAD, TY, TA, TAA, T} = T 
+
 const NT_NLM = NamedTuple{(:n, :l, :m), Tuple{Int, Int, Int}}
 
 function _make_Y_basis(Ytype, lmax) 
