@@ -33,3 +33,32 @@ calc = M.ACEPotential(model)
 
 at = bulk(:Si, cubic=true) * 2
 evf = M.energy_forces_virial(at, calc, ps, st)
+
+
+##
+# testing the AD through a loss function 
+
+
+at = rattle!(bulk(:Si, cubic=true), 0.1)
+
+using Unitful 
+using Unitful: ustrip
+
+wE = 1.0 / u"eV"
+wV = 1.0 / u"eV"
+wF = 0.33 / u"eV/Å"
+
+function loss(at, calc, ps, st)
+   efv = M.energy_forces_virial(at, calc, ps, st)
+   _norm_sq(f) = sum(abs2, f)
+   return (   wE^2 * efv.energy^2 / length(at) 
+            + wV^2 * sum(abs2, efv.virial) / length(at)  
+            + wF^2 * sum(_norm_sq, efv.forces) )
+end
+
+##
+
+using Zygote 
+Zygote.refresh() 
+
+Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1] 
