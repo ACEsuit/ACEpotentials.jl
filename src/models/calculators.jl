@@ -23,7 +23,11 @@ using ObjectPools: release!
 
 struct ACEPotential{MOD} <: SitePotential
    model::MOD
+   ps
+   st 
 end
+
+ACEPotential(model) = ACEPotential(model, nothing, nothing)
 
 # TODO: allow user to specify what units the model is working with
 
@@ -44,10 +48,12 @@ cutoff_radius(V::ACEPotential{<: ACEModel}) =
       maximum(x.rcut for x in V.model.rbasis.rin0cuts) * distance_unit(V)
 
 eval_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0) = 
-      evaluate(V.model, Rs, Zs, z0) * energy_unit(V)
+      evaluate(V.model, Rs, Zs, z0, V.ps, V.st)[1] 
 
-eval_grad_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0) = 
-      evaluate_ed(V.model, Rs, Zs, z0) * force_unit(V)
+function eval_grad_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0) 
+   v, dv, st = evaluate_ed(V.model, Rs, Zs, z0, V.ps, V.st) 
+   return v, dv
+end
 
 
 # --------------------------------------------------------------- 
@@ -61,6 +67,32 @@ _ustrip(x) = ustrip(x)
 _ustrip(x::ZeroTangent) = x
 
 AtomsBase.atomic_number(at::JuLIP.Atoms, iat::Integer) = at.Z[iat]
+
+function energy_forces_virial_serial(
+         at, V::ACEPotential{<: ACEModel}, ps, st;
+         domain   = 1:length(at), 
+         nlist    = JuLIP.neighbourlist(at, cutoff_radius(V)/distance_unit(V)),
+         )
+
+   T = fl_type(V.model) # this is ACE specific 
+   energy = zero(T)
+   forces = zeros(SVector{3, T}, length(at))
+   virial = zero(SMatrix{3, 3, T})
+
+   for i in domain
+      Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
+      v, dv, st = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
+      energy += v
+      for α = 1:length(Js) 
+         forces[Js[α]] -= dv[α]
+         forces[i]     += dv[α]
+      end
+      virial += JuLIP.Potentials.site_virial(dv, Rs)
+      release!(Js); release!(Rs); release!(Zs)
+   end
+   return (energy = energy, forces = forces, virial = virial)
+end
+
 
 function energy_forces_virial(
          at, V::ACEPotential{<: ACEModel}, ps, st;
@@ -93,8 +125,10 @@ function energy_forces_virial(
          Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
          v, dv, st = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
          energy += v * energy_unit(V)
-         forces[Js] -= (dv * force_unit(V))
-         forces[i]  += sum(dv) * force_unit(V)
+         for α = 1:length(Js) 
+            forces[Js[α]] -= dv[α] * force_unit(V)
+            forces[i]     += dv[α] * force_unit(V)
+         end
          virial += JuLIP.Potentials.site_virial(dv, Rs) * energy_unit(V)
          release!(Js); release!(Rs); release!(Zs)
       end
