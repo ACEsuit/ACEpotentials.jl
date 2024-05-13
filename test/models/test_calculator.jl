@@ -75,6 +75,7 @@ at_flex = AtomsBase.FlexibleSystem(at)
 @info(" TODO: write virial test!")
 for ntest = 1:10
    at = rattle!(bulk(:Si, cubic=true), 0.1)
+   at.Z[[3,6,8]] .= 8
    Us = randn(SVector{3, Float64}, length(at)) / length(at)
    dF0 = - dot(Us, M.energy_forces_virial_serial(at, calc, ps, st).forces)
    X0 = deepcopy(at.X)
@@ -88,11 +89,16 @@ println()
 ##
 # testing the AD through a loss function 
 
-at = rattle!(bulk(:Si, cubic=true), 0.1)
 
+using Zygote 
 using Unitful 
 using Unitful: ustrip
 
+# random structure 
+at = rattle!(bulk(:Si, cubic=true), 0.1)
+at.Z[[3,6,8]] .= 8
+
+# need to make sure that the weights in the loss remove the units! 
 wE = 1.0 / u"eV"
 wV = 1.0 / u"eV"
 wF = 0.33 / u"eV/Å"
@@ -100,14 +106,20 @@ wF = 0.33 / u"eV/Å"
 function loss(at, calc, ps, st)
    efv = M.energy_forces_virial(at, calc, ps, st)
    _norm_sq(f) = sum(abs2, f)
-   return (   wE^2 * efv.energy^2 / length(at) 
-            + wV^2 * sum(abs2, efv.virial) / length(at)  
+   return (   wE^2 * efv.energy^2 / length(at)  
+            + wV^2 * sum(abs2, efv.virial) / length(at) 
             + wF^2 * sum(_norm_sq, efv.forces) )
 end
 
-##
 
-using Zygote 
-Zygote.refresh() 
+g = Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1] 
 
-Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1] 
+p_vec, _restruct = destructure(ps)
+g_vec = destructure(g)[1]
+u = randn(length(p_vec)) / length(p_vec)
+dot(g_vec, u)
+_ps(t) = _restruct(p_vec + t * u)
+F(t) = loss(at, calc, _ps(t), st)
+dF0 = dot(g_vec, u)
+
+ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=true)

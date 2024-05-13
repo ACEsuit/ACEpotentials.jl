@@ -189,7 +189,7 @@ function pullback_EFV(Δefv,
          Δei = _ustrip(Δefv.energy)
 
          # them adjoint for dV needs combination of the virial and forces pullback
-         Δdi = [ _ustrip.(Δefv.virial * rj) for rj in Rs ]
+         Δdi = [ - _ustrip.(Δefv.virial * rj) for rj in Rs ]
          for α = 1:length(Js) 
             # F[Js[α]] -= dV[α], F[i] += dV[α] 
             # ∂_dvj { Δf[Js[α]] * F[Js[α]] } -> 
