@@ -88,38 +88,45 @@ println()
 
 ##
 # testing the AD through a loss function 
-
+@info("Testing Zygote-AD through a loss function")
 
 using Zygote 
 using Unitful 
 using Unitful: ustrip
 
-# random structure 
-at = rattle!(bulk(:Si, cubic=true), 0.1)
-at.Z[[3,6,8]] .= 8
-
 # need to make sure that the weights in the loss remove the units! 
-wE = 1.0 / u"eV"
-wV = 1.0 / u"eV"
-wF = 0.33 / u"eV/Å"
+for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"), 
+                      (0.0 / u"eV", 1.0 / u"eV", 0.0 / u"eV/Å"), 
+                      (0.0 / u"eV", 0.0 / u"eV", 1.0 / u"eV/Å"), 
+                      (1.0 / u"eV", 0.1 / u"eV", 0.1 / u"eV/Å") ]
+   # random structure 
+   at = rattle!(bulk(:Si, cubic=true), 0.1)
+   at.Z[[3,6,8]] .= 8
 
-function loss(at, calc, ps, st)
-   efv = M.energy_forces_virial(at, calc, ps, st)
-   _norm_sq(f) = sum(abs2, f)
-   return (   wE^2 * efv.energy^2 / length(at)  
-            + wV^2 * sum(abs2, efv.virial) / length(at) 
-            + wF^2 * sum(_norm_sq, efv.forces) )
+   # wE = 1.0 / u"eV"
+   # wV = 1.0 / u"eV"
+   # wF = 0.33 / u"eV/Å"
+
+   function loss(at, calc, ps, st)
+      efv = M.energy_forces_virial(at, calc, ps, st)
+      _norm_sq(f) = sum(abs2, f)
+      return (   wE^2 * efv.energy^2 / length(at)  
+               + wV^2 * sum(abs2, efv.virial) / length(at) 
+               + wF^2 * sum(_norm_sq, efv.forces) )
+   end
+
+
+   g = Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1] 
+
+   p_vec, _restruct = destructure(ps)
+   g_vec = destructure(g)[1]
+   u = randn(length(p_vec)) / length(p_vec)
+   dot(g_vec, u)
+   _ps(t) = _restruct(p_vec + t * u)
+   F(t) = loss(at, calc, _ps(t), st)
+   dF0 = dot(g_vec, u)
+
+   @info("(wE, wV, wF) = ($wE, $wV, $wF)")
+   FDTEST = ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=true)
+   println(@test FDTEST)
 end
-
-
-g = Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1] 
-
-p_vec, _restruct = destructure(ps)
-g_vec = destructure(g)[1]
-u = randn(length(p_vec)) / length(p_vec)
-dot(g_vec, u)
-_ps(t) = _restruct(p_vec + t * u)
-F(t) = loss(at, calc, _ps(t), st)
-dF0 = dot(g_vec, u)
-
-ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=true)
