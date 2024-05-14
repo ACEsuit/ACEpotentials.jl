@@ -33,7 +33,7 @@ struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW, T} <: AbstractExplicitLayer
    transforms::SMatrix{NZ, NZ, TT}
    envelopes::SMatrix{NZ, NZ, TENV}
    # -------------- 
-   weights::SMatrix{NZ, NZ, TW}               # learnable weights, `nothing` when using Lux
+   weights::Array{TW, 4}                      # learnable weights, `nothing` when using Lux
    rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
    spec::Vector{NT_NL_SPEC}       
    # --------------
@@ -47,7 +47,7 @@ function set_params(basis::LearnableRnlrzzBasis, ps)
                                basis.transforms, 
                                basis.envelopes, 
                                # ---------------
-                               _make_smatrix(ps.Wnlq, _get_nz(basis)), 
+                               ps.Wnlq, 
                                basis.rin0cuts, 
                                basis.spec, 
                                # ---------------
@@ -95,7 +95,7 @@ function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
 
    NZ = _get_nz(basis)
    T = _get_T(basis)
-   LEN = size(basis.weights[1, 1], 1)
+   LEN = size(basis.weights, 1)
    _splines = Matrix{SPL_OF_SVEC{LEN, T}}(undef, (NZ, NZ))
    x_nodes = range(-1.0, 1.0, length = nnodes)
    polys = basis.polys
@@ -105,7 +105,7 @@ function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
       rin, rcut = rin0cut.rin, rin0cut.rcut
       
       Tij = basis.transforms[iz0, iz1]
-      Wnlq_ij = basis.weights[iz0, iz1]
+      Wnlq_ij = @view basis.weights[:, :, iz0, iz1]
       Rnl = [ SVector{LEN}( Wnlq_ij * Polynomials4ML.evaluate(polys, x) )
               for x in x_nodes ]
 

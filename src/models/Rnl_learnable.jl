@@ -10,13 +10,16 @@ function LearnableRnlrzzBasis(
             spec::AbstractVector{NT_NL_SPEC}; 
             weights=nothing, 
             meta=Dict{String, Any}())
-   NZ = length(zlist)   
+   NZ = length(zlist) 
+   if isnothing(weights) 
+      weights = fill(nothing, (1,1,1,1)) 
+   end 
    LearnableRnlrzzBasis(_convert_zlist(zlist), 
                         polys, 
                         _make_smatrix(transforms, NZ), 
                         _make_smatrix(envelopes, NZ), 
                         # --------------
-                        _make_smatrix(weights, NZ), 
+                        weights, 
                         _make_smatrix(rin0cuts, NZ),
                         collect(spec), 
                         meta)
@@ -30,20 +33,26 @@ function initialparameters(rng::AbstractRNG,
    len_nl = length(basis)
    len_q = length(basis.polys)
 
-   function _W()
-      W = randn(rng, len_nl, len_q)
-      W  = W ./ sqrt.(sum(W.^2, dims = 2))
+   Wnlq = zeros(len_nl, len_q, NZ, NZ)
+   for i = 1:NZ, j = 1:NZ
+      Wnlq[:, :, i, j] .= glorot_normal(rng, Float64, len_nl, len_q)
    end
 
-   return (Wnlq = [ _W() for i = 1:NZ, j = 1:NZ ], )
+   return (Wnlq = Wnlq, )
 end
 
 function initialstates(rng::AbstractRNG, 
                        basis::LearnableRnlrzzBasis)
    return NamedTuple()                       
 end
-                  
+      
 
+function parameterlength(basis::LearnableRnlrzzBasis)
+   NZ = _get_nz(basis) 
+   len_nl = length(basis)
+   len_q = length(basis.polys)
+   return len_nl * len_q * NZ * NZ
+end
 
 
 # ------------------------------------------------------------ 
@@ -57,7 +66,7 @@ import Polynomials4ML
 function evaluate!(Rnl, basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    iz = _z2i(basis, Zi)
    jz = _z2i(basis, Zj)
-   Wij = ps.Wnlq[iz, jz]
+   Wij = @view ps.Wnlq[:, :, iz, jz]
    trans_ij = basis.transforms[iz, jz]
    x = trans_ij(r)
    P = Polynomials4ML.evaluate(basis.polys, x)
@@ -70,7 +79,7 @@ end
 function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    iz = _z2i(basis, Zi)
    jz = _z2i(basis, Zj)
-   Wij = ps.Wnlq[iz, jz]
+   Wij = @view ps.Wnlq[:, :, iz, jz]
    trans_ij = basis.transforms[iz, jz]
    x = trans_ij(r)
    P = Polynomials4ML.evaluate(basis.polys, x)
@@ -98,7 +107,7 @@ function evaluate_batched(basis::LearnableRnlrzzBasis,
       env_ij = basis.envelopes[iz, jz]
       e = evaluate(env_ij, x)   
       P = Polynomials4ML.evaluate(basis.polys, x) .* e
-      Rnl[j, :] = ps.Wnlq[iz, jz] * P
+      Rnl[j, :] = (@view ps.Wnlq[:, :, iz, jz]) * P
    end
 
    return Rnl, st
@@ -169,8 +178,7 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
    # output storage for the gradients
    T_∂Wnlq = promote_type(eltype(Δ), eltype(rs))
    NZ = _get_nz(basis)
-   ∂Wnlq = [ zeros(T_∂Wnlq, size(ps.Wnlq[i,j]))
-             for i = 1:NZ, j = 1:NZ ]
+   ∂Wnlq = zeros(T_∂Wnlq, size(ps.Wnlq))
 
    # then evaluate the rest in-place 
    for j = 1:length(rs)
@@ -186,7 +194,7 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
 
       # TODO:  ... and obviously this part here needs to be moved 
       # to a SIMD loop.
-      ∂Wnlq[iz, jz][:, :] .+= Δ[j, :] * P'
+      ∂Wnlq[:, :, iz, jz] .+= Δ[j, :] * P'
    end
 
    return (Wnql = ∂Wnlq,)

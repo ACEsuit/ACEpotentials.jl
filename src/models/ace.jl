@@ -1,8 +1,10 @@
 
-using LuxCore: AbstractExplicitLayer, 
+import LuxCore: AbstractExplicitLayer, 
                AbstractExplicitContainerLayer,
                initialparameters, 
-               initialstates
+               initialstates, 
+               parameterlength
+            
 
 using Lux: glorot_normal
 
@@ -31,8 +33,8 @@ struct ACEModel{NZ, TRAD, TY, TA, TAA, T} <: AbstractExplicitContainerLayer{(:rb
    # -------------- 
    # we can add a nonlinear embedding here 
    # --------------
-   bparams::NTuple{NZ, Vector{T}}
-   aaparams::NTuple{NZ, Vector{T}}
+   bparams::Matrix{T}   # : x NZ matrix of B parameters 
+   # aaparams::NTuple{NZ, Vector{T}}
    # --------------
    meta::Dict{String, Any}
 end
@@ -126,8 +128,8 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    NZ = _get_nz(rbasis)
    n_B_params, n_AA_params = size(AA2BB_map)
    return ACEModel(rbasis._i2z, rbasis, ybasis, a_basis, aa_basis, AA2BB_map, 
-                   ntuple(_ -> zeros(n_B_params), NZ),
-                   ntuple(_ -> zeros(n_AA_params), NZ),
+                   zeros(n_B_params, NZ), 
+                  #  ntuple(_ -> zeros(n_AA_params), NZ),
                    Dict{String, Any}() )
 end
 
@@ -162,7 +164,12 @@ function initialparameters(rng::AbstractRNG,
       error("unknown `init_WB` = $(model.meta["init_WB"])")
    end
 
-   return (WB = [ winit(Float64, n_B_params) for _=1:NZ ], 
+   WB = zeros(n_B_params, NZ)
+   for iz = 1:NZ 
+      WB[:, iz] .= winit(rng, Float64, n_B_params)
+   end
+
+   return (WB = WB, 
            rbasis = initialparameters(rng, model.rbasis), )
 end
 
@@ -173,6 +180,11 @@ end
 
 (l::ACEModel)(args...) = evaluate(l, args...)
 
+function parameterlength(model::ACEModel)
+   NZ = _get_nz(model)
+   n_B_params, n_AA_params = size(model.A2Bmap)
+   return NZ * n_B_params + parameterlength(model.rbasis)
+end
 
 # ------------------------------------------------------------
 #   Model Evaluation 
@@ -217,7 +229,7 @@ function evaluate(model::ACEModel,
 
    # contract with params 
    i_z0 = _z2i(model.rbasis, Z0)
-   val = dot(B, ps.WB[i_z0])
+   val = dot(B, (@view ps.WB[:, i_z0]))
             
    return val, st 
 end
@@ -264,12 +276,12 @@ function evaluate_ed(model::ACEModel,
    # contract with params 
    # (here we can insert another nonlinearity instead of the simple dot)
    i_z0 = _z2i(model.rbasis, Z0)
-   Ei = dot(B, ps.WB[i_z0])
+   Ei = dot(B, (@view ps.WB[:, i_z0]))
 
    # ---------- BACKWARD PASS ------------
 
    # ∂Ei / ∂B = WB[i_z0]
-   ∂B = ps.WB[i_z0]
+   ∂B = @view ps.WB[:, i_z0]
 
    # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
    ∂AA = model.A2Bmap' * ∂B   # TODO: make this in-place 
@@ -340,14 +352,14 @@ function grad_params(model::ACEModel,
    # contract with params 
    # (here we can insert another nonlinearity instead of the simple dot)
    i_z0 = _z2i(model.rbasis, Z0)
-   Ei = dot(B, ps.WB[i_z0])
+   Ei = dot(B, (@view ps.WB[:, i_z0]))
 
    # ---------- BACKWARD PASS ------------
 
    # we need ∂WB = ∂Ei/∂WB -> this goes into the gradient 
    # but we also need ∂B = ∂Ei / ∂B = WB[i_z0] to backpropagate
    ∂WB_i = B 
-   ∂B = ps.WB[i_z0]
+   ∂B = @view ps.WB[:, i_z0]
 
    # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
    ∂AA = model.A2Bmap' * ∂B   # TODO: make this in-place 
