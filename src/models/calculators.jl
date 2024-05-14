@@ -15,8 +15,6 @@ import AtomsCalculators: energy_forces_virial
 using Folds, ChunkSplitters, Unitful, NeighbourLists, 
       Optimisers, LuxCore, ChainRulesCore 
 
-using ComponentArrays: ComponentArray
-
 import ChainRulesCore: rrule, NoTangent, ZeroTangent
 
 using ObjectPools: release! 
@@ -60,18 +58,24 @@ end
 #   manual implementation allowing parameters  
 #   but basically copied from the EmpiricalPotentials implementation 
 
-import JuLIP
 import AtomsBase
+using EmpiricalPotentials: PairList, get_neighbours, site_virial
+
 using Unitful: ustrip
 _ustrip(x) = ustrip(x)
 _ustrip(x::ZeroTangent) = x
 
-AtomsBase.atomic_number(at::JuLIP.Atoms, iat::Integer) = at.Z[iat]
+_site_virial(dV::AbstractVector{SVector{3, T1}}, 
+                  Rs::AbstractVector{SVector{3, T2}}) where {T1, T2} =  
+      (
+         - sum( dVi * Ri' for (dVi, Ri) in zip(dV, Rs); 
+               init = zero(SMatrix{3, 3, promote_type(T1, T2)}) )
+      )
 
 function energy_forces_virial_serial(
          at, V::ACEPotential{<: ACEModel}, ps, st;
          domain   = 1:length(at), 
-         nlist    = JuLIP.neighbourlist(at, cutoff_radius(V)/distance_unit(V)),
+         nlist    = PairList(at, cutoff_radius(V)), 
          )
 
    T = fl_type(V.model) # this is ACE specific 
@@ -87,7 +91,7 @@ function energy_forces_virial_serial(
          forces[Js[α]] -= dv[α]
          forces[i]     += dv[α]
       end
-      virial += JuLIP.Potentials.site_virial(dv, Rs)
+      virial += _site_virial(dv, Rs)
       release!(Js); release!(Rs); release!(Zs)
    end
    return (energy = energy, forces = forces, virial = virial)
@@ -99,7 +103,7 @@ function energy_forces_virial(
          domain   = 1:length(at), 
          executor = ThreadedEx(),
          ntasks   = Threads.nthreads(),
-         nlist    = JuLIP.neighbourlist(at, cutoff_radius(V)/distance_unit(V)),
+         nlist    = PairList(at, cutoff_radius(V)), 
          kwargs...
          )
 
@@ -129,7 +133,7 @@ function energy_forces_virial(
             forces[Js[α]] -= dv[α] * force_unit(V)
             forces[i]     += dv[α] * force_unit(V)
          end
-         virial += JuLIP.Potentials.site_virial(dv, Rs) * energy_unit(V)
+         virial += _site_virial(dv, Rs) * energy_unit(V)
          release!(Js); release!(Rs); release!(Zs)
       end
       [energy, forces, virial]
@@ -138,30 +142,12 @@ function energy_forces_virial(
 end
 
 
-# this implements the pullback of the energy_forces_virial function
-# w.r.t. to the parameters only!!
-# we should implement similar pullback helpers for forces and remove them 
-# from the function below to be re-used broadly. 
-
-# function site_virial(dV::AbstractVector{SVector{3, T1}}, 
-#                      Rs::AbstractVector{SVector{3, T2}}) where {T1, T2}
-#    T = promote_type(T1, T2)
-#    return sum( dVj * rj' for (dVj, rj) in zip(dV, Rs), 
-#                init = zero(SMatrix{3, 3, T}) )
-# end
-
-# function pullback_sitevirial_dV(Δ, Rs) 
-#    #   Δ : virial  =  ∑_j dVj' * Δ * rj 
-#    #   ∂_dVj (Δ : virial) = Δ * rj
-#    return [ Δ * rj for rj in Rs ]
-# end
-
 function pullback_EFV(Δefv, 
                at, V::ACEPotential{<: ACEModel}, ps, st;
                domain   = 1:length(at), 
                executor = ThreadedEx(),
                ntasks   = Threads.nthreads(),
-               nlist    = JuLIP.neighbourlist(at, cutoff_radius(V)/distance_unit(V)),
+               nlist    = PairList(at, cutoff_radius(V)), 
                kwargs...
                )
 
@@ -227,7 +213,7 @@ function rrule(::typeof(energy_forces_virial),
                domain   = 1:length(at), 
                executor = ThreadedEx(),
                ntasks   = Threads.nthreads(),
-               nlist    = JuLIP.neighbourlist(at, cutoff_radius(V)/distance_unit(V)),
+               nlist    = PairList(at, cutoff_radius(V)), 
                kwargs...
                )
 
