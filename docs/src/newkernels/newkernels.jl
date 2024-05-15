@@ -3,7 +3,7 @@
 # I am 
 
 using ACEpotentials, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
-      Unitful, Random 
+      Unitful, Random, Zygote, Optimisers
 
 bulk = AtomsBuilder.bulk 
 rattle! = AtomsBuilder.rattle!      
@@ -85,5 +85,88 @@ display(efv.virial)
 @info("Forces (on atoms 1..5)")
 display(efv.forces[1:5])
 
+# we can incorporate the parameters and the state into the model struct 
+# but for now we ignore this possibility and focus on how to train a model. 
+
+# we load our example dataset and convert it to AtomsBase 
+
+data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
+train_data = FlexibleSystem.(data[1:5:end])
+
+# to set up training we specify data keys and training weights. 
+# to get a unitless loss we need to specify the weights to have inverse 
+# units to the data. The local loss function is the loss applied to 
+# a single training structure. This follows the Lux training API 
+#      loss(model, ps, st, data)
+
+loss = let data_keys = (E_key = :energy, F_key = :force, V_key = :virial), 
+                   weights = (wE = 1.0/u"eV", wF = 0.1 / u"eV/Å", wV = 0.1/u"eV")
+
+   function(calc, ps, st, at)
+      efv = M.energy_forces_virial(at, calc, ps, st)
+      _norm_sq(f) = sum(abs2, f)
+      E_dft, F_dft, V_dft = Zygote.ignore() do   # Zygote doesn't have an adjoint for creating units :(
+            (  at.data[data_keys.E_key] * u"eV", 
+               at.data[data_keys.F_key] * u"eV/Å", 
+               at.data[data_keys.V_key] * u"eV" )
+      end
+      return ( weights[:wE]^2 * (efv.energy - E_dft)^2 / length(at)  
+               + weights[:wV]^2 * sum(abs2, efv.virial - V_dft) / length(at) 
+               + weights[:wF]^2 * sum(_norm_sq, efv.forces - F_dft) 
+            ), st, ()
+   end
+end    
+
+loss(calc, ps, st, at)[1]
 
 
+# Zygote should now be able to differentiate this loss with respect to parameters 
+# the gradient is provided in the same format as the parameters, i.e. a NamedTuple. 
+ 
+at1 = train_data[1] 
+g = Zygote.gradient(ps -> loss(calc, ps, st, at1)[1], ps)[1] 
+
+@show typeof(g)
+
+# both parameters and gradients can be serialized into a vector and that 
+# allows us use of arbitrary optimizers 
+
+ps_vec, _restruct = destructure(ps)
+g_vec = destructure(g)[1]
+
+# Let's now try to optimize the model. Here I'm a bit hazy how to do this 
+# properly. I'm just modifying a Lux tutorial. There are probably better ways. 
+# https://github.com/LuxDL/Lux.jl/blob/main/examples/PolynomialFitting/main.jl
+
+using ADTypes, Printf 
+vjp_rule = AutoZygote() 
+opt = Optimisers.Adam()
+opt_state = Optimisers.setup(opt, ps)
+tstate = Lux.Experimental.TrainState(rng, calc.model, opt)
+
+function main(tstate, vjp, data, epochs)
+   for epoch in 1:epochs
+       grads, loss_val, stats, tstate = Lux.Experimental.compute_gradients(
+           vjp, loss, data, tstate)
+       if epoch % 10 == 1 || epoch == epochs
+           @printf "Epoch: %3d \t Loss: %.5g\n" epoch loss_val
+       end
+       tstate = Lux.Experimental.apply_gradients!(tstate, grads)
+   end
+   return tstate
+end
+
+main(tstate, vjp_rule, train_data, 100)
+
+
+# the alternative might be to optimize using Optim.jl
+
+using Optim
+
+adam = Optim.Adam() 
+
+function total_loss(p_vec)
+   return sum( loss(calc, _restruct(p_vec), st, at)[1] for at in train_data )
+end
+
+result = Optim.optimize(total_loss, ps_vec, adam)

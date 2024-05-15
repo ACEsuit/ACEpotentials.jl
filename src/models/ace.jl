@@ -466,7 +466,8 @@ function grad_params(model::ACEModel,
    # ------------------- 
 
 
-   return Ei, (WB = ∂WB, Wpair = ∂Wpair, rbasis = ∂Wqnl), st
+   return Ei, (WB = ∂WB, Wpair = ∂Wpair, rbasis = ∂Wqnl, 
+               pairbasis = NamedTuple()), st
 end
 
 

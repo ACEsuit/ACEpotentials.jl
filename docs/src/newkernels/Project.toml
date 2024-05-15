@@ -1,8 +1,12 @@
 [deps]
 ACEpotentials = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
+ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 AtomsBuilder = "f5cc8831-eeb7-4288-8d9f-d6c1ddb77004"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
