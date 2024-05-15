@@ -81,6 +81,9 @@ _transform_zz(obj, zi, zj) = obj.transforms[_z2i(obj, zi), _z2i(obj, zj)]
 
 _get_T(basis::LearnableRnlrzzBasis) = typeof(basis.rin0cuts[1,1].rin)
 
+splinify(basis::SplineRnlrzzBasis; kwargs...) = basis 
+    
+
 function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
 
    # transform : r ∈ [rin, rcut] -> x
@@ -105,7 +108,7 @@ function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
       rin, rcut = rin0cut.rin, rin0cut.rcut
       
       Tij = basis.transforms[iz0, iz1]
-      Wnlq_ij = @view basis.weights[:, :, iz0, iz1]
+      Wnlq_ij = @view basis.weights[:, :, iz0, iz1] 
       Rnl = [ SVector{LEN}( Wnlq_ij * Polynomials4ML.evaluate(polys, x) )
               for x in x_nodes ]
 

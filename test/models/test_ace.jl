@@ -1,5 +1,5 @@
 
-# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using Test, ACEbase
@@ -22,10 +22,10 @@ order = 3
 
 model = M.ace_model(; elements = elements, order = order, Ytype = :solid, 
                       level = level, max_level = max_level, maxl = 8, 
-                      init_WB = :glorot_normal)
+                      pair_maxn = 15, 
+                      init_WB = :glorot_normal, init_Wpair = :glorot_normal)
 
 ps, st = LuxCore.setup(rng, model)
-
 
 ##
 
@@ -57,7 +57,6 @@ println_slim(@test Ei ≈ Ei1)
 
 for ntest = 1:20 
    local Nat, Rs, Zs, z0, Us, F, dF
-
    Nat = rand(8:16)
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
    Us = randn(SVector{3, Float64}, Nat)

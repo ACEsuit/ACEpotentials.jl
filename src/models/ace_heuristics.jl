@@ -1,4 +1,4 @@
-
+import Random 
 
 # --------------------------------------------------
 #   different notions of "level" / total degree.
@@ -42,7 +42,7 @@ function ace_learnable_Rnlrzz(;
                rin0cuts = _default_rin0cuts(elements),
                transforms = agnesi_transform.(rin0cuts, 2, 2), 
                polys = :legendre, 
-               envelopes = PolyEnvelope2sX(-1.0, 1.0, 2, 2)
+               envelopes = :poly2sx
                )
    if elements == nothing
       error("elements must be specified!")
@@ -52,6 +52,7 @@ function ace_learnable_Rnlrzz(;
    end
 
    zlist =_convert_zlist(elements)
+   NZ = length(zlist)
 
    if spec == nothing
       spec = [ (n = n, l = l) for n = 1:maxn, l = 0:maxl
@@ -67,6 +68,19 @@ function ace_learnable_Rnlrzz(;
       else
          error("unknown polynomial type : $polys")
       end
+   end
+
+   if transforms isa Tuple && transforms[1] == :agnesi 
+      p = transforms[2] 
+      q = transforms[3]
+      transforms = agnesi_transform.(rin0cuts, p, q)
+   end
+
+   if envelopes == :poly2sx
+      envelopes = PolyEnvelope2sX(-1.0, 1.0, 2, 2)
+   elseif envelopes == :poly1sr
+      envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, 1) 
+                    for iz = 1:NZ, jz = 1:NZ ]
    end
 
    if actual_maxn > length(polys)
@@ -90,6 +104,11 @@ function ace_model(; elements = nothing,
                      level = nothing, 
                      max_level = nothing, 
                      init_WB = :zeros, 
+                     # pair basis 
+                     pair_maxn = nothing, 
+                     pair_basis = :auto, 
+                     init_Wpair = :zeros, 
+                     rng = Random.default_rng(), 
                      )
    # construct an rbasis if needed
    if isnothing(rbasis)
@@ -102,11 +121,31 @@ function ace_model(; elements = nothing,
       end
    end
 
+   # construct a pair basis if needed 
+   if pair_basis == :auto
+      @assert pair_maxn isa Integer 
+      @show pair_maxn 
+
+      pair_basis = ace_learnable_Rnlrzz(; 
+               elements = rbasis._i2z, 
+               level = TotalDegree(), 
+               max_level = pair_maxn, 
+               maxl = 0, 
+               maxn = pair_maxn, 
+               rin0cuts = rbasis.rin0cuts,
+               transforms = (:agnesi, 1, 4), 
+               envelopes = :poly1sr )
+   end
+
+   ps_pair = initialparameters(rng, pair_basis)
+   pair_basis_spl = splinify(set_params(pair_basis, ps_pair))
+
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level)
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl)
    model.meta["init_WB"] = String(init_WB)
+   model.meta["init_Wpair"] = String(init_Wpair)
 
    return model 
 end

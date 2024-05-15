@@ -21,11 +21,14 @@ import Polynomials4ML
 #    ACE MODEL SPECIFICATION 
 
 
-struct ACEModel{NZ, TRAD, TY, TA, TAA, T} <: AbstractExplicitContainerLayer{(:rbasis,)}
+struct ACEModel{NZ, TRAD, TY, TA, TAA, T, TPAIR} <: AbstractExplicitContainerLayer{(:rbasis,)}
    _i2z::NTuple{NZ, Int}
    # --------------
+   # embeddings of the particles 
    rbasis::TRAD
    ybasis::TY
+   # --------------
+   # the tensor format
    abasis::TA
    aabasis::TAA
    A2Bmap::SparseMatrixCSC{T, Int}
@@ -36,8 +39,8 @@ struct ACEModel{NZ, TRAD, TY, TA, TAA, T} <: AbstractExplicitContainerLayer{(:rb
    # aaparams::NTuple{NZ, Vector{T}} (not used right now)
    # --------------
    #   pair potential 
-   # pairbasis::TPAIR 
-   # pairparams::Matrix{T}
+   pairbasis::TPAIR 
+   pairparams::Matrix{T}
    # --------------
    meta::Dict{String, Any}
 end
@@ -88,7 +91,8 @@ end
 
 
 function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector, 
-                             level = TotalDegree())
+                             level = TotalDegree(), 
+                             pair_basis = nothing )
    # generate the coupling coefficients 
    cgen = EquivariantModels.Rot3DCoeffs_real(0)
    AA2BB_map = EquivariantModels._rpi_A2B_matrix(cgen, AA_spec)
@@ -128,10 +132,14 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
    aa_basis.meta["AA_spec"] = AA_spec  # (also store the human-readable spec)
    
-   NZ = _get_nz(rbasis)
-   n_B_params, n_AA_params = size(AA2BB_map)
-   return ACEModel(rbasis._i2z, rbasis, ybasis, a_basis, aa_basis, AA2BB_map, 
-                   zeros(n_B_params, NZ), 
+   # NZ = _get_nz(rbasis)
+   # n_B_params, n_AA_params = size(AA2BB_map)
+
+
+
+   return ACEModel(rbasis._i2z, rbasis, ybasis, 
+                   a_basis, aa_basis, AA2BB_map, zeros(0,0), 
+                   pair_basis, zeros(0,0), 
                   #  ntuple(_ -> zeros(n_AA_params), NZ),
                    Dict{String, Any}() )
 end
@@ -139,8 +147,8 @@ end
 # TODO: it is not entirely clear that the `level` is really needed here 
 #       since it is implicitly already encoded in AA_spec. We need a 
 #       function `auto_level` that generates level automagically from AA_spec.
-function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level)
-   return _generate_ace_model(rbasis, Ytype, AA_spec, level)
+function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level, pair_basis)
+   return _generate_ace_model(rbasis, Ytype, AA_spec, level, pair_basis)
 end 
 
 # NOTE : a nicer convenience constructor is also provided in `ace_heuristics.jl`
@@ -149,6 +157,16 @@ end
 
 # ------------------------------------------------------------
 #   Lux stuff 
+
+function _W_init(str)
+   if str == "zeros"
+      return (rng, T, args...) -> zeros(T, args...)
+   elseif str == "glorot_normal"
+      return glorot_normal
+   else
+      error("unknown `init_WB` = $str")
+   end
+end
 
 function initialparameters(rng::AbstractRNG, 
                            model::ACEModel)
@@ -159,26 +177,30 @@ function initialparameters(rng::AbstractRNG,
    # via the B params. 
 
    # there are different ways to initialize parameters 
-   if model.meta["init_WB"] == "zeros"
-      winit = zeros 
-   elseif model.meta["init_WB"] == "glorot_normal"
-      winit = glorot_normal
-   else
-      error("unknown `init_WB` = $(model.meta["init_WB"])")
-   end
-
+   winit = _W_init(model.meta["init_WB"])
    WB = zeros(n_B_params, NZ)
    for iz = 1:NZ 
       WB[:, iz] .= winit(rng, Float64, n_B_params)
    end
 
-   return (WB = WB, 
-           rbasis = initialparameters(rng, model.rbasis), )
+   # generate pair basis parameters 
+   n_pair = length(model.pairbasis)
+   Wpair = zeros(n_pair, NZ)
+   winit_pair = _W_init(model.meta["init_Wpair"])
+
+   for iz = 1:NZ 
+      Wpair[:, iz] .= winit_pair(rng, Float64, n_pair)
+   end
+
+   return (WB = WB, Wpair = Wpair, 
+           rbasis = initialparameters(rng, model.rbasis),
+           pairbasis = initialparameters(rng, model.pairbasis), ) 
 end
 
 function initialstates(rng::AbstractRNG, 
                        model::ACEModel)
-   return ( rbasis = initialstates(rng, model.rbasis), )
+   return ( rbasis = initialstates(rng, model.rbasis), 
+            pairbasis = initialstates(rng, model.pairbasis), ) 
 end
 
 (l::ACEModel)(args...) = evaluate(l, args...)
@@ -233,6 +255,16 @@ function evaluate(model::ACEModel,
    # contract with params 
    i_z0 = _z2i(model.rbasis, Z0)
    val = dot(B, (@view ps.WB[:, i_z0]))
+
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing 
+      Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+                               ps.pairbasis, st.pairbasis)
+      Apair = sum(Rpair, dims=1)[:]
+      val += dot(Apair, (@view ps.Wpair[:, i_z0]))
+   end
+   # ------------------- 
             
    return val, st 
 end
@@ -281,6 +313,7 @@ function evaluate_ed(model::ACEModel,
    i_z0 = _z2i(model.rbasis, Z0)
    Ei = dot(B, (@view ps.WB[:, i_z0]))
 
+
    # ---------- BACKWARD PASS ------------
 
    # ∂Ei / ∂B = WB[i_z0]
@@ -310,6 +343,27 @@ function evaluate_ed(model::ACEModel,
       ∇Ei[j] = dot(∂Rnl[j, :], dRnl[j, :]) * (Rs[j] / rs[j]) + 
                sum(∂Ylm[j, :] .* dYlm[j, :])
    end
+
+
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing 
+      Rpair, dRpair, _ = evaluate_ed_batched(model.pairbasis, rs, Z0, Zs, 
+                                             ps.pairbasis, st.pairbasis)
+      Apair = sum(Rpair, dims=1)[:]
+      Wp_i = @view ps.Wpair[:, i_z0]
+      Ei += dot(Apair, Wp_i)
+
+      # pullback --- I'm now assuming that the pair basis is not learnable.
+      if !( ps.pairbasis == NamedTuple() ) 
+         error("I'm currently assuming the pair basis is not learnable.")
+      end
+
+      for j = 1:length(Rs)
+         ∇Ei[j] += dot(Wp_i, (@view dRpair[j, :])) * (Rs[j] / rs[j])
+      end
+   end
+   # ------------------- 
 
    return Ei, ∇Ei, st 
 end
@@ -391,7 +445,28 @@ function grad_params(model::ACEModel,
    #   = pullback(∂Rnl, rbasis, args...)
    _, _, _, _, ∂Wqnl, _ = pb_Rnl(∂Rnl)  # this should be a named tuple already.
 
-   return Ei, (WB = ∂WB, rbasis = ∂Wqnl), st
+
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing 
+      Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+                                    ps.pairbasis, st.pairbasis)
+      Apair = sum(Rpair, dims=1)[:]
+      Wp_i = @view ps.Wpair[:, i_z0]
+      Ei += dot(Apair, Wp_i)
+
+      # pullback --- I'm now assuming that the pair basis is not learnable.
+      if !( ps.pairbasis == NamedTuple() ) 
+         error("I'm currently assuming the pair basis is not learnable.")
+      end
+
+      ∂Wpair = zeros(eltype(Apair), size(ps.Wpair))
+      ∂Wpair[:, i_z0] = Apair
+   end
+   # ------------------- 
+
+
+   return Ei, (WB = ∂WB, Wpair = ∂Wpair, rbasis = ∂Wqnl), st
 end
 
 
