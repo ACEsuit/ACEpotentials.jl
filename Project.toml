@@ -46,7 +46,7 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-ACE1 = "0.12"
+ACE1 = "0.12.2"
 ACE1x = "0.1.8"
 ACEfit = "0.1.4"
 ACEmd = "0.1.6"
@@ -59,6 +59,7 @@ StaticArrays = "1"
 UltraFastACE = "0.0.2"
 YAML = "0.4"
 julia = "1.9"
+Interpolations = "0.14.7" 
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

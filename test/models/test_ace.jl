@@ -1,5 +1,5 @@
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using Test, ACEbase
@@ -32,7 +32,7 @@ ps, st = LuxCore.setup(rng, model)
 @info("Test Rotation-Invariance of the Model")
 
 for ntest = 1:50 
-   local st1, Nat, Rs, Zs, Z0 
+   local st1, Nat, Rs, Zs, Z0, val 
 
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(model, Nat)

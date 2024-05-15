@@ -94,7 +94,9 @@ function energy_forces_virial_serial(
       virial += _site_virial(dv, Rs)
       release!(Js); release!(Rs); release!(Zs)
    end
-   return (energy = energy, forces = forces, virial = virial)
+   return (energy = energy * energy_unit(V), 
+           forces = forces * force_unit(V), 
+           virial = virial * energy_unit(V) )
 end
 
 

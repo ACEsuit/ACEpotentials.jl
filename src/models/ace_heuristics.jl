@@ -124,7 +124,6 @@ function ace_model(; elements = nothing,
    # construct a pair basis if needed 
    if pair_basis == :auto
       @assert pair_maxn isa Integer 
-      @show pair_maxn 
 
       pair_basis = ace_learnable_Rnlrzz(; 
                elements = rbasis._i2z, 

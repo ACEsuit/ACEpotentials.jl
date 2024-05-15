@@ -47,7 +47,7 @@ println()
 @info("LearnableRnlrzz : Consistency of single and batched evaluation")
 
 for ntest = 1:20 
-   local Rs, Rnl, Zs, Z0, Nat, st1, ∇Rnl
+   local Rs, Rnl, Zs, Z0, Nat, st1, ∇Rnl, rs 
 
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(basis, Nat)
@@ -125,7 +125,7 @@ basis_p = M.set_params(basis, ps)
 basis_spl = M.splinify(basis_p; nnodes = 100)
 
 for ntest = 1:20 
-   local Rnl, Rs, Zs, Z0, Nat, st1, ∇Rnl
+   local Rnl, Rs, Zs, Z0, Nat, st1, ∇Rnl, rs 
 
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(basis_spl, Nat)
