@@ -1,6 +1,6 @@
 
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using Test, ACEbase
@@ -40,6 +40,8 @@ calc = M.ACEPotential(model, ps, st)
 
 @info("Testing correctness of potential energy")
 for ntest = 1:20 
+   local Rs, Zs, z0, at 
+
    at = rattle!(bulk(:Si, cubic=true) * 2, 0.1)
    nlist = PairList(at, M.cutoff_radius(calc))
    E = 0.0 
@@ -52,6 +54,7 @@ for ntest = 1:20
    print_tf(@test abs(E - ustrip(efv.energy))/abs(E) < 1e-12)
    print_tf(@test abs(E - ustrip(E2)) / abs(E) < 1e-12)
 end
+println() 
 
 ##
 
@@ -77,6 +80,8 @@ at = rattle!(bulk(:Si, cubic=true), 0.1)
 @info("test consistency of forces with energy")
 @info(" TODO: write virial test!")
 for ntest = 1:10
+   local at, Us, dF0, X0, F, Z
+
    at = rattle!(bulk(:Si, cubic=true), 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)
    Z[[3,6,8]] .= 8
@@ -104,6 +109,8 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
                       (0.0 / u"eV", 1.0 / u"eV", 0.0 / u"eV/Å"), 
                       (0.0 / u"eV", 0.0 / u"eV", 1.0 / u"eV/Å"), 
                       (1.0 / u"eV", 0.1 / u"eV", 0.1 / u"eV/Å") ]
+   local at
+
    # random structure 
    at = rattle!(bulk(:Si, cubic=true), 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)

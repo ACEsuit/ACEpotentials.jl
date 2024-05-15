@@ -1,5 +1,5 @@
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using Test, ACEbase
@@ -26,23 +26,22 @@ model = M.ace_model(; elements = elements, order = order, Ytype = :solid,
 
 ps, st = LuxCore.setup(rng, model)
 
-# TODO: the number of parameters is completely off, so something is 
-#       likely wrong here. 
-
 
 ##
 
 @info("Test Rotation-Invariance of the Model")
 
 for ntest = 1:50 
+   local st1, Nat, Rs, Zs, Z0 
+
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(model, Nat)
-   val, st = M.evaluate(model, Rs, Zs, Z0, ps, st)
+   val, st1 = M.evaluate(model, Rs, Zs, Z0, ps, st)
 
    p = shuffle(1:Nat)
    Rs1 = Ref(M.rand_iso()) .* Rs[p]
    Zs1 = Zs[p]
-   val1, st = M.evaluate(model, Rs1, Zs1, Z0, ps, st)
+   val1, st1 = M.evaluate(model, Rs1, Zs1, Z0, ps, st)
 
    print_tf(@test abs(val - val1) < 1e-10)
 end
@@ -57,6 +56,8 @@ Ei1, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
 println_slim(@test Ei ≈ Ei1)
 
 for ntest = 1:20 
+   local Nat, Rs, Zs, z0, Us, F, dF
+
    Nat = rand(8:16)
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
    Us = randn(SVector{3, Float64}, Nat)
@@ -76,6 +77,8 @@ Ei1, ∇Ei, st = M.grad_params(model, Rs, Zs, z0, ps, st)
 println_slim(@test Ei ≈ Ei1)
 
 for ntest = 1:20
+   local Nat, Rs, Zs, z0, pvec, uvec, F, dF0 
+
    Nat = rand(8:16)
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
    pvec, _restruct = destructure(ps)
@@ -84,11 +87,15 @@ for ntest = 1:20
    dF0 = dot( destructure( M.grad_params(model, Rs, Zs, z0, ps, st)[2] )[1], uvec )
    print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose = false))
 end
+println() 
 
 ##
 
 @info("Test second mixed derivatives reverse-over-reverse")
 for ntest = 1:20 
+   local Nat, Rs, Zs, Us, Ei, ∂Ei, ∂2_Ei, 
+         ps_vec, vs_vec, F, dF0, z0 
+
    Nat = rand(8:16)
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
    Us = randn(SVector{3, Float64}, Nat)
@@ -109,33 +116,38 @@ for ntest = 1:20
    dF0 = dot(∂2_∇Ei_vec, vs_vec)
    print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=false))
 end
-
+println() 
 
 ##
 
 @info("Test basis implementation")
 
 for ntest = 1:30 
+   local Nat, Rs, Zs, z0, Ei, B, θ, st1 , ∇Ei
+
    Nat = 15
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
    i_z0 = M._z2i(model, z0)
-   Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
-   B, st = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
+   Ei, st1 = M.evaluate(model, Rs, Zs, z0, ps, st)
+   B, st1 = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
    θ = vcat(ps.WB...)
    print_tf(@test Ei ≈ dot(B, θ))
 
-   Ei, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
-   B, ∇B, st = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
+   Ei, ∇Ei, st1 = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+   B, ∇B, st1 = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
    θ = vcat(ps.WB...)
    print_tf(@test Ei ≈ dot(B, θ))
    print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
 end
+println() 
 
 ##
 
 @info("Test the full mixed jacobian")
 
 for ntest = 1:30 
+   local Nat, Rs, Zs, z0, Ei, ∇Ei, ∂∂Ei, Us, F, dF0
+
    Nat = 15
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
    Us = randn(SVector{3, Float64}, Nat) / sqrt(Nat)
@@ -144,10 +156,12 @@ for ntest = 1:30
    ∂∂Ei = M.jacobian_grad_params(model, Rs, Zs, z0, ps, st)[3]
    print_tf(@test dF0 ≈ transpose.(∂∂Ei) * Us)
 end 
+println() 
 
 
 ##
 
+#=
 @info("Basic performance benchmarks")
 # first test shows the performance is not at all awful even without any 
 # optimizations and reductions in memory allocations. 
@@ -168,3 +182,4 @@ print("      evaluate_basis : "); @btime M.evaluate_basis($model, $Rs, $Zs, $z0,
 print("   evaluate_basis_ed : "); @btime M.evaluate_basis_ed($model, $Rs, $Zs, $z0, $ps, $st)
 print("jacobian_grad_params : "); @btime M.jacobian_grad_params($model, $Rs, $Zs, $z0, $ps, $st)
 
+=#

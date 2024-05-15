@@ -1,7 +1,7 @@
 
 
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using ACEpotentials
@@ -31,6 +31,7 @@ Rnl, Rnl_d, st1 = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
 @info("Test derivatives of Rnlrzz basis")
 
 for ntest = 1:20 
+   global ps, st
    r = 2.0 + rand() 
    Zi = rand(basis._i2z)
    Zj = rand(basis._i2z)
@@ -46,6 +47,7 @@ println()
 @info("LearnableRnlrzz : Consistency of single and batched evaluation")
 
 for ntest = 1:20 
+   global ps, st
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(basis, Nat)
    rs = norm.(Rs)

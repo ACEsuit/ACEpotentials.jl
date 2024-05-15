@@ -2,9 +2,7 @@
 import LuxCore: AbstractExplicitLayer, 
                AbstractExplicitContainerLayer,
                initialparameters, 
-               initialstates, 
-               parameterlength
-            
+               initialstates            
 
 using Lux: glorot_normal
 
@@ -25,6 +23,7 @@ import Polynomials4ML
 
 struct ACEModel{NZ, TRAD, TY, TA, TAA, T} <: AbstractExplicitContainerLayer{(:rbasis,)}
    _i2z::NTuple{NZ, Int}
+   # --------------
    rbasis::TRAD
    ybasis::TY
    abasis::TA
@@ -34,7 +33,11 @@ struct ACEModel{NZ, TRAD, TY, TA, TAA, T} <: AbstractExplicitContainerLayer{(:rb
    # we can add a nonlinear embedding here 
    # --------------
    bparams::Matrix{T}   # : x NZ matrix of B parameters 
-   # aaparams::NTuple{NZ, Vector{T}}
+   # aaparams::NTuple{NZ, Vector{T}} (not used right now)
+   # --------------
+   #   pair potential 
+   # pairbasis::TPAIR 
+   # pairparams::Matrix{T}
    # --------------
    meta::Dict{String, Any}
 end
@@ -180,10 +183,10 @@ end
 
 (l::ACEModel)(args...) = evaluate(l, args...)
 
-function parameterlength(model::ACEModel)
+function LuxCore.parameterlength(model::ACEModel)
    NZ = _get_nz(model)
    n_B_params, n_AA_params = size(model.A2Bmap)
-   return NZ * n_B_params + parameterlength(model.rbasis)
+   return NZ * n_B_params
 end
 
 # ------------------------------------------------------------

@@ -12,7 +12,7 @@ end
 PolyEnvelope1sR(rcut, p) = 
    PolyEnvelope1sR(rcut, p, Dict{String, Any}())
 
-function evaluate(env::PolyEnvelope1sR, r::T) where T 
+function evaluate(env::PolyEnvelope1sR, r::T, x::T) where T 
    if r >= env.rcut 
       return zero(T)
    end
@@ -21,8 +21,10 @@ function evaluate(env::PolyEnvelope1sR, r::T) where T
    return ( (r/env.rcut)^(-p) - 1.0) * (1 - r / env.rcut)
 end
 
-evaluate_d(env::PolyEnvelope1sR, r) = 
-   ForwardDiff.derivative(x -> evaluate(env, x), r)
+evaluate_d(env::PolyEnvelope1sR, r::T, x::T) where {T} = 
+      (ForwardDiff.derivative(x -> evaluate(env, x), r), 
+       zero(T),)
+
 
 # ----------------------------
 
@@ -50,7 +52,7 @@ function PolyEnvelope2sX(x1, x2, p1, p2)
 end 
 
 
-function evaluate(env::PolyEnvelope2sX, x::T) where T 
+function evaluate(env::PolyEnvelope2sX, r::T, x::T) where T 
    x1, x2 = env.x1, env.x2
    p1, p2 = env.p1, env.p2
    s = env.s
@@ -63,7 +65,8 @@ function evaluate(env::PolyEnvelope2sX, x::T) where T
 end
 
 
-evaluate_d(env::PolyEnvelope2sX, x::T) where T = 
-   ForwardDiff.derivative(x -> evaluate(env, x), x)
+evaluate_d(env::PolyEnvelope2sX, r::T, x::T) where T = 
+    (zero(T), ForwardDiff.derivative(x -> evaluate(env, x), x))
 
+    
 

@@ -39,7 +39,7 @@ function evaluate(basis::SplineRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    spl_ij = basis.splines[iz, jz]
 
    x_ij = T_ij(r)
-   e_ij = evaluate(env_ij, x_ij)
+   e_ij = evaluate(env_ij, r, x_ij)
 
    return spl_ij(x_ij) * e_ij, st
 end

@@ -1,7 +1,7 @@
 
 
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 using ACEpotentials
@@ -31,6 +31,7 @@ Rnl, Rnl_d, st1 = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
 @info("Test derivatives of LearnableRnlrzzBasis")
 
 for ntest = 1:20 
+   local r, Zi, Zj, U, F, dF
    r = 2.0 + rand() 
    Zi = rand(basis._i2z)
    Zj = rand(basis._i2z)
@@ -46,12 +47,14 @@ println()
 @info("LearnableRnlrzz : Consistency of single and batched evaluation")
 
 for ntest = 1:20 
+   local Rs, Rnl, Zs, Z0, Nat, st1, ∇Rnl
+
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(basis, Nat)
    rs = norm.(Rs)
 
    Rnl = [ M.evaluate(basis, r, Z0, z, ps, st)[1] for (r, z) in zip(rs, Zs) ]
-   Rnl_b, st = M.evaluate_batched(basis, rs, Z0, Zs, ps, st)
+   Rnl_b, st1 = M.evaluate_batched(basis, rs, Z0, Zs, ps, st)
    print_tf(@test all([Rnl_b[j, :] for j = 1:Nat] .≈ Rnl))
 
    Rnl_b2, ∇Rnl_b, _ = M.evaluate_ed_batched(basis, rs, Z0, Zs, ps, st)
@@ -61,6 +64,7 @@ for ntest = 1:20
    print_tf(@test Rnl_b ≈ Rnl_b2)
    print_tf(@test all(∇Rnl .≈ [∇Rnl_b[j, :] for j = 1:Nat ]))
 end
+println() 
 
 ## 
 
@@ -70,6 +74,8 @@ basis_p = M.set_params(basis, ps)
 @info("Testing SplineRnlrzzBasis consistency via splinify")
 
 for ntest = 1:30 
+   local Nat, Rs, Zs, Zi, r, Zj, Rnl
+
    Nat = 1
    Rs, Zs, Zi = M.rand_atenv(basis, Nat)
    r = norm(Rs[1]) 
@@ -78,6 +84,7 @@ for ntest = 1:30
    Rnl, _ = basis(r, Zi, Zj, ps, st)
 
    for (nnodes, tol) in [(30, 1e-3), (100, 1e-5), (1000, 1e-8)]
+      local basis_spl, ps_spl, st_spl, Rnl_spl 
 
       basis_spl = M.splinify(basis_p; nnodes = nnodes)
       ps_spl, st_spl = LuxCore.setup(rng, basis_spl)
@@ -88,6 +95,7 @@ for ntest = 1:30
       # @show norm(rel_err, 1) / length(Rnl)
    end
 end
+println() 
 
 ##
 
@@ -97,6 +105,8 @@ basis_p = M.set_params(basis, ps)
 basis_spl = M.splinify(basis_p; nnodes = 100)
 
 for ntest = 1:20 
+   local Rs, Zs, Zi, Zj, r, Rnl, U, F, dF
+
    Rs, Zs, Zi = M.rand_atenv(basis_spl, 1)
    r = norm(Rs[1]); Zj = Zs[1] 
    Rnl = basis_spl(r, Zi, Zj, ps, st)[1]
@@ -115,12 +125,14 @@ basis_p = M.set_params(basis, ps)
 basis_spl = M.splinify(basis_p; nnodes = 100)
 
 for ntest = 1:20 
+   local Rnl, Rs, Zs, Z0, Nat, st1, ∇Rnl
+
    Nat = rand(8:16)
    Rs, Zs, Z0 = M.rand_atenv(basis_spl, Nat)
    rs = norm.(Rs)
 
    Rnl = [ M.evaluate(basis_spl, r, Z0, z, ps, st)[1] for (r, z) in zip(rs, Zs) ]
-   Rnl_b, st = M.evaluate_batched(basis_spl, rs, Z0, Zs, ps, st)
+   Rnl_b, st1 = M.evaluate_batched(basis_spl, rs, Z0, Zs, ps, st)
    print_tf(@test all([Rnl_b[j, :] for j = 1:Nat] .≈ Rnl))
 
    Rnl_b2, ∇Rnl_b, _ = M.evaluate_ed_batched(basis_spl, rs, Z0, Zs, ps, st)
@@ -130,3 +142,4 @@ for ntest = 1:20
    print_tf(@test Rnl_b ≈ Rnl_b2)
    print_tf(@test all(∇Rnl .≈ [∇Rnl_b[j, :] for j = 1:Nat ]))
 end
+println() 

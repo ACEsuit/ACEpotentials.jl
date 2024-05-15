@@ -1,4 +1,4 @@
-
+import LuxCore
 
 
 # ------------------------------------------------------------ 
@@ -47,7 +47,7 @@ function initialstates(rng::AbstractRNG,
 end
       
 
-function parameterlength(basis::LearnableRnlrzzBasis)
+function LuxCore.parameterlength(basis::LearnableRnlrzzBasis)
    NZ = _get_nz(basis) 
    len_nl = length(basis)
    len_q = length(basis.polys)
@@ -71,7 +71,7 @@ function evaluate!(Rnl, basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    x = trans_ij(r)
    P = Polynomials4ML.evaluate(basis.polys, x)
    env_ij = basis.envelopes[iz, jz]
-   e = evaluate(env_ij, x)   
+   e = evaluate(env_ij, r, x)   
    Rnl[:] .= Wij * (P .* e)
    return Rnl, st 
 end
@@ -84,7 +84,7 @@ function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    x = trans_ij(r)
    P = Polynomials4ML.evaluate(basis.polys, x)
    env_ij = basis.envelopes[iz, jz]
-   e = evaluate(env_ij, x)   
+   e = evaluate(env_ij, r, x)   
    return Wij * (P .* e), st 
 end
 
@@ -105,7 +105,7 @@ function evaluate_batched(basis::LearnableRnlrzzBasis,
       trans_ij = basis.transforms[iz, jz]
       x = trans_ij(rs[j])
       env_ij = basis.envelopes[iz, jz]
-      e = evaluate(env_ij, x)   
+      e = evaluate(env_ij, rs[j], x)   
       P = Polynomials4ML.evaluate(basis.polys, x) .* e
       Rnl[j, :] = (@view ps.Wnlq[:, :, iz, jz]) * P
    end
@@ -187,7 +187,7 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
       trans_ij = basis.transforms[iz, jz]
       x = trans_ij(rs[j])
       env_ij = basis.envelopes[iz, jz]
-      e = evaluate(env_ij, x)   
+      e = evaluate(env_ij, rs[j], x)   
       P = Polynomials4ML.evaluate(basis.polys, x) .* e
       # TODO: the P shouuld be stored inside a closure in the 
       #       forward pass and then resused. 

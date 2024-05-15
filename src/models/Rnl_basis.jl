@@ -131,3 +131,4 @@ function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
 
    return spl_basis
 end
+

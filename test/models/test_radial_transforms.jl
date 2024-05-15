@@ -1,6 +1,6 @@
 
-using Pkg; Pkg.activate(".");
-using TestEnv; TestEnv.activate();
+# using Pkg; Pkg.activate(".");
+# using TestEnv; TestEnv.activate();
 
 using ACEpotentials, Test 
 
