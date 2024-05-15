@@ -28,89 +28,71 @@ acefit!(model, train; solver=solver, data_keys...);</code></pre><pre class="docu
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (7052, 110).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:06</span><span class="sgr32">Progress:  25%|██████████▎                              |  ETA: 0:00:05</span><span class="sgr32">Progress:  40%|████████████████▍                        |  ETA: 0:00:04</span><span class="sgr32">Progress:  90%|████████████████████████████████████▉    |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:06</span>
+<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:06</span><span class="sgr32">Progress:  60%|████████████████████████▋                |  ETA: 0:00:03</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:06</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 Iter     Function value   Gradient norm
      0     6.727465e+03     6.769388e+03
- * time: 4.8160552978515625e-5
+ * time: 4.792213439941406e-5
      1    -1.653584e+03     2.072568e+04
- * time: 0.0153350830078125
+ * time: 0.015866994857788086
      2    -4.158362e+03     2.522873e+04
- * time: 0.01875019073486328
+ * time: 0.019505023956298828
      3    -5.498239e+03     1.598170e+04
- * time: 0.022459030151367188
-     4    -5.550799e+03     2.288053e+04
- * time: 0.024060964584350586
-     5    -5.676270e+03     3.198554e+03
- * time: 0.025124073028564453
-     6    -5.705136e+03     6.107999e+03
- * time: 0.02725815773010254
-     7    -6.160276e+03     1.705559e+04
- * time: 0.030148983001708984
-     8    -8.253971e+03     5.327710e+04
- * time: 0.033828020095825195
-     9    -1.096126e+04     3.703438e+04
- * time: 0.03647303581237793
-    10    -1.104392e+04     2.111605e+04
- * time: 0.039216041564941406
-    11    -1.111651e+04     1.251007e+04
- * time: 0.04059410095214844
-    12    -1.162560e+04     2.956345e+04
- * time: 0.04385113716125488
-    13    -1.197430e+04     3.839835e+04
- * time: 0.04587912559509277
-    14    -1.221583e+04     1.021687e+04
- * time: 0.047898054122924805
-    15    -1.230516e+04     2.245764e+04
- * time: 0.04929208755493164
-    16    -1.251463e+04     3.301746e+04
- * time: 0.051920175552368164
-    17    -1.259525e+04     7.000423e+03
- * time: 0.05393409729003906
-    18    -1.259983e+04     1.943134e+03
- * time: 0.05529499053955078
-    19    -1.260748e+04     1.576029e+03
- * time: 0.05789518356323242
-    20    -1.260817e+04     6.702533e+02
- * time: 0.05985713005065918
-    21    -1.260825e+04     1.634493e+02
- * time: 0.06180405616760254
-    22    -1.260824e+04     1.303045e+00
- * time: 0.06308507919311523
-    23    -1.260825e+04     7.668955e-02
- * time: 0.06437015533447266
-    24    -1.260825e+04     7.971863e-02
- * time: 0.06567907333374023
-    25    -1.260824e+04     4.860490e-02
- * time: 0.06696915626525879
-    26    -1.260825e+04     1.439764e-01
- * time: 0.0695340633392334
-    27    -1.260824e+04     6.560766e-03
- * time: 0.07082104682922363
-    28    -1.260824e+04     8.245398e-02
- * time: 0.07267117500305176
-    29    -1.260824e+04     2.560794e-02
- * time: 0.07511305809020996
-    30    -1.260824e+04     1.430025e-01
- * time: 0.07695317268371582
-    31    -1.260825e+04     1.337117e-01
- * time: 0.07878398895263672
-    32    -1.260825e+04     7.811927e-02
- * time: 0.08012700080871582
-    33    -1.260825e+04     3.583894e-02
- * time: 0.08139204978942871
-    34    -1.260825e+04     2.650669e-02
- * time: 0.08320999145507812
-    35    -1.260824e+04     3.036501e-02
- * time: 0.08685517311096191
-    36    -1.260824e+04     6.085996e-02
- * time: 0.08811402320861816
-    37    -1.260824e+04     3.823356e-02
- * time: 0.08992600440979004
-    38    -1.260824e+04     2.819762e-02
- * time: 0.10264396667480469
- * Status: success
+ * time: 0.02332305908203125
+     4    -5.550432e+03     2.292239e+04
+ * time: 0.025217056274414062
+     5    -5.676258e+03     3.198384e+03
+ * time: 0.02672290802001953
+     6    -5.705056e+03     6.107128e+03
+ * time: 0.029703855514526367
+     7    -6.198132e+03     1.814330e+04
+ * time: 0.03394198417663574
+     8    -9.292725e+03     5.804096e+04
+ * time: 0.039563894271850586
+     9    -1.102307e+04     3.289065e+04
+ * time: 0.04235100746154785
+    10    -1.109925e+04     1.042603e+04
+ * time: 0.04446601867675781
+    11    -1.114862e+04     1.825906e+04
+ * time: 0.046530961990356445
+    12    -1.139397e+04     1.388445e+04
+ * time: 0.049237966537475586
+    13    -1.201983e+04     4.704148e+04
+ * time: 0.05193305015563965
+    14    -1.219235e+04     1.962891e+04
+ * time: 0.0539548397064209
+    15    -1.238623e+04     2.176163e+04
+ * time: 0.05597805976867676
+    16    -1.253177e+04     1.966207e+04
+ * time: 0.057968854904174805
+    17    -1.257962e+04     2.096011e+03
+ * time: 0.060066938400268555
+    18    -1.259943e+04     1.193816e+04
+ * time: 0.06228184700012207
+    19    -1.260732e+04     1.447764e+03
+ * time: 0.06470394134521484
+    20    -1.260816e+04     1.061123e+03
+ * time: 0.06671285629272461
+    21    -1.260824e+04     5.962821e+01
+ * time: 0.06860899925231934
+    22    -1.260824e+04     2.535835e+00
+ * time: 0.07046985626220703
+    23    -1.260824e+04     7.334983e-02
+ * time: 0.0718379020690918
+    24    -1.260824e+04     1.743906e-01
+ * time: 0.07486796379089355
+    25    -1.260824e+04     3.080896e-01
+ * time: 0.07619595527648926
+    26    -1.260824e+04     2.300227e-01
+ * time: 0.07748198509216309
+    27    -1.260824e+04     1.465356e+01
+ * time: 0.07876300811767578
+    28    -1.260824e+04     3.198283e-02
+ * time: 0.08015894889831543
+    29    -1.260824e+04     1.465899e-02
+ * time: 0.08147192001342773
+ * Status: success (objective increased between iterations)
 
  * Candidate solution
     Final objective value:     -1.260824e+04
@@ -119,17 +101,17 @@ Iter     Function value   Gradient norm
     Algorithm:     L-BFGS
 
  * Convergence measures
-    |x - x&#39;|               = 2.28e-09 ≤ 1.0e-08
-    |x - x&#39;|/|x&#39;|          = 2.21e-11 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|         = 1.54e-03 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|/|f(x&#39;)| = 1.22e-07 ≰ 0.0e+00
-    |g(x)|                 = 2.82e-02 ≰ 0.0e+00
+    |x - x&#39;|               = 1.88e-09 ≤ 1.0e-08
+    |x - x&#39;|/|x&#39;|          = 1.82e-11 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|         = 2.35e-03 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|/|f(x&#39;)| = 1.87e-07 ≰ 0.0e+00
+    |g(x)|                 = 1.47e-02 ≰ 0.0e+00
 
  * Work counters
     Seconds run:   0  (vs limit Inf)
-    Iterations:    38
-    f(x) calls:    151
-    ∇f(x) calls:   151</code></pre><p>To see the training errors we can use</p><pre><code class="language-julia hljs">@info(&quot;Training Errors&quot;)
+    Iterations:    29
+    f(x) calls:    123
+    ∇f(x) calls:   123</code></pre><p>To see the training errors we can use</p><pre><code class="language-julia hljs">@info(&quot;Training Errors&quot;)
 ACEpotentials.linear_errors(train, model; data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Training Errors
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌─────────┬─────────┬──────────┬─────────┐
@@ -170,17 +152,17 @@ test_energies = [ JuLIP.get_data(at, &quot;energy&quot;) / length(at) for at in 
 model_energies = [energy(potential, at) / length(at) for at in test]
 rmse_energy = norm(test_energies - model_energies) / sqrt(length(test))
 @show rmse_energy;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Manual RMSE Test
-rmse_energy = 0.00022336071162342794</code></pre><p>But in practice, one should run more extensive test simulations to check how robust the fitted potential is.</p><h3 id="Step-5:-export-the-model"><a class="docs-heading-anchor" href="#Step-5:-export-the-model">Step 5: export the model</a><a id="Step-5:-export-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5:-export-the-model" title="Permalink"></a></h3><p>The fitted model can be exported to a JSON or YAML file, or to a LAMMPs compatible <code>yace</code> file. We won&#39;t go through that in this tutoral. See <code>export2json</code> and <code>export2lammps</code> for further information.</p><h3 id="Step-6:-Using-the-model"><a class="docs-heading-anchor" href="#Step-6:-Using-the-model">Step 6: Using the model</a><a id="Step-6:-Using-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6:-Using-the-model" title="Permalink"></a></h3><p>Let&#39;s do something very simple: relax a vacancy.</p><p>We create a small Si cell, delete an atom and rattle the rest</p><pre><code class="language-julia hljs">at = bulk(:Si, cubic=true) * 3
+rmse_energy = 0.00022336031187506652</code></pre><p>But in practice, one should run more extensive test simulations to check how robust the fitted potential is.</p><h3 id="Step-5:-export-the-model"><a class="docs-heading-anchor" href="#Step-5:-export-the-model">Step 5: export the model</a><a id="Step-5:-export-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5:-export-the-model" title="Permalink"></a></h3><p>The fitted model can be exported to a JSON or YAML file, or to a LAMMPs compatible <code>yace</code> file. We won&#39;t go through that in this tutoral. See <code>export2json</code> and <code>export2lammps</code> for further information.</p><h3 id="Step-6:-Using-the-model"><a class="docs-heading-anchor" href="#Step-6:-Using-the-model">Step 6: Using the model</a><a id="Step-6:-Using-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6:-Using-the-model" title="Permalink"></a></h3><p>Let&#39;s do something very simple: relax a vacancy.</p><p>We create a small Si cell, delete an atom and rattle the rest</p><pre><code class="language-julia hljs">at = bulk(:Si, cubic=true) * 3
 deleteat!(at, 1)
 rattle!(at, 0.03 * rnn(:Si))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">JuLIP.Atoms with 215 atoms</code></pre><p>we can now minimize the ACE energy.</p><pre><code class="language-julia hljs">set_calculator!(at, potential);
 minimise!(at)
-E_ace = energy(at)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-924.9763888559539</code></pre><p>If we want a formation energy, we could get it like this.</p><pre><code class="language-julia hljs">at0 = bulk(:Si)
+E_ace = energy(at)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-924.9764086077141</code></pre><p>If we want a formation energy, we could get it like this.</p><pre><code class="language-julia hljs">at0 = bulk(:Si)
 E0_ace = energy(potential, at0);
 Evac_ace = E_ace - (length(at)-1)/length(at0) * E0_ace
-@show Evac_ace;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_ace = 2.714825793505497</code></pre><p>Note that there are no vacancy structures in the training set, so this is a prediction out of sample. We have no guarantee of the accuracy of this prediction. In fact the prediction is quite far off:</p><pre><code class="language-julia hljs">sw = StillingerWeber()
+@show Evac_ace;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_ace = 2.7148087885758514</code></pre><p>Note that there are no vacancy structures in the training set, so this is a prediction out of sample. We have no guarantee of the accuracy of this prediction. In fact the prediction is quite far off:</p><pre><code class="language-julia hljs">sw = StillingerWeber()
 set_calculator!(at, sw)
 minimise!(at; verbose=false);
 E_sw = energy(at)
 E0_sw = energy(sw, bulk(:Si))
 Evac_sw = E_sw - (length(at)-1)/length(at0) * E0_sw
-@show Evac_sw;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_sw = -1.1122891578452254e-5</code></pre><p>To obtain accurate predictions on a vacancy structure, we must add it to the training set. This iterative model development process goes beyond the scope of this tutorial.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../TiAl_model/">The <code>acemodel</code> interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 2 May 2024 05:53">Thursday 2 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+@show Evac_sw;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Evac_sw = -1.1122892601633794e-5</code></pre><p>To obtain accurate predictions on a vacancy structure, we must add it to the training set. This iterative model development process goes beyond the scope of this tutorial.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../TiAl_model/">The <code>acemodel</code> interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Wednesday 15 May 2024 06:10">Wednesday 15 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
