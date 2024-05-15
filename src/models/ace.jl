@@ -513,6 +513,29 @@ function get_basis_inds(model::ACEModel, Z)
    return (i_z - 1) * len_Bi .+ (1:len_Bi)
 end
 
+function get_pairbasis_inds(model::ACEModel, Z)
+   len_Bi = size(model.A2Bmap, 1)
+   NZ = _get_nz(model)
+   len_B = NZ * len_Bi 
+
+   len_pair = length(model.pairbasis)
+   i_z = _z2i(model, Z)
+   return (len_B + (i_z - 1) * len_pair) .+ (1:len_pair)
+end
+
+function len_basis(model::ACEModel)
+   len_Bi = size(model.A2Bmap, 1)
+   len_pair = length(model.pairbasis)
+   NZ = _get_nz(model)
+   return (len_Bi + len_pair) * NZ 
+end
+
+
+function get_basis_params(model::ACEModel, ps, )
+   # this is magically given by the basis ordering we picked
+   return vcat(ps.WB[:], ps.Wpair[:])   
+end
+
 function evaluate_basis(model::ACEModel, 
                         Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                         ps, st) where {T}
@@ -543,9 +566,18 @@ function evaluate_basis(model::ACEModel,
    # evaluate the coupling coefficients 
    # TODO: use Bumper and do it in-place 
    Bi = model.A2Bmap * AA
-   B = zeros(eltype(Bi), length(Bi) * _get_nz(model))
+   B = zeros(eltype(Bi), len_basis(model))
    B[get_basis_inds(model, Z0)] .= Bi
    
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing 
+      Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+                                    ps.pairbasis, st.pairbasis)
+      Apair = sum(Rpair, dims=1)[:]
+      B[get_pairbasis_inds(model, Z0)] .= Apair
+   end 
+
    return B, st
 end
 

@@ -129,12 +129,11 @@ for ntest = 1:30
    i_z0 = M._z2i(model, z0)
    Ei, st1 = M.evaluate(model, Rs, Zs, z0, ps, st)
    B, st1 = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
-   θ = vcat(ps.WB...)
+   θ = M.get_basis_params(model, ps)
    print_tf(@test Ei ≈ dot(B, θ))
 
    Ei, ∇Ei, st1 = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
    B, ∇B, st1 = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
-   θ = vcat(ps.WB...)
    print_tf(@test Ei ≈ dot(B, θ))
    print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
 end
