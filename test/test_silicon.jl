@@ -140,6 +140,6 @@ end
     acefit!(model, data;
             data_keys...,
             weights = weights,
-            solver = ACEfit.BLR(committee_size = 10))
+            solver = ACEfit.BLR(factorization = :svd, committee_size = 10))
     #test_rmse(results["errors"]["rmse"], rmse_blr, 1e-5)
 end
