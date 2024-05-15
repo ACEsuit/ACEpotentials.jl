@@ -65,15 +65,14 @@ println()
 at = rattle!(bulk(:Si, cubic=true), 0.1)
 
 @info(" consistency local vs EmpiricalPotentials implementation")
-@info("the force test currently fails due to a bug in EmpiricalPotentials")
 efv1 = M.energy_forces_virial(at, calc, ps, st)
 efv2 = AtomsCalculators.energy_forces_virial(at, calc)
 efv3 = M.energy_forces_virial_serial(at, calc, ps, st)
 print_tf(@test efv1.energy ≈ efv2.energy)
-# print_tf(@test all(efv1.forces .≈ efv2.force))
+print_tf(@test all(efv1.forces .≈ efv2.forces))
 print_tf(@test efv1.virial ≈ efv1.virial)
 print_tf(@test efv1.energy ≈ efv3.energy)
-# print_tf(@test all(efv1.forces .≈ efv3.forces))
+print_tf(@test all(efv1.forces .≈ efv3.forces))
 print_tf(@test efv1.virial ≈ efv3.virial)
 
 ##
