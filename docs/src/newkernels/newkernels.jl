@@ -5,6 +5,7 @@
 using ACEpotentials, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
       Unitful, Random, Zygote, Optimisers
 
+# JuLIP (via ACEpotentials) also exports the same functions 
 bulk = AtomsBuilder.bulk 
 rattle! = AtomsBuilder.rattle!      
 
@@ -36,7 +37,10 @@ model = M.ace_model(; elements = elements,
 
 # the radial basis specification can be looked at explicitly via 
 
-display(model.rbasis.spec)
+@info("Subset of radial basis specification")
+display(model.rbasis.spec[1:10:end])
+@info("Subset of pair basis specification")
+display(model.pairbasis.spec[1:2:end])
 
 # we can see that it is defined as (n, l) pairs. Each `n` specifies an invariant 
 # channel coupled to an `l` channel. Each `Rnl` radial basis function is defined 
@@ -53,10 +57,10 @@ display(model.rbasis.spec)
 
 ps, st = Lux.setup(rng, model)
 
-# From the model we generate a calculator. This step should probably be integrated. 
-# into `ace_model`, we can discuss it. 
+# From the model we generate a calculator. This step should probably be 
+# integrated into `ace_model`, we can discuss it. 
 
-calc = M.ACEPotential(model, ps, st)
+calc = M.ACEPotential(model)
 
 # We can now treat `calc` as a nonlinear parameterized site potential model. 
 # - generate a random Al, Ti structure  
@@ -117,13 +121,13 @@ loss = let data_keys = (E_key = :energy, F_key = :force, V_key = :virial),
    end
 end    
 
-loss(calc, ps, st, at)[1]
+at1 = train_data[1]
+loss(calc, ps, st, at1)[1]
 
 
 # Zygote should now be able to differentiate this loss with respect to parameters 
 # the gradient is provided in the same format as the parameters, i.e. a NamedTuple. 
  
-at1 = train_data[1] 
 g = Zygote.gradient(ps -> loss(calc, ps, st, at1)[1], ps)[1] 
 
 @show typeof(g)
@@ -132,13 +136,15 @@ g = Zygote.gradient(ps -> loss(calc, ps, st, at1)[1], ps)[1]
 # allows us use of arbitrary optimizers 
 
 ps_vec, _restruct = destructure(ps)
-g_vec = destructure(g)[1]
+g_vec, _ = destructure(g)   # the restructure is the same as for the params
 
 # Let's now try to optimize the model. Here I'm a bit hazy how to do this 
-# properly. I'm just modifying a Lux tutorial. There are probably better ways. 
-# https://github.com/LuxDL/Lux.jl/blob/main/examples/PolynomialFitting/main.jl
+# properly. 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # This is the Lux approach, which I couldn't get to work. 
+# I'm just modifying a Lux tutorial. There are probably better ways. 
+# https://github.com/LuxDL/Lux.jl/blob/main/examples/PolynomialFitting/main.jl
 
 # using ADTypes, Printf 
 # vjp_rule = AutoZygote() 
@@ -159,27 +165,34 @@ g_vec = destructure(g)[1]
 # end
 
 # main(tstate, vjp_rule, train_data, 100)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 # the alternative might be to optimize using Optim.jl
+# this would allow us to use a wide range of different optimizers, 
+# including BFGS and friends. 
+# the total_loss and total_loss_grad! should be re-implemented properly 
+# with options to assemble the loss multi-threaded or distributed 
 
 using Optim
 
-function total_loss(p_vec)
+function total_loss(p_vec) 
    return sum( loss(calc, _restruct(p_vec), st, at)[1] 
-               for at in train_data )
+                           for at in train_data )
 end
-
+                              
 function total_loss_grad!(g, p_vec) 
    g[:] = Zygote.gradient(ps -> total_loss(ps), p_vec)[1]
    return g 
 end 
 
+@info("Timing for total loss and loss-grad")
 @time total_loss(ps_vec)
 @time total_loss(ps_vec)
 @time total_loss_grad!(zeros(length(ps_vec)), ps_vec)
 @time total_loss_grad!(zeros(length(ps_vec)), ps_vec)
 
+@info("Start the optimization")
 result = Optim.optimize(total_loss, total_loss_grad!, ps_vec;
                         method = Optim.Adam(),
                         show_trace = true, 
@@ -195,27 +208,18 @@ result = Optim.optimize(total_loss, total_loss_grad!, ps_vec;
 # optimize the ACE basis coefficients via linear regression. 
 
 # as a first step, we replace the learnable radials with 
-# splined radials 
+# splined radials. This is not technically needed, but I want to make it 
+# the default that once we have fixed the radials, we splinify them 
+# so that we fit to exactly what we export.
 
-ps1_vec = result.minimizer
-ps1 = _restruct(ps1_vec)
+ps1 = _restruct(result.minimizer)
+lin_calc = M.splinify(calc, ps1)
 
-rbasis_p = M.set_params(calc.model.rbasis, ps1.rbasis)
-rbasis_spl = M.splinify(rbasis_p)
+# The next point is that I propose a change to the interface for evaluating 
+# the basis (as opposed to the model), i.e. replacing 
+#  energy(basis) with energy_basis(model)  and similar. 
+# With this in mind we can now assemble the linear regression problem.
 
-# next we create a new ACE model with the splined radial basis
-# this step should be moved into ACEpotentials.Models and 
-# automated. 
 
-linmodel = M.ACEModel(calc.model._i2z, 
-               rbasis_spl, 
-               calc.model.ybasis, 
-               calc.model.abasis, 
-               calc.model.aabasis, 
-               calc.model.A2Bmap, 
-               calc.model.bparams, 
-               calc.model.pairbasis, 
-               calc.model.pairparams, 
-               calc.model.meta)
-lincalc = M.ACEPotential(linmodel)
+
 
