@@ -34,6 +34,8 @@ distance_unit(::ACEPotential) = 1.0u"Å"
 force_unit(V) = energy_unit(V) / distance_unit(V)
 Base.zero(V::ACEPotential) =  zero(energy_unit(V))
 
+initialparameters(rng::AbstractRNG, V::ACEPotential) = initialparameters(rng, V.model) 
+initialstates(rng::AbstractRNG, V::ACEPotential) = initialstates(rng, V.model)
 
 # --------------------------------------------------------------- 
 #   EmpiricalPotentials / SitePotential based implementation 

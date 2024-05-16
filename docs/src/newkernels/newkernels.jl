@@ -138,35 +138,59 @@ g_vec = destructure(g)[1]
 # properly. I'm just modifying a Lux tutorial. There are probably better ways. 
 # https://github.com/LuxDL/Lux.jl/blob/main/examples/PolynomialFitting/main.jl
 
-using ADTypes, Printf 
-vjp_rule = AutoZygote() 
-opt = Optimisers.Adam()
-opt_state = Optimisers.setup(opt, ps)
-tstate = Lux.Experimental.TrainState(rng, calc.model, opt)
+# This is the Lux approach, which I couldn't get to work. 
 
-function main(tstate, vjp, data, epochs)
-   for epoch in 1:epochs
-       grads, loss_val, stats, tstate = Lux.Experimental.compute_gradients(
-           vjp, loss, data, tstate)
-       if epoch % 10 == 1 || epoch == epochs
-           @printf "Epoch: %3d \t Loss: %.5g\n" epoch loss_val
-       end
-       tstate = Lux.Experimental.apply_gradients!(tstate, grads)
-   end
-   return tstate
-end
+# using ADTypes, Printf 
+# vjp_rule = AutoZygote() 
+# opt = Optimisers.Adam()
+# opt_state = Optimisers.setup(opt, ps)
+# tstate = Lux.Experimental.TrainState(rng, calc.model, opt)
 
-main(tstate, vjp_rule, train_data, 100)
+# function main(tstate, vjp, data, epochs)
+#    for epoch in 1:epochs
+#        grads, loss_val, stats, tstate = Lux.Experimental.compute_gradients(
+#            vjp, loss, data, tstate)
+#        if epoch % 10 == 1 || epoch == epochs
+#            @printf "Epoch: %3d \t Loss: %.5g\n" epoch loss_val
+#        end
+#        tstate = Lux.Experimental.apply_gradients!(tstate, grads)
+#    end
+#    return tstate
+# end
+
+# main(tstate, vjp_rule, train_data, 100)
 
 
 # the alternative might be to optimize using Optim.jl
 
 using Optim
 
-adam = Optim.Adam() 
-
 function total_loss(p_vec)
-   return sum( loss(calc, _restruct(p_vec), st, at)[1] for at in train_data )
+   return sum( loss(calc, _restruct(p_vec), st, at)[1] 
+               for at in train_data )
 end
 
-result = Optim.optimize(total_loss, ps_vec, adam)
+function total_loss_grad!(g, p_vec) 
+   g[:] = Zygote.gradient(ps -> total_loss(ps), p_vec)[1]
+   return g 
+end 
+
+@time total_loss(ps_vec)
+@time total_loss(ps_vec)
+@time total_loss_grad!(zeros(length(ps_vec)), ps_vec)
+@time total_loss_grad!(zeros(length(ps_vec)), ps_vec)
+
+result = Optim.optimize(total_loss, total_loss_grad!, ps_vec;
+                        method = Optim.Adam(),
+                        show_trace = true, 
+                        iterations = 100)
+
+
+# Now that we've optimized the entire model a little bit 
+# we can think that the radial basis functions are sufficiently 
+# optimized. This is of course not true in this case since we didn't 
+# use enough iterations. But suppose we had converged the nonlinear 
+# optimization to get a really good radial basis. 
+# Then, in a second step we can freeze the radial basis and 
+# optimize the ACE basis coefficients via linear regression. 
+
