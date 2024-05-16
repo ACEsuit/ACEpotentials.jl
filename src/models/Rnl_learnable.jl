@@ -8,18 +8,18 @@ import LuxCore
 function LearnableRnlrzzBasis(
             zlist, polys, transforms, envelopes, rin0cuts, 
             spec::AbstractVector{NT_NL_SPEC}; 
-            weights=nothing, 
+            # weights=nothing, 
             meta=Dict{String, Any}())
    NZ = length(zlist) 
-   if isnothing(weights) 
-      weights = fill(nothing, (1,1,1,1)) 
-   end 
+   # if isnothing(weights) 
+   #    weights = fill(nothing, (1,1,1,1)) 
+   # end 
    LearnableRnlrzzBasis(_convert_zlist(zlist), 
                         polys, 
                         _make_smatrix(transforms, NZ), 
                         _make_smatrix(envelopes, NZ), 
                         # --------------
-                        weights, 
+                        # weights, 
                         _make_smatrix(rin0cuts, NZ),
                         collect(spec), 
                         meta)

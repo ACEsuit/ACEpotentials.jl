@@ -37,6 +37,13 @@ Base.zero(V::ACEPotential) =  zero(energy_unit(V))
 initialparameters(rng::AbstractRNG, V::ACEPotential) = initialparameters(rng, V.model) 
 initialstates(rng::AbstractRNG, V::ACEPotential) = initialstates(rng, V.model)
 
+set_parameters!(V::ACEPotential, ps) = (V.ps = ps; V)
+set_states!(V::ACEPotential, st) = (V.st = st; V)
+set_psst!(V::ACEPotential, ps, st) = (V.ps = ps; V.st = st; V)
+
+splinify(V::ACEPotential) = splinify(V, V.ps) 
+splinify(V::ACEPotential, ps) = ACEPotential(splinify(V.model, ps), nothing, nothing) 
+
 # --------------------------------------------------------------- 
 #   EmpiricalPotentials / SitePotential based implementation 
 #

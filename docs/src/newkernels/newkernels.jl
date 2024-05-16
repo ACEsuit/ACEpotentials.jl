@@ -194,3 +194,28 @@ result = Optim.optimize(total_loss, total_loss_grad!, ps_vec;
 # Then, in a second step we can freeze the radial basis and 
 # optimize the ACE basis coefficients via linear regression. 
 
+# as a first step, we replace the learnable radials with 
+# splined radials 
+
+ps1_vec = result.minimizer
+ps1 = _restruct(ps1_vec)
+
+rbasis_p = M.set_params(calc.model.rbasis, ps1.rbasis)
+rbasis_spl = M.splinify(rbasis_p)
+
+# next we create a new ACE model with the splined radial basis
+# this step should be moved into ACEpotentials.Models and 
+# automated. 
+
+linmodel = M.ACEModel(calc.model._i2z, 
+               rbasis_spl, 
+               calc.model.ybasis, 
+               calc.model.abasis, 
+               calc.model.aabasis, 
+               calc.model.A2Bmap, 
+               calc.model.bparams, 
+               calc.model.pairbasis, 
+               calc.model.pairparams, 
+               calc.model.meta)
+lincalc = M.ACEPotential(linmodel)
+

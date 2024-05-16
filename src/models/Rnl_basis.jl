@@ -27,31 +27,18 @@ const SPL_OF_SVEC{DIM, T} =
       }
 
 
-struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, TW, T} <: AbstractExplicitLayer
+struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitLayer
    _i2z::NTuple{NZ, Int}
    polys::TPOLY
    transforms::SMatrix{NZ, NZ, TT}
    envelopes::SMatrix{NZ, NZ, TENV}
    # -------------- 
-   weights::Array{TW, 4}                      # learnable weights, `nothing` when using Lux
+   # weights::Array{TW, 4}                      # learnable weights, `nothing` when using Lux
    rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
    spec::Vector{NT_NL_SPEC}       
    # --------------
    # meta
    meta::Dict{String, Any} 
-end
-
-function set_params(basis::LearnableRnlrzzBasis, ps)
-   return LearnableRnlrzzBasis(basis._i2z, 
-                               basis.polys, 
-                               basis.transforms, 
-                               basis.envelopes, 
-                               # ---------------
-                               ps.Wnlq, 
-                               basis.rin0cuts, 
-                               basis.spec, 
-                               # ---------------
-                               basis.meta)
 end
 
 
@@ -81,10 +68,11 @@ _transform_zz(obj, zi, zj) = obj.transforms[_z2i(obj, zi), _z2i(obj, zj)]
 
 _get_T(basis::LearnableRnlrzzBasis) = typeof(basis.rin0cuts[1,1].rin)
 
-splinify(basis::SplineRnlrzzBasis; kwargs...) = basis 
+
+splinify(basis::SplineRnlrzzBasis, ps; kwargs...) = basis 
     
 
-function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
+function splinify(basis::LearnableRnlrzzBasis, ps; nnodes = 100)
 
    # transform : r ∈ [rin, rcut] -> x
    # and then Rnl =  Wnl_q * Pq(x) * env(x) gives the basis. 
@@ -98,7 +86,7 @@ function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
 
    NZ = _get_nz(basis)
    T = _get_T(basis)
-   LEN = size(basis.weights, 1)
+   LEN = size(ps.Wnlq, 1)
    _splines = Matrix{SPL_OF_SVEC{LEN, T}}(undef, (NZ, NZ))
    x_nodes = range(-1.0, 1.0, length = nnodes)
    polys = basis.polys
@@ -108,7 +96,7 @@ function splinify(basis::LearnableRnlrzzBasis; nnodes = 100)
       rin, rcut = rin0cut.rin, rin0cut.rcut
       
       Tij = basis.transforms[iz0, iz1]
-      Wnlq_ij = @view basis.weights[:, :, iz0, iz1] 
+      Wnlq_ij = @view ps.Wnlq[:, :, iz0, iz1] 
       Rnl = [ SVector{LEN}( Wnlq_ij * Polynomials4ML.evaluate(polys, x) )
               for x in x_nodes ]
 

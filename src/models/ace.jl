@@ -35,12 +35,12 @@ struct ACEModel{NZ, TRAD, TY, TA, TAA, T, TPAIR} <: AbstractExplicitContainerLay
    # -------------- 
    # we can add a nonlinear embedding here 
    # --------------
-   bparams::Matrix{T}   # : x NZ matrix of B parameters 
+   # bparams::Matrix{T}   # : x NZ matrix of B parameters 
    # aaparams::NTuple{NZ, Vector{T}} (not used right now)
    # --------------
    #   pair potential 
    pairbasis::TPAIR 
-   pairparams::Matrix{T}
+   # pairparams::Matrix{T}
    # --------------
    meta::Dict{String, Any}
 end
@@ -138,8 +138,8 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
 
 
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
-                   a_basis, aa_basis, AA2BB_map, zeros(0,0), 
-                   pair_basis, zeros(0,0), 
+                   a_basis, aa_basis, AA2BB_map, # zeros(0,0), 
+                   pair_basis, # zeros(0,0), 
                   #  ntuple(_ -> zeros(n_AA_params), NZ),
                    Dict{String, Any}() )
 end
@@ -209,6 +209,19 @@ function LuxCore.parameterlength(model::ACEModel)
    NZ = _get_nz(model)
    n_B_params, n_AA_params = size(model.A2Bmap)
    return NZ * n_B_params
+end
+
+function splinify(model::ACEModel, ps::NamedTuple)
+   rbasis_spl = splinify(model.rbasis, ps.rbasis)
+   pairbasis_spl = splinify(model.pairbasis, ps.pairbasis)
+   return ACEModel(model._i2z, 
+                     rbasis_spl, 
+                     model.ybasis, 
+                     model.abasis, 
+                     model.aabasis, 
+                     model.A2Bmap, 
+                     pairbasis_spl, 
+                     model.meta)
 end
 
 # ------------------------------------------------------------

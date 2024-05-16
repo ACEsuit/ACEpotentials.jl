@@ -137,7 +137,7 @@ function ace_model(; elements = nothing,
    end
 
    ps_pair = initialparameters(rng, pair_basis)
-   pair_basis_spl = splinify(set_params(pair_basis, ps_pair))
+   pair_basis_spl = splinify(pair_basis, ps_pair)
 
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)

@@ -159,6 +159,29 @@ println()
 
 ##
 
+@info("check splinification")
+lin_ace = M.splinify(model, ps)
+ps_lin, st_lin = LuxCore.setup(rng, lin_ace)
+ps_lin.WB[:] .= ps.WB[:] 
+ps_lin.Wpair[:] .= ps.Wpair[:]
+
+for ntest = 1:10
+   local len, Nat, Rs, Zs, z0, Ei 
+   len = 10 
+   mae = sum(1:len) do _
+      Nat = rand(8:16)
+      Rs, Zs, z0 = M.rand_atenv(model, Nat)
+      Ei = M.evaluate(model, Rs, Zs, z0, ps, st)[1]
+      Ei_lin = M.evaluate(lin_ace, Rs, Zs, z0, ps_lin, st_lin)[1]
+      abs(Ei - Ei_lin)
+   end
+   mae /= len 
+   print_tf(@test mae < 0.01)
+end
+println() 
+
+##
+
 #=
 @info("Basic performance benchmarks")
 # first test shows the performance is not at all awful even without any 
@@ -179,5 +202,4 @@ print("  reverse^2 : "); @btime M.pullback_2_mixed(rand(), $Us, $model, $Rs, $Zs
 print("      evaluate_basis : "); @btime M.evaluate_basis($model, $Rs, $Zs, $z0, $ps, $st)
 print("   evaluate_basis_ed : "); @btime M.evaluate_basis_ed($model, $Rs, $Zs, $z0, $ps, $st)
 print("jacobian_grad_params : "); @btime M.jacobian_grad_params($model, $Rs, $Zs, $z0, $ps, $st)
-
 =#

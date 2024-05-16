@@ -68,8 +68,6 @@ println()
 
 ## 
 
-basis_p = M.set_params(basis, ps)
-
 
 @info("Testing SplineRnlrzzBasis consistency via splinify")
 
@@ -86,7 +84,7 @@ for ntest = 1:30
    for (nnodes, tol) in [(30, 1e-3), (100, 1e-5), (1000, 1e-8)]
       local basis_spl, ps_spl, st_spl, Rnl_spl 
 
-      basis_spl = M.splinify(basis_p; nnodes = nnodes)
+      basis_spl = M.splinify(basis, ps; nnodes = nnodes)
       ps_spl, st_spl = LuxCore.setup(rng, basis_spl)
       Rnl_spl, _ = basis_spl(r, Zi, Zj, ps_spl, st_spl)
       rel_err = (Rnl - Rnl_spl) ./ (1 .+ abs.(Rnl))
@@ -101,8 +99,7 @@ println()
 
 @info("Test derivatives of SplineRnlrzzBasis")
 
-basis_p = M.set_params(basis, ps)
-basis_spl = M.splinify(basis_p; nnodes = 100)
+basis_spl = M.splinify(basis, ps; nnodes = 100)
 
 for ntest = 1:20 
    local Rs, Zs, Zi, Zj, r, Rnl, U, F, dF
@@ -121,8 +118,7 @@ println()
 
 @info("SplineRnlrzz : Consistency of single and batched evaluation")
 
-basis_p = M.set_params(basis, ps)
-basis_spl = M.splinify(basis_p; nnodes = 100)
+basis_spl = M.splinify(basis, ps; nnodes = 100)
 
 for ntest = 1:20 
    local Rnl, Rs, Zs, Z0, Nat, st1, ∇Rnl, rs 

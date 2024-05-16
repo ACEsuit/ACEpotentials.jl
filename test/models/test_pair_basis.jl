@@ -29,8 +29,7 @@ Zj = basis._i2z[2]
 Rnl1, st1 = basis(r, Zi, Zj, ps, st)
 Rnl, Rnl_d, st1 = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
 
-basis_p = M.set_params(basis, ps)
-basis_spl = M.splinify(basis_p)
+basis_spl = M.splinify(basis, ps)
 ps_spl, st_spl = LuxCore.setup(rng, basis_spl)
 
 Rnl2, _ = M.evaluate(basis_spl, r, Zi, Zj, ps_spl, st_spl)

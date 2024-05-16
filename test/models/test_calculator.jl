@@ -86,15 +86,41 @@ for ntest = 1:10
    Z = AtomsBuilder._get_atomic_numbers(at)
    Z[[3,6,8]] .= 8
    at = AtomsBuilder._set_atomic_numbers(at, Z)
-   Us = randn(SVector{3, Float64}, length(at)) / length(at)
+   Us = randn(SVector{3, Float64}, length(at)) / length(at) * u"Å"
    dF0 = - dot(Us, M.energy_forces_virial_serial(at, calc, ps, st).forces)
    X0 = AtomsBuilder._get_positions(at)
    F(t) = M.energy_forces_virial_serial(
-               AtomsBuilder._set_positions(at, X0 + (t * u"Å") * Us), 
-               calc, ps, st).energy
-   print_tf( @test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=false ) )
+               AtomsBuilder._set_positions(at, X0 + t * Us), 
+               calc, ps, st).energy |> ustrip 
+   print_tf( @test ACEbase.Testing.fdtest(F, t -> ustrip(dF0), 0.0; verbose=false ) )
+end
+println()
+
+##
+
+@info("check splinification of calculator")
+
+lin_calc = M.splinify(calc, ps)
+ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
+ps_lin.WB[:] .= ps.WB[:] 
+ps_lin.Wpair[:] .= ps.Wpair[:]
+
+for ntest = 1:10
+   len = 10 
+   mae = sum(1:len) do _
+      at = rattle!(bulk(:Si, cubic=true), 0.1)
+      Z = AtomsBuilder._get_atomic_numbers(at)
+      Z[[3,6,8]] .= 8
+      E = M.energy_forces_virial(at, calc, ps, st).energy
+      E_lin = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin).energy
+      abs(E - E_lin) / (abs(E) + abs(E_lin))
+   end
+   mae /= len 
+   print_tf(@test mae < 1e-3)
 end
 println() 
+
+
 
 ##
 # testing the AD through a loss function 
@@ -109,7 +135,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
                       (0.0 / u"eV", 1.0 / u"eV", 0.0 / u"eV/Å"), 
                       (0.0 / u"eV", 0.0 / u"eV", 1.0 / u"eV/Å"), 
                       (1.0 / u"eV", 0.1 / u"eV", 0.1 / u"eV/Å") ]
-   local at
+   local at, Z, dF0 
 
    # random structure 
    at = rattle!(bulk(:Si, cubic=true), 0.1)
@@ -138,3 +164,4 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
    FDTEST = ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=true)
    println(@test FDTEST)
 end
+
