@@ -22,6 +22,7 @@ rng = Random.MersenneTwister(1234)
 
 # I'll create a new model for a simple alloy and then generate a model. 
 # this generates a trace-like ACE model with a random radial basis. 
+# we probably have to put significant work into initializing better.
 
 elements = (:Al, :Ti)
 
@@ -69,7 +70,7 @@ calc = M.ACEPotential(model)
 
 function rand_AlTi(nrep, rattle)
    # Al : 13; Ti : 22
-   at = rattle!(bulk(:Al, cubic=true) * 2, 0.1)
+   at = rattle!(bulk(:Al, cubic=true) * nrep, 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)
    Z[rand(1:length(at), length(at) ÷ 2)] .= 22
    return AtomsBuilder._set_atomic_numbers(at, Z)      
@@ -95,7 +96,9 @@ display(efv.forces[1:5])
 # we load our example dataset and convert it to AtomsBase 
 
 data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
-train_data = FlexibleSystem.(data[1:5:end])
+data = FlexibleSystem.(data)
+train_data = data[1:5:end]
+test_data = data[2:5:end]
 
 # to set up training we specify data keys and training weights. 
 # to get a unitless loss we need to specify the weights to have inverse 
@@ -198,14 +201,11 @@ end
 result = Optim.optimize(total_loss, total_loss_grad!, ps_vec;
                         method = Optim.Adam(),
                         show_trace = true, 
-                        iterations = 100)
+                        iterations = 30)   # obviously this needs more iterations
 
 
-# Now that we've optimized the entire model a little bit 
-# we can think that the radial basis functions are sufficiently 
-# optimized. This is of course not true in this case since we didn't 
-# use enough iterations. But suppose we had converged the nonlinear 
-# optimization to get a really good radial basis. 
+# We didn't use enough iterations to do anything useful here. But suppose we 
+# had converged the nonlinear optimization to get a good radial basis. 
 # Then, in a second step we can freeze the radial basis and 
 # optimize the ACE basis coefficients via linear regression. 
 
@@ -216,6 +216,7 @@ result = Optim.optimize(total_loss, total_loss_grad!, ps_vec;
 
 ps1 = _restruct(result.minimizer)
 lin_calc = M.splinify(calc, ps1)
+lin_ps, lin_st = Lux.setup(rng, lin_calc)
 
 # The next point is that I propose a change to the interface for evaluating 
 # the basis (as opposed to the model), i.e. replacing 
@@ -241,16 +242,119 @@ function local_lsqsys(calc, at, ps, st, weights, keys)
    wV = weights[:wV]
    V_dft = at.data[data_keys.V_key] * u"eV"
    y_V = wV * V_dft[:]
-   A_V = wV * reshape(reinterpret(eltype(efv.virial), efv.virial), 9, :)
+   # display( reinterpret(eltype(efv.virial), efv.virial) )
+   A_V = wV * reshape(reinterpret(eltype(efv.virial[1]), efv.virial), 9, :)
 
    return vcat(A_E, A_F, A_V), vcat(y_E, y_F, y_V)
 end
 
 
+# this line just checks that the local assembly makes sense 
 
+A1, y1 = local_lsqsys(lin_calc, at1, lin_ps, lin_st, weights, data_keys)
 
-function assemble_lsq(calc, data)
+@assert size(A1, 1) == length(y1) == 1 + 3 * length(at1) + 9
+@assert size(A1, 2) == length(destructure(lin_ps)[1])
 
+# we convert this to a global assembly routine. I thought this version would 
+# be multi-threaded but something seems to be wrong with it. 
+
+using Folds 
+
+function assemble_lsq(calc, data, weights, data_keys; 
+                      rng = Random.GLOBAL_RNG, 
+                      executor = Folds.ThreadedEx())
+   ps, st = Lux.setup(rng, calc)
+   blocks = Folds.map(at -> local_lsqsys(lin_calc, at, ps, st, 
+                                   weights, data_keys), 
+                      train_data, executor)
+   A = reduce(vcat, [b[1] for b in blocks])
+   y = reduce(vcat, [b[2] for b in blocks])
+   return A, y
 end
 
+A, y = assemble_lsq(lin_calc, train_data, weights, data_keys)
+
+# estimate the parameters 
+
+solver = ACEpotentials.ACEfit.BLR()
+result = ACEpotentials.ACEfit.solve(solver, A, y)
+
+# a little hack to turn it into real parameters and a fully parameterized model 
+# this needs another convenience function provided within ACEpotentials. 
+
+ps, st = Lux.setup(rng, lin_calc)
+_, _restruct = destructure(ps)
+fit_ps = _restruct(result["C"])
+fit_calc = M.ACEPotential(lin_calc.model, fit_ps, st)
+
+# can this do anything useful? 
+# first of all, because we have now specified the parameters, we no longer need 
+# to drag them around and can use a higher-level interface to evaluate the 
+# model. For example ... 
+
+using AtomsCalculators
+using AtomsCalculators: energy_forces_virial, forces, potential_energy
+
+at1 = rand(train_data)
+efv1 = M.energy_forces_virial(at1, fit_calc, fit_calc.ps, fit_calc.st)
+efv2 = energy_forces_virial(at1, fit_calc)
+efv1.energy ≈ efv2.energy
+all(efv1.forces .≈ efv2.forces)
+efv1.virial ≈ efv2.virial
+potential_energy(at1, fit_calc) ≈ efv1.energy
+AtomsCalculators.virial(at1, fit_calc) ≈ efv1.virial
+ef = AtomsCalculators.energy_forces(at1, fit_calc)
+ef.energy ≈ efv1.energy
+all(ef.forces .≈ efv1.forces)
+all(efv1.forces .≈ forces(at1, fit_calc))
+
+# Checking accuracy (it is terrible, so lots to fix ...)
+
+E_err(at) = abs(ustrip(potential_energy(at, fit_calc)) - at.data[data_keys.E_key]) / length(at)
+mae_train = sum(E_err, train_data) / length(train_data)
+mae_test = sum(E_err, test_data) / length(test_data)
+
+@info("MAE(train) = $mae_train")
+@info("MAE(test) = $mae_test")
+
+
+# Trying some simple geometry optimization 
+# This seems to run but doesn't update the structure, there is also no 
+# documentation how to extract information from the result to do so. 
+# I am probably still doing something wrong here ... 
+
+using GeometryOptimization, OptimizationOptimJL
+
+@info("Short geometry optimization")
+at = rand_AlTi(2, 0.001)
+@show potential_energy(at, fit_calc)
+solver = OptimizationOptimJL.LBFGS()
+optim_options = (f_tol=1e-4, g_tol=1e-4, iterations=30, show_trace=false)
+results = minimize_energy!(at, fit_calc; solver, optim_options...)
+@show potential_energy(at, fit_calc)
+at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, results.u) * u"Å")
+@show potential_energy(at, fit_calc)
+
+
+# The last step is to run a simple MD simulation for just a 100 steps.
+# this currently doesn't work because Molly doesn't allow arbitrary 
+# units. (WTF?!) And I can't be bothered to write the wrappers 
+# needed to convert.
+
+# import Molly 
+# at = rand_AlTi(3, 0.01)
+# sys_md = Molly.System(at)
+
+# sys_md = Molly.System(sys_md; 
+#     velocities = random_velocities(sys_md, 298.0u"K"),
+#     loggers=(temp=TemperatureLogger(100),)
+# )
+
+# simulator = VelocityVerlet(
+#     dt=1.0u"fs",
+#     coupling=AndersenThermostat(temp, 1.0u"ps"),
+# )
+
+# simulate!(sys, simulator, 100)
 
