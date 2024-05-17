@@ -245,3 +245,44 @@ function rrule(::typeof(energy_forces_virial),
                                     nlist = nlist, 
                                     kwargs...), NoTangent() )
 end
+
+
+# --------------------------------------------------------
+#   Basis evaluation 
+
+
+function energy_forces_virial_basis(
+            at, calc::ACEPotential{<: ACEModel}, ps, st;
+            domain   = 1:length(at), 
+            executor = ThreadedEx(),
+            ntasks   = Threads.nthreads(),
+            nlist    = PairList(at, cutoff_radius(calc)), 
+            kwargs...
+            )
+   
+   Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, 1)            
+   E1, _ = evaluate_basis(calc.model, Rs, Zs, z0, ps, st)
+   N_basis = length(E1)
+   T = fl_type(calc.model) # this is ACE specific 
+
+   E = fill(zero(T) * energy_unit(calc), N_basis)
+   F = fill(zero(SVector{3, T}) * force_unit(calc), length(at), N_basis)
+   V = fill(zero(SMatrix{3, 3, T}) * energy_unit(calc), N_basis)
+
+   for i in domain
+      Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
+      v, dv, _ = evaluate_basis_ed(calc.model, Rs, Zs, z0, ps, st)
+
+      for k = 1:N_basis
+         E[k] += v[k] * energy_unit(calc) 
+         for α = 1:length(Js) 
+            F[Js[α], k] -= dv[k, α] * force_unit(calc)
+            F[i, k]     += dv[k, α] * force_unit(calc)
+         end
+         V[k] += _site_virial(dv[k, :], Rs) * energy_unit(calc)
+      end
+      release!(Js); release!(Rs); release!(Zs)
+   end
+         
+   return (energy = E, forces = F, virial = V)
+end

@@ -103,8 +103,10 @@ train_data = FlexibleSystem.(data[1:5:end])
 # a single training structure. This follows the Lux training API 
 #      loss(model, ps, st, data)
 
-loss = let data_keys = (E_key = :energy, F_key = :force, V_key = :virial), 
-                   weights = (wE = 1.0/u"eV", wF = 0.1 / u"eV/Å", wV = 0.1/u"eV")
+data_keys = (E_key = :energy, F_key = :force, V_key = :virial) 
+weights = (wE = 1.0/u"eV", wF = 0.1 / u"eV/Å", wV = 0.1/u"eV")
+
+loss = let data_keys = data_keys, weights = weights
 
    function(calc, ps, st, at)
       efv = M.energy_forces_virial(at, calc, ps, st)
@@ -220,6 +222,35 @@ lin_calc = M.splinify(calc, ps1)
 #  energy(basis) with energy_basis(model)  and similar. 
 # With this in mind we can now assemble the linear regression problem.
 
+function local_lsqsys(calc, at, ps, st, weights, keys) 
+   efv = M.energy_forces_virial_basis(at, calc, ps, st)
 
+   # energy 
+   wE = weights[:wE]
+   E_dft = at.data[data_keys.E_key] * u"eV"
+   y_E = wE * E_dft 
+   A_E = wE * efv.energy' 
+
+   # forces 
+   wF = weights[:wF]
+   F_dft = at.data[data_keys.F_key] * u"eV/Å"
+   y_F = wF * reinterpret(eltype(F_dft[1]), F_dft)
+   A_F = wF * reinterpret(eltype(efv.forces[1]), efv.forces)
+
+   # virial 
+   wV = weights[:wV]
+   V_dft = at.data[data_keys.V_key] * u"eV"
+   y_V = wV * V_dft[:]
+   A_V = wV * reshape(reinterpret(eltype(efv.virial), efv.virial), 9, :)
+
+   return vcat(A_E, A_F, A_V), vcat(y_E, y_F, y_V)
+end
+
+
+
+
+function assemble_lsq(calc, data)
+
+end
 
 

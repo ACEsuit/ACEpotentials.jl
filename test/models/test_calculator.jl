@@ -120,7 +120,25 @@ for ntest = 1:10
 end
 println() 
 
+##
 
+@info("Test splinified calculator basis usage")
+
+for ntest = 1:10
+   ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
+   at = rattle!(bulk(:Si, cubic=true), 0.1)
+   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z[[3,6,8]] .= 8
+
+   efv = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin)
+   efv_b = M.energy_forces_virial_basis(at, lin_calc, ps_lin, st_lin)
+
+   ps_vec, _restruct = destructure(ps_lin)
+   print_tf(@test dot(efv_b.energy, ps_vec) ≈ efv.energy )
+   print_tf(@test all(efv_b.forces * ps_vec .≈ efv.forces) )
+   print_tf(@test sum(ps_vec .* efv_b.virial) ≈ efv.virial )
+end
+println()
 
 ##
 # testing the AD through a loss function 
