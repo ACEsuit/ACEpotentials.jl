@@ -71,10 +71,9 @@ calc = M.ACEPotential(model)
 function rand_AlTi(nrep, rattle)
    # Al : 13; Ti : 22
    at = rattle!(bulk(:Al, cubic=true) * nrep, 0.1)
-
-   # swap odd atoms to Ti
-   particles = map( enumerate(at) ) do (i,atom)
-      isodd(i) ? AtomsBase.Atom(22, position(atom)) : atom
+   # swap random atoms to Ti
+   particles = map( enumerate(at) ) do (i, atom)
+      (rand() < 0.5) ? AtomsBase.Atom(22, position(atom)) : atom
    end
    return FlexibleSystem(particles, bounding_box(at), boundary_conditions(at))      
 end
@@ -261,6 +260,8 @@ A1, y1 = local_lsqsys(lin_calc, at1, lin_ps, lin_st, weights, data_keys)
 
 # we convert this to a global assembly routine. I thought this version would 
 # be multi-threaded but something seems to be wrong with it. 
+# this assembly is very slow because the current implementation of the 
+# basis is very inefficient 
 
 using Folds 
 
@@ -283,8 +284,8 @@ A, y = assemble_lsq(lin_calc, train_data, weights, data_keys)
 solver = ACEpotentials.ACEfit.BLR()
 result = ACEpotentials.ACEfit.solve(solver, A, y)
 
-# a little hack to turn it into real parameters and a fully parameterized model 
-# this needs another convenience function provided within ACEpotentials. 
+# a little hack to turn it into NamedTuple parameters and a fully parameterized 
+# model this needs another convenience function provided within ACEpotentials. 
 
 ps, st = Lux.setup(rng, lin_calc)
 _, _restruct = destructure(ps)
@@ -297,7 +298,7 @@ fit_calc = M.ACEPotential(lin_calc.model, fit_ps, st)
 # model. For example ... 
 
 using AtomsCalculators
-using AtomsCalculators: energy_forces_virial, forces, potential_energy
+using AtomsCalculators: energy_forces_virial, forces, potential_energy, virial 
 
 at1 = rand(train_data)
 efv1 = M.energy_forces_virial(at1, fit_calc, fit_calc.ps, fit_calc.st)
@@ -306,7 +307,7 @@ efv1.energy ≈ efv2.energy
 all(efv1.forces .≈ efv2.forces)
 efv1.virial ≈ efv2.virial
 potential_energy(at1, fit_calc) ≈ efv1.energy
-AtomsCalculators.virial(at1, fit_calc) ≈ efv1.virial
+virial(at1, fit_calc) ≈ efv1.virial
 ef = AtomsCalculators.energy_forces(at1, fit_calc)
 ef.energy ≈ efv1.energy
 all(ef.forces .≈ efv1.forces)
@@ -325,7 +326,7 @@ mae_test = sum(E_err, test_data) / length(test_data)
 # Trying some simple geometry optimization 
 # This seems to run but doesn't update the structure, there is also no 
 # documentation how to extract information from the result to do so. 
-# I am probably still doing something wrong here ... 
+# The following seems to work but this wants a PR in GeometryOptimization.jl
 
 using GeometryOptimization, OptimizationOptimJL
 
@@ -335,8 +336,6 @@ at = rand_AlTi(2, 0.001)
 solver = OptimizationOptimJL.LBFGS()
 optim_options = (f_tol=1e-4, g_tol=1e-4, iterations=30, show_trace=false)
 results = minimize_energy!(at, fit_calc; solver, optim_options...)
-@show potential_energy(at, fit_calc)
-#at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, results.u) * u"Å")
 at_new = FastSystem(
    bounding_box(at),
    boundary_conditions(at),
@@ -348,18 +347,13 @@ at_new = FastSystem(
 @show potential_energy(at_new, fit_calc)
 
 
-
-
 # The last step is to run a simple MD simulation for just a 100 steps.
-# this currently doesn't work because Molly doesn't allow arbitrary 
-# units. (WTF?!) And I can't be bothered to write the wrappers 
-# needed to convert.
+# Important: Tell Molly what units are used!!
+# This seems to work ok now (Thank you, Teemu).
 
 import Molly 
 at = rand_AlTi(3, 0.01)
-# Tell Molly what units are used
 sys_md = Molly.System(at; force_units=u"eV/Å", energy_units=u"eV")
-
 temp = 298.0u"K"
 
 sys_md = Molly.System(
