@@ -2,7 +2,7 @@
 # I'll try to explain what can be done and what is missing along the way. 
 # I am 
 
-using ACEpotentials, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
+using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
       Unitful, Random, Zygote, Optimisers
 
 # JuLIP (via ACEpotentials) also exports the same functions 
@@ -71,9 +71,12 @@ calc = M.ACEPotential(model)
 function rand_AlTi(nrep, rattle)
    # Al : 13; Ti : 22
    at = rattle!(bulk(:Al, cubic=true) * nrep, 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
-   Z[rand(1:length(at), length(at) ÷ 2)] .= 22
-   return AtomsBuilder._set_atomic_numbers(at, Z)      
+
+   # swap odd atoms to Ti
+   particles = map( enumerate(at) ) do (i,atom)
+      isodd(i) ? AtomsBase.Atom(22, position(atom)) : atom
+   end
+   return FlexibleSystem(particles, bounding_box(at), boundary_conditions(at))      
 end
 
 
@@ -333,8 +336,18 @@ solver = OptimizationOptimJL.LBFGS()
 optim_options = (f_tol=1e-4, g_tol=1e-4, iterations=30, show_trace=false)
 results = minimize_energy!(at, fit_calc; solver, optim_options...)
 @show potential_energy(at, fit_calc)
-at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, results.u) * u"Å")
-@show potential_energy(at, fit_calc)
+#at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, results.u) * u"Å")
+at_new = FastSystem(
+   bounding_box(at),
+   boundary_conditions(at),
+   reinterpret(SVector{3, Float64}, results.u) * u"Å",
+   atomic_symbol(at),
+   atomic_number(at),
+   atomic_mass(at)
+)
+@show potential_energy(at_new, fit_calc)
+
+
 
 
 # The last step is to run a simple MD simulation for just a 100 steps.
@@ -342,19 +355,24 @@ at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, result
 # units. (WTF?!) And I can't be bothered to write the wrappers 
 # needed to convert.
 
-# import Molly 
-# at = rand_AlTi(3, 0.01)
-# sys_md = Molly.System(at)
+import Molly 
+at = rand_AlTi(3, 0.01)
+# Tell Molly what units are used
+sys_md = Molly.System(at; force_units=u"eV/Å", energy_units=u"eV")
 
-# sys_md = Molly.System(sys_md; 
-#     velocities = random_velocities(sys_md, 298.0u"K"),
-#     loggers=(temp=TemperatureLogger(100),)
-# )
+temp = 298.0u"K"
 
-# simulator = VelocityVerlet(
-#     dt=1.0u"fs",
-#     coupling=AndersenThermostat(temp, 1.0u"ps"),
-# )
+sys_md = Molly.System(
+   sys_md;
+   general_inters = (fit_calc,),
+   velocities = Molly.random_velocities(sys_md, temp),
+   loggers=(temp=Molly.TemperatureLogger(100),)
+)
 
-# simulate!(sys, simulator, 100)
+simulator = Molly.VelocityVerlet(
+   dt = 1.0u"fs",
+   coupling = Molly.AndersenThermostat(temp, 1.0u"ps"),
+)
+
+Molly.simulate!(sys_md, simulator, 100)
 
