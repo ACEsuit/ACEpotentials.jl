@@ -11,6 +11,7 @@ include("Rnl_basis.jl")
 include("Rnl_learnable.jl")
 include("Rnl_splines.jl")
 
+include("sparse.jl")
 
 include("ace_heuristics.jl") 
 include("ace.jl")

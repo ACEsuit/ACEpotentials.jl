@@ -7,7 +7,6 @@ import LuxCore: AbstractExplicitLayer,
 using Lux: glorot_normal
 
 using Random: AbstractRNG
-using SparseArrays: SparseMatrixCSC     
 using StaticArrays: SVector
 using LinearAlgebra: norm, dot
 
@@ -20,8 +19,7 @@ import Polynomials4ML
 # ------------------------------------------------------------
 #    ACE MODEL SPECIFICATION 
 
-
-struct ACEModel{NZ, TRAD, TY, TA, TAA, T, TPAIR} <: AbstractExplicitContainerLayer{(:rbasis,)}
+struct ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR} <: AbstractExplicitContainerLayer{(:rbasis,)}
    _i2z::NTuple{NZ, Int}
    # --------------
    # embeddings of the particles 
@@ -29,9 +27,7 @@ struct ACEModel{NZ, TRAD, TY, TA, TAA, T, TPAIR} <: AbstractExplicitContainerLay
    ybasis::TY
    # --------------
    # the tensor format
-   abasis::TA
-   aabasis::TAA
-   A2Bmap::SparseMatrixCSC{T, Int}
+   tensor::TTEN 
    # -------------- 
    # we can add a nonlinear embedding here 
    # --------------
@@ -48,7 +44,7 @@ end
 # this is terrible : I'm assuming here that there is a unique 
 # output type, which is of course not the case. It is needed temporarily 
 # to make things work with AtomsCalculators and EmpiricalPotentials 
-fl_type(::ACEModel{NZ, TRAD, TY, TA, TAA, T}) where {NZ, TRAD, TY, TA, TAA, T} = T 
+fl_type(::ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR}) where {NZ, TRAD, TY, TTEN, T, TPAIR} = T 
 
 const NT_NLM = NamedTuple{(:n, :l, :m), Tuple{Int, Int, Int}}
 
@@ -135,9 +131,11 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
       E0s = ntuple(i -> 0.0, NZ)
    end
 
+   tensor = SparseEquivTensor(a_basis, aa_basis, AA2BB_map, 
+                              Dict{String, Any}())
+
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
-                   a_basis, aa_basis, AA2BB_map, 
-                   pair_basis, E0s, 
+                   tensor, pair_basis, E0s, 
                    Dict{String, Any}() )
 end
 
@@ -169,7 +167,7 @@ end
 function initialparameters(rng::AbstractRNG, 
                            model::ACEModel)
    NZ = _get_nz(model)
-   n_B_params, n_AA_params = size(model.A2Bmap)
+   n_B_params = length(model.tensor)
 
    # only the B params are parameters, the AA params are uniquely defined 
    # via the B params. 
@@ -215,9 +213,7 @@ function splinify(model::ACEModel, ps::NamedTuple)
    return ACEModel(model._i2z, 
                      rbasis_spl, 
                      model.ybasis, 
-                     model.abasis, 
-                     model.aabasis, 
-                     model.A2Bmap, 
+                     model.tensor, 
                      pairbasis_spl, 
                      model.E0s,
                      model.meta)
@@ -236,7 +232,10 @@ _length(ybasis::SolidHarmonics) = SpheriCart.sizeY(_getlmax(ybasis))
 
 function evaluate(model::ACEModel, 
                   Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
-                  ps, st) where {T}
+                  ps, st) where 
+                  {T}
+   i_z0 = _z2i(model.rbasis, Z0)
+
    # get the radii 
    rs = [ norm(r) for r in Rs ]   # use Bumper 
 
@@ -249,23 +248,10 @@ function evaluate(model::ACEModel,
    Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
    SpheriCart.compute!(Ylm, model.ybasis, Rs)
 
-   # evaluate the A basis
-   TA = promote_type(T, eltype(Rnl))
-   A = zeros(T, length(model.abasis))
-   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
-
-   # evaluate the AA basis
-   _AA = zeros(T, length(model.aabasis))     # use Bumper here
-   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
-   # project to the actual AA basis 
-   proj = model.aabasis.projection
-   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
-
-   # evaluate the coupling coefficients
-   B = model.A2Bmap * AA
+   # equivariant tensor product 
+   B, _ = evaluate(model.tensor, Rnl, Ylm)
 
    # contract with params 
-   i_z0 = _z2i(model.rbasis, Z0)
    val = dot(B, (@view ps.WB[:, i_z0]))
 
    # ------------------- 
@@ -290,6 +276,8 @@ function evaluate_ed(model::ACEModel,
                      Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                      ps, st) where {T}
 
+   i_z0 = _z2i(model.rbasis, Z0)
+   
    # ---------- EMBEDDINGS ------------
    # (these are done in forward mode, so not part of the fwd, bwd passes)
 
@@ -305,48 +293,20 @@ function evaluate_ed(model::ACEModel,
    dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
    SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
-   # ---------- FORWARD PASS ------------
-
-   # evaluate the A basis
-   TA = promote_type(T, eltype(Rnl))
-   A = zeros(T, length(model.abasis))
-   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
-
-   # evaluate the AA basis
-   _AA = zeros(T, length(model.aabasis))     # TODO: use Bumper here
-   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
-   # project to the actual AA basis 
-   proj = model.aabasis.projection
-   AA = _AA[proj]     # TODO: use Bumper here, or view; needs experimentation. 
-
-   # evaluate the coupling coefficients 
-   # TODO: use Bumper and do it in-place 
-   B = model.A2Bmap * AA
+   # Forward Pass through the tensor 
+   # keep intermediates to be used in backward pass 
+   B, intermediates = evaluate(model.tensor, Rnl, Ylm)
 
    # contract with params 
    # (here we can insert another nonlinearity instead of the simple dot)
-   i_z0 = _z2i(model.rbasis, Z0)
    Ei = dot(B, (@view ps.WB[:, i_z0]))
 
-
-   # ---------- BACKWARD PASS ------------
-
+   # Start the backward pass 
    # ∂Ei / ∂B = WB[i_z0]
    ∂B = @view ps.WB[:, i_z0]
-
-   # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
-   ∂AA = model.A2Bmap' * ∂B   # TODO: make this in-place 
-   _∂AA = zeros(T, length(_AA)) 
-   _∂AA[proj] = ∂AA
-
-   # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
-   ∂A = zeros(T, length(model.abasis))
-   Polynomials4ML.pullback_arg!(∂A, _∂AA, model.aabasis, _AA)
    
-   # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
-   ∂Rnl = zeros(T, size(Rnl))
-   ∂Ylm = zeros(T, size(Ylm))
-   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, model.abasis, (Rnl, Ylm))
+   # backward pass through tensor 
+   ∂Rnl, ∂Ylm = pullback_evaluate(∂B, model.tensor, Rnl, Ylm, intermediates)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
@@ -406,23 +366,9 @@ function grad_params(model::ACEModel,
    dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
    SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
-   # ---------- FORWARD PASS ------------
-
-   # evaluate the A basis
-   TA = promote_type(T, eltype(Rnl))
-   A = zeros(T, length(model.abasis))
-   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
-
-   # evaluate the AA basis
-   _AA = zeros(T, length(model.aabasis))     # TODO: use Bumper here
-   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
-   # project to the actual AA basis 
-   proj = model.aabasis.projection
-   AA = _AA[proj]     # TODO: use Bumper here, or view; needs experimentation. 
-
-   # evaluate the coupling coefficients 
-   # TODO: use Bumper and do it in-place 
-   B = model.A2Bmap * AA
+   # Forward Pass through the tensor 
+   # keep intermediates to be used in backward pass 
+   B, intermediates = evaluate(model.tensor, Rnl, Ylm)
 
    # contract with params 
    # (here we can insert another nonlinearity instead of the simple dot)
@@ -436,19 +382,8 @@ function grad_params(model::ACEModel,
    ∂WB_i = B 
    ∂B = @view ps.WB[:, i_z0]
 
-   # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
-   ∂AA = model.A2Bmap' * ∂B   # TODO: make this in-place 
-   _∂AA = zeros(T, length(_AA)) 
-   _∂AA[proj] = ∂AA
-
-   # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
-   ∂A = zeros(T, length(model.abasis))
-   Polynomials4ML.pullback_arg!(∂A, _∂AA, model.aabasis, _AA)
-   
-   # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
-   ∂Rnl = zeros(T, size(Rnl))
-   ∂Ylm = zeros(T, size(Ylm))   # we could make this a black hole since we don't need it. 
-   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, model.abasis, (Rnl, Ylm))
+   # backward pass through tensor 
+   ∂Rnl, ∂Ylm = pullback_evaluate(∂B, model.tensor, Rnl, Ylm, intermediates)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # the first grad_param is ∂WB, which we already have but it needs to be 
@@ -530,13 +465,13 @@ end
 
 
 function get_basis_inds(model::ACEModel, Z)
-   len_Bi = size(model.A2Bmap, 1)
+   len_Bi = length(model.tensor)
    i_z = _z2i(model.rbasis, Z)
    return (i_z - 1) * len_Bi .+ (1:len_Bi)
 end
 
 function get_pairbasis_inds(model::ACEModel, Z)
-   len_Bi = size(model.A2Bmap, 1)
+   len_Bi = length(model.tensor)
    NZ = _get_nz(model)
    len_B = NZ * len_Bi 
 
@@ -546,7 +481,7 @@ function get_pairbasis_inds(model::ACEModel, Z)
 end
 
 function len_basis(model::ACEModel)
-   len_Bi = size(model.A2Bmap, 1)
+   len_Bi = length(model.tensor)
    len_pair = length(model.pairbasis)
    NZ = _get_nz(model)
    return (len_Bi + len_pair) * NZ 
@@ -573,21 +508,9 @@ function evaluate_basis(model::ACEModel,
    Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
    SpheriCart.compute!(Ylm, model.ybasis, Rs)
 
-   # evaluate the A basis
-   TA = promote_type(T, eltype(Rnl))
-   A = zeros(T, length(model.abasis))
-   Polynomials4ML.evaluate!(A, model.abasis, (Rnl, Ylm))
+   # equivariant tensor product 
+   Bi, _ = evaluate(model.tensor, Rnl, Ylm)
 
-   # evaluate the AA basis
-   _AA = zeros(T, length(model.aabasis))     # use Bumper here
-   Polynomials4ML.evaluate!(_AA, model.aabasis, A)
-   # project to the actual AA basis 
-   proj = model.aabasis.projection
-   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
-
-   # evaluate the coupling coefficients 
-   # TODO: use Bumper and do it in-place 
-   Bi = model.A2Bmap * AA
    B = zeros(eltype(Bi), len_basis(model))
    B[get_basis_inds(model, Z0)] .= Bi
    
