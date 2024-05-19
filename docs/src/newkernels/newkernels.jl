@@ -228,10 +228,15 @@ lin_ps, lin_st = Lux.setup(rng, lin_calc)
 function local_lsqsys(calc, at, ps, st, weights, keys) 
    efv = M.energy_forces_virial_basis(at, calc, ps, st)
 
+   # compute the E0s contribution. This needs to be done more 
+   # elegantly and a stacked model would solve this problem. 
+   E0 = sum( calc.model.E0s[M._z2i(calc.model, z)] 
+             for z in AtomsBase.atomic_number(at) ) * u"eV"
+
    # energy 
    wE = weights[:wE]
    E_dft = at.data[data_keys.E_key] * u"eV"
-   y_E = wE * E_dft 
+   y_E = wE * (E_dft - E0) 
    A_E = wE * efv.energy' 
 
    # forces 
@@ -296,6 +301,7 @@ fit_calc = M.ACEPotential(lin_calc.model, fit_ps, st)
 # first of all, because we have now specified the parameters, we no longer need 
 # to drag them around and can use a higher-level interface to evaluate the 
 # model. For example ... 
+# (this should really go into unit tests I think)
 
 using AtomsCalculators
 using AtomsCalculators: energy_forces_virial, forces, potential_energy, virial 
@@ -336,20 +342,12 @@ at = rand_AlTi(2, 0.001)
 solver = OptimizationOptimJL.LBFGS()
 optim_options = (f_tol=1e-4, g_tol=1e-4, iterations=30, show_trace=false)
 results = minimize_energy!(at, fit_calc; solver, optim_options...)
-at_new = FastSystem(
-   bounding_box(at),
-   boundary_conditions(at),
-   reinterpret(SVector{3, Float64}, results.u) * u"Å",
-   atomic_symbol(at),
-   atomic_number(at),
-   atomic_mass(at)
-)
+at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, results.u) * u"Å")
 @show potential_energy(at_new, fit_calc)
 
 
 # The last step is to run a simple MD simulation for just a 100 steps.
 # Important: Tell Molly what units are used!!
-# This seems to work ok now (Thank you, Teemu).
 
 import Molly 
 at = rand_AlTi(3, 0.01)
@@ -370,3 +368,5 @@ simulator = Molly.VelocityVerlet(
 
 Molly.simulate!(sys_md, simulator, 100)
 
+@info("This simulation obviously crashed:")
+@show sys_md.loggers.temp.history

@@ -41,7 +41,7 @@ calc = M.ACEPotential(model, ps, st)
 
 @info("Testing correctness of potential energy")
 for ntest = 1:20 
-   local Rs, Zs, z0, at 
+   local Rs, Zs, z0, at, efv 
 
    at = rattle!(bulk(:Si, cubic=true) * 2, 0.1)
    nlist = PairList(at, M.cutoff_radius(calc))
@@ -125,6 +125,8 @@ println()
 @info("Test splinified calculator basis usage")
 
 for ntest = 1:10
+   local ps_lin, st_lin, at, efv, _restruct
+
    ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
    at = rattle!(bulk(:Si, cubic=true), 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)
@@ -153,7 +155,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
                       (0.0 / u"eV", 1.0 / u"eV", 0.0 / u"eV/Å"), 
                       (0.0 / u"eV", 0.0 / u"eV", 1.0 / u"eV/Å"), 
                       (1.0 / u"eV", 0.1 / u"eV", 0.1 / u"eV/Å") ]
-   local at, Z, dF0 
+   local at, Z, dF0, g, _restruct, g_vec 
 
    # random structure 
    at = rattle!(bulk(:Si, cubic=true), 0.1)

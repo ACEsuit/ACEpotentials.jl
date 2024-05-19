@@ -76,7 +76,7 @@ Ei1, ∇Ei, st = M.grad_params(model, Rs, Zs, z0, ps, st)
 println_slim(@test Ei ≈ Ei1)
 
 for ntest = 1:20
-   local Nat, Rs, Zs, z0, pvec, uvec, F, dF0 
+   local Nat, Rs, Zs, z0, pvec, uvec, F, dF0, _restruct 
 
    Nat = rand(8:16)
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
@@ -93,7 +93,7 @@ println()
 @info("Test second mixed derivatives reverse-over-reverse")
 for ntest = 1:20 
    local Nat, Rs, Zs, Us, Ei, ∂Ei, ∂2_Ei, 
-         ps_vec, vs_vec, F, dF0, z0 
+         ps_vec, vs_vec, F, dF0, z0, _restruct 
 
    Nat = rand(8:16)
    Rs, Zs, z0 = M.rand_atenv(model, Nat)

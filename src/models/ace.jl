@@ -35,12 +35,9 @@ struct ACEModel{NZ, TRAD, TY, TA, TAA, T, TPAIR} <: AbstractExplicitContainerLay
    # -------------- 
    # we can add a nonlinear embedding here 
    # --------------
-   # bparams::Matrix{T}   # : x NZ matrix of B parameters 
-   # aaparams::NTuple{NZ, Vector{T}} (not used right now)
-   # --------------
-   #   pair potential 
+   #   pair potential & Vref 
    pairbasis::TPAIR 
-   # pairparams::Matrix{T}
+   E0s::NTuple{NZ, T}
    # --------------
    meta::Dict{String, Any}
 end
@@ -92,7 +89,8 @@ end
 
 function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector, 
                              level = TotalDegree(), 
-                             pair_basis = nothing )
+                             pair_basis = nothing, 
+                             E0s = nothing )
    # generate the coupling coefficients 
    cgen = EquivariantModels.Rot3DCoeffs_real(0)
    AA2BB_map = EquivariantModels._rpi_A2B_matrix(cgen, AA_spec)
@@ -131,24 +129,24 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    # from this we can now generate the AA basis layer
    aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
    aa_basis.meta["AA_spec"] = AA_spec  # (also store the human-readable spec)
-   
-   # NZ = _get_nz(rbasis)
-   # n_B_params, n_AA_params = size(AA2BB_map)
 
-
+   if isnothing(E0s)
+      NZ = _get_nz(rbasis)
+      E0s = ntuple(i -> 0.0, NZ)
+   end
 
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
-                   a_basis, aa_basis, AA2BB_map, # zeros(0,0), 
-                   pair_basis, # zeros(0,0), 
-                  #  ntuple(_ -> zeros(n_AA_params), NZ),
+                   a_basis, aa_basis, AA2BB_map, 
+                   pair_basis, E0s, 
                    Dict{String, Any}() )
 end
 
 # TODO: it is not entirely clear that the `level` is really needed here 
 #       since it is implicitly already encoded in AA_spec. We need a 
 #       function `auto_level` that generates level automagically from AA_spec.
-function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level, pair_basis)
-   return _generate_ace_model(rbasis, Ytype, AA_spec, level, pair_basis)
+function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level, 
+                   pair_basis, E0s = nothing)
+   return _generate_ace_model(rbasis, Ytype, AA_spec, level, pair_basis, E0s)
 end 
 
 # NOTE : a nicer convenience constructor is also provided in `ace_heuristics.jl`
@@ -221,6 +219,7 @@ function splinify(model::ACEModel, ps::NamedTuple)
                      model.aabasis, 
                      model.A2Bmap, 
                      pairbasis_spl, 
+                     model.E0s,
                      model.meta)
 end
 
@@ -277,6 +276,9 @@ function evaluate(model::ACEModel,
       Apair = sum(Rpair, dims=1)[:]
       val += dot(Apair, (@view ps.Wpair[:, i_z0]))
    end
+   # ------------------- 
+   #  E0s 
+   val += model.E0s[i_z0]
    # ------------------- 
             
    return val, st 
@@ -377,6 +379,9 @@ function evaluate_ed(model::ACEModel,
       end
    end
    # ------------------- 
+   #  E0s 
+   Ei += model.E0s[i_z0]
+   # ------------------- 
 
    return Ei, ∇Ei, st 
 end
@@ -476,6 +481,9 @@ function grad_params(model::ACEModel,
       ∂Wpair = zeros(eltype(Apair), size(ps.Wpair))
       ∂Wpair[:, i_z0] = Apair
    end
+   # ------------------- 
+   #  E0s 
+   Ei += model.E0s[i_z0]
    # ------------------- 
 
 
