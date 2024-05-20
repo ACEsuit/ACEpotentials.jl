@@ -13,7 +13,7 @@ using Optimisers, ForwardDiff, Unitful
 import AtomsCalculators
 
 using AtomsBuilder, EmpiricalPotentials
-using AtomsBuilder: bulk, rattle! 
+AB = AtomsBuilder
 using EmpiricalPotentials: get_neighbours
 
 
@@ -43,7 +43,7 @@ calc = M.ACEPotential(model, ps, st)
 for ntest = 1:20 
    local Rs, Zs, z0, at, efv 
 
-   at = rattle!(bulk(:Si, cubic=true) * 2, 0.1)
+   at = AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1)
    nlist = PairList(at, M.cutoff_radius(calc))
    E = 0.0 
    for i = 1:length(at)
@@ -62,7 +62,7 @@ println()
 @info("Testing correctness of forces ")
 @info("   .... TODO TEST VIRIALS ..... ")
 
-at = rattle!(bulk(:Si, cubic=true), 0.1)
+at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
 
 @info(" consistency local vs EmpiricalPotentials implementation")
 efv1 = M.energy_forces_virial(at, calc, ps, st)
@@ -82,7 +82,7 @@ print_tf(@test efv1.virial ≈ efv3.virial)
 for ntest = 1:10
    local at, Us, dF0, X0, F, Z
 
-   at = rattle!(bulk(:Si, cubic=true), 0.1)
+   at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)
    Z[[3,6,8]] .= 8
    at = AtomsBuilder._set_atomic_numbers(at, Z)
@@ -108,7 +108,7 @@ ps_lin.Wpair[:] .= ps.Wpair[:]
 for ntest = 1:10
    len = 10 
    mae = sum(1:len) do _
-      at = rattle!(bulk(:Si, cubic=true), 0.1)
+      at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
       Z = AtomsBuilder._get_atomic_numbers(at)
       Z[[3,6,8]] .= 8
       E = M.energy_forces_virial(at, calc, ps, st).energy
@@ -128,7 +128,7 @@ for ntest = 1:10
    local ps_lin, st_lin, at, efv, _restruct
 
    ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
-   at = rattle!(bulk(:Si, cubic=true), 0.1)
+   at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)
    Z[[3,6,8]] .= 8
 
@@ -158,7 +158,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
    local at, Z, dF0, g, _restruct, g_vec 
 
    # random structure 
-   at = rattle!(bulk(:Si, cubic=true), 0.1)
+   at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
    Z = AtomsBuilder._get_atomic_numbers(at)
    Z[[3,6,8]] .= 8
 
