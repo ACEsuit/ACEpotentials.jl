@@ -19,6 +19,7 @@ include("analysis/potential_analysis.jl")
 include("analysis/dataset_analysis.jl")
 
 include("experimental.jl")
+include("models/models.jl")
 
 include("outdated/fit.jl")
 include("outdated/data.jl")
