@@ -27,14 +27,14 @@ const SPL_OF_SVEC{DIM, T} =
       }
 
 
-struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitLayer
+struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T, NZSQ} <: AbstractExplicitLayer
    _i2z::NTuple{NZ, Int}
    polys::TPOLY
-   transforms::SMatrix{NZ, NZ, TT}
-   envelopes::SMatrix{NZ, NZ, TENV}
+   transforms::SMatrix{NZ, NZ, TT, NZSQ}
+   envelopes::SMatrix{NZ, NZ, TENV, NZSQ}
    # -------------- 
    # weights::Array{TW, 4}                      # learnable weights, `nothing` when using Lux
-   rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
+   rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}, NZSQ}  # matrix of (rin, rout, rcut)
    spec::Vector{NT_NL_SPEC}       
    # --------------
    # meta

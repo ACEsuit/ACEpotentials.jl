@@ -114,6 +114,50 @@ function evaluate_batched(basis::LearnableRnlrzzBasis,
 end
 
 
+# ------------------------------------------ 
+#   experimental evaluation with Bumper 
+
+using StrideArrays, Bumper 
+
+function whatalloc(basis::LearnableRnlrzzBasis, rs, zi, zjs, ps, st)
+   # Rnl is a linear transformation of a polynomial to the type can be 
+   # inferred from rs and ps 
+   T = promote_type(eltype(rs), eltype(ps.Wnlq))
+   sz = (length(rs), length(basis))
+   return (T, sz...)
+end
+
+function evaluate_batched!(Rnl, basis::LearnableRnlrzzBasis, 
+                           rs, zi, zjs, ps, st)
+
+   Nr = length(rs)                           
+   @assert Nr == length(zjs) == size(Rnl, 1)
+   @assert size(Rnl, 2) == length(basis)
+
+   @no_escape begin
+
+      P = @alloc(eltype(rs), length(basis.polys))
+      Rnl_1 = @alloc(eltype(Rnl), length(basis))
+
+      # then evaluate the rest in-place 
+      for j = 1:length(rs)
+         iz = _z2i(basis, zi); jz = _z2i(basis, zjs[j])
+         trans_ij = basis.transforms[iz, jz]
+         x = trans_ij(rs[j])
+         env_ij = basis.envelopes[iz, jz]
+         e = evaluate(env_ij, rs[j], x)   
+
+         Polynomials4ML.evaluate!(P, basis.polys, x)
+         @. P .= P .* e 
+
+         mul!(Rnl_1, (@view ps.Wnlq[:, :, iz, jz]), P)
+         @. Rnl[j, :] .= Rnl_1
+      end
+   end 
+
+   return Rnl, st
+end
+
 
 
 # ----- gradients 
