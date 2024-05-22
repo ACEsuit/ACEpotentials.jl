@@ -63,6 +63,24 @@ function evaluate_batched(basis::SplineRnlrzzBasis,
    return Rnl, st
 end
 
+function whatalloc(basis::SplineRnlrzzBasis, rs, zi, zjs, ps, st)
+   # Rnl is a p.w. polynomial or rational so the type can be 
+   # inferred from rs and ps 
+   T = eltype(rs)
+   sz = (length(rs), length(basis))
+   return (T, sz...)
+end
+
+
+function evaluate_batched!(Rnl, basis::SplineRnlrzzBasis, 
+                           rs, zi, zjs, ps, st)
+   for j = 1:length(rs)
+      Rnl[j, :], st = evaluate(basis, rs[j], zi, zjs[j], ps, st)
+   end
+   return nothing
+end
+
+
 
 # ----- gradients 
 # because the typical scenario is that we have few r, then moderately 

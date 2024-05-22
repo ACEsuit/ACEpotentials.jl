@@ -225,6 +225,7 @@ end
 #   gets more complicated.
 
 import Zygote
+using Bumper
 
 # these _getlmax and _length should be moved into SpheriCart 
 _getlmax(ybasis::SolidHarmonics{L}) where {L} = L 
@@ -269,6 +270,72 @@ function evaluate(model::ACEModel,
             
    return val, st 
 end
+
+
+function evaluate_bump(model::ACEModel, 
+                  Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                  ps, st) where 
+                  {T}
+   i_z0 = _z2i(model.rbasis, Z0)
+
+   val = @no_escape begin 
+
+      # get the radii 
+      rs = @alloc(T, length(Rs))
+      for i = 1:length(Rs)
+         rs[i] = norm(Rs[i])
+      end
+      # rs = [ norm(r) for r in Rs ]   # use Bumper 
+
+      # evaluate the radial basis
+      # use Bumper to pre-allocate 
+      Rnl = @alloc(whatalloc(model.rbasis, rs, Z0, Zs, ps.rbasis, st.rbasis)...)
+      evaluate_batched!(Rnl, model.rbasis, rs, Z0, Zs, ps.rbasis, st.rbasis)
+      # Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
+      #                            ps.rbasis, st.rbasis)
+
+      # evaluate the Y basis
+      Ylm = @alloc(T, length(Rs), _length(model.ybasis)) 
+      # Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+      SpheriCart.compute!(Ylm, model.ybasis, Rs)
+
+      # equivariant tensor product 
+      alcB, alc_interm = whatalloc(model.tensor, Rnl, Ylm)
+      B = @alloc(alcB...)
+      intermediates = (_AA = @alloc(alc_interm._AA...), )
+      evaluate!(B, model.tensor, Rnl, Ylm, intermediates)
+
+      # contract with params 
+      dot(B, (@view ps.WB[:, i_z0]))
+
+   end
+
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing 
+      @no_escape begin 
+         Rpair = @alloc(whatalloc(model.pairbasis, rs, Z0, Zs, ps.pairbasis, st.pairbasis)...)
+         evaluate_batched!(Rpair, model.pairbasis, rs, Z0, Zs, ps.pairbasis, st.pairbasis)
+         # Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+         #                          ps.pairbasis, st.pairbasis)
+         for ibasis = 1:size(Rpair, 2)
+            a = zero(eltype(Rpair))
+            @simd ivdep for j = 2:length(Rs)
+               a += Rpair[j, ibasis]
+            end
+            val += a * ps.Wpair[ibasis, i_z0]
+         end 
+      end
+   end
+
+   # ------------------- 
+   #  E0s 
+   val += model.E0s[i_z0]
+   # ------------------- 
+            
+   return val, st 
+end
+
 
 
 

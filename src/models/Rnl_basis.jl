@@ -42,13 +42,13 @@ struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T, NZSQ} <: AbstractExplicitLay
 end
 
 
-struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractExplicitLayer
+struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T, NZSQ} <: AbstractExplicitLayer
    _i2z::NTuple{NZ, Int}
-   transforms::SMatrix{NZ, NZ, TT}
-   envelopes::SMatrix{NZ, NZ, TENV}
-   splines::SMatrix{NZ, NZ, SPL_OF_SVEC{LEN, T}}
+   transforms::SMatrix{NZ, NZ, TT, NZSQ}
+   envelopes::SMatrix{NZ, NZ, TENV, NZSQ}
+   splines::SMatrix{NZ, NZ, SPL_OF_SVEC{LEN, T}, NZSQ}
    # -------------- 
-   rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
+   rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}, NZSQ}  # matrix of (rin, rout, rcut)
    spec::Vector{NT_NL_SPEC}       
    # --------------
    meta::Dict{String, Any} 
