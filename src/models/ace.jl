@@ -278,7 +278,7 @@ function evaluate_bump(model::ACEModel,
                   {T}
    i_z0 = _z2i(model.rbasis, Z0)
 
-   val = @no_escape begin 
+   @no_escape begin 
 
       # get the radii 
       rs = @alloc(T, length(Rs))
@@ -306,7 +306,7 @@ function evaluate_bump(model::ACEModel,
       evaluate!(B, model.tensor, Rnl, Ylm, intermediates)
 
       # contract with params 
-      dot(B, (@view ps.WB[:, i_z0]))
+      val = dot(B, (@view ps.WB[:, i_z0]))
 
    end
 

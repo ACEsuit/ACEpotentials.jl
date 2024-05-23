@@ -32,15 +32,15 @@ rs = norm.(Rs)
 Rnl = zeros(M.whatalloc(basis, rs, Z0, Zs, ps, st)...)
 @btime M.evaluate_batched!($Rnl, $basis, $rs, $Z0, $Zs, $ps, $st)
 
+Rnl1, _ = M.evaluate_batched(basis, rs, Z0, Zs, ps, st)
+M.evaluate_batched!(Rnl, basis, rs, Z0, Zs, ps, st)
+Rnl1 ≈ Rnl
+
 ##
 
 # same with splines?
 bspl = M.splinify(basis, ps)
 ps, st = LuxCore.setup(rng, bspl)
-
-Nat = 12
-Rs, Zs, Z0 = M.rand_atenv(basis, Nat)
-rs = norm.(Rs)
 
 @info("Original implementation")
 @btime M.evaluate_batched($bspl, $rs, $Z0, $Zs, $ps, $st)
@@ -48,6 +48,10 @@ rs = norm.(Rs)
 @info("In-place implementation (baby-bumper)")
 Rnl = zeros(M.whatalloc(bspl, rs, Z0, Zs, ps, st)...)
 @btime M.evaluate_batched!($Rnl, $bspl, $rs, $Z0, $Zs, $ps, $st)
+
+Rnl1, _ = M.evaluate_batched(bspl, rs, Z0, Zs, ps, st)
+M.evaluate_batched!(Rnl, bspl, rs, Z0, Zs, ps, st)
+Rnl1 ≈ Rnl
 
 ## 
 # next step : inner kernel 
@@ -81,7 +85,15 @@ B1 = zeros(alcB...)
 intm = (_AA = zeros(alc_interm._AA...), )
 @btime M.evaluate!($B1, $(model.tensor), $Rnl, $Ylm, $intm)
 
+B, _ = M.evaluate(model.tensor, Rnl, Ylm);
+M.evaluate!(B1, model.tensor, Rnl, Ylm, intm)
+B ≈ B1
+
 ## 
+
+val1, _ = M.evaluate(model, Rs, Zs, Z0, ps, st)
+val2, _ = M.evaluate_bump(model, Rs, Zs, Z0, ps, st)
+val1 ≈ val2
 
 @info("old evaluate")
 @btime M.evaluate($model, $Rs, $Zs, $Z0, $ps, $st)
@@ -91,11 +103,11 @@ intm = (_AA = zeros(alc_interm._AA...), )
 
 ##
 
-# @code_warntype M.evaluate_bump(model, Rs, Zs, Z0, ps, st)
+@code_warntype M.evaluate_bump(model, Rs, Zs, Z0, ps, st)
 
 @profview let model = model, Rs = Rs, Zs = Zs, Z0 = Z0, ps = ps, st = st
    v = 0.0 
-   for nrun = 1:50_000
+   for nrun = 1:200_000
       v += M.evaluate_bump(model, Rs, Zs, Z0, ps, st)[1]
    end
 end
