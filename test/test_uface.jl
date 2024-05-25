@@ -46,6 +46,8 @@ for ntest = 1:30
    @test abs(E1 - E2) < tolerance
 end
 
+fpot_si = fpot
+
 ##
 
 @info("construct a TiAl model and fit parameters using RRQR")
@@ -87,4 +89,49 @@ for ntest = 1:30
    # @show abs(E1 - E2)  < tolerance
    @test abs(E1 - E2) < tolerance
 end
+
+
+##
+
+function rand_struct()
+   at = bulk(:Si, cubic=true) * 2 
+   rattle!(at, rattle)
+   return at 
+end
+
+function rand_env() 
+   at = rand_struct() 
+   nlist = JuLIP.neighbourlist(at, 5.5)
+   Js, Rs, Zs = JuLIP.Potentials.neigsz(nlist, at, 1) 
+   return Js, Rs, Zs, Zs[1] 
+end
+
+
+##
+
+
+# example use of computing a site hessian via ForwardDiff
+
+# generate a random environment for testing 
+Js, Rs, Zs, z0 = rand_env()
+
+# reminder: computing the site energy gradient 
+∇Ei = JuLIP.evaluate_d(fpot_si, Rs, Zs, z0)
+
+using ForwardDiff, StaticArrays
+_pos2vec(X) = reinterpret(eltype(eltype(X)), X)
+_vec2pos(x) = reinterpret(SVector{3, eltype(x)}, x)
+_vec2pos(_pos2vec(Rs)) == Rs
+F(x) = _pos2vec(JuLIP.evaluate_d(fpot_si, _vec2pos(x), Zs, z0))
+Hi = ForwardDiff.jacobian(F, _pos2vec(Rs))
+@time ForwardDiff.jacobian(F, _pos2vec(Rs))
+
+# and another example how to compute a directional derivative 
+# e.g. if a derivative in a single perturbation direction of a 
+# single atom is needed then just make all other entries of Us = 0. 
+Us = randn(eltype(Rs), length(Rs))
+G(t) = JuLIP.evaluate_d(fpot_si, Rs + t * Us, Zs, z0)
+ForwardDiff.derivative(G, 0.0)
+
+
 
