@@ -47,7 +47,7 @@ data = AtomsIO.load_system("initial structure file")
 # need to have velocity return other than missing
 
 # Load ACE potential
-pot = load_potential("some ace potential"; new_format=true)
+pot = load_potential("some ace potential file"; new_format=true)
 
 # Pack data to Molly compatible format
 sys = Molly.System(data, pot)
