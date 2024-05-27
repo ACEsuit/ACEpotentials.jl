@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Committee Potentials · ACEpotentials.jl</title><meta name="title" content="Committee Potentials · ACEpotentials.jl"/><meta property="og:title" content="Committee Potentials · ACEpotentials.jl"/><meta property="twitter:title" content="Committee Potentials · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/committee/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/committee/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/committee/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li><li><input class="collapse-toggle" id="menuitem-2-3" type="checkbox" checked/><label class="tocitem" for="menuitem-2-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../first_example_model/">First example</a></li><li><a class="tocitem" href="../TiAl_model/">The <code>acemodel</code> interface</a></li><li><a class="tocitem" href="../TiAl_basis/">The <code>ace_basis</code> interface</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Elementary Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/lammps/">ACEpotentials potentials in LAMMPS</a></li><li><a class="tocitem" href="../../tutorials/python_ase/">python-<code>ase</code></a></li><li><a class="tocitem" href="../../tutorials/molly/">Using ACE potentials in Molly</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li class="is-active"><a class="tocitem" href>Committee Potentials</a></li><li><a class="tocitem" href="../../tutorials/AtomsBase_interface/">AtomsBase Interface</a></li><li><a class="tocitem" href="../experimental/">Some Experimental Features</a></li></ul></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../ACEpotentials/all_exported/"><code>ACEpotentials.jl</code> API</a></li></ul></li><li><span class="tocitem">Outdated</span><ul><li><a class="tocitem" href="../../outdated/outdated/">Outdated</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Getting Started</a></li><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Committee Potentials</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Committee Potentials</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/committee.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Committee-Potentials"><a class="docs-heading-anchor" href="#Committee-Potentials">Committee Potentials</a><a id="Committee-Potentials-1"></a><a class="docs-heading-anchor-permalink" href="#Committee-Potentials" title="Permalink"></a></h1><pre><code class="language-julia hljs">using Plots, ACEpotentials, Statistics</code></pre><h3 id="Perform-the-fit"><a class="docs-heading-anchor" href="#Perform-the-fit">Perform the fit</a><a id="Perform-the-fit-1"></a><a class="docs-heading-anchor-permalink" href="#Perform-the-fit" title="Permalink"></a></h3><p>load some example training data</p><pre><code class="language-julia hljs">train, _, _ = ACEpotentials.example_dataset(&quot;Si_tiny&quot;)
+data_keys = (energy_key = &quot;dft_energy&quot;, force_key = &quot;dft_force&quot;);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: Si_tiny_dataset
+<span class="sgr31"><span class="sgr1">     Failure</span></span> artifact: Si_tiny_dataset
+<span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: Si_tiny_dataset</code></pre><p>create model</p><pre><code class="language-julia hljs">model = acemodel(elements = [:Si,], order = 3, totaldegree = 8);</code></pre><p>create solver, setting a nonzero committee size at present, the SVD factorization is required for committees</p><pre><code class="language-julia hljs">solver = ACEfit.BLR(committee_size=10, factorization=:svd);</code></pre><p>perform the fit</p><pre><code class="language-julia hljs">acefit!(model, train; solver=solver, data_keys...);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│<span class="sgr1">          Type </span>│<span class="sgr1"> #Configs </span>│<span class="sgr1"> #Envs </span>│<span class="sgr1"> #E </span>│<span class="sgr1">  #F </span>│<span class="sgr1">  #V </span>│
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │   0 │
+│            bt │       25 │    50 │ 25 │ 150 │   0 │
+│           liq │        2 │   128 │  2 │ 384 │   0 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │   0 │
+│       missing │        0 │     0 │  0 │   0 │ 318 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (740, 54).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
+<span class="sgr32">Progress:   4%|█▌                                       |  ETA: 0:00:55</span><span class="sgr32">Progress:   6%|██▍                                      |  ETA: 0:00:42</span><span class="sgr32">Progress:   8%|███▏                                     |  ETA: 0:00:35</span><span class="sgr32">Progress:   9%|███▉                                     |  ETA: 0:00:30</span><span class="sgr32">Progress:  11%|████▋                                    |  ETA: 0:00:27</span><span class="sgr32">Progress:  13%|█████▍                                   |  ETA: 0:00:25</span><span class="sgr32">Progress:  15%|██████▎                                  |  ETA: 0:00:23</span><span class="sgr32">Progress:  17%|███████                                  |  ETA: 0:00:22</span><span class="sgr32">Progress:  19%|███████▊                                 |  ETA: 0:00:21</span><span class="sgr32">Progress:  21%|████████▌                                |  ETA: 0:00:20</span><span class="sgr32">Progress:  23%|█████████▎                               |  ETA: 0:00:19</span><span class="sgr32">Progress:  25%|██████████                               |  ETA: 0:00:18</span><span class="sgr32">Progress:  26%|██████████▉                              |  ETA: 0:00:17</span><span class="sgr32">Progress:  28%|███████████▋                             |  ETA: 0:00:16</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:16</span><span class="sgr32">Progress:  32%|█████████████▏                           |  ETA: 0:00:15</span><span class="sgr32">Progress:  34%|█████████████▉                           |  ETA: 0:00:14</span><span class="sgr32">Progress:  36%|██████████████▊                          |  ETA: 0:00:14</span><span class="sgr32">Progress:  38%|███████████████▌                         |  ETA: 0:00:13</span><span class="sgr32">Progress:  40%|████████████████▎                        |  ETA: 0:00:13</span><span class="sgr32">Progress:  42%|█████████████████                        |  ETA: 0:00:12</span><span class="sgr32">Progress:  43%|█████████████████▊                       |  ETA: 0:00:12</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:11</span><span class="sgr32">Progress:  47%|███████████████████▍                     |  ETA: 0:00:11</span><span class="sgr32">Progress:  49%|████████████████████▏                    |  ETA: 0:00:10</span><span class="sgr32">Progress:  51%|████████████████████▉                    |  ETA: 0:00:10</span><span class="sgr32">Progress:  53%|█████████████████████▋                   |  ETA: 0:00:10</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:09</span><span class="sgr32">Progress:  57%|███████████████████████▎                 |  ETA: 0:00:09</span><span class="sgr32">Progress:  58%|████████████████████████                 |  ETA: 0:00:08</span><span class="sgr32">Progress:  60%|████████████████████████▊                |  ETA: 0:00:08</span><span class="sgr32">Progress:  62%|█████████████████████████▌               |  ETA: 0:00:08</span><span class="sgr32">Progress:  64%|██████████████████████████▎              |  ETA: 0:00:07</span><span class="sgr32">Progress:  66%|███████████████████████████▏             |  ETA: 0:00:07</span><span class="sgr32">Progress:  68%|███████████████████████████▉             |  ETA: 0:00:06</span><span class="sgr32">Progress:  70%|████████████████████████████▋            |  ETA: 0:00:06</span><span class="sgr32">Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:06</span><span class="sgr32">Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:05</span><span class="sgr32">Progress:  75%|███████████████████████████████          |  ETA: 0:00:05</span><span class="sgr32">Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:04</span><span class="sgr32">Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:04</span><span class="sgr32">Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:04</span><span class="sgr32">Progress:  83%|██████████████████████████████████       |  ETA: 0:00:03</span><span class="sgr32">Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:03</span><span class="sgr32">Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:03</span><span class="sgr32">Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:02</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:02</span><span class="sgr32">Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:01</span><span class="sgr32">Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:01</span><span class="sgr32">Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:01</span><span class="sgr32">Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:00</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:19</span>
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Entering bayesian_linear_regression_svd
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>Computing SVD of (740, 54) matrix
+<span class="sgr36"><span class="sgr1">│ </span></span>  BLAS.get_num_threads() = 2
+<span class="sgr36"><span class="sgr1">│ </span></span>  BLAS.get_config() =
+<span class="sgr36"><span class="sgr1">│ </span></span>   LinearAlgebra.BLAS.LBTConfig
+<span class="sgr36"><span class="sgr1">│ </span></span>   Libraries:
+<span class="sgr36"><span class="sgr1">└ </span></span>   └ [ILP64] libopenblas64_.so
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>SVD completed after 4.3391183333333336e-5 minutes
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Beginning to maximize marginal likelihood
+Iter     Function value   Gradient norm
+     0     1.155681e+07     2.291558e+07
+ * time: 0.016752004623413086
+     1     1.323055e+04     3.211203e-05
+ * time: 0.9801981449127197
+     2     1.104783e+04     6.894847e-04
+ * time: 0.9805021286010742
+     3     1.085204e+04     9.054319e-04
+ * time: 0.9806091785430908
+     4     9.406472e+03     7.122083e-03
+ * time: 0.9806780815124512
+     5     8.339838e+03     3.316252e-02
+ * time: 0.9807701110839844
+     6     8.060072e+03     4.969366e-02
+ * time: 0.9808371067047119
+     7     5.440938e+03     1.552293e+00
+ * time: 0.9809651374816895
+     8     5.433687e+03     7.453787e-01
+ * time: 0.9810831546783447
+     9     5.424067e+03     2.009109e-01
+ * time: 0.9811370372772217
+    10     5.423534e+03     5.812888e-03
+ * time: 0.9812002182006836
+    11     5.423533e+03     2.575836e-03
+ * time: 0.9812541007995605
+    12     5.357973e+03     3.408621e+00
+ * time: 0.9813621044158936
+    13     5.239034e+03     2.701533e+00
+ * time: 0.9814372062683105
+    14     5.221524e+03     5.672050e-01
+ * time: 0.9815001487731934
+    15     5.192204e+03     7.939021e-01
+ * time: 0.981593132019043
+    16     5.102834e+03     4.891234e-01
+ * time: 0.9816420078277588
+    17     5.012466e+03     4.962002e-01
+ * time: 0.9817051887512207
+    18     4.955312e+03     5.205714e-01
+ * time: 0.9817960262298584
+    19     4.951432e+03     4.302906e-02
+ * time: 0.9818680286407471
+    20     4.951319e+03     8.048149e-02
+ * time: 0.9819271564483643
+    21     4.935454e+03     2.021946e-01
+ * time: 0.9819982051849365
+    22     4.934924e+03     7.177739e-02
+ * time: 0.9820690155029297
+    23     4.930113e+03     8.489367e-02
+ * time: 0.9821710586547852
+    24     4.925719e+03     5.923817e-02
+ * time: 0.9822430610656738
+    25     4.925587e+03     5.166299e-02
+ * time: 0.9822981357574463
+    26     4.925331e+03     2.191065e-02
+ * time: 0.982349157333374
+    27     4.925295e+03     8.457060e-03
+ * time: 0.9824001789093018
+    28     4.925294e+03     7.921336e-05
+ * time: 0.982457160949707
+    29     4.925294e+03     2.183887e-07
+ * time: 0.9825170040130615
+    30     4.925294e+03     9.675324e-13
+ * time: 0.9825780391693115
+    31     4.925294e+03     1.867550e-15
+ * time: 0.9826350212097168
+<span class="sgr36"><span class="sgr1">┌ Info: </span></span>Optimization complete
+<span class="sgr36"><span class="sgr1">│ </span></span>  Results =
+<span class="sgr36"><span class="sgr1">│ </span></span>    * Status: success
+<span class="sgr36"><span class="sgr1">│ </span></span>
+<span class="sgr36"><span class="sgr1">│ </span></span>    * Candidate solution
+<span class="sgr36"><span class="sgr1">│ </span></span>       Final objective value:     4.925294e+03
+<span class="sgr36"><span class="sgr1">│ </span></span>
+<span class="sgr36"><span class="sgr1">│ </span></span>    * Found with
+<span class="sgr36"><span class="sgr1">│ </span></span>       Algorithm:     L-BFGS
+<span class="sgr36"><span class="sgr1">│ </span></span>
+<span class="sgr36"><span class="sgr1">│ </span></span>    * Convergence measures
+<span class="sgr36"><span class="sgr1">│ </span></span>       |x - x&#39;|               = 1.15e-10 ≤ 1.0e-08
+<span class="sgr36"><span class="sgr1">│ </span></span>       |x - x&#39;|/|x&#39;|          = 6.41e-13 ≰ 0.0e+00
+<span class="sgr36"><span class="sgr1">│ </span></span>       |f(x) - f(x&#39;)|         = 0.00e+00 ≤ 0.0e+00
+<span class="sgr36"><span class="sgr1">│ </span></span>       |f(x) - f(x&#39;)|/|f(x&#39;)| = 0.00e+00 ≤ 0.0e+00
+<span class="sgr36"><span class="sgr1">│ </span></span>       |g(x)|                 = 1.87e-15 ≰ 0.0e+00
+<span class="sgr36"><span class="sgr1">│ </span></span>
+<span class="sgr36"><span class="sgr1">│ </span></span>    * Work counters
+<span class="sgr36"><span class="sgr1">│ </span></span>       Seconds run:   1  (vs limit Inf)
+<span class="sgr36"><span class="sgr1">│ </span></span>       Iterations:    31
+<span class="sgr36"><span class="sgr1">│ </span></span>       f(x) calls:    183
+<span class="sgr36"><span class="sgr1">│ </span></span>       ∇f(x) calls:   183
+<span class="sgr36"><span class="sgr1">└ </span></span></code></pre><p>Inspect the total energies vs committee energies and error bars for a few perturbed structures. Note the training set is so small that we don&#39;t expect these committees to be particularly useful; this is only to illustrate how they might be used. Also note that the energy <code>E</code> is <em>not</em> in general the mean of <code>co_E</code> but it is the mean of the exact posterior distribution.</p><pre><code class="language-julia hljs">atoms = bulk(:Si, cubic=true) * 2; rattle = [0.03, 0.1, 0.3]
+plot(; size = (300, 300), xlabel = &quot;rattle&quot;, ylabel = &quot;energy [eV]&quot;, ylims = (-10650, -10250),
+      xlims = (0.015, 0.6), xticks = (rattle, string.(rattle)), xscale = :log10)
+for (i, rt) in enumerate(rattle)
+   rattle!(atoms, rt)
+   E, co_E = ACE1.co_energy(model.potential, atoms)
+   scatter!(rt*ones(10), co_E, c = 1, label=(i==1 ? &quot;committee&quot; : &quot;&quot;))
+   scatter!([rt,], [E,], yerror = [std(co_E),], c = 2, ms=6, label=(i==1 ? &quot;mean&quot; : &quot;&quot;))
+end
+plot!()</code></pre><img src="3f876763.svg" alt="Example block output"/><p>Committee forces are computed analogously. <code>F</code> is a vector of mean forces (i.e. a vector of 3-vectors), while <code>co_F</code> is a list of vectors of committe forces (i.e. a vector of vectors of 3-vectors).</p><pre><code class="language-julia hljs">F, co_F = ACE1.co_forces(model.potential, atoms)
+@show typeof(F)
+@show typeof(co_F);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">typeof(F) = Vector{StaticArraysCore.SVector{3, Float64}}
+typeof(co_F) = StaticArraysCore.SVector{10, Vector{StaticArraysCore.SVector{3, Float64}}}</code></pre><p>The situation is analogous for committee virials</p><pre><code class="language-julia hljs">V, co_V = ACE1.co_virial(model.potential, atoms)
+@show typeof(V)
+@show typeof(co_V);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">typeof(V) = StaticArraysCore.SMatrix{3, 3, Float64, 9}
+typeof(co_V) = StaticArraysCore.SVector{10, StaticArraysCore.SMatrix{3, 3, Float64, 9}}</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../tutorials/AtomsBase_interface/">AtomsBase Interface »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Monday 27 May 2024 20:59">Monday 27 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
