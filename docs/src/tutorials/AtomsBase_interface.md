@@ -63,6 +63,20 @@ acefit!(model, data_train; solver=solver, weights=weights, prior = P);
 ACEpotentials.linear_errors(data_train, model; weights=weights);
 ```
 
+### Training data in AtomsBase structures
+
+In AtomsBase you have system wide features accesses with `haskey(some_key)` or atom features accesses with `hasatomkey(some_key)`.
+Energy (scalar) and virial (matrix) are expected to be system features while force (vector) should be a atom feature.
+They should be unitless. The fitting process does not have internal units. But in the data is expected to be in eV and eV/Å, when units are stripped.
+
+By default all these should be `true`
+
+```julia
+haskey(system, :energy)     # default energy key
+haskey(system, :virial)     # default virial key
+hasatomkey(system, :force)  # default force key
+```
+
 ### Weights with AtomsBase
 
 With AtomsBase weights are stored in AtomsBase structures and there is no need to create `AtomsData` structures. Weights can be given for either energy, forces or virial and for structure itself. Each of these have an associated keyword
@@ -86,7 +100,7 @@ To set a weight by hand on an individual structure you can use
 ```julia
 # Set general weight
 data_point[:weight] = 60
-
+## AtomsCalculators support
 # Set weight for energy
 data_point[:energy_weight] = 60
 
@@ -119,7 +133,10 @@ acefit!(model, data_train; solver=solver, weights=weights, prior = P, new_assemb
 ACEfit.assemble(data_train, basis; new_assembly=true)
 ```
 
-## Calculations with AtomsBase
+You can control what keys are used for energy, forces and virial by using keyword arguments `energy_key`, `force_key` and `virial_key`.
+Look for document sting for more details and more contron options.
+
+## AtomsCalculators Interface
 
 To use AtomsBase structures as an input for calculations you need to create `ACEpotential` structure. If you use acemodel interface (like above) you can do this with
 
@@ -133,14 +150,24 @@ If you use acebasis interface you can create potential with
 pot_1 = ACEpotential(basis, results["C"])
 ```
 
-After this you can use commands
+Alternatively you can load the potential from a file
 
 ```julia
-E = ace_energy(system, pot)
-F = ace_forces(system, pot)
-V = ace_virial(system, pot)
+pot = load_potential("my-potential.json"; new_format=true)
+```
+
+`ACEpotential` stucture implements [AtomsCalculators](https://github.com/JuliaMolSim/AtomsCalculators.jl)
+interface
+
+```julia
+using AtomsCalculators
+
+E = AtomsCalculators.potential_energy(system, pot)
+F = AtomsCalculators.forces(system, pot)
+V = AtomsCalculators.virial(system, pot)
 ```
 
 where `system` is an AtomsBase structure.
 
-For more details on using AtomsBase look [ACEmd](https://github.com/ACEsuit/ACEmd.jl).
+The current ACE1 based implemetation to AtomsBase and AtomsCalculators is implemented in
+[ACEmd](https://github.com/ACEsuit/ACEmd.jl). Take a look onto it, if you need further information.
