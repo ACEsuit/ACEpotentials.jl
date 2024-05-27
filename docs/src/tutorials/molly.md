@@ -25,7 +25,7 @@ The default units are eV for energy and Å for length. You can change these with
 
 ```julia
 pot_new_units = ACEpotential(
-    pot.potentials;
+    old_potential.potentials;
     energy_unit = u"hartree",
     length_unit = u"bohr",
     cutoff_unit = u"pm"
