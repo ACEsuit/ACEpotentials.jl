@@ -67,7 +67,7 @@ ACEpotentials.linear_errors(data_train, model; weights=weights);
 
 In AtomsBase you have system wide features accesses with `haskey(some_key)` or atom features accesses with `hasatomkey(some_key)`.
 Energy (scalar) and virial (matrix) are expected to be system features while force (vector) should be a atom feature.
-They should be unitless. The fitting process does not have internal units. But in the data is expected to be in eV and eV/Å, when units are stripped.
+They should be unitless. The fitting process does not have internal units. But in the data the units are implicitely expected to be in eV and eV/Å, when units are stripped.
 
 By default all these should be `true`
 
