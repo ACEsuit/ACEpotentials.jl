@@ -124,7 +124,12 @@ _vec2pos(x) = reinterpret(SVector{3, eltype(x)}, x)
 _vec2pos(_pos2vec(Rs)) == Rs
 F(x) = _pos2vec(JuLIP.evaluate_d(fpot_si, _vec2pos(x), Zs, z0))
 Hi = ForwardDiff.jacobian(F, _pos2vec(Rs))
-@time ForwardDiff.jacobian(F, _pos2vec(Rs))
+
+@info("timing ∇Ei")
+_, t1 = @timed JuLIP.evaluate_d(fpot_si, Rs, Zs, z0); 
+@info("timing Hi")
+_, t2 = @timed ForwardDiff.jacobian(F, _pos2vec(Rs)); 
+@info("t(∇Ei) * #Rs * 3 / t(Hi) = $(round(t1 * length(Rs) * 3 / t2, digits=2))")
 
 # and another example how to compute a directional derivative 
 # e.g. if a derivative in a single perturbation direction of a 
