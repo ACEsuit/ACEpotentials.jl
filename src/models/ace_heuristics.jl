@@ -95,6 +95,7 @@ end
 function ace_model(; elements = nothing, 
                      order = nothing, 
                      Ytype = :solid,  
+                     E0s = nothing,
                      # radial basis 
                      rbasis = nothing, 
                      rbasis_type = :learnable, 
@@ -142,7 +143,7 @@ function ace_model(; elements = nothing,
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl)
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl, E0s)
    model.meta["init_WB"] = String(init_WB)
    model.meta["init_Wpair"] = String(init_Wpair)
 
