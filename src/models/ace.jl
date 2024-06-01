@@ -202,9 +202,9 @@ end
 (l::ACEModel)(args...) = evaluate(l, args...)
 
 function LuxCore.parameterlength(model::ACEModel)
+   # this layer stores the pair basis parameters and the B basis parameters 
    NZ = _get_nz(model)
-   n_B_params, n_AA_params = size(model.A2Bmap)
-   return NZ * n_B_params
+   return NZ^2 * length(model.pairbasis) + NZ * length(model.tensor)
 end
 
 function splinify(model::ACEModel, ps::NamedTuple)
