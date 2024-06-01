@@ -26,11 +26,24 @@ elements = (:Si, :O)
 level = M.TotalDegree()
 max_level = 15
 order = 3 
+E0s = (-158.54496821, -2042.0330099956639)
+NZ = length(elements)
+
+function make_rin0cut(zi, zj) 
+   r0 = ACE1x.get_r0(zi, zj)
+   return (rin = 0.0, r0 = r0, rcut = 6.5)
+end
+
+rin0cuts = SMatrix{NZ, NZ}([make_rin0cut(zi, zj) for zi in elements, zj in elements])
+
 
 model = M.ace_model(; elements = elements, order = order, Ytype = :solid, 
                       level = level, max_level = max_level, maxl = 8, 
                       pair_maxn = 15, 
-                      init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+                      init_WB = :glorot_normal, init_Wpair = :glorot_normal,
+                      E0s = E0s,
+                      rin0cuts = rin0cuts
+                      )
 
 ps, st = LuxCore.setup(rng, model)
 
@@ -38,6 +51,21 @@ calc = M.ACEPotential(model, ps, st)
 
 ##
 
+@info("Testing correctness of E0s")
+ps_vec, _restruct = destructure(ps)
+ps_zero = _restruct(zero(ps_vec))
+
+for ntest = 1:20
+   local Rs, Zs, z0, at, efv 
+   at = AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1)
+   nlist = PairList(at, M.cutoff_radius(calc))
+   efv = M.energy_forces_virial(at, calc, ps_zero, st)
+   print_tf(@test norm(ustrip(efv.energy) - E0s[1] * length(at)) < 1e-10)
+end
+
+println()
+
+##
 
 @info("Testing correctness of potential energy")
 for ntest = 1:20 
@@ -56,6 +84,7 @@ for ntest = 1:20
    print_tf(@test abs(E - ustrip(E2)) / abs(E) < 1e-12)
 end
 println() 
+
 
 ##
 
@@ -185,3 +214,4 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
    println(@test FDTEST)
 end
 
+##
