@@ -57,10 +57,13 @@ ps_zero = _restruct(zero(ps_vec))
 
 for ntest = 1:20
    local Rs, Zs, z0, at, efv 
-   at = AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1)
+   at = AB.randz!( AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1), 
+                   (:Si => 0.6, :O => 0.5), )
+   n_Si = count(x -> x == 14, AtomsBase.atomic_number(at))                   
+   n_O = count(x -> x == 8, AtomsBase.atomic_number(at))
    nlist = PairList(at, M.cutoff_radius(calc))
    efv = M.energy_forces_virial(at, calc, ps_zero, st)
-   print_tf(@test norm(ustrip(efv.energy) - E0s[1] * length(at)) < 1e-10)
+   print_tf(@test abs(ustrip(efv.energy) - E0s[1] * n_Si - E0s[2] * n_O) < 1e-10)
 end
 
 println()
