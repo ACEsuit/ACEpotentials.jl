@@ -2,7 +2,7 @@ using SparseArrays: SparseMatrixCSC
 import Polynomials4ML
 
 
-struct SparseEquivTensor{T, TA, TAA} 
+struct SparseEquivTensor{T, TA, TAA}
    abasis::TA
    aabasis::TAA
    A2Bmap::SparseMatrixCSC{T, Int}

@@ -87,6 +87,10 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
                              level = TotalDegree(), 
                              pair_basis = nothing, 
                              E0s = nothing )
+
+   # storing E0s with unit
+   model_meta = Dict{String, Any}("E0s" => deepcopy(E0s))
+
    # generate the coupling coefficients 
    cgen = EquivariantModels.Rot3DCoeffs_real(0)
    AA2BB_map = EquivariantModels._rpi_A2B_matrix(cgen, AA_spec)
@@ -126,9 +130,20 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
    aa_basis.meta["AA_spec"] = AA_spec  # (also store the human-readable spec)
 
+   # process E0s and ustrip any units
    if isnothing(E0s)
       NZ = _get_nz(rbasis)
       E0s = ntuple(i -> 0.0, NZ)
+   elseif E0s isa Dict{Symbol, <: Quantity}
+      NZ = _get_nz(rbasis)
+      _E0s = zeros(NZ)
+      for sym in keys(E0s)
+         idx = findfirst(==(AtomicNumber(sym).z), rbasis._i2z)
+         _E0s[idx] = ustrip(E0s[sym])
+      end
+      E0s = Tuple(_E0s)
+   else
+      error("E0s can either be nothing, or in form of a dictionary with keys 'Symbol' and values 'Uniful.Quantity'.")
    end
 
    tensor = SparseEquivTensor(a_basis, aa_basis, AA2BB_map, 
@@ -136,7 +151,7 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
 
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
                    tensor, pair_basis, E0s, 
-                   Dict{String, Any}() )
+                   model_meta )
 end
 
 # TODO: it is not entirely clear that the `level` is really needed here 
@@ -202,9 +217,9 @@ end
 (l::ACEModel)(args...) = evaluate(l, args...)
 
 function LuxCore.parameterlength(model::ACEModel)
+   # this layer stores the pair basis parameters and the B basis parameters 
    NZ = _get_nz(model)
-   n_B_params, n_AA_params = size(model.A2Bmap)
-   return NZ * n_B_params
+   return NZ^2 * length(model.pairbasis) + NZ * length(model.tensor)
 end
 
 function splinify(model::ACEModel, ps::NamedTuple)

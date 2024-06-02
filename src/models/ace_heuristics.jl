@@ -95,6 +95,8 @@ end
 function ace_model(; elements = nothing, 
                      order = nothing, 
                      Ytype = :solid,  
+                     E0s = nothing,
+                     rin0cuts = nothing,
                      # radial basis 
                      rbasis = nothing, 
                      rbasis_type = :learnable, 
@@ -110,12 +112,21 @@ function ace_model(; elements = nothing,
                      init_Wpair = :zeros, 
                      rng = Random.default_rng(), 
                      )
+
+   if rin0cuts == nothing
+      rin0cuts = _default_rin0cuts(elements)
+   else
+      NZ = length(elements)
+      @assert rin0cuts isa SMatrix && size(rin0cuts) == (NZ, NZ)
+   end
+
    # construct an rbasis if needed
    if isnothing(rbasis)
       if rbasis_type == :learnable
          rbasis = ace_learnable_Rnlrzz(; max_level = max_level, level = level, 
                                          maxl = maxl, maxn = maxn, 
-                                         elements = elements)
+                                         elements = elements, 
+                                         rin0cuts = rin0cuts)
       else
          error("unknown rbasis_type = $rbasis_type")
       end
@@ -142,7 +153,7 @@ function ace_model(; elements = nothing,
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl)
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl, E0s)
    model.meta["init_WB"] = String(init_WB)
    model.meta["init_Wpair"] = String(init_Wpair)
 
