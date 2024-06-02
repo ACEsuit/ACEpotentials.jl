@@ -40,7 +40,7 @@ ps.WB[idxBBl1, :] .= 1.0
 # check sacling
 Nat = 1
 for ntest = 1:20
-   local Rs, Zs, Z0, Nal
+   local Rs, Zs, Z0
    Rs, Zs, Z0 = M.rand_atenv(msolid, Nat)
    valsoild, _ = M.evaluate(msolid, Rs, Zs, Z0, ps, st)
    valspherical, _ = M.evaluate(mspherical, Rs, Zs, Z0, ps, st)
