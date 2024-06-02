@@ -25,8 +25,9 @@ rng = Random.MersenneTwister(1234)
 elements = (:Si, :O)
 level = M.TotalDegree()
 max_level = 15
-order = 3 
-E0s = (-158.54496821, -2042.0330099956639)
+order = 3
+E0s = Dict( :Si => -158.54496821u"eV", 
+            :O => -2042.0330099956639u"eV")
 NZ = length(elements)
 
 function make_rin0cut(zi, zj) 
@@ -47,7 +48,7 @@ model = M.ace_model(; elements = elements, order = order, Ytype = :solid,
 
 ps, st = LuxCore.setup(rng, model)
 
-calc = M.ACEPotential(model, ps, st)
+calc = M.ACEPotential(model, ps, st)   
 
 ##
 
@@ -63,7 +64,7 @@ for ntest = 1:20
    n_O = count(x -> x == 8, AtomsBase.atomic_number(at))
    nlist = PairList(at, M.cutoff_radius(calc))
    efv = M.energy_forces_virial(at, calc, ps_zero, st)
-   print_tf(@test abs(ustrip(efv.energy) - E0s[1] * n_Si - E0s[2] * n_O) < 1e-10)
+   print_tf(@test ustrip(abs(efv.energy - E0s[:Si] * n_Si - E0s[:O] * n_O)) < 1e-10)
 end
 
 println()
