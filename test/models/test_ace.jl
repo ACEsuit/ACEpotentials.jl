@@ -20,7 +20,39 @@ level = M.TotalDegree()
 max_level = 15
 order = 3 
 
+@info("Test ybasis of the Model is used correctly")
+msolid = M.ace_model(; elements = elements, order = order, Ytype = :solid, 
+level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+mspherical = M.ace_model(; elements = elements, order = order, Ytype = :spherical, 
+level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :zero)
+ps, st = LuxCore.setup(rng, msolid)
+
+# get first l ≠ 0 index
+spec = msolid.tensor.aabasis.meta["AA_spec"]
+getl(t) = t.l
+idxBBl1 = findfirst(t -> any(getl.(t) .> 0), spec)
+
+# only set firstl1 as 1.0, coming from ∑m
+ps.Wpair .= 0.0
+ps.WB .= 0.0
+ps.WB[idxBBl1, :] .= 1.0
+
+# check sacling
+Nat = 1
+for ntest = 1:20
+   local Rs, Zs, Z0, Nal
+   Rs, Zs, Z0 = M.rand_atenv(msolid, Nat)
+   valsoild, _ = M.evaluate(msolid, Rs, Zs, Z0, ps, st)
+   valspherical, _ = M.evaluate(mspherical, Rs, Zs, Z0, ps, st)
+   print_tf(@test valsoild / valspherical ≈ norm(Rs[1])^(length(spec[idxBBl1])))
+end
+println()
+
+##
+
 for ybasis in [:spherical, :solid]
+   @info("=== Testing ybasis = $ybasis === ")
+   local ps, st, Nat
    model = M.ace_model(; elements = elements, order = order, Ytype = ybasis, 
                         level = level, max_level = max_level, maxl = 8, 
                         pair_maxn = 15, 
