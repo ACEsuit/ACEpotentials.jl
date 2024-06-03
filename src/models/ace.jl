@@ -242,8 +242,8 @@ end
 import Zygote
 
 # these _getlmax and _length should be moved into SpheriCart 
-_getlmax(ybasis::SolidHarmonics{L}) where {L} = L 
-_length(ybasis::SolidHarmonics) = SpheriCart.sizeY(_getlmax(ybasis))
+_getlmax(ybasis::Union{SolidHarmonics{L}, SphericalHarmonics{L}}) where {L} = L 
+_length(ybasis::Union{SolidHarmonics, SphericalHarmonics}) = SpheriCart.sizeY(_getlmax(ybasis))
 
 function evaluate(model::ACEModel, 
                   Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
