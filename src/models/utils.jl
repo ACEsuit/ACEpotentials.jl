@@ -79,6 +79,16 @@ function sparse_AA_spec(; order = nothing,
 end
 
 
+"""
+Get the specification of the BBbasis as a list (`Vector`) of vectors of `@NamedTuple{n::Int, l::Int}`.
+
+### Parameters 
+
+* `model` : an ACEModel
+"""
+function get_nnll_spec(model::ACEModel)
+   return get_nnll_spec(model.tensor)
+end
 
 
 import ACE1 

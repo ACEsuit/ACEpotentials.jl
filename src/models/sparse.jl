@@ -57,3 +57,27 @@ function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm,
    return ∂Rnl, ∂Ylm
 end
 
+
+"""
+Get the specification of the BBbasis as a list (`Vector`) of vectors of `@NamedTuple{n::Int, l::Int}`.
+
+### Parameters 
+
+* `tensor` : a SparseEquivTensor, possibly from ACEModel
+"""
+function get_nnll_spec(tensor::SparseEquivTensor{T}) where {T}
+   _nl(bb) = [(n = b.n, l = b.l) for b in bb]
+   # assume the new ACE model NEVER has the z channel
+   spec = tensor.aabasis.meta["AA_spec"]
+   nBB = size(tensor.A2Bmap, 1)
+   nnll_list = Vector{NT_NL_SPEC}[]
+   for i in 1:nBB
+      AAidx_nnz = tensor.A2Bmap[i, :].nzind
+      bbs = spec[AAidx_nnz]
+      @assert all([bb == _nl(bbs[1]) for bb in _nl.(bbs)])
+      push!(nnll_list, _nl(bbs[1]))
+   end
+   @assert length(nnll_list) == nBB
+   return nnll_list
+end
+
