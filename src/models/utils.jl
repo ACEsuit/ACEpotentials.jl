@@ -78,8 +78,9 @@ function sparse_AA_spec(; order = nothing,
    return AA_spec_nlm 
 end
 
-
-
+function get_nl(model::ACEModel)
+   return get_nl(model.tensor)
+end
 
 import ACE1 
 

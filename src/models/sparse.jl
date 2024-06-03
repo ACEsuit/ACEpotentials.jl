@@ -57,3 +57,21 @@ function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm,
    return ∂Rnl, ∂Ylm
 end
 
+
+_nl(bb) = [(n = b.n, l = b.l) for b in bb]
+
+function get_nl(tensor::SparseEquivTensor{T}) where {T}
+   # assume the new ACE model NEVER has the z channel
+   spec = tensor.aabasis.meta["AA_spec"]
+   nBB = size(tensor.A2Bmap, 1)
+   nnll_list = Vector{NT_NL_SPEC}[]
+   for i in 1:nBB
+      AAidx_nnz = tensor.A2Bmap[i, :].nzind
+      bbs = spec[AAidx_nnz]
+      @assert all([bb == _nl(bbs[1]) for bb in _nl.(bbs)])
+      push!(nnll_list, _nl(bbs[1]))
+   end
+   @assert length(nnll_list) == nBB
+   return nnll_list
+end
+
