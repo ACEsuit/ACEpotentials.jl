@@ -5,3 +5,4 @@ scratch
 /docs/src/literate_tutorials
 .vscode
 .ipynb_checkpoints
+.CondaPkg

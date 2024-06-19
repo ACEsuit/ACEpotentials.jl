@@ -1,7 +1,9 @@
-
+import Random
 using ACEpotentials
 using LazyArtifacts
 using Test
+
+Random.seed!(1234)
 
 ## ----- setup -----
 
@@ -12,7 +14,7 @@ model = acemodel(elements = [:Si],
                  Eref = [:Si => -158.54496821],
                  rcut = 5.5,
                  order = 3,
-                 totaldegree = 10)
+                 totaldegree = 15)
 data = read_extxyz(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
 data_keys = [:energy_key => "dft_energy",
              :force_key => "dft_force",
@@ -126,7 +128,7 @@ F(x) = _pos2vec(JuLIP.evaluate_d(fpot_si, _vec2pos(x), Zs, z0))
 Hi = ForwardDiff.jacobian(F, _pos2vec(Rs))
 
 @info("timing ∇Ei")
-_, t1 = @timed JuLIP.evaluate_d(fpot_si, Rs, Zs, z0); 
+_, t1 = @timed JuLIP.evaluate_d(fpot_si, Rs, Zs, z0);
 @info("timing Hi")
 _, t2 = @timed ForwardDiff.jacobian(F, _pos2vec(Rs)); 
 @info("t(∇Ei) * #Rs * 3 / t(Hi) = $(round(t1 * length(Rs) * 3 / t2, digits=2))")
@@ -136,7 +138,8 @@ _, t2 = @timed ForwardDiff.jacobian(F, _pos2vec(Rs));
 # single atom is needed then just make all other entries of Us = 0. 
 Us = randn(eltype(Rs), length(Rs))
 G(t) = JuLIP.evaluate_d(fpot_si, Rs + t * Us, Zs, z0)
-ForwardDiff.derivative(G, 0.0)
-
+dG0 = ForwardDiff.derivative(G, 0.0)
+u = reinterpret(Float64, Us)
+@test Hi * u ≈ reinterpret(Float64, dG0)
 
 
