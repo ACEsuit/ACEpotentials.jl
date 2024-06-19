@@ -1,4 +1,4 @@
-import Random
+import Random, ForwardDiff
 using ACEpotentials
 using LazyArtifacts
 using Test
@@ -141,5 +141,4 @@ G(t) = JuLIP.evaluate_d(fpot_si, Rs + t * Us, Zs, z0)
 dG0 = ForwardDiff.derivative(G, 0.0)
 u = reinterpret(Float64, Us)
 @test Hi * u ≈ reinterpret(Float64, dG0)
-
 
