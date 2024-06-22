@@ -18,9 +18,18 @@ using AtomsBuilder, EmpiricalPotentials
 AB = AtomsBuilder
 using EmpiricalPotentials: get_neighbours
 
-
 using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
+
+function _calc_E0s(at, calc)
+   out = 0.0 
+   Zs = AtomsBase.atomic_number(at) 
+   for z in Zs
+      iz = M._z2i(calc.model, z)
+      out += calc.model.E0s[iz] 
+   end
+   return out 
+end
 
 ##
 
@@ -66,7 +75,9 @@ for ntest = 1:20
    n_O = count(x -> x == 8, AtomsBase.atomic_number(at))
    nlist = PairList(at, M.cutoff_radius(calc))
    efv = M.energy_forces_virial(at, calc, ps_zero, st)
-   print_tf(@test ustrip(abs(efv.energy - E0s[:Si] * n_Si - E0s[:O] * n_O)) < 1e-10)
+   _E0 = E0s[:Si] * n_Si + E0s[:O] * n_O
+   print_tf(@test ustrip(abs(efv.energy - _E0)) < 1e-10)
+   print_tf(@test ustrip(_E0) ≈ _calc_E0s(at, calc))
 end
 
 println()
@@ -169,9 +180,8 @@ for ntest = 1:10
 
    efv = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin)
    efv_b = M.energy_forces_virial_basis(at, lin_calc, ps_lin, st_lin)
-
    ps_vec, _restruct = destructure(ps_lin)
-   print_tf(@test dot(efv_b.energy, ps_vec) ≈ efv.energy )
+   print_tf(@test dot(efv_b.energy, ps_vec) + _calc_E0s(at, lin_calc) * u"eV" ≈ efv.energy )
    print_tf(@test all(efv_b.forces * ps_vec .≈ efv.forces) )
    print_tf(@test sum(ps_vec .* efv_b.virial) ≈ efv.virial )
 end
