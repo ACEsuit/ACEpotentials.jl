@@ -17,8 +17,6 @@ using Folds, ChunkSplitters, Unitful, NeighbourLists,
 
 import ChainRulesCore: rrule, NoTangent, ZeroTangent
 
-using ObjectPools: release! 
-
 struct ACEPotential{MOD} <: SitePotential
    model::MOD
    ps
@@ -101,7 +99,6 @@ function energy_forces_virial_serial(
          forces[i]     += dv[α]
       end
       virial += _site_virial(dv, Rs)
-      release!(Js); release!(Rs); release!(Zs)
    end
    return (energy = energy * energy_unit(V), 
            forces = forces * force_unit(V), 
@@ -145,7 +142,6 @@ function energy_forces_virial(
             forces[i]     += dv[α] * force_unit(V)
          end
          virial += _site_virial(dv, Rs) * energy_unit(V)
-         release!(Js); release!(Rs); release!(Zs)
       end
       [energy, forces, virial]
    end
@@ -204,8 +200,6 @@ function pullback_EFV(Δefv,
             mult = one(TP)
          end
 
-         release!(Js); release!(Rs); release!(Zs)
-         
          # convert it back to a vector so we can accumulate it in the sum. 
          # this is quite bad - in the call to pullback_2_mixed we just 
          # converted it from a vector to a named tuple. We need to look into 
@@ -281,7 +275,6 @@ function energy_forces_virial_basis(
          end
          V[k] += _site_virial(dv[k, :], Rs) * energy_unit(calc)
       end
-      release!(Js); release!(Rs); release!(Zs)
    end
          
    return (energy = E, forces = F, virial = V)

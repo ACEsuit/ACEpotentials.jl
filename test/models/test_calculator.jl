@@ -3,6 +3,8 @@
 # using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
+##
+
 using Test, ACEbase
 using ACEbase.Testing: print_tf, println_slim
 
@@ -116,14 +118,14 @@ for ntest = 1:10
    local at, Us, dF0, X0, F, Z
 
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z = AtomsBase.atomic_number(at)
    Z[[3,6,8]] .= 8
-   at = AtomsBuilder._set_atomic_numbers(at, Z)
+   at = AtomsBuilder.set_elements(at, Z)
    Us = randn(SVector{3, Float64}, length(at)) / length(at) * u"Å"
    dF0 = - dot(Us, M.energy_forces_virial_serial(at, calc, ps, st).forces)
-   X0 = AtomsBuilder._get_positions(at)
+   X0 = AtomsBase.position(at)
    F(t) = M.energy_forces_virial_serial(
-               AtomsBuilder._set_positions(at, X0 + t * Us), 
+               AtomsBuilder.set_positions(at, X0 + t * Us), 
                calc, ps, st).energy |> ustrip 
    print_tf( @test ACEbase.Testing.fdtest(F, t -> ustrip(dF0), 0.0; verbose=false ) )
 end
@@ -142,7 +144,7 @@ for ntest = 1:10
    len = 10 
    mae = sum(1:len) do _
       at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-      Z = AtomsBuilder._get_atomic_numbers(at)
+      Z = AtomsBase.atomic_number(at)
       Z[[3,6,8]] .= 8
       E = M.energy_forces_virial(at, calc, ps, st).energy
       E_lin = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin).energy
@@ -162,7 +164,7 @@ for ntest = 1:10
 
    ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z = AtomsBase.atomic_number(at)
    Z[[3,6,8]] .= 8
 
    efv = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin)
@@ -192,7 +194,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
 
    # random structure 
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z = AtomsBase.atomic_number(at)
    Z[[3,6,8]] .= 8
 
    function loss(at, calc, ps, st)
@@ -214,7 +216,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
    dF0 = dot(g_vec, u)
 
    @info("(wE, wV, wF) = ($wE, $wV, $wF)")
-   FDTEST = ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=true)
+   FDTEST = ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=false)
    println(@test FDTEST)
 end
 

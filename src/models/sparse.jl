@@ -47,12 +47,12 @@ function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm,
    TA = promote_type(T, eltype(_AA), eltype(∂B), 
                         eltype(Rnl), eltype(eltype(Ylm)))
    ∂A = zeros(TA, length(tensor.abasis))
-   Polynomials4ML.pullback_arg!(∂A, _∂AA, tensor.aabasis, _AA)
+   Polynomials4ML.unsafe_pullback!(∂A, _∂AA, tensor.aabasis, _AA)
    
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
    ∂Rnl = zeros(TA, size(Rnl))
    ∂Ylm = zeros(TA, size(Ylm))
-   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+   Polynomials4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
 
    return ∂Rnl, ∂Ylm
 end
