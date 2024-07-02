@@ -89,14 +89,16 @@ function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
 end
 
 
-function evaluate_batched(basis::LearnableRnlrzzBasis, 
+function evaluate_batched!(Rnl, 
+                           basis::LearnableRnlrzzBasis, 
                            rs, zi, zjs, ps, st)
 
-   @assert length(rs) == length(zjs)                          
+   @assert length(rs) == length(zjs)    
+   @assert size(Rnl, 1) >= length(rs) 
+   @assert size(Rnl, 2) >= length(basis)  
+
    # evaluate the first one to get the types and size
    Rnl_1, st = evaluate(basis, rs[1], zi, zjs[1], ps, st)
-   # ... and then allocate storage
-   Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
 
    # then evaluate the rest in-place 
    for j = 1:length(rs)
@@ -110,7 +112,15 @@ function evaluate_batched(basis::LearnableRnlrzzBasis,
       Rnl[j, :] = (@view ps.Wnlq[:, :, iz, jz]) * P
    end
 
-   return Rnl, st
+   return Rnl
+end
+
+function whatalloc(::typeof(evaluate_batched!), 
+                    basis::LearnableRnlrzzBasis, 
+                    rs::AbstractVector{T}, zi, zjs, ps, st) where {T}
+   # Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
+   T1 = promote_type(eltype(ps.Wnlq), T)
+   return (T1, length(rs), length(basis))
 end
 
 
@@ -201,13 +211,13 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
 end
 
 
-function rrule(::typeof(evaluate_batched), 
-               basis::LearnableRnlrzzBasis, 
-               rs, zi, zjs, ps, st)
-   Rnl, st = evaluate_batched(basis, rs, zi, zjs, ps, st)
+# function rrule(::typeof(evaluate_batched), 
+#                basis::LearnableRnlrzzBasis, 
+#                rs, zi, zjs, ps, st)
+#    Rnl, st = evaluate_batched(basis, rs, zi, zjs, ps, st)
 
-   return (Rnl, st), 
-         Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
-              pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
-              NoTangent())
-end
+#    return (Rnl, st), 
+#          Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
+#               pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
+#               NoTangent())
+# end

@@ -13,7 +13,7 @@ end
 Base.length(tensor::SparseEquivTensor) = size(tensor.A2Bmap, 1) 
 
 
-function evaluate(tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T} 
+function evaluate!(B, _AA, tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T}
    # evaluate the A basis
    TA = promote_type(T, eltype(Rnl), eltype(eltype(Ylm)))
    A = zeros(TA, length(tensor.abasis))
@@ -27,9 +27,16 @@ function evaluate(tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T}
    AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
 
    # evaluate the coupling coefficients
-   B = tensor.A2Bmap * AA
+   # B = tensor.A2Bmap * AA
+   mul!(B, tensor.A2Bmap, AA)   
 
    return B, (_AA = _AA, )
+end
+
+function whatalloc(::typeof(evaluate!), tensor::SparseEquivTensor, Rnl, Ylm)
+   TA = promote_type(eltype(Rnl), eltype(eltype(Ylm)))
+   TB = promote_type(TA, eltype(tensor.A2Bmap))
+   return (TB, size(tensor.A2Bmap, 1),), (TA, length(tensor.abasis),)
 end
 
 
@@ -47,12 +54,12 @@ function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm,
    TA = promote_type(T, eltype(_AA), eltype(∂B), 
                         eltype(Rnl), eltype(eltype(Ylm)))
    ∂A = zeros(TA, length(tensor.abasis))
-   Polynomials4ML.pullback_arg!(∂A, _∂AA, tensor.aabasis, _AA)
+   Polynomials4ML.unsafe_pullback!(∂A, _∂AA, tensor.aabasis, _AA)
    
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
    ∂Rnl = zeros(TA, size(Rnl))
    ∂Ylm = zeros(TA, size(Ylm))
-   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+   Polynomials4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
 
    return ∂Rnl, ∂Ylm
 end

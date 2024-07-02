@@ -1,6 +1,21 @@
 
 module Models 
 
+using Random: AbstractRNG
+
+using StrideArrays, Bumper, WithAlloc
+import WithAlloc: whatalloc
+
+import Zygote
+
+import Polynomials4ML
+const P4ML = Polynomials4ML
+
+import LuxCore: AbstractExplicitLayer, 
+               AbstractExplicitContainerLayer,
+               initialparameters, 
+               initialstates            
+
 include("elements.jl")
 
 include("radial_envelopes.jl")
