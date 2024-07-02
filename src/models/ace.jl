@@ -1,20 +1,14 @@
 
-import LuxCore: AbstractExplicitLayer, 
-               AbstractExplicitContainerLayer,
-               initialparameters, 
-               initialstates            
 
 using Lux: glorot_normal
 
-using Random: AbstractRNG
 using StaticArrays: SVector
 using LinearAlgebra: norm, dot
+using Polynomials4ML: real_sphericalharmonics, real_solidharmonics
 
-import SpheriCart
-using SpheriCart: SolidHarmonics, SphericalHarmonics
 import RepLieGroups
 import EquivariantModels
-import Polynomials4ML
+
 
 # ------------------------------------------------------------
 #    ACE MODEL SPECIFICATION 
@@ -50,9 +44,9 @@ const NT_NLM = NamedTuple{(:n, :l, :m), Tuple{Int, Int, Int}}
 
 function _make_Y_basis(Ytype, lmax) 
    if Ytype == :solid 
-      return SolidHarmonics(lmax)
+      return real_solidharmonics(lmax)
    elseif Ytype == :spherical
-      return SphericalHarmonics(lmax)
+      return real_sphericalharmonics(lmax)
    end 
 
    error("unknown `Ytype` = $Ytype - I don't know how to generate a spherical basis from this.")
@@ -71,12 +65,12 @@ function _make_A_spec(AA_spec, level)
    return A_spec
 end 
 
-# this should go into sphericart or P4ML 
+# TODO: this should go into sphericart or P4ML 
 function _make_Y_spec(maxl::Integer)
    NT_LM = NamedTuple{(:l, :m), Tuple{Int, Int}}
    y_spec = NT_LM[] 
-   for i = 1:SpheriCart.sizeY(maxl)
-      l, m = SpheriCart.idx2lm(i)
+   for i = 1:P4ML.SpheriCart.sizeY(maxl)
+      l, m = P4ML.SpheriCart.idx2lm(i)
       push!(y_spec, (l = l, m = m))
    end
    return y_spec 
@@ -235,15 +229,24 @@ function splinify(model::ACEModel, ps::NamedTuple)
 end
 
 # ------------------------------------------------------------
+#  utilities 
+
+function radii!(rs, Rs::AbstractVector{SVector{D, T}}) where {D, T <: Real}
+   @assert length(rs) >= length(Rs)
+   @inbounds for i = 1:length(Rs)
+      rs[i] = norm(Rs[i])
+   end
+   return rs   
+end
+
+function whatalloc(::typeof(radii!), Rs::AbstractVector{SVector{D, T}}) where {D, T <: Real} 
+   return (T, length(Rs))
+end
+
+# ------------------------------------------------------------
 #   Model Evaluation 
 #   this should possibly be moved to a separate file once it 
 #   gets more complicated.
-
-import Zygote
-
-# these _getlmax and _length should be moved into SpheriCart 
-_getlmax(ybasis::Union{SolidHarmonics{L}, SphericalHarmonics{L}}) where {L} = L 
-_length(ybasis::Union{SolidHarmonics, SphericalHarmonics}) = SpheriCart.sizeY(_getlmax(ybasis))
 
 function evaluate(model::ACEModel, 
                   Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
@@ -251,24 +254,25 @@ function evaluate(model::ACEModel,
                   {T}
    i_z0 = _z2i(model.rbasis, Z0)
 
+   @no_escape begin 
+
    # get the radii 
-   rs = [ norm(r) for r in Rs ]   # use Bumper 
+   rs = @withalloc radii!(Rs) 
 
    # evaluate the radial basis
-   # use Bumper to pre-allocate 
-   Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
-                              ps.rbasis, st.rbasis)
+   Rnl = @withalloc evaluate_batched!(model.rbasis, rs, Z0, Zs, 
+                                      ps.rbasis, st.rbasis)
 
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
-   SpheriCart.compute!(Ylm, model.ybasis, Rs)
+   Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
 
    # equivariant tensor product 
-   B, _ = evaluate(model.tensor, Rnl, Ylm)
+   B, _ = @withalloc evaluate!(model.tensor, Rnl, Ylm)
 
    # contract with params 
    val = dot(B, (@view ps.WB[:, i_z0]))
 
+   
    # ------------------- 
    #  pair potential 
    if model.pairbasis != nothing 
@@ -281,6 +285,8 @@ function evaluate(model::ACEModel,
    #  E0s 
    val += model.E0s[i_z0]
    # ------------------- 
+
+   end
             
    return val, st 
 end
@@ -304,8 +310,8 @@ function evaluate_ed(model::ACEModel,
    Rnl, dRnl, _st = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
                                         ps.rbasis, st.rbasis)
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # TODO: use Bumper
-   dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
+   Ylm = zeros(T, length(Rs), length(model.ybasis))    # TODO: use Bumper
+   dYlm = zeros(SVector{3, T}, length(Rs), length(model.ybasis))
    SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
    # Forward Pass through the tensor 
@@ -377,8 +383,8 @@ function grad_params(model::ACEModel,
    (Rnl, _st), pb_Rnl = rrule(evaluate_batched, model.rbasis, 
                               rs, Z0, Zs, ps.rbasis, st.rbasis)
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # TODO: use Bumper
-   dYlm = zeros(SVector{3, T}, length(Rs), _length(model.ybasis))
+   Ylm = zeros(T, length(Rs), length(model.ybasis))    # TODO: use Bumper
+   dYlm = zeros(SVector{3, T}, length(Rs), length(model.ybasis))
    SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
    # Forward Pass through the tensor 
@@ -520,7 +526,7 @@ function evaluate_basis(model::ACEModel,
                               ps.rbasis, st.rbasis)
 
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), _length(model.ybasis))    # use Bumper here
+   Ylm = zeros(T, length(Rs), length(model.ybasis))    # use Bumper here
    SpheriCart.compute!(Ylm, model.ybasis, Rs)
 
    # equivariant tensor product 

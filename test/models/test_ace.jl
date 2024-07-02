@@ -36,7 +36,7 @@ for ntest = 1:30
    𝐫 = randn(SVector{3, Float64})
    Ysolid = msolid.ybasis(𝐫)
    Yspher = mspherical.ybasis(𝐫)
-   ll = [ M.SpheriCart.idx2lm(i)[1] for i in 1:length(Ysolid) ]
+   ll = [ M.P4ML.SpheriCart.idx2lm(i)[1] for i in 1:length(Ysolid) ]
    print_tf(@test (Yspher .* (norm(𝐫)).^ll) ≈ Ysolid)
 end
 println() 
@@ -44,7 +44,7 @@ println()
 ##
 
 for ybasis in [:spherical, :solid]
-
+   # ybasis = :spherical
    @info("=== Testing ybasis = $ybasis === ")
    local ps, st, Nat
    model = M.ace_model(; elements = elements, order = order, Ytype = ybasis, 
@@ -73,8 +73,9 @@ for ybasis in [:spherical, :solid]
       print_tf(@test abs(val - val1) < 1e-10)
    end
    println()
+end 
 
-   ##
+##
 
    @info("Test derivatives w.r.t. positions")
    Rs, Zs, z0 = M.rand_atenv(model, 16)
