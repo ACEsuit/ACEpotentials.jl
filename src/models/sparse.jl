@@ -39,6 +39,16 @@ function whatalloc(::typeof(evaluate!), tensor::SparseEquivTensor, Rnl, Ylm)
    return (TB, size(tensor.A2Bmap, 1),), (TA, length(tensor.abasis),)
 end
 
+function evaluate(tensor::SparseEquivTensor, Rnl, Ylm)
+   allocinfo = whatalloc(evaluate!, tensor, Rnl, Ylm)
+   B = zeros(allocinfo[1]...)
+   AA = zeros(allocinfo[2]...)
+   return evaluate!(B, AA, tensor, Rnl, Ylm)
+end
+
+
+# ---------
+
 
 function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
                            intermediates) where {T} 

@@ -286,7 +286,7 @@ function evaluate(model::ACEModel,
    val += model.E0s[i_z0]
    # ------------------- 
 
-   end
+   end # @no_escape
             
    return val, st 
 end
@@ -298,25 +298,25 @@ function evaluate_ed(model::ACEModel,
                      ps, st) where {T}
 
    i_z0 = _z2i(model.rbasis, Z0)
+
+   @no_escape begin 
    
    # ---------- EMBEDDINGS ------------
    # (these are done in forward mode, so not part of the fwd, bwd passes)
 
    # get the radii 
-   rs = [ norm(r) for r in Rs ]   # TODO: use Bumper 
+   rs = @withalloc radii!(Rs)
 
    # evaluate the radial basis
-   # TODO: use Bumper to pre-allocate 
-   Rnl, dRnl, _st = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
-                                        ps.rbasis, st.rbasis)
+   # TODO: using @withalloc causes stack overflow 
+   Rnl, dRnl = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
+                                               ps.rbasis, st.rbasis)
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), length(model.ybasis))    # TODO: use Bumper
-   dYlm = zeros(SVector{3, T}, length(Rs), length(model.ybasis))
-   SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
+   Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
 
    # Forward Pass through the tensor 
    # keep intermediates to be used in backward pass 
-   B, intermediates = evaluate(model.tensor, Rnl, Ylm)
+   B, intermediates = @withalloc evaluate!(model.tensor, Rnl, Ylm)
 
    # contract with params 
    # (here we can insert another nonlinearity instead of the simple dot)
@@ -363,6 +363,8 @@ function evaluate_ed(model::ACEModel,
    #  E0s 
    Ei += model.E0s[i_z0]
    # ------------------- 
+
+   end # @no_escape
 
    return Ei, ∇Ei, st 
 end

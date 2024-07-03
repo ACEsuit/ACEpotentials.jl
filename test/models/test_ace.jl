@@ -44,7 +44,7 @@ println()
 ##
 
 for ybasis in [:spherical, :solid]
-   # ybasis = :spherical
+   ybasis = :spherical
    @info("=== Testing ybasis = $ybasis === ")
    local ps, st, Nat
    model = M.ace_model(; elements = elements, order = order, Ytype = ybasis, 
@@ -73,9 +73,8 @@ for ybasis in [:spherical, :solid]
       print_tf(@test abs(val - val1) < 1e-10)
    end
    println()
-end 
 
-##
+   ##
 
    @info("Test derivatives w.r.t. positions")
    Rs, Zs, z0 = M.rand_atenv(model, 16)
