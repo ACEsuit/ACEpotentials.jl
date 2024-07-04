@@ -59,14 +59,15 @@ function pullback!(∂Rnl, ∂Ylm,
    T_∂A = promote_type(T_∂AA, eltype(_AA))
 
    @no_escape begin 
+   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                            
    # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
    # ∂AA = tensor.A2Bmap' * ∂B   
    ∂AA = @alloc(T_∂AA, size(tensor.A2Bmap, 2))
    mul!(∂AA, tensor.A2Bmap', ∂B)
-   # _∂AA[proj] = ∂AA
    _∂AA = @alloc(T_∂AA, length(_AA))
-   _∂AA[proj] .= ∂AA
+   fill!(_∂AA, zero(T_∂AA))
+   _∂AA[proj] = ∂AA
 
    # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
    ∂A = @alloc(T_∂A, length(tensor.abasis))
@@ -75,6 +76,7 @@ function pullback!(∂Rnl, ∂Ylm,
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
    P4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
 
+   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    end # no_escape
 
    return ∂Rnl, ∂Ylm

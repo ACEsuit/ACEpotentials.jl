@@ -89,7 +89,7 @@ println()
       Us = randn(SVector{3, Float64}, Nat)
       F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
       dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
-      print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=true))
+      print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
    end
    println() 
 
