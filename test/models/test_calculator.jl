@@ -1,6 +1,6 @@
 
 
-# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 ##
@@ -93,7 +93,7 @@ for ntest = 1:20
    E = 0.0 
    for i = 1:length(at)
       Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, i)
-      E += M.evaluate(calc.model, Rs, Zs, z0, ps, st)[1]
+      E += M.evaluate(calc.model, Rs, Zs, z0, ps, st)
    end
    efv = M.energy_forces_virial(at, calc, ps, st)
    E2 = AtomsCalculators.potential_energy(at, calc)

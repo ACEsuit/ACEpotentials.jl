@@ -53,10 +53,10 @@ cutoff_radius(V::ACEPotential{<: ACEModel}) =
       maximum(x.rcut for x in V.model.rbasis.rin0cuts) * distance_unit(V)
 
 eval_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0) = 
-      evaluate(V.model, Rs, Zs, z0, V.ps, V.st)[1] 
+      evaluate(V.model, Rs, Zs, z0, V.ps, V.st) 
 
 function eval_grad_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0) 
-   v, dv, st = evaluate_ed(V.model, Rs, Zs, z0, V.ps, V.st) 
+   v, dv = evaluate_ed(V.model, Rs, Zs, z0, V.ps, V.st) 
    return v, dv
 end
 
@@ -92,7 +92,7 @@ function energy_forces_virial_serial(
 
    for i in domain
       Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
-      v, dv, st = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
+      v, dv = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
       energy += v
       for α = 1:length(Js) 
          forces[Js[α]] -= dv[α]
@@ -135,7 +135,7 @@ function energy_forces_virial(
 
       for i in sub_domain
          Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
-         v, dv, st = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
+         v, dv = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
          energy += v * energy_unit(V)
          for α = 1:length(Js) 
             forces[Js[α]] -= dv[α] * force_unit(V)
@@ -255,7 +255,7 @@ function energy_forces_virial_basis(
             )
    
    Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, 1)            
-   E1, _ = evaluate_basis(calc.model, Rs, Zs, z0, ps, st)
+   E1 = evaluate_basis(calc.model, Rs, Zs, z0, ps, st)
    N_basis = length(E1)
    T = fl_type(calc.model) # this is ACE specific 
 
@@ -265,7 +265,7 @@ function energy_forces_virial_basis(
 
    for i in domain
       Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
-      v, dv, _ = evaluate_basis_ed(calc.model, Rs, Zs, z0, ps, st)
+      v, dv = evaluate_basis_ed(calc.model, Rs, Zs, z0, ps, st)
 
       for k = 1:N_basis
          E[k] += v[k] * energy_unit(calc) 

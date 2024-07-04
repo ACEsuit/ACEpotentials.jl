@@ -95,16 +95,13 @@ end
 
 
 
-function evaluate_ed_batched(basis::SplineRnlrzzBasis, 
+function evaluate_ed_batched!(Rnl, Rnl_d, 
+                             basis::SplineRnlrzzBasis, 
                              rs::AbstractVector{T}, Zi, Zs, ps, st
                              ) where {T <: Real}
    
    @assert length(rs) == length(Zs)            
    Rnl1, ∇Rnl1 = evaluate_ed(basis, rs[1], Zi, Zs[1], ps, st)
-   Rnl = zeros(T, length(rs), length(Rnl1))
-   Rnl_d = zeros(T, length(rs), length(Rnl1))
-   Rnl[1, :] .= Rnl1
-   Rnl_d[1, :] .= ∇Rnl1
 
    for j = 1:length(rs)
       Rnl_j, ∇Rnl_j = evaluate_ed(basis, rs[j], Zi, Zs[j], ps, st)
