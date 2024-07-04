@@ -17,11 +17,11 @@ function evaluate!(B, _AA, tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T}
    # evaluate the A basis
    TA = promote_type(T, eltype(Rnl), eltype(eltype(Ylm)))
    A = zeros(TA, length(tensor.abasis))
-   Polynomials4ML.evaluate!(A, tensor.abasis, (Rnl, Ylm))
+   P4ML.evaluate!(A, tensor.abasis, (Rnl, Ylm))
 
    # evaluate the AA basis
-   _AA = zeros(TA, length(tensor.aabasis))     # use Bumper here
-   Polynomials4ML.evaluate!(_AA, tensor.aabasis, A)
+   # _AA = zeros(TA, length(tensor.aabasis))     # use Bumper here
+   P4ML.evaluate!(_AA, tensor.aabasis, A)
    # project to the actual AA basis 
    proj = tensor.aabasis.projection
    AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
@@ -36,7 +36,7 @@ end
 function whatalloc(::typeof(evaluate!), tensor::SparseEquivTensor, Rnl, Ylm)
    TA = promote_type(eltype(Rnl), eltype(eltype(Ylm)))
    TB = promote_type(TA, eltype(tensor.A2Bmap))
-   return (TB, size(tensor.A2Bmap, 1),), (TA, length(tensor.abasis),)
+   return (TB, length(tensor),), (TA, length(tensor.aabasis),)
 end
 
 function evaluate(tensor::SparseEquivTensor, Rnl, Ylm)

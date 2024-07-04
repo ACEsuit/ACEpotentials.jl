@@ -155,8 +155,10 @@ function evaluate_ed_batched!(Rnl, Rnl_d,
    for j = 1:length(rs)
       d_r = Dual{T}(rs[j], one(T))   
       d_Rnl = evaluate(basis, d_r, Zi, Zs[j], ps, st)  # should reuse memory here 
-      map!(ForwardDiff.value, (@view Rnl[j, :]), d_Rnl)
-      map!(d -> ForwardDiff.extract_derivative(T, d), (@view Rnl_d[j, :]), d_Rnl)
+      for t = 1:size(Rnl, 2) 
+         Rnl[j, t] = ForwardDiff.value(d_Rnl[t])
+         Rnl_d[j, t] = ForwardDiff.extract_derivative(T, d_Rnl[t])
+      end
    end       
 
    return Rnl, Rnl_d 
@@ -235,3 +237,13 @@ end
 #               pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
 #               NoTangent())
 # end
+
+function rrule(::typeof(evaluate_batched), 
+               basis::LearnableRnlrzzBasis, 
+               rs, zi, zjs, ps, st)
+   Rnl = evaluate_batched(basis, rs, zi, zjs, ps, st)
+
+   return Rnl, Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
+                     pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
+                     NoTangent())
+end

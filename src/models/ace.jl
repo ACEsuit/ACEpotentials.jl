@@ -243,6 +243,22 @@ function whatalloc(::typeof(radii!), Rs::AbstractVector{SVector{D, T}}) where {D
    return (T, length(Rs))
 end
 
+function radii_ed!(rs, ∇rs, Rs::AbstractVector{SVector{D, T}}) where {D, T <: Real}
+   @assert length(rs) >= length(Rs)
+   @assert length(∇rs) >= length(Rs)
+   @inbounds for i = 1:length(Rs)
+      rs[i] = norm(Rs[i])
+      ∇rs[i] = Rs[i] / rs[i]
+   end
+   return rs, ∇rs
+end
+
+function whatalloc(::typeof(radii_ed!), Rs::AbstractVector{SVector{D, T}}) where {D, T <: Real} 
+   return (T, length(Rs)), (SVector{D, T}, length(Rs))
+end
+
+
+
 # ------------------------------------------------------------
 #   Model Evaluation 
 #   this should possibly be moved to a separate file once it 
@@ -300,19 +316,20 @@ function evaluate_ed(model::ACEModel,
    i_z0 = _z2i(model.rbasis, Z0)
 
    @no_escape begin 
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
    # ---------- EMBEDDINGS ------------
    # (these are done in forward mode, so not part of the fwd, bwd passes)
 
    # get the radii 
-   rs = @withalloc radii!(Rs)
+   rs, ∇rs = @withalloc radii_ed!(Rs)
 
    # evaluate the radial basis
    # TODO: using @withalloc causes stack overflow 
-   # Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
-   #                                             ps.rbasis, st.rbasis)
-   Rnl, dRnl = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
+   Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
                                                ps.rbasis, st.rbasis)
+   # Rnl, dRnl = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
+   #                                 ps.rbasis, st.rbasis)
 
    # evaluate the Y basis
    Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
@@ -330,7 +347,7 @@ function evaluate_ed(model::ACEModel,
    ∂B = @view ps.WB[:, i_z0]
    
    # backward pass through tensor 
-   ∂Rnl, ∂Ylm = pullback(∂B, model.tensor, Rnl, Ylm, intermediates)
+   ∂Rnl, ∂Ylm = @withalloc pullback!(∂B, model.tensor, Rnl, Ylm, intermediates)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
@@ -338,11 +355,16 @@ function evaluate_ed(model::ACEModel,
    #    ∂Ei / ∂𝐫ⱼ = ∑_nl ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂𝐫ⱼ 
    #              + ∑_lm ∂Ei / ∂Ylm[j] * ∂Ylm[j] / ∂𝐫ⱼ
    ∇Ei = zeros(SVector{3, T}, length(Rs))
-   for j = 1:length(Rs)
-      ∇Ei[j] = dot(∂Rnl[j, :], dRnl[j, :]) * (Rs[j] / rs[j]) + 
-               sum(∂Ylm[j, :] .* dYlm[j, :])
+   for t = 1:size(∂Rnl, 2)
+      for j = 1:size(∂Rnl, 1)
+         ∇Ei[j] += (∂Rnl[j, t] * dRnl[j, t]) * ∇rs[j]
+      end
    end
-
+   for t = 1:size(∂Ylm, 2)
+      for j = 1:size(∂Ylm, 1)
+         ∇Ei[j] += ∂Ylm[j, t] * dYlm[j, t]
+      end
+   end
 
    # ------------------- 
    #  pair potential 
@@ -367,6 +389,7 @@ function evaluate_ed(model::ACEModel,
    Ei += model.E0s[i_z0]
    # ------------------- 
 
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    end # @no_escape
 
    return Ei, ∇Ei, st 
@@ -377,24 +400,31 @@ function grad_params(model::ACEModel,
                      Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                      ps, st) where {T}
 
+   @no_escape begin 
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
+
    # ---------- EMBEDDINGS ------------
    # (these are done in forward mode, so not part of the fwd, bwd passes)
 
    # get the radii 
-   rs = [ norm(r) for r in Rs ]   # TODO: use Bumper 
+   rs = @withalloc radii!(Rs) 
 
    # evaluate the radial basis
    # TODO: use Bumper to pre-allocate 
-   (Rnl, _st), pb_Rnl = rrule(evaluate_batched, model.rbasis, 
+   Rnl, pb_Rnl = rrule(evaluate_batched, model.rbasis, 
                               rs, Z0, Zs, ps.rbasis, st.rbasis)
+   
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), length(model.ybasis))    # TODO: use Bumper
-   dYlm = zeros(SVector{3, T}, length(Rs), length(model.ybasis))
-   SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
+   Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
+
+   # Ylm = zeros(T, length(Rs), length(model.ybasis))    # TODO: use Bumper
+   # dYlm = zeros(SVector{3, T}, length(Rs), length(model.ybasis))
+   # SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
    # Forward Pass through the tensor 
    # keep intermediates to be used in backward pass 
-   B, intermediates = evaluate(model.tensor, Rnl, Ylm)
+   # B, intermediates = evaluate(model.tensor, Rnl, Ylm)
+   B, intermediates = @withalloc evaluate!(model.tensor, Rnl, Ylm)
 
    # contract with params 
    # (here we can insert another nonlinearity instead of the simple dot)
@@ -409,7 +439,8 @@ function grad_params(model::ACEModel,
    ∂B = @view ps.WB[:, i_z0]
 
    # backward pass through tensor 
-   ∂Rnl, ∂Ylm = pullback_evaluate(∂B, model.tensor, Rnl, Ylm, intermediates)
+   # ∂Rnl, ∂Ylm = pullback_evaluate(∂B, model.tensor, Rnl, Ylm, intermediates)
+   ∂Rnl, ∂Ylm = @withalloc pullback!(∂B, model.tensor, Rnl, Ylm, intermediates)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # the first grad_param is ∂WB, which we already have but it needs to be 
@@ -447,6 +478,9 @@ function grad_params(model::ACEModel,
    Ei += model.E0s[i_z0]
    # ------------------- 
 
+
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   end # @no_escape
 
    return Ei, (WB = ∂WB, Wpair = ∂Wpair, rbasis = ∂Wqnl, 
                pairbasis = NamedTuple()), st
