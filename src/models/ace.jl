@@ -292,7 +292,7 @@ function evaluate(model::ACEModel,
    # ------------------- 
    #  pair potential 
    if model.pairbasis != nothing 
-      Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+      Rpair = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
                                ps.pairbasis, st.pairbasis)
       Apair = sum(Rpair, dims=1)[:]
       val += dot(Apair, (@view ps.Wpair[:, i_z0]))
@@ -369,7 +369,7 @@ function evaluate_ed(model::ACEModel,
    # ------------------- 
    #  pair potential 
    if model.pairbasis != nothing 
-      Rpair, dRpair, _ = evaluate_ed_batched(model.pairbasis, rs, Z0, Zs, 
+      Rpair, dRpair = evaluate_ed_batched(model.pairbasis, rs, Z0, Zs, 
                                              ps.pairbasis, st.pairbasis)
       Apair = sum(Rpair, dims=1)[:]
       Wp_i = @view ps.Wpair[:, i_z0]
@@ -459,7 +459,7 @@ function grad_params(model::ACEModel,
    # ------------------- 
    #  pair potential 
    if model.pairbasis != nothing 
-      Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+      Rpair = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
                                     ps.pairbasis, st.pairbasis)
       Apair = sum(Rpair, dims=1)[:]
       Wp_i = @view ps.Wpair[:, i_z0]
@@ -575,7 +575,7 @@ function evaluate_basis(model::ACEModel,
    # ------------------- 
    #  pair potential 
    if model.pairbasis != nothing 
-      Rpair, _ = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+      Rpair = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
                                     ps.pairbasis, st.pairbasis)
       Apair = sum(Rpair, dims=1)[:]
       B[get_pairbasis_inds(model, Z0)] .= Apair

@@ -26,14 +26,14 @@ ps, st = LuxCore.setup(rng, basis)
 r = 3.0 
 Zi = basis._i2z[1]
 Zj = basis._i2z[2]
-Rnl1, st1 = basis(r, Zi, Zj, ps, st)
-Rnl, Rnl_d, st1 = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
+Rnl1 = basis(r, Zi, Zj, ps, st)
+Rnl, Rnl_d = M.evaluate_ed(basis, r, Zi, Zj, ps, st)
 
 basis_spl = M.splinify(basis, ps)
 ps_spl, st_spl = LuxCore.setup(rng, basis_spl)
 
-Rnl2, _ = M.evaluate(basis_spl, r, Zi, Zj, ps_spl, st_spl)
-Rnl2, Rnl_d2, _ = M.evaluate_ed(basis_spl, r, Zi, Zj, ps_spl, st_spl)
+Rnl2 = M.evaluate(basis_spl, r, Zi, Zj, ps_spl, st_spl)
+Rnl2, Rnl_d2 = M.evaluate_ed(basis_spl, r, Zi, Zj, ps_spl, st_spl)
 
 ## 
 # inspect the basis visually 
@@ -69,7 +69,7 @@ for ntest = 1:20
    Zj = rand(basis_spl._i2z)
    r = 2.0 + rand() 
    U = randn(length(basis_spl))
-   F(t) = dot(U, basis_spl(r + t, Zi, Zj, ps, st)[1])
+   F(t) = dot(U, basis_spl(r + t, Zi, Zj, ps, st))
    dF(t) = dot(U, M.evaluate_ed(basis_spl, r + t, Zi, Zj, ps, st)[2])
    print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
 end

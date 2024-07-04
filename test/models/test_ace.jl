@@ -43,8 +43,8 @@ println()
 
 ##
 
-# for ybasis in [:spherical, :solid]
-   ybasis = :spherical
+for ybasis in [:spherical, :solid]
+   # ybasis = :solid
    @info("=== Testing ybasis = $ybasis === ")
    local ps, st, Nat
    model = M.ace_model(; elements = elements, order = order, Ytype = ybasis, 
@@ -193,12 +193,12 @@ println()
 
    for ntest = 1:10
       local len, Nat, Rs, Zs, z0, Ei 
-      len = 10 
+      len = 100 
       mae = sum(1:len) do _
          Nat = rand(8:16)
          Rs, Zs, z0 = M.rand_atenv(model, Nat)
-         Ei = M.evaluate(model, Rs, Zs, z0, ps, st)[1]
-         Ei_lin = M.evaluate(lin_ace, Rs, Zs, z0, ps_lin, st_lin)[1]
+         Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+         Ei_lin = M.evaluate(lin_ace, Rs, Zs, z0, ps_lin, st_lin)
          abs(Ei - Ei_lin)
       end
       mae /= len 
@@ -207,6 +207,7 @@ println()
    println() 
 
 end
+
 ##
 
 #=
