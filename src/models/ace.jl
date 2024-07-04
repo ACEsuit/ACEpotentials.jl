@@ -304,7 +304,7 @@ function evaluate(model::ACEModel,
 
    end # @no_escape
             
-   return val, st 
+   return val
 end
 
 
@@ -392,7 +392,7 @@ function evaluate_ed(model::ACEModel,
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    end # @no_escape
 
-   return Ei, ∇Ei, st 
+   return Ei, ∇Ei
 end
 
 
@@ -557,19 +557,17 @@ function evaluate_basis(model::ACEModel,
                         Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                         ps, st) where {T}
    # get the radii 
-   rs = [ norm(r) for r in Rs ]   # use Bumper 
+   rs = @withalloc radii!(Rs) 
 
    # evaluate the radial basis
-   # use Bumper to pre-allocate 
-   Rnl, _st = evaluate_batched(model.rbasis, rs, Z0, Zs, 
-                              ps.rbasis, st.rbasis)
+   Rnl = evaluate_batched(model.rbasis, rs, Z0, Zs, 
+                           ps.rbasis, st.rbasis)
 
    # evaluate the Y basis
-   Ylm = zeros(T, length(Rs), length(model.ybasis))    # use Bumper here
-   SpheriCart.compute!(Ylm, model.ybasis, Rs)
+   Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
 
    # equivariant tensor product 
-   Bi, _ = evaluate(model.tensor, Rnl, Ylm)
+   Bi, _ = @withalloc evaluate!(model.tensor, Rnl, Ylm)
 
    B = zeros(eltype(Bi), len_basis(model))
    B[get_basis_inds(model, Z0)] .= Bi
@@ -583,7 +581,7 @@ function evaluate_basis(model::ACEModel,
       B[get_pairbasis_inds(model, Z0)] .= Apair
    end 
 
-   return B, st
+   return B
 end
 
 __vec(Rs::AbstractVector{SVector{3, T}}) where {T} = reinterpret(T, Rs)
@@ -593,16 +591,16 @@ function evaluate_basis_ed(model::ACEModel,
                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                            ps, st) where {T}
 
-   B, st = evaluate_basis(model, Rs, Zs, Z0, ps, st)
+   B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
 
    dB_vec = ForwardDiff.jacobian( 
-            _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st)[1],
+            _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st),
             __vec(Rs))
    dB1 = __svecs(collect(dB_vec')[:])
    dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
                                (2, 1) ) )
 
-   return B, dB, st         
+   return B, dB         
 end
 
 

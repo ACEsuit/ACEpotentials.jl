@@ -63,12 +63,12 @@ println()
 
       Nat = rand(8:16)
       Rs, Zs, Z0 = M.rand_atenv(model, Nat)
-      val, st1 = M.evaluate(model, Rs, Zs, Z0, ps, st)
+      val = M.evaluate(model, Rs, Zs, Z0, ps, st)
 
       p = shuffle(1:Nat)
       Rs1 = Ref(M.rand_iso()) .* Rs[p]
       Zs1 = Zs[p]
-      val1, st1 = M.evaluate(model, Rs1, Zs1, Z0, ps, st)
+      val1 = M.evaluate(model, Rs1, Zs1, Z0, ps, st)
 
       print_tf(@test abs(val - val1) < 1e-10)
    end
@@ -78,8 +78,8 @@ println()
 
    @info("Test derivatives w.r.t. positions")
    Rs, Zs, z0 = M.rand_atenv(model, 16)
-   Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
-   Ei1, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+   Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+   Ei1, ∇Ei = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
    println_slim(@test Ei ≈ Ei1)
 
    for ntest = 1:20 
@@ -87,7 +87,7 @@ println()
       Nat = rand(8:16)
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       Us = randn(SVector{3, Float64}, Nat)
-      F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
+      F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)
       dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
       print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
    end
@@ -98,8 +98,8 @@ println()
    @info("Test derivatives w.r.t. parameters")
    Nat = 15
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
-   Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
-   Ei1, ∇Ei, st = M.grad_params(model, Rs, Zs, z0, ps, st)
+   Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+   Ei1, ∇Ei = M.grad_params(model, Rs, Zs, z0, ps, st)
    println_slim(@test Ei ≈ Ei1)
 
    for ntest = 1:20
@@ -109,7 +109,7 @@ println()
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       pvec, _restruct = destructure(ps)
       uvec = randn(length(pvec)) / sqrt(length(pvec))
-      F(t) = M.evaluate(model, Rs, Zs, z0, _restruct(pvec + t * uvec), st)[1]
+      F(t) = M.evaluate(model, Rs, Zs, z0, _restruct(pvec + t * uvec), st)
       dF0 = dot( destructure( M.grad_params(model, Rs, Zs, z0, ps, st)[2] )[1], uvec )
       print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose = false))
    end
@@ -126,7 +126,7 @@ println()
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       Us = randn(SVector{3, Float64}, Nat)
       Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
-      Ei, ∂Ei, _ = M.grad_params(model, Rs, Zs, z0, ps, st)
+      Ei, ∂Ei = M.grad_params(model, Rs, Zs, z0, ps, st)
 
       # test partial derivative w.r.t. the Ei component 
       ∂2_Ei = M.pullback_2_mixed(1.0, 0*Us, model, Rs, Zs, z0, ps, st)
@@ -154,14 +154,13 @@ println()
       Nat = 15
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       i_z0 = M._z2i(model, z0)
-      Ei, st1 = M.evaluate(model, Rs, Zs, z0, ps, st)
-      B, st1 = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
+      Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+      B = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
       θ = M.get_basis_params(model, ps)
       print_tf(@test Ei ≈ dot(B, θ))
 
-      Ei, ∇Ei, st1 = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
-      B, ∇B, st1 = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
-      print_tf(@test Ei ≈ dot(B, θ))
+      Ei, ∇Ei = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+      B, ∇B = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
       print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
    end
    println() 
@@ -184,7 +183,7 @@ println()
    println() 
 
 
-   ##
+##
 
    @info("check splinification")
    lin_ace = M.splinify(model, ps)
