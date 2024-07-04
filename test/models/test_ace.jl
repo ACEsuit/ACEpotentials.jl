@@ -1,5 +1,5 @@
 
-# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 ##
@@ -43,7 +43,7 @@ println()
 
 ##
 
-for ybasis in [:spherical, :solid]
+# for ybasis in [:spherical, :solid]
    ybasis = :spherical
    @info("=== Testing ybasis = $ybasis === ")
    local ps, st, Nat
@@ -54,7 +54,7 @@ for ybasis in [:spherical, :solid]
 
    ps, st = LuxCore.setup(rng, model)
 
-   ##
+##
 
    @info("Test Rotation-Invariance of the Model")
 
@@ -74,7 +74,7 @@ for ybasis in [:spherical, :solid]
    end
    println()
 
-   ##
+##
 
    @info("Test derivatives w.r.t. positions")
    Rs, Zs, z0 = M.rand_atenv(model, 16)
@@ -89,11 +89,11 @@ for ybasis in [:spherical, :solid]
       Us = randn(SVector{3, Float64}, Nat)
       F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
       dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
-      print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
+      print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=true))
    end
    println() 
 
-   ##
+##
 
    @info("Test derivatives w.r.t. parameters")
    Nat = 15

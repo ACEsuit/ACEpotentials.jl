@@ -309,8 +309,11 @@ function evaluate_ed(model::ACEModel,
 
    # evaluate the radial basis
    # TODO: using @withalloc causes stack overflow 
+   # Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
+   #                                             ps.rbasis, st.rbasis)
    Rnl, dRnl = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
                                                ps.rbasis, st.rbasis)
+
    # evaluate the Y basis
    Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
 
@@ -327,7 +330,7 @@ function evaluate_ed(model::ACEModel,
    ∂B = @view ps.WB[:, i_z0]
    
    # backward pass through tensor 
-   ∂Rnl, ∂Ylm = pullback_evaluate(∂B, model.tensor, Rnl, Ylm, intermediates)
+   ∂Rnl, ∂Ylm = pullback(∂B, model.tensor, Rnl, Ylm, intermediates)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 

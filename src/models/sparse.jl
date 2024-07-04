@@ -50,30 +50,54 @@ end
 # ---------
 
 
-function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
-                           intermediates) where {T} 
+function pullback!(∂Rnl, ∂Ylm, 
+                   ∂B, tensor::SparseEquivTensor, Rnl, Ylm, 
+                   intermediates)
    _AA = intermediates._AA
    proj = tensor.aabasis.projection
+   T_∂AA = promote_type(eltype(∂B), eltype(tensor.A2Bmap))
+   T_∂A = promote_type(T_∂AA, eltype(_AA))
+
+   @no_escape begin 
                            
    # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
-   ∂AA = tensor.A2Bmap' * ∂B   # TODO: make this in-place 
-   _∂AA = zeros(T, length(_AA)) 
-   _∂AA[proj] = ∂AA
+   # ∂AA = tensor.A2Bmap' * ∂B   
+   ∂AA = @alloc(T_∂AA, size(tensor.A2Bmap, 2))
+   mul!(∂AA, tensor.A2Bmap', ∂B)
+   # _∂AA[proj] = ∂AA
+   _∂AA = @alloc(T_∂AA, length(_AA))
+   _∂AA[proj] .= ∂AA
 
    # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
-   TA = promote_type(T, eltype(_AA), eltype(∂B), 
-                        eltype(Rnl), eltype(eltype(Ylm)))
-   ∂A = zeros(TA, length(tensor.abasis))
-   Polynomials4ML.unsafe_pullback!(∂A, _∂AA, tensor.aabasis, _AA)
+   ∂A = @alloc(T_∂A, length(tensor.abasis))
+   P4ML.unsafe_pullback!(∂A, _∂AA, tensor.aabasis, _AA)
    
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
-   ∂Rnl = zeros(TA, size(Rnl))
-   ∂Ylm = zeros(TA, size(Ylm))
-   Polynomials4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+   P4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+
+   end # no_escape
 
    return ∂Rnl, ∂Ylm
 end
 
+function whatalloc(::typeof(pullback!),  
+                   ∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
+                   intermediates) where {T} 
+   TA = promote_type(T, eltype(intermediates._AA), eltype(∂B), 
+                     eltype(Rnl), eltype(eltype(Ylm)))
+   return (TA, size(Rnl)...), (TA, size(Ylm)...)   
+end
+
+function pullback(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
+                           intermediates) where {T} 
+   alc_∂Rnl, alc_∂Ylm = whatalloc(pullback!, ∂B, tensor, Rnl, Ylm, intermediates)
+   ∂Rnl = zeros(alc_∂Rnl...)
+   ∂Ylm = zeros(alc_∂Ylm...)
+   return pullback!(∂Rnl, ∂Ylm, ∂B, tensor, Rnl, Ylm, intermediates)
+end
+
+# ----------------------------------------
+#  utilities 
 
 """
 Get the specification of the BBbasis as a list (`Vector`) of vectors of `@NamedTuple{n::Int, l::Int}`.
