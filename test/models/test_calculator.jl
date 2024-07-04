@@ -3,6 +3,8 @@
 # using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
+##
+
 using Test, ACEbase
 using ACEbase.Testing: print_tf, println_slim
 
@@ -16,9 +18,18 @@ using AtomsBuilder, EmpiricalPotentials
 AB = AtomsBuilder
 using EmpiricalPotentials: get_neighbours
 
-
 using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
+
+function _calc_E0s(at, calc)
+   out = 0.0 
+   Zs = AtomsBase.atomic_number(at) 
+   for z in Zs
+      iz = M._z2i(calc.model, z)
+      out += calc.model.E0s[iz] 
+   end
+   return out 
+end
 
 ##
 
@@ -64,7 +75,9 @@ for ntest = 1:20
    n_O = count(x -> x == 8, AtomsBase.atomic_number(at))
    nlist = PairList(at, M.cutoff_radius(calc))
    efv = M.energy_forces_virial(at, calc, ps_zero, st)
-   print_tf(@test ustrip(abs(efv.energy - E0s[:Si] * n_Si - E0s[:O] * n_O)) < 1e-10)
+   _E0 = E0s[:Si] * n_Si + E0s[:O] * n_O
+   print_tf(@test ustrip(abs(efv.energy - _E0)) < 1e-10)
+   print_tf(@test ustrip(_E0) ≈ _calc_E0s(at, calc))
 end
 
 println()
@@ -80,7 +93,7 @@ for ntest = 1:20
    E = 0.0 
    for i = 1:length(at)
       Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, i)
-      E += M.evaluate(calc.model, Rs, Zs, z0, ps, st)[1]
+      E += M.evaluate(calc.model, Rs, Zs, z0, ps, st)
    end
    efv = M.energy_forces_virial(at, calc, ps, st)
    E2 = AtomsCalculators.potential_energy(at, calc)
@@ -116,14 +129,14 @@ for ntest = 1:10
    local at, Us, dF0, X0, F, Z
 
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z = AtomsBase.atomic_number(at)
    Z[[3,6,8]] .= 8
-   at = AtomsBuilder._set_atomic_numbers(at, Z)
+   at = AtomsBuilder.set_elements(at, Z)
    Us = randn(SVector{3, Float64}, length(at)) / length(at) * u"Å"
    dF0 = - dot(Us, M.energy_forces_virial_serial(at, calc, ps, st).forces)
-   X0 = AtomsBuilder._get_positions(at)
+   X0 = AtomsBase.position(at)
    F(t) = M.energy_forces_virial_serial(
-               AtomsBuilder._set_positions(at, X0 + t * Us), 
+               AtomsBuilder.set_positions(at, X0 + t * Us), 
                calc, ps, st).energy |> ustrip 
    print_tf( @test ACEbase.Testing.fdtest(F, t -> ustrip(dF0), 0.0; verbose=false ) )
 end
@@ -142,7 +155,7 @@ for ntest = 1:10
    len = 10 
    mae = sum(1:len) do _
       at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-      Z = AtomsBuilder._get_atomic_numbers(at)
+      Z = AtomsBase.atomic_number(at)
       Z[[3,6,8]] .= 8
       E = M.energy_forces_virial(at, calc, ps, st).energy
       E_lin = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin).energy
@@ -162,14 +175,13 @@ for ntest = 1:10
 
    ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z = AtomsBase.atomic_number(at)
    Z[[3,6,8]] .= 8
 
    efv = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin)
    efv_b = M.energy_forces_virial_basis(at, lin_calc, ps_lin, st_lin)
-
    ps_vec, _restruct = destructure(ps_lin)
-   print_tf(@test dot(efv_b.energy, ps_vec) ≈ efv.energy )
+   print_tf(@test dot(efv_b.energy, ps_vec) + _calc_E0s(at, lin_calc) * u"eV" ≈ efv.energy )
    print_tf(@test all(efv_b.forces * ps_vec .≈ efv.forces) )
    print_tf(@test sum(ps_vec .* efv_b.virial) ≈ efv.virial )
 end
@@ -192,7 +204,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
 
    # random structure 
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBuilder._get_atomic_numbers(at)
+   Z = AtomsBase.atomic_number(at)
    Z[[3,6,8]] .= 8
 
    function loss(at, calc, ps, st)
@@ -214,7 +226,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
    dF0 = dot(g_vec, u)
 
    @info("(wE, wV, wF) = ($wE, $wV, $wF)")
-   FDTEST = ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=true)
+   FDTEST = ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose=false)
    println(@test FDTEST)
 end
 

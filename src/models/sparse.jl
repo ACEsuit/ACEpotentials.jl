@@ -13,50 +13,93 @@ end
 Base.length(tensor::SparseEquivTensor) = size(tensor.A2Bmap, 1) 
 
 
-function evaluate(tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T} 
+function evaluate!(B, _AA, tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T}
    # evaluate the A basis
    TA = promote_type(T, eltype(Rnl), eltype(eltype(Ylm)))
    A = zeros(TA, length(tensor.abasis))
-   Polynomials4ML.evaluate!(A, tensor.abasis, (Rnl, Ylm))
+   P4ML.evaluate!(A, tensor.abasis, (Rnl, Ylm))
 
    # evaluate the AA basis
-   _AA = zeros(TA, length(tensor.aabasis))     # use Bumper here
-   Polynomials4ML.evaluate!(_AA, tensor.aabasis, A)
+   # _AA = zeros(TA, length(tensor.aabasis))     # use Bumper here
+   P4ML.evaluate!(_AA, tensor.aabasis, A)
    # project to the actual AA basis 
    proj = tensor.aabasis.projection
    AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
 
    # evaluate the coupling coefficients
-   B = tensor.A2Bmap * AA
+   # B = tensor.A2Bmap * AA
+   mul!(B, tensor.A2Bmap, AA)   
 
    return B, (_AA = _AA, )
 end
 
+function whatalloc(::typeof(evaluate!), tensor::SparseEquivTensor, Rnl, Ylm)
+   TA = promote_type(eltype(Rnl), eltype(eltype(Ylm)))
+   TB = promote_type(TA, eltype(tensor.A2Bmap))
+   return (TB, length(tensor),), (TA, length(tensor.aabasis),)
+end
 
-function pullback_evaluate(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
-                           intermediates) where {T} 
+function evaluate(tensor::SparseEquivTensor, Rnl, Ylm)
+   allocinfo = whatalloc(evaluate!, tensor, Rnl, Ylm)
+   B = zeros(allocinfo[1]...)
+   AA = zeros(allocinfo[2]...)
+   return evaluate!(B, AA, tensor, Rnl, Ylm)
+end
+
+
+# ---------
+
+
+function pullback!(∂Rnl, ∂Ylm, 
+                   ∂B, tensor::SparseEquivTensor, Rnl, Ylm, 
+                   intermediates)
    _AA = intermediates._AA
    proj = tensor.aabasis.projection
+   T_∂AA = promote_type(eltype(∂B), eltype(tensor.A2Bmap))
+   T_∂A = promote_type(T_∂AA, eltype(_AA))
+
+   @no_escape begin 
+   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                            
    # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
-   ∂AA = tensor.A2Bmap' * ∂B   # TODO: make this in-place 
-   _∂AA = zeros(T, length(_AA)) 
+   # ∂AA = tensor.A2Bmap' * ∂B   
+   ∂AA = @alloc(T_∂AA, size(tensor.A2Bmap, 2))
+   mul!(∂AA, tensor.A2Bmap', ∂B)
+   _∂AA = @alloc(T_∂AA, length(_AA))
+   fill!(_∂AA, zero(T_∂AA))
    _∂AA[proj] = ∂AA
 
    # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
-   TA = promote_type(T, eltype(_AA), eltype(∂B), 
-                        eltype(Rnl), eltype(eltype(Ylm)))
-   ∂A = zeros(TA, length(tensor.abasis))
-   Polynomials4ML.pullback_arg!(∂A, _∂AA, tensor.aabasis, _AA)
+   ∂A = @alloc(T_∂A, length(tensor.abasis))
+   P4ML.unsafe_pullback!(∂A, _∂AA, tensor.aabasis, _AA)
    
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
-   ∂Rnl = zeros(TA, size(Rnl))
-   ∂Ylm = zeros(TA, size(Ylm))
-   Polynomials4ML._pullback_evaluate!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+   P4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+
+   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   end # no_escape
 
    return ∂Rnl, ∂Ylm
 end
 
+function whatalloc(::typeof(pullback!),  
+                   ∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
+                   intermediates) where {T} 
+   TA = promote_type(T, eltype(intermediates._AA), eltype(∂B), 
+                     eltype(Rnl), eltype(eltype(Ylm)))
+   return (TA, size(Rnl)...), (TA, size(Ylm)...)   
+end
+
+function pullback(∂B, tensor::SparseEquivTensor{T}, Rnl, Ylm, 
+                           intermediates) where {T} 
+   alc_∂Rnl, alc_∂Ylm = whatalloc(pullback!, ∂B, tensor, Rnl, Ylm, intermediates)
+   ∂Rnl = zeros(alc_∂Rnl...)
+   ∂Ylm = zeros(alc_∂Ylm...)
+   return pullback!(∂Rnl, ∂Ylm, ∂B, tensor, Rnl, Ylm, intermediates)
+end
+
+# ----------------------------------------
+#  utilities 
 
 """
 Get the specification of the BBbasis as a list (`Vector`) of vectors of `@NamedTuple{n::Int, l::Int}`.

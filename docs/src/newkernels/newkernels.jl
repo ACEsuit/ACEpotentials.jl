@@ -330,20 +330,13 @@ mae_test = sum(E_err, test_data) / length(test_data)
 
 
 # Trying some simple geometry optimization 
-# This seems to run but doesn't update the structure, there is also no 
-# documentation how to extract information from the result to do so. 
-# The following seems to work but this wants a PR in GeometryOptimization.jl
 
-using GeometryOptimization, OptimizationOptimJL
+using GeomOpt
 
-@info("Short geometry optimization")
 at = rand_AlTi(2, 0.001)
 @show potential_energy(at, fit_calc)
-solver = OptimizationOptimJL.LBFGS()
-optim_options = (f_tol=1e-4, g_tol=1e-4, iterations=30, show_trace=false)
-results = minimize_energy!(at, fit_calc; solver, optim_options...)
-at_new = AtomsBuilder._set_positions(at, reinterpret(SVector{3, Float64}, results.u) * u"Å")
-@show potential_energy(at_new, fit_calc)
+_at_opt, info = GeomOpt.minimise(at, fit_calc; g_tol = 1e-4, g_calls_limit = 30 )
+@show potential_energy(_at_opt, fit_calc)
 
 
 # The last step is to run a simple MD simulation for just a 100 steps.

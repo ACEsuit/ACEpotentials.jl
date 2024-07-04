@@ -73,7 +73,7 @@ function evaluate!(Rnl, basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    env_ij = basis.envelopes[iz, jz]
    e = evaluate(env_ij, r, x)   
    Rnl[:] .= Wij * (P .* e)
-   return Rnl, st 
+   return Rnl 
 end
 
 function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
@@ -85,18 +85,20 @@ function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    P = Polynomials4ML.evaluate(basis.polys, x)
    env_ij = basis.envelopes[iz, jz]
    e = evaluate(env_ij, r, x)   
-   return Wij * (P .* e), st 
+   return Wij * (P .* e) 
 end
 
 
-function evaluate_batched(basis::LearnableRnlrzzBasis, 
+function evaluate_batched!(Rnl, 
+                           basis::LearnableRnlrzzBasis, 
                            rs, zi, zjs, ps, st)
 
-   @assert length(rs) == length(zjs)                          
+   @assert length(rs) == length(zjs)    
+   @assert size(Rnl, 1) >= length(rs) 
+   @assert size(Rnl, 2) >= length(basis)  
+
    # evaluate the first one to get the types and size
-   Rnl_1, st = evaluate(basis, rs[1], zi, zjs[1], ps, st)
-   # ... and then allocate storage
-   Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
+   Rnl_1 = evaluate(basis, rs[1], zi, zjs[1], ps, st)
 
    # then evaluate the rest in-place 
    for j = 1:length(rs)
@@ -110,11 +112,21 @@ function evaluate_batched(basis::LearnableRnlrzzBasis,
       Rnl[j, :] = (@view ps.Wnlq[:, :, iz, jz]) * P
    end
 
-   return Rnl, st
+   return Rnl
 end
 
+function whatalloc(::typeof(evaluate_batched!), 
+                    basis::LearnableRnlrzzBasis, 
+                    rs::AbstractVector{T}, zi, zjs, ps, st) where {T}
+   T1 = promote_type(eltype(ps.Wnlq), T)
+   return (T1, length(rs), length(basis))
+end
 
-
+function evaluate_batched(basis::LearnableRnlrzzBasis, 
+                          rs, zi, zjs, ps, st)
+   Rnl = zeros(whatalloc(evaluate_batched!, basis, rs, zi, zjs, ps, st)...)
+   return evaluate_batched!(Rnl, basis, rs, zi, zjs, ps, st)
+end
 
 # ----- gradients 
 # because the typical scenario is that we have few r, then moderately 
@@ -127,32 +139,46 @@ using ForwardDiff: Dual
 
 function evaluate_ed(basis::LearnableRnlrzzBasis, r::T, Zi, Zj, ps, st) where {T <: Real}
    d_r = Dual{T}(r, one(T))
-   d_Rnl, st = evaluate(basis, d_r, Zi, Zj, ps, st)
+   d_Rnl = evaluate(basis, d_r, Zi, Zj, ps, st)
    Rnl = ForwardDiff.value.(d_Rnl)
    Rnl_d = ForwardDiff.extract_derivative(T, d_Rnl) 
-   return Rnl, Rnl_d, st 
+   return Rnl, Rnl_d 
 end
 
 
-function evaluate_ed_batched(basis::LearnableRnlrzzBasis, 
+function evaluate_ed_batched!(Rnl, Rnl_d, 
+                             basis::LearnableRnlrzzBasis, 
                              rs::AbstractVector{T}, Zi, Zs, ps, st
                              ) where {T <: Real}
    
    @assert length(rs) == length(Zs)            
-   Rnl1, st = evaluate(basis, rs[1], Zi, Zs[1], ps, st) 
-   Rnl = zeros(T, length(rs), length(Rnl1))
-   Rnl_d = zeros(T, length(rs), length(Rnl1))
-
    for j = 1:length(rs)
       d_r = Dual{T}(rs[j], one(T))   
-      d_Rnl, st = evaluate(basis, d_r, Zi, Zs[j], ps, st)  # should reuse memory here 
-      map!(ForwardDiff.value, (@view Rnl[j, :]), d_Rnl)
-      map!(d -> ForwardDiff.extract_derivative(T, d), (@view Rnl_d[j, :]), d_Rnl)
+      d_Rnl = evaluate(basis, d_r, Zi, Zs[j], ps, st)  # should reuse memory here 
+      for t = 1:size(Rnl, 2) 
+         Rnl[j, t] = ForwardDiff.value(d_Rnl[t])
+         Rnl_d[j, t] = ForwardDiff.extract_derivative(T, d_Rnl[t])
+      end
    end       
 
-   return Rnl, Rnl_d, st 
+   return Rnl, Rnl_d 
 end
 
+function whatalloc(::typeof(evaluate_ed_batched!), 
+                    basis::LearnableRnlrzzBasis, 
+                    rs::AbstractVector{T}, Zi, Zs, ps, st) where {T}
+   T1 = promote_type(eltype(ps.Wnlq), T)
+   return (T1, length(rs), length(basis)), (T1, length(rs), length(basis))                                  
+end
+
+function evaluate_ed_batched(basis::LearnableRnlrzzBasis, 
+                        rs::AbstractVector{T}, Zi, Zs, ps, st
+                        ) where {T <: Real}
+   allocinfo = whatalloc(evaluate_ed_batched!, basis, rs, Zi, Zs, ps, st)
+   Rnl = zeros(allocinfo[1]...)
+   Rnl_d = zeros(allocinfo[2]...)
+   return evaluate_ed_batched!(Rnl, Rnl_d, basis, rs, Zi, Zs, ps, st)
+end
 
 
 
@@ -201,13 +227,23 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
 end
 
 
+# function rrule(::typeof(evaluate_batched), 
+#                basis::LearnableRnlrzzBasis, 
+#                rs, zi, zjs, ps, st)
+#    Rnl, st = evaluate_batched(basis, rs, zi, zjs, ps, st)
+
+#    return (Rnl, st), 
+#          Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
+#               pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
+#               NoTangent())
+# end
+
 function rrule(::typeof(evaluate_batched), 
                basis::LearnableRnlrzzBasis, 
                rs, zi, zjs, ps, st)
-   Rnl, st = evaluate_batched(basis, rs, zi, zjs, ps, st)
+   Rnl = evaluate_batched(basis, rs, zi, zjs, ps, st)
 
-   return (Rnl, st), 
-         Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
-              pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
-              NoTangent())
+   return Rnl, Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
+                     pullback_evaluate_batched(Δ, basis, rs, zi, zjs, ps, st), 
+                     NoTangent())
 end

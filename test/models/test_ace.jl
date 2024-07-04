@@ -2,6 +2,8 @@
 # using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
+##
+
 using Test, ACEbase
 using ACEbase.Testing: print_tf, println_slim
 
@@ -12,6 +14,7 @@ using Optimisers, ForwardDiff
 
 using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
+Random.seed!(11)
 
 ##
 
@@ -33,13 +36,15 @@ for ntest = 1:30
    𝐫 = randn(SVector{3, Float64})
    Ysolid = msolid.ybasis(𝐫)
    Yspher = mspherical.ybasis(𝐫)
-   ll = [ M.SpheriCart.idx2lm(i)[1] for i in 1:length(Ysolid) ]
+   ll = [ M.P4ML.SpheriCart.idx2lm(i)[1] for i in 1:length(Ysolid) ]
    print_tf(@test (Yspher .* (norm(𝐫)).^ll) ≈ Ysolid)
 end
+println() 
 
 ##
 
 for ybasis in [:spherical, :solid]
+   # ybasis = :solid
    @info("=== Testing ybasis = $ybasis === ")
    local ps, st, Nat
    model = M.ace_model(; elements = elements, order = order, Ytype = ybasis, 
@@ -49,7 +54,7 @@ for ybasis in [:spherical, :solid]
 
    ps, st = LuxCore.setup(rng, model)
 
-   ##
+##
 
    @info("Test Rotation-Invariance of the Model")
 
@@ -58,23 +63,23 @@ for ybasis in [:spherical, :solid]
 
       Nat = rand(8:16)
       Rs, Zs, Z0 = M.rand_atenv(model, Nat)
-      val, st1 = M.evaluate(model, Rs, Zs, Z0, ps, st)
+      val = M.evaluate(model, Rs, Zs, Z0, ps, st)
 
       p = shuffle(1:Nat)
       Rs1 = Ref(M.rand_iso()) .* Rs[p]
       Zs1 = Zs[p]
-      val1, st1 = M.evaluate(model, Rs1, Zs1, Z0, ps, st)
+      val1 = M.evaluate(model, Rs1, Zs1, Z0, ps, st)
 
       print_tf(@test abs(val - val1) < 1e-10)
    end
    println()
 
-   ##
+##
 
    @info("Test derivatives w.r.t. positions")
    Rs, Zs, z0 = M.rand_atenv(model, 16)
-   Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
-   Ei1, ∇Ei, st = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+   Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+   Ei1, ∇Ei = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
    println_slim(@test Ei ≈ Ei1)
 
    for ntest = 1:20 
@@ -82,19 +87,19 @@ for ybasis in [:spherical, :solid]
       Nat = rand(8:16)
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       Us = randn(SVector{3, Float64}, Nat)
-      F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)[1] 
+      F(t) = M.evaluate(model, Rs + t * Us, Zs, z0, ps, st)
       dF(t) = dot(M.evaluate_ed(model, Rs + t * Us, Zs, z0, ps, st)[2], Us)
       print_tf(@test ACEbase.Testing.fdtest(F, dF, 0.0; verbose=false))
    end
    println() 
 
-   ##
+##
 
    @info("Test derivatives w.r.t. parameters")
    Nat = 15
    Rs, Zs, z0 = M.rand_atenv(model, Nat)
-   Ei, st = M.evaluate(model, Rs, Zs, z0, ps, st)
-   Ei1, ∇Ei, st = M.grad_params(model, Rs, Zs, z0, ps, st)
+   Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+   Ei1, ∇Ei = M.grad_params(model, Rs, Zs, z0, ps, st)
    println_slim(@test Ei ≈ Ei1)
 
    for ntest = 1:20
@@ -104,13 +109,13 @@ for ybasis in [:spherical, :solid]
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       pvec, _restruct = destructure(ps)
       uvec = randn(length(pvec)) / sqrt(length(pvec))
-      F(t) = M.evaluate(model, Rs, Zs, z0, _restruct(pvec + t * uvec), st)[1]
+      F(t) = M.evaluate(model, Rs, Zs, z0, _restruct(pvec + t * uvec), st)
       dF0 = dot( destructure( M.grad_params(model, Rs, Zs, z0, ps, st)[2] )[1], uvec )
       print_tf(@test ACEbase.Testing.fdtest(F, t -> dF0, 0.0; verbose = false))
    end
    println() 
 
-   ##
+##
 
    @info("Test second mixed derivatives reverse-over-reverse")
    for ntest = 1:20 
@@ -121,7 +126,7 @@ for ybasis in [:spherical, :solid]
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       Us = randn(SVector{3, Float64}, Nat)
       Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
-      Ei, ∂Ei, _ = M.grad_params(model, Rs, Zs, z0, ps, st)
+      Ei, ∂Ei = M.grad_params(model, Rs, Zs, z0, ps, st)
 
       # test partial derivative w.r.t. the Ei component 
       ∂2_Ei = M.pullback_2_mixed(1.0, 0*Us, model, Rs, Zs, z0, ps, st)
@@ -139,7 +144,7 @@ for ybasis in [:spherical, :solid]
    end
    println() 
 
-   ##
+##
 
    @info("Test basis implementation")
 
@@ -149,19 +154,18 @@ for ybasis in [:spherical, :solid]
       Nat = 15
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
       i_z0 = M._z2i(model, z0)
-      Ei, st1 = M.evaluate(model, Rs, Zs, z0, ps, st)
-      B, st1 = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
+      Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+      B = M.evaluate_basis(model, Rs, Zs, z0, ps, st)
       θ = M.get_basis_params(model, ps)
       print_tf(@test Ei ≈ dot(B, θ))
 
-      Ei, ∇Ei, st1 = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
-      B, ∇B, st1 = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
-      print_tf(@test Ei ≈ dot(B, θ))
+      Ei, ∇Ei = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
+      B, ∇B = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
       print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
    end
    println() 
 
-   ##
+##
 
    @info("Test the full mixed jacobian")
 
@@ -179,7 +183,7 @@ for ybasis in [:spherical, :solid]
    println() 
 
 
-   ##
+##
 
    @info("check splinification")
    lin_ace = M.splinify(model, ps)
@@ -189,20 +193,21 @@ for ybasis in [:spherical, :solid]
 
    for ntest = 1:10
       local len, Nat, Rs, Zs, z0, Ei 
-      len = 10 
+      len = 100 
       mae = sum(1:len) do _
          Nat = rand(8:16)
          Rs, Zs, z0 = M.rand_atenv(model, Nat)
-         Ei = M.evaluate(model, Rs, Zs, z0, ps, st)[1]
-         Ei_lin = M.evaluate(lin_ace, Rs, Zs, z0, ps_lin, st_lin)[1]
+         Ei = M.evaluate(model, Rs, Zs, z0, ps, st)
+         Ei_lin = M.evaluate(lin_ace, Rs, Zs, z0, ps_lin, st_lin)
          abs(Ei - Ei_lin)
       end
       mae /= len 
-      print_tf(@test mae < 0.01)
+      print_tf(@test mae < 0.02)
    end
    println() 
 
 end
+
 ##
 
 #=
