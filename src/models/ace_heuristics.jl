@@ -42,7 +42,8 @@ function ace_learnable_Rnlrzz(;
                rin0cuts = _default_rin0cuts(elements),
                transforms = agnesi_transform.(rin0cuts, 2, 2), 
                polys = :legendre, 
-               envelopes = :poly2sx
+               envelopes = :poly2sx, 
+               Winit = :glorot_normal, 
                )
    if elements == nothing
       error("elements must be specified!")
@@ -87,7 +88,9 @@ function ace_learnable_Rnlrzz(;
       error("actual_maxn > length of polynomial basis")
    end
 
-   return LearnableRnlrzzBasis(zlist, polys, transforms, envelopes, rin0cuts, spec)
+   return LearnableRnlrzzBasis(zlist, polys, transforms, envelopes, 
+                               rin0cuts, spec; 
+                               Winit = Winit)
 end 
 
 
@@ -102,6 +105,7 @@ function ace_model(; elements = nothing,
                      rbasis_type = :learnable, 
                      maxl = 30, # maxl, max are fairly high defaults 
                      maxn = 50, # that we will likely never reach 
+                     init_Wradial = :glorot_normal, 
                      # basis size parameters 
                      level = nothing, 
                      max_level = nothing, 
@@ -126,7 +130,8 @@ function ace_model(; elements = nothing,
          rbasis = ace_learnable_Rnlrzz(; max_level = max_level, level = level, 
                                          maxl = maxl, maxn = maxn, 
                                          elements = elements, 
-                                         rin0cuts = rin0cuts)
+                                         rin0cuts = rin0cuts, 
+                                         Winit = init_Wradial)
       else
          error("unknown rbasis_type = $rbasis_type")
       end
