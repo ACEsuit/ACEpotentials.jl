@@ -70,10 +70,9 @@ end
 Set the radial weights as they would be in a linear ACE model. 
 """
 function set_I_weights!(rbasis::LearnableRnlrzzBasis, ps)
+   # Rnl(r, Z1, Z2) = ∑_q W[(nl), q, Z1, Z2] * P_q(r)
+   # For linear models this becomes Rnl(r, Z1, Z2) = Pn(r)
    NZ = _get_nz(rbasis)
-   if NZ != 1 
-      error("set_I_weights! is currently only implemented for NZ = 1")
-   end 
    ps.Wnlq[:] .= 0 
    for i = 1:NZ, j = 1:NZ
       for (i_nl, nl) in enumerate(rbasis.spec)
