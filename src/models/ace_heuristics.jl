@@ -37,6 +37,8 @@ function ace_learnable_Rnlrzz(;
                level = nothing, 
                maxl = nothing, 
                maxn = nothing,
+               maxq_fact = 1.5, 
+               maxq = :auto, 
                elements = nothing, 
                spec = nothing, 
                rin0cuts = _default_rin0cuts(elements),
@@ -62,10 +64,18 @@ function ace_learnable_Rnlrzz(;
 
    # now the actual maxn is the maximum n in the spec
    actual_maxn = maximum([ s.n for s in spec ])
+   
+   if maxq == :auto 
+      maxq = ceil(Int, actual_maxn * maxq_fact)
+   end 
+
+   if maxq < actual_maxn 
+      @warn("maxq < actual_maxn; this results in linear dependence")
+   end 
 
    if polys isa Symbol 
       if polys == :legendre
-         polys = Polynomials4ML.legendre_basis(actual_maxn) 
+         polys = Polynomials4ML.legendre_basis(maxq) 
       else
          error("unknown polynomial type : $polys")
       end
@@ -99,12 +109,14 @@ function ace_model(; elements = nothing,
                      order = nothing, 
                      Ytype = :solid,  
                      E0s = nothing,
-                     rin0cuts = nothing,
+                     rin0cuts = :auto,
                      # radial basis 
                      rbasis = nothing, 
                      rbasis_type = :learnable, 
                      maxl = 30, # maxl, max are fairly high defaults 
                      maxn = 50, # that we will likely never reach 
+                     maxq_fact = 1.5, 
+                     maxq = :auto, 
                      init_Wradial = :glorot_normal, 
                      # basis size parameters 
                      level = nothing, 
@@ -117,7 +129,7 @@ function ace_model(; elements = nothing,
                      rng = Random.default_rng(), 
                      )
 
-   if rin0cuts == nothing
+   if rin0cuts == :auto
       rin0cuts = _default_rin0cuts(elements)
    else
       NZ = length(elements)
@@ -129,6 +141,7 @@ function ace_model(; elements = nothing,
       if rbasis_type == :learnable
          rbasis = ace_learnable_Rnlrzz(; max_level = max_level, level = level, 
                                          maxl = maxl, maxn = maxn, 
+                                         maxq_fact = maxq_fact, maxq = maxq, 
                                          elements = elements, 
                                          rin0cuts = rin0cuts, 
                                          Winit = init_Wradial)
