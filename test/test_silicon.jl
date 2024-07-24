@@ -4,7 +4,7 @@ using LazyArtifacts
 using PythonCall
 using Test
 
-### ----- setup -----
+## ----- setup -----
 
 @warn "test_silicon not fully converted yet."
 model = acemodel(elements = [:Si],
