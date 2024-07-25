@@ -4,7 +4,7 @@
 
 using Random
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
-      Unitful, Zygote, Optimisers, Folds   
+      Unitful, Zygote, Optimisers, Folds, Printf 
 
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 
@@ -28,6 +28,7 @@ rcut = 5.5
 model1 = acemodel(elements = elements, 
                   order = order, 
                   totaldegree = totaldegree, 
+                  pure = false, pure2b = false, 
                   rcut = rcut,  )
 
 # now we create an ACE2 style model that should behave similarly                   
@@ -176,3 +177,9 @@ end
 
 E_rmse_1, F_rmse_1 = rmse(test, model1.potential)
 E_rmse_2, F_rmse_2 = rmse(test2, calc_model2_fit)
+
+
+@printf("Model  |     E    |    F  \n")
+@printf(" ACE1  | %.2e  |  %.2e  \n", E_rmse_1, F_rmse_1)
+@printf(" ACE2  | %.2e  |  %.2e  \n", E_rmse_2, F_rmse_2)
+

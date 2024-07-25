@@ -125,6 +125,7 @@ function ace_model(; elements = nothing,
                      # pair basis 
                      pair_maxn = nothing, 
                      pair_basis = :auto, 
+                     pair_learnable = false, 
                      init_Wpair = :zeros, 
                      rng = Random.default_rng(), 
                      )
@@ -165,6 +166,9 @@ function ace_model(; elements = nothing,
                envelopes = :poly1sr )
    end
 
+   if !pair_learnable 
+      pair_basis.meta["Winit"] = "linear"
+   end 
    ps_pair = initialparameters(rng, pair_basis)
    pair_basis_spl = splinify(pair_basis, ps_pair)
 
