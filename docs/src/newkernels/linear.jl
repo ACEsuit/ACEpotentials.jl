@@ -5,11 +5,12 @@
 using Random
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
       Unitful, Zygote, Optimisers, Folds, Printf 
+rng = Random.GLOBAL_RNG
 
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 
 
-Z0 = :Si 
+Z0 = :Cu
 train, test, _ = ACEpotentials.example_dataset("Zuo20_$Z0")
 train = train[1:3:end]
 
