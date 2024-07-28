@@ -140,21 +140,3 @@ maxll = [ maximum(b.l for b in bb) for bb in spec2[I2mb] ]
 idx_hasl = findall(maxll .> 0)
 @show sort(idx_fail) == sort(idx_hasl)
 
-## ------------------------------------------------------------------
-## try for the 1-correlations: 
-
-@info("Checking consistencyy of 1-correlations")
-idx1 = 1:10 
-C1 = A2[idx1, :] / A1[idx1,:]
-@show norm(C1 * A2[idx1,:] - A1[idx1,:])
-
-## try for 1- and 2-correlations 
-
-idx21 = findall(length.(spec1[idx2in1]) .<= 2)
-idx22 = findall(length.(spec2) .<= 2)
-C2 = A2[idx22, :]' \ A1[idx21, :]'
-@show norm(A1[idx21, :]' - A2[idx22,:]' * C2)
-err = sum(abs, A1[idx21, :]' - A2[idx22,:]' * C2, dims = (1,))
-idx_err = findall(err[:] .> 1e-10)
-
-
