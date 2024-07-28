@@ -5,6 +5,7 @@
 using Random
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
       Unitful, Zygote, Optimisers, Folds, Plots
+rng = Random.GLOBAL_RNG
 
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 
@@ -30,9 +31,11 @@ rcut = 5.5
 
 model1 = acemodel(elements = elements, 
                   order = order, 
+                  transform = (:agnesi, 2, 2),
                   totaldegree = totaldegree, 
                   pure = false, 
                   pure2b = false, 
+                  pair_envelope = (:r, 1), 
                   rcut = rcut,  )
 
 # now we create an ACE2 style model that should behave similarly                   
@@ -40,8 +43,8 @@ model1 = acemodel(elements = elements,
 # this essentially reproduces the rcut = 5.5, we may want a nicer way to 
 # achieve this. 
 
-rin0cuts = M._default_rin0cuts(elements; rcutfactor = 2.3)
-
+rin0cuts = M._default_rin0cuts(elements) #; rcutfactor = 2.29167)
+rin0cuts = SMatrix{1,1}((;rin0cuts[1]..., :rcut => 5.5))
 
 model2 = M.ace_model(; elements = elements, 
                        order = order,               # correlation order 
@@ -50,8 +53,10 @@ model2 = M.ace_model(; elements = elements,
                        max_level = totaldegree,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
                        init_WB = :zeros,            # how to initialize the ACE basis parmeters
-                       init_Wpair = :zeros,         # how to initialize the pair potential parameters
+                       init_Wpair = "linear",         # how to initialize the pair potential parameters
                        init_Wradial = :linear, 
+                       pair_transform = (:agnesi, 1, 3), 
+                       pair_learnable = true, 
                        rin0cuts = rin0cuts, 
                      )
 
@@ -59,20 +64,55 @@ ps, st = Lux.setup(rng, model2)
 ps_r = ps.rbasis
 st_r = st.rbasis
 
+# extract the radial basis 
+rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
+rbasis2 = model2.rbasis
+k = length(rbasis1_.J.A)
+
+# transform old coefficients to new coefficients to make them match 
+
+rbasis1.J.A[:] .= rbasis2.polys.A[1:k]
+rbasis1.J.B[:] .= rbasis2.polys.B[1:k]
+rbasis1.J.C[:] .= rbasis2.polys.C[1:k]
+rbasis1.J.A[2] /= rbasis1.J.A[1] 
+rbasis1.J.B[2] /= rbasis1.J.A[1]
+
 # wrap the model into a calculator, which turns it into a potential...
 
 calc_model2 = M.ACEPotential(model2)
 
-# extrac the radial basis 
-rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
-rbasis2 = model2.rbasis
-
 
 ##
 
-rr = range(0.001, rcut + 0.5, length=200)
+# sample points
+rr = range(0.001, rcut, length=200)
+
+@info("check the transforms are identical") 
+t1 = ACE1.Transforms.transform.(Ref(rbasis1.trans), rr, z1, z1)
+t2 = rbasis2.transforms[1].(rr)
+@show t1 ≈ t2
+
+##
+
+@info("Check the raw polynomials")
+xx = range(-1, 1, length=200)
+J1 = reduce(hcat, ACE1.evaluate.(Ref(_J), xx))' 
+J2 = rbasis2.polys(xx)
+J1 ≈ J2[:, 1:size(J1, 2)]
+
+plt = plot() 
+for n = 1:5 
+   plot!(J1[:, n], c = n, label = "J1,$n")
+   plot!(J2[:, n], c = n, ls = :dash, label = "J2,$n")
+end
+plt
+
+##
+
 R1 = reduce(hcat, [ JuLIP.evaluate(rbasis1, r, z1, z1) for r in rr ])
 R2 = reduce(hcat, [ rbasis2(r, z2, z2, ps_r, st_r)[1:10] for r in rr])
+
+# R1 = R1_ * Diagonal(R2[1,:])
 
 # normalize 
 for n = 1:10 
@@ -90,13 +130,13 @@ plt
 
 ##
 
-nmax = 8 
-
 pairb1 = model1.basis.BB[1].J[1] 
-P1 = reduce(hcat, [ JuLIP.evaluate(pairb1, r, z1, z1)[1:nmax] for r in rr ])
-
 pairb2 = model2.pairbasis 
-P2 = reduce(hcat, [ pairb2(r, z2, z2, NamedTuple(), NamedTuple())[1:nmax] for r in rr ])
+ps_pair = ps.pairbasis
+st_pair = st.pairbasis
+
+P1 = reduce(hcat, [ JuLIP.evaluate(pairb1, r, z1, z1)[1:nmax] for r in rr ])
+P2 = reduce(hcat, [ pairb2(r, z2, z2, ps_pair, st_pair)[1:nmax] for r in rr ])
 
 # truncate 
 P1 = min.(max.(P1, -100), 100)
@@ -108,4 +148,24 @@ for n = 1:4
    plot!(plt, rr, P2[n, :], c = n, ls = :dash, label="P2_$n")
 end
 plt
+
+
+##
+@info(" Confirm that the pair bases span the same space ")
+# they do to within almost machine precision
+# ( in fact the transormation matrix C says they differ only 
+#   up to a sign and scalar factor. )
+
+rrr = range(1.0, 5.0, length=100)
+P1 = reduce(hcat, [ JuLIP.evaluate(pairb1, r, z1, z1)[1:nmax] for r in rrr ])
+P2 = reduce(hcat, [ pairb2(r, z2, z2, ps_pair, st_pair)[1:nmax] for r in rrr ])
+C = P2' \ P1'
+@show norm(P1' - P2' * C)
+
+@info("Confirm the radial bases span the same space")
+
+R1 = reduce(hcat, [ JuLIP.evaluate(rbasis1, r, z1, z1)[1:nmax] for r in rrr ])
+R2 = reduce(hcat, [ rbasis2(r, z2, z2, ps_r, st_r)[1:nmax] for r in rrr])
+C = R2' \ R1'
+@show norm(R1' - R2' * C)
 

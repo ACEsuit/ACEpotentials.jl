@@ -10,7 +10,7 @@ rng = Random.GLOBAL_RNG
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 
 
-Z0 = :Cu
+Z0 = :Si
 train, test, _ = ACEpotentials.example_dataset("Zuo20_$Z0")
 train = train[1:3:end]
 
@@ -28,8 +28,12 @@ rcut = 5.5
 
 model1 = acemodel(elements = elements, 
                   order = order, 
+                  pin = 2, pcut = 2, 
+                  transform = (:agnesi, 2, 2),
                   totaldegree = totaldegree, 
-                  pure = false, pure2b = false, 
+                  pure = false, 
+                  pure2b = false, 
+                  pair_envelope = (:r, 1), 
                   rcut = rcut,  )
 
 # now we create an ACE2 style model that should behave similarly                   
@@ -37,7 +41,8 @@ model1 = acemodel(elements = elements,
 # this essentially reproduces the rcut = 5.5, we may want a nicer way to 
 # achieve this. 
 
-rin0cuts = M._default_rin0cuts(elements; rcutfactor = 2.3)
+rin0cuts = M._default_rin0cuts(elements) #; rcutfactor = 2.29167)
+rin0cuts = SMatrix{1,1}((;rin0cuts[1]..., :rcut => 5.5))
 
 model2 = M.ace_model(; elements = elements, 
                        order = order,               # correlation order 
@@ -46,10 +51,26 @@ model2 = M.ace_model(; elements = elements,
                        max_level = totaldegree,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
                        init_WB = :zeros,            # how to initialize the ACE basis parmeters
-                       init_Wpair = :zeros,         # how to initialize the pair potential parameters
+                       init_Wpair = "linear",         # how to initialize the pair potential parameters
                        init_Wradial = :linear, 
+                       pair_transform = (:agnesi, 1, 3), 
+                       pair_learnable = true, 
                        rin0cuts = rin0cuts, 
                      )
+
+ps, st = Lux.setup(rng, model2)                     
+ps_r = ps.rbasis
+st_r = st.rbasis
+
+# extract the radial basis 
+rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
+rbasis2 = model2.rbasis
+
+k = length(rbasis1.J.A)
+rbasis1.J.A[:] .= rbasis2.polys.A[1:k]
+rbasis1.J.B[:] .= rbasis2.polys.B[1:k]
+rbasis1.J.C[:] .= rbasis2.polys.C[1:k]
+
 
 # wrap the model into a calculator, which turns it into a potential...
 
@@ -134,8 +155,8 @@ ps, st = Lux.setup(rng, calc_model2)
 # then I'm using the destructure / restructure method from Optimizers to 
 # convert θ into a namedtuple. 
 
-ps_lin = (WB = ps.WB, Wpair = ps.Wpair, pairbasis = ps.pairbasis, rbasis = NamedTuple())
-_, restruct = destructure(ps_lin) 
+ps_lin = (WB = ps.WB, Wpair = ps.Wpair, pairbasis = NamedTuple(), rbasis = NamedTuple())
+_θ, restruct = destructure(ps_lin) 
 ps_lin_fit = restruct(θ)
 ps_fit = deepcopy(ps)
 ps_fit.WB[:] = ps_lin_fit.WB[:]

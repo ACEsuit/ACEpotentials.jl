@@ -46,6 +46,10 @@ function initialparameters(rng::AbstractRNG,
    elseif basis.meta["Winit"] == "linear"
       set_I_weights!(basis, ps)
 
+   elseif basis.meta["Winit"] == "zeros"
+      @warn("Setting inner basis weights to zero.")
+      Wnlq[:] .= 0 
+
    else 
       error("Unknown key Winit = $(basis.meta["Winit"]) to initialize radial basis weights.")
    end 

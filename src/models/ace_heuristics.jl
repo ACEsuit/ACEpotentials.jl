@@ -126,7 +126,8 @@ function ace_model(; elements = nothing,
                      pair_maxn = nothing, 
                      pair_basis = :auto, 
                      pair_learnable = false, 
-                     init_Wpair = :zeros, 
+                     pair_transform = (:agnesi, 1, 4), 
+                     init_Wpair = "linear", 
                      rng = Random.default_rng(), 
                      )
 
@@ -162,20 +163,21 @@ function ace_model(; elements = nothing,
                maxl = 0, 
                maxn = pair_maxn, 
                rin0cuts = rbasis.rin0cuts,
-               transforms = (:agnesi, 1, 4), 
+               transforms = pair_transform, 
                envelopes = :poly1sr )
    end
 
-   if !pair_learnable 
-      pair_basis.meta["Winit"] = "linear"
-   end 
-   ps_pair = initialparameters(rng, pair_basis)
-   pair_basis_spl = splinify(pair_basis, ps_pair)
+   pair_basis.meta["Winit"] = init_Wpair 
+
+   if !pair_learnable
+      ps_pair = initialparameters(rng, pair_basis)
+      pair_basis = splinify(pair_basis, ps_pair)
+   end
 
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl, E0s)
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, E0s)
    model.meta["init_WB"] = String(init_WB)
    model.meta["init_Wpair"] = String(init_Wpair)
 

@@ -27,7 +27,7 @@ const SPL_OF_SVEC{DIM, T} =
       }
 
 
-struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitLayer
+mutable struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitLayer
    _i2z::NTuple{NZ, Int}
    polys::TPOLY
    transforms::SMatrix{NZ, NZ, TT}
@@ -42,7 +42,7 @@ struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitLayer
 end
 
 
-struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractExplicitLayer
+mutable struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractExplicitLayer
    _i2z::NTuple{NZ, Int}
    transforms::SMatrix{NZ, NZ, TT}
    envelopes::SMatrix{NZ, NZ, TENV}
