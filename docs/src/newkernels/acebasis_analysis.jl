@@ -136,4 +136,33 @@ idx_fail = findall(err .> 1e-8)
 @show idx_fail
 @show norm( abs.(C) - I )
 
-# ALL ARE OK! WE ARE GOOD
+@info("Perfect match - we should be good!") 
+
+##
+# now we try to reduce the ACE1 basis to be identical to the 
+# ACE2 basis 
+
+@info("Reduce the ACE1 basis to be identical to the ACE2 basis")
+@show size(model1.basis.BB[2].A2Bmaps[1])
+
+A1_all[idx2in1, :] == A1
+idx_del = setdiff((1:size(model1.basis.BB[2].A2Bmaps[1], 1)), idx2in1)
+model1.basis.BB[2].A2Bmaps[1][idx_del, :] .= 0 
+BB2 = ACE1.RPI.remove_zeros(ACE1._cleanup(model1.basis.BB[2]))
+@show size(BB2.A2Bmaps[1])
+
+##
+basis1_red = deepcopy(model1.basis)
+basis1_red.BB[2] = BB2
+
+function _evaluate(basis::JuLIP.MLIPs.IPSuperBasis, 
+                   Rs, Zs, z0)
+   reduce(vcat, [ACE1.evaluate(B, Rs, Zs, z0) for B in basis.BB])
+end
+
+A1_ = reduce(hcat, [ _evaluate(basis1_red, x...) for x in XX1])
+A2_ = reduce(hcat, [M.evaluate_basis(model2, x..., ps, st) for x in XX2])
+A2_p = [A2_[end-9:end,:]; A2_[1:end-10,:]]
+
+C = A1_' \ A2_p'
+@show norm(A2_p - C' * A1_)
