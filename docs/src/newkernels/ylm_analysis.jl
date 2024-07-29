@@ -102,3 +102,8 @@ Ci = Y2' \ Y1i'
 @show norm(Y1i' - Y2' * Ci)
 
 
+## 
+
+cyp4ml = complex_sphericalharmonics(2)
+Yp4 = reduce(hcat, [cyp4ml(u) for u in X] )
+Yp4 ≈ Y1

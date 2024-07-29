@@ -48,7 +48,7 @@ rin0cuts = SMatrix{1,1}((;rin0cuts[1]..., :rcut => 5.5))
 
 model2 = M.ace_model(; elements = elements, 
                        order = order,               # correlation order 
-                       Ytype = :solid,              # solid vs spherical harmonics
+                       Ytype = :spherical,              # solid vs spherical harmonics
                        level = M.TotalDegree(),     # how to calculate the weights to give to a basis function
                        max_level = totaldegree,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
@@ -114,11 +114,14 @@ XX2 = [ M.rand_atenv(model2, rand(6:10)) for _=1:Nenv ]
 XX1 = [ (x[1], AtomicNumber.(x[2]), AtomicNumber(x[3])) for x in XX2 ]
 
 B1 = [ ACE1.evaluate(model1.basis.BB[2], x...)[idx2in1] for x in XX1 ]
+B1_all = [ ACE1.evaluate(model1.basis.BB[2], x...) for x in XX1 ]
+
 
 I2mb = M.get_basis_inds(model2, z2)
 B2 = [ M.evaluate_basis(model2, x..., ps, st)[I2mb] for x in XX2 ]
 
 A1 = reduce(hcat, B1)
+A1_all = reduce(hcat, B1_all)
 A2 = reduce(hcat, B2)
 
 # see whether they span the same space 
@@ -130,13 +133,7 @@ norm(A2' - A1' * C)
 @info("make a list of failed basis functions")
 err = sum(abs, A2' - A1' * C, dims = (1,))[:]
 idx_fail = findall(err .> 1e-8)
+@show idx_fail
+@show norm( abs.(C) - I )
 
-spec_fail = spec2[I2mb[idx_fail]]
-@info("List of failed basis functions: ")
-display(spec_fail)
-
-@info("Compare with list of basis functions that have l > 0")
-maxll = [ maximum(b.l for b in bb) for bb in spec2[I2mb] ]
-idx_hasl = findall(maxll .> 0)
-@show sort(idx_fail) == sort(idx_hasl)
-
+# ALL ARE OK! WE ARE GOOD
