@@ -5,8 +5,11 @@
 using Random
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
       Unitful, Zygote, Optimisers, Folds, Printf 
-rng = Random.GLOBAL_RNG
-M = ACEpotentials.Models
+# rng = Random.GLOBAL_RNG
+# M = ACEpotentials.Models
+
+include("match_bases.jl")
+include("LLSQ.jl")
 
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 
@@ -35,7 +38,8 @@ acefit!(model1, train;  solver=solver, weights=weights)
 
 ##
 # Fit the ACE2 model - this still needs a bit of hacking to convert everything 
-# to the new framework. 
+# to the new framework. To be moved into ACEpotentials and hide from 
+# the user ...  
 # - convert the data to AtomsBase 
 # - use a different interface to specify data weights and keys 
 #   (this needs to be brough in line with the ACEpotentials framework)
@@ -46,108 +50,17 @@ test2 = FlexibleSystem.(test)
 data_keys = (E_key = :energy, F_key = :force, ) 
 weights = (wE = 30.0/u"eV", wF = 1.0 / u"eV/Å", )
 
-function local_lsqsys(calc, at, ps, st, weights, keys)
-   efv = M.energy_forces_virial_basis(at, calc, ps, st)
-
-   # There are no E0s in this dataset! 
-   # # compute the E0s contribution. This needs to be done more 
-   # # elegantly and a stacked model would solve this problem. 
-   # E0 = sum( calc.model.E0s[M._z2i(calc.model, z)] 
-   #           for z in AtomsBase.atomic_number(at) ) * u"eV"
-
-   # energy 
-   wE = weights[:wE]
-   E_dft = at.data[data_keys.E_key] * u"eV"
-   y_E = wE * E_dft / sqrt(length(at)) # (E_dft - E0)
-   A_E = wE * efv.energy' / sqrt(length(at))
-
-   # forces 
-   wF = weights[:wF]
-   F_dft = at.data[data_keys.F_key] * u"eV/Å"
-   y_F = wF * reinterpret(eltype(F_dft[1]), F_dft)
-   A_F = wF * reinterpret(eltype(efv.forces[1]), efv.forces)
-
-   # # virial 
-   # wV = weights[:wV]
-   # V_dft = at.data[data_keys.V_key] * u"eV"
-   # y_V = wV * V_dft[:]
-   # # display( reinterpret(eltype(efv.virial), efv.virial) )
-   # A_V = wV * reshape(reinterpret(eltype(efv.virial[1]), efv.virial), 9, :)
-
-   return vcat(A_E, A_F), vcat(y_E, y_F)
-end
-
-
-function assemble_lsq(calc, data, weights, data_keys; 
-                      rng = Random.MersenneTwister(1234), 
-                      executor = Folds.ThreadedEx())
-   ps, st = Lux.setup(rng, calc)
-   blocks = Folds.map(at -> local_lsqsys(calc, at, ps, st, 
-                                         weights, data_keys), 
-                      data, executor)
-                         
-   A = reduce(vcat, [b[1] for b in blocks])
-   y = reduce(vcat, [b[2] for b in blocks])
-   return A, y
-end
-
-A, y = assemble_lsq(calc_model2, train2, weights, data_keys)
+A, y = LLSQ.assemble_lsq(calc_model2, train2, weights, data_keys)
 @show size(A) 
 
 θ = ACEfit.trunc_svd(svd(A), y, 1e-8)
-ps, st = Lux.setup(rng, calc_model2)
-
-# the next step is a hack. This should be automatable, probably using Lux.freeze. 
-# But I couldn't quite figure out how to use that. 
-# Here I'm manually constructing a parameters NamedTuple with rbasis removed. 
-# then I'm using the destructure / restructure method from Optimizers to 
-# convert θ into a namedtuple. 
-
-ps_lin = (WB = ps.WB, Wpair = ps.Wpair, pairbasis = NamedTuple(), rbasis = NamedTuple())
-_θ, restruct = destructure(ps_lin) 
-ps_lin_fit = restruct(θ)
-ps_fit = deepcopy(ps)
-ps_fit.WB[:] = ps_lin_fit.WB[:]
-ps_fit.Wpair[:] = ps_lin_fit.Wpair[:]
-calc_model2_fit = M.ACEPotential(model2, ps_fit, st)
-
+calc_model2_fit = LLSQ.set_linear_params(calc_model2, θ)
 
 ##
-# Now we can compare errors? 
-# to make sure we are comparing exactly the same thing, we implement this 
-# from scratch here ... 
+# compute the errors 
 
-function EF_err(sys::JuLIP.Atoms, calc)
-   E = JuLIP.energy(calc, sys) 
-   F = JuLIP.forces(calc, sys)
-   E_ref = JuLIP.get_data(sys, "energy")
-   F_ref = JuLIP.get_data(sys, "force")
-   return abs(E - E_ref) / length(sys), norm.(F - F_ref)
-end
-
-function EF_err(sys::AtomsBase.AbstractSystem, calc)
-   efv = M.energy_forces_virial(sys, calc_model2_fit)
-   F_ustrip = [ ustrip.(f) for f in efv.forces ]
-   E_ref = sys.data[:energy]
-   F_ref = sys.data[:force]
-   return abs(ustrip(efv.energy) - E_ref) / length(sys), norm.(F_ustrip - F_ref)
-end
-   
-function rmse(test, calc) 
-   E_errs = Float64[] 
-   F_errs = Float64[] 
-   for sys in test 
-      E_err, F_err = EF_err(sys, calc)
-      push!(E_errs, E_err)
-      append!(F_errs, F_err) 
-   end 
-   return norm(E_errs) / sqrt(length(E_errs)), 
-          norm(F_errs) / sqrt(length(F_errs))
-end
-
-
-E_rmse_1, F_rmse_1 = rmse(test, model1.potential)
-E_rmse_2, F_rmse_2 = rmse(test2, calc_model2_fit)
+E_rmse_1, F_rmse_1 = LLSQ.rmse(test, model1.potential)
+E_rmse_2, F_rmse_2 = LLSQ.rmse(test2, calc_model2_fit)
 
 
 @printf("Model  |     E    |    F  \n")

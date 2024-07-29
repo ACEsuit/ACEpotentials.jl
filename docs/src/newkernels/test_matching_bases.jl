@@ -11,8 +11,8 @@ Z0 = :Si
 z1 = AtomicNumber(Z0)
 z2 = Int(z1)
 
-ps, st = Lux.setup(Random.GLOBAL_RNG, model2)
 model1, model2, calc_model2 = matching_bases(; Z = Z0)
+ps, st = Lux.setup(Random.GLOBAL_RNG, model2)
 
 ##
 # confirm match on atomic environments 

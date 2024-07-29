@@ -9,6 +9,7 @@ M = ACEpotentials.Models
 function matching_bases(; Z = :Si, order = 3, totaldegree = 10, 
                           rcut = 5.5)
 
+   elements = [Z, ]                          
    model1 = acemodel(elements = elements, 
                      order = order, 
                      transform = (:agnesi, 2, 2),
@@ -35,7 +36,7 @@ function matching_bases(; Z = :Si, order = 3, totaldegree = 10,
                        rin0cuts = rin0cuts, 
                      )
 
-   ps, st = Lux.setup(rng, model2)
+   ps, st = Lux.setup(Random.GLOBAL_RNG, model2)
    ps_r = ps.rbasis
    st_r = st.rbasis
 
