@@ -47,7 +47,7 @@ model2 = M.ace_model(; elements = elements,
                        order = order,               # correlation order 
                        Ytype = :spherical,              # solid vs spherical harmonics
                        level = M.TotalDegree(),     # how to calculate the weights to give to a basis function
-                       max_level = totaldegree+1,     # maximum level of the basis functions
+                       max_level = totaldegree,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
                        init_WB = :zeros,            # how to initialize the ACE basis parmeters
                        init_Wpair = "linear",         # how to initialize the pair potential parameters
@@ -72,6 +72,11 @@ rbasis1.J.B[:] .= rbasis2.polys.B[1:k]
 rbasis1.J.C[:] .= rbasis2.polys.C[1:k]
 rbasis1.J.A[2] /= rbasis1.J.A[1] 
 rbasis1.J.B[2] /= rbasis1.J.A[1]
+
+##
+basis1_red = deepcopy(model1.basis)
+basis1_red.BB[2] = BB2
+
 
 # wrap the model into a calculator, which turns it into a potential...
 

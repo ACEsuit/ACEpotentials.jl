@@ -60,7 +60,7 @@ model2 = M.ace_model(; elements = elements,
                        rin0cuts = rin0cuts, 
                      )
 
-ps, st = Lux.setup(rng, model2)                     
+ps, st = Lux.setup(rng, model2)
 ps_r = ps.rbasis
 st_r = st.rbasis
 
