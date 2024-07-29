@@ -23,12 +23,11 @@ M = ACEpotentials.Models
 
 elements = [Z0,]
 order = 3 
-totaldegree = 10
+totaldegree = 12
 rcut = 5.5 
 
 model1 = acemodel(elements = elements, 
                   order = order, 
-                  pin = 2, pcut = 2, 
                   transform = (:agnesi, 2, 2),
                   totaldegree = totaldegree, 
                   pure = false, 
@@ -46,9 +45,9 @@ rin0cuts = SMatrix{1,1}((;rin0cuts[1]..., :rcut => 5.5))
 
 model2 = M.ace_model(; elements = elements, 
                        order = order,               # correlation order 
-                       Ytype = :solid,              # solid vs spherical harmonics
+                       Ytype = :spherical,              # solid vs spherical harmonics
                        level = M.TotalDegree(),     # how to calculate the weights to give to a basis function
-                       max_level = totaldegree,     # maximum level of the basis functions
+                       max_level = totaldegree+1,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
                        init_WB = :zeros,            # how to initialize the ACE basis parmeters
                        init_Wpair = "linear",         # how to initialize the pair potential parameters
@@ -58,25 +57,28 @@ model2 = M.ace_model(; elements = elements,
                        rin0cuts = rin0cuts, 
                      )
 
-ps, st = Lux.setup(rng, model2)                     
+ps, st = Lux.setup(rng, model2)
 ps_r = ps.rbasis
 st_r = st.rbasis
 
 # extract the radial basis 
 rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
 rbasis2 = model2.rbasis
-
 k = length(rbasis1.J.A)
+
+# transform old coefficients to new coefficients to make them match 
 rbasis1.J.A[:] .= rbasis2.polys.A[1:k]
 rbasis1.J.B[:] .= rbasis2.polys.B[1:k]
 rbasis1.J.C[:] .= rbasis2.polys.C[1:k]
-
+rbasis1.J.A[2] /= rbasis1.J.A[1] 
+rbasis1.J.B[2] /= rbasis1.J.A[1]
 
 # wrap the model into a calculator, which turns it into a potential...
 
 calc_model2 = M.ACEPotential(model2)
 
-# Fit the ACE1 model 
+## 
+#Fit the ACE1 model 
 
 # set weights for energy, forces virials 
 weights = Dict("default" => Dict("E" => 30.0, "F" => 1.0 , "V" => 1.0 ),);
@@ -86,7 +88,7 @@ solver=ACEfit.TruncatedSVD(; rtol = 1e-8)
 acefit!(model1, train;  solver=solver)
 
 
-
+##
 # Fit the ACE2 model - this still needs a bit of hacking to convert everything 
 # to the new framework. 
 # - convert the data to AtomsBase 
@@ -138,13 +140,14 @@ function assemble_lsq(calc, data, weights, data_keys;
    blocks = Folds.map(at -> local_lsqsys(calc, at, ps, st, 
                                          weights, data_keys), 
                       data, executor)
+                         
    A = reduce(vcat, [b[1] for b in blocks])
    y = reduce(vcat, [b[2] for b in blocks])
    return A, y
 end
 
-
-A, y = assemble_lsq(calc_model2, train2[1:10], weights, data_keys)
+A, y = assemble_lsq(calc_model2, train2, weights, data_keys)
+@show size(A) 
 
 θ = ACEfit.trunc_svd(svd(A), y, 1e-8)
 ps, st = Lux.setup(rng, calc_model2)
@@ -164,6 +167,7 @@ ps_fit.Wpair[:] = ps_lin_fit.Wpair[:]
 calc_model2_fit = M.ACEPotential(model2, ps_fit, st)
 
 
+##
 # Now we can compare errors? 
 # to make sure we are comparing exactly the same thing, we implement this 
 # from scratch here ... 
