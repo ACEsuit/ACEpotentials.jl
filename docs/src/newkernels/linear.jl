@@ -6,19 +6,19 @@ using Random
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
       Unitful, Zygote, Optimisers, Folds, Printf 
 rng = Random.GLOBAL_RNG
+M = ACEpotentials.Models
 
+##
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 
 
 Z0 = :Si
 train, test, _ = ACEpotentials.example_dataset("Zuo20_$Z0")
 train = train[1:3:end]
+wE = 30.0; wF = 1.0; wV = 1.0 
+weights = Dict("default" => Dict("E" => wE, "F" => wF , "V" => wV))
 
-# because the new implementation is experimental, it is not exported, 
-# so I create a little shortcut to have easy access. 
-
-M = ACEpotentials.Models
-
+##
 # First we create an ACE1 style potential with some standard parameters 
 
 elements = [Z0,]
@@ -28,7 +28,6 @@ rcut = 5.5
 
 model1 = acemodel(elements = elements, 
                   order = order, 
-                  transform = (:agnesi, 2, 2),
                   totaldegree = totaldegree, 
                   pure = false, 
                   pure2b = false, 
@@ -37,17 +36,14 @@ model1 = acemodel(elements = elements,
 
 # now we create an ACE2 style model that should behave similarly                   
 
-# this essentially reproduces the rcut = 5.5, we may want a nicer way to 
-# achieve this. 
-
-rin0cuts = M._default_rin0cuts(elements) #; rcutfactor = 2.29167)
+rin0cuts = M._default_rin0cuts(elements)
 rin0cuts = SMatrix{1,1}((;rin0cuts[1]..., :rcut => 5.5))
 
 model2 = M.ace_model(; elements = elements, 
                        order = order,               # correlation order 
                        Ytype = :spherical,              # solid vs spherical harmonics
                        level = M.TotalDegree(),     # how to calculate the weights to give to a basis function
-                       max_level = totaldegree,     # maximum level of the basis functions
+                       max_level = totaldegree+1,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
                        init_WB = :zeros,            # how to initialize the ACE basis parmeters
                        init_Wpair = "linear",         # how to initialize the pair potential parameters
@@ -58,38 +54,16 @@ model2 = M.ace_model(; elements = elements,
                      )
 
 ps, st = Lux.setup(rng, model2)
-ps_r = ps.rbasis
-st_r = st.rbasis
-
-# extract the radial basis 
-rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
-rbasis2 = model2.rbasis
-k = length(rbasis1.J.A)
-
-# transform old coefficients to new coefficients to make them match 
-rbasis1.J.A[:] .= rbasis2.polys.A[1:k]
-rbasis1.J.B[:] .= rbasis2.polys.B[1:k]
-rbasis1.J.C[:] .= rbasis2.polys.C[1:k]
-rbasis1.J.A[2] /= rbasis1.J.A[1] 
-rbasis1.J.B[2] /= rbasis1.J.A[1]
-
-##
-basis1_red = deepcopy(model1.basis)
-basis1_red.BB[2] = BB2
-
 
 # wrap the model into a calculator, which turns it into a potential...
 
 calc_model2 = M.ACEPotential(model2)
 
 ## 
-#Fit the ACE1 model 
+# Fit the ACE1 model 
 
-# set weights for energy, forces virials 
-weights = Dict("default" => Dict("E" => 30.0, "F" => 1.0 , "V" => 1.0 ),);
 # specify a solver 
 solver=ACEfit.TruncatedSVD(; rtol = 1e-8)
-
 acefit!(model1, train;  solver=solver)
 
 
@@ -104,7 +78,7 @@ acefit!(model1, train;  solver=solver)
 train2 = FlexibleSystem.(train)
 test2 = FlexibleSystem.(test)
 data_keys = (E_key = :energy, F_key = :force, ) 
-weights = (wE = 30.0/u"eV", wF = 1.0 / u"eV/Å", )
+weights = (wE = wE/u"eV", wF = wF / u"eV/Å", )
 
 function local_lsqsys(calc, at, ps, st, weights, keys)
    efv = M.energy_forces_virial_basis(at, calc, ps, st)
@@ -118,8 +92,8 @@ function local_lsqsys(calc, at, ps, st, weights, keys)
    # energy 
    wE = weights[:wE]
    E_dft = at.data[data_keys.E_key] * u"eV"
-   y_E = wE * E_dft # (E_dft - E0)
-   A_E = wE * efv.energy'
+   y_E = wE * E_dft / sqrt(length(at))   # (E_dft - E0)
+   A_E = wE * efv.energy' / sqrt(length(at))
 
    # forces 
    wF = weights[:wF]
