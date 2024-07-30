@@ -20,7 +20,7 @@ jobs:
       matrix:
         julia-version:
           - '1.9'
-          - '1'
+          - '1.10'
           - 'nightly'
         python-version: 
           - '3.8'
