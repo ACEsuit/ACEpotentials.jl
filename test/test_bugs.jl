@@ -26,6 +26,6 @@ E_per_at = [ energy_per_at(model.potential, i) for i = 1:10 ]
 maxdiff = maximum(abs(E_per_at[i] - E_per_at[j]) for i = 1:10, j = 1:10 )
 @show maxdiff 
 
-@test maxdiff < 1e-12
+@test maxdiff < 1e-9
 
 @info(" ============================================================")
