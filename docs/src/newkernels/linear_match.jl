@@ -9,7 +9,7 @@ using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra,
 # M = ACEpotentials.Models
 
 include("match_bases.jl")
-include("LLSQ.jl")
+include("llsq.jl")
 
 # we will try this for a simple dataset, Zuo et al 
 # replace element with any of those available in that dataset 

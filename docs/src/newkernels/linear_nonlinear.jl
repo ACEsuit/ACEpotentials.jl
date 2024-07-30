@@ -8,7 +8,7 @@ using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra,
 rng = Random.GLOBAL_RNG
 M = ACEpotentials.Models
 
-include(@__DIR__() * "/LLSQ.jl")
+include(@__DIR__() * "/llsq.jl")
 
 ##
 # we will try this for a simple dataset, Zuo et al 
