@@ -19,7 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         julia-version:
-          - '1.9'
           - '1.10'
           - 'nightly'
         python-version: 
