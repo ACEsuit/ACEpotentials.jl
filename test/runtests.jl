@@ -12,6 +12,9 @@ using ACEpotentials, Test, LazyArtifacts
 
     @testset "New Models" begin include("models/test_models.jl") end 
 
+    # weird stuff 
+    @testset "Weird bugs" begin include("test_bugs.jl") end
+
     # outdated
     # @testset "Read data" begin include("outdated/test_data.jl") end 
     # @testset "Basis" begin include("outdated/test_basis.jl") end 
