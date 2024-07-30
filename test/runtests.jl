@@ -10,6 +10,9 @@ using ACEpotentials, Test, LazyArtifacts
     # experimental 
     @testset "UF_ACE" begin include("test_uface.jl") end
 
+    # weird stuff 
+    @testset "Weird Bugs" begin include("test_bugs.jl") end
+
     # outdated
     @testset "Read data" begin include("outdated/test_data.jl") end 
     @testset "Basis" begin include("outdated/test_basis.jl") end 
