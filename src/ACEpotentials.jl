@@ -2,8 +2,15 @@ module ACEpotentials
 
 using Reexport 
 @reexport using JuLIP
-@reexport using ACE1
-@reexport using ACE1x
+
+using ACE1
+export ACE1 
+
+using ACE1x
+export ACE1x 
+import ACE1x: ace_basis, smoothness_prior, ace_defaults, acemodel 
+export ace_basis, smoothness_prior, ace_defaults, acemodel
+
 @reexport using ACEfit
 @reexport using ACEmd
 
