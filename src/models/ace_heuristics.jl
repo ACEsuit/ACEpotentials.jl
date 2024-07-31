@@ -37,12 +37,15 @@ function ace_learnable_Rnlrzz(;
                level = nothing, 
                maxl = nothing, 
                maxn = nothing,
+               maxq_fact = 1.5, 
+               maxq = :auto, 
                elements = nothing, 
                spec = nothing, 
                rin0cuts = _default_rin0cuts(elements),
                transforms = agnesi_transform.(rin0cuts, 2, 2), 
                polys = :legendre, 
-               envelopes = :poly2sx
+               envelopes = :poly2sx, 
+               Winit = :glorot_normal, 
                )
    if elements == nothing
       error("elements must be specified!")
@@ -61,10 +64,18 @@ function ace_learnable_Rnlrzz(;
 
    # now the actual maxn is the maximum n in the spec
    actual_maxn = maximum([ s.n for s in spec ])
+   
+   if maxq == :auto 
+      maxq = ceil(Int, actual_maxn * maxq_fact)
+   end 
+
+   if maxq < actual_maxn 
+      @warn("maxq < actual_maxn; this results in linear dependence")
+   end 
 
    if polys isa Symbol 
       if polys == :legendre
-         polys = Polynomials4ML.legendre_basis(actual_maxn) 
+         polys = Polynomials4ML.legendre_basis(maxq) 
       else
          error("unknown polynomial type : $polys")
       end
@@ -87,7 +98,9 @@ function ace_learnable_Rnlrzz(;
       error("actual_maxn > length of polynomial basis")
    end
 
-   return LearnableRnlrzzBasis(zlist, polys, transforms, envelopes, rin0cuts, spec)
+   return LearnableRnlrzzBasis(zlist, polys, transforms, envelopes, 
+                               rin0cuts, spec; 
+                               Winit = Winit)
 end 
 
 
@@ -96,12 +109,15 @@ function ace_model(; elements = nothing,
                      order = nothing, 
                      Ytype = :solid,  
                      E0s = nothing,
-                     rin0cuts = nothing,
+                     rin0cuts = :auto,
                      # radial basis 
                      rbasis = nothing, 
                      rbasis_type = :learnable, 
                      maxl = 30, # maxl, max are fairly high defaults 
                      maxn = 50, # that we will likely never reach 
+                     maxq_fact = 1.5, 
+                     maxq = :auto, 
+                     init_Wradial = :glorot_normal, 
                      # basis size parameters 
                      level = nothing, 
                      max_level = nothing, 
@@ -109,11 +125,13 @@ function ace_model(; elements = nothing,
                      # pair basis 
                      pair_maxn = nothing, 
                      pair_basis = :auto, 
-                     init_Wpair = :zeros, 
+                     pair_learnable = false, 
+                     pair_transform = (:agnesi, 1, 4), 
+                     init_Wpair = "linear", 
                      rng = Random.default_rng(), 
                      )
 
-   if rin0cuts == nothing
+   if rin0cuts == :auto
       rin0cuts = _default_rin0cuts(elements)
    else
       NZ = length(elements)
@@ -125,8 +143,10 @@ function ace_model(; elements = nothing,
       if rbasis_type == :learnable
          rbasis = ace_learnable_Rnlrzz(; max_level = max_level, level = level, 
                                          maxl = maxl, maxn = maxn, 
+                                         maxq_fact = maxq_fact, maxq = maxq, 
                                          elements = elements, 
-                                         rin0cuts = rin0cuts)
+                                         rin0cuts = rin0cuts, 
+                                         Winit = init_Wradial)
       else
          error("unknown rbasis_type = $rbasis_type")
       end
@@ -143,17 +163,21 @@ function ace_model(; elements = nothing,
                maxl = 0, 
                maxn = pair_maxn, 
                rin0cuts = rbasis.rin0cuts,
-               transforms = (:agnesi, 1, 4), 
+               transforms = pair_transform, 
                envelopes = :poly1sr )
    end
 
-   ps_pair = initialparameters(rng, pair_basis)
-   pair_basis_spl = splinify(pair_basis, ps_pair)
+   pair_basis.meta["Winit"] = init_Wpair 
+
+   if !pair_learnable
+      ps_pair = initialparameters(rng, pair_basis)
+      pair_basis = splinify(pair_basis, ps_pair)
+   end
 
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis_spl, E0s)
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, E0s)
    model.meta["init_WB"] = String(init_WB)
    model.meta["init_Wpair"] = String(init_Wpair)
 

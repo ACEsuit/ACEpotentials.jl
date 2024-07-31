@@ -13,7 +13,7 @@ import EquivariantModels
 # ------------------------------------------------------------
 #    ACE MODEL SPECIFICATION 
 
-struct ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR} <: AbstractExplicitContainerLayer{(:rbasis,)}
+mutable struct ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR} <: AbstractExplicitContainerLayer{(:rbasis,)}
    _i2z::NTuple{NZ, Int}
    # --------------
    # embeddings of the particles 
@@ -191,7 +191,7 @@ function initialparameters(rng::AbstractRNG,
    # generate pair basis parameters 
    n_pair = length(model.pairbasis)
    Wpair = zeros(n_pair, NZ)
-   winit_pair = _W_init(model.meta["init_Wpair"])
+   winit_pair = _W_init(model.meta["init_WB"])
 
    for iz = 1:NZ 
       Wpair[:, iz] .= winit_pair(rng, Float64, n_pair)
@@ -376,9 +376,9 @@ function evaluate_ed(model::ACEModel,
       Ei += dot(Apair, Wp_i)
 
       # pullback --- I'm now assuming that the pair basis is not learnable.
-      if !( ps.pairbasis == NamedTuple() ) 
-         error("I'm currently assuming the pair basis is not learnable.")
-      end
+      # if !( ps.pairbasis == NamedTuple() ) 
+      #    error("I'm currently assuming the pair basis is not learnable.")
+      # end
 
       for j = 1:length(Rs)
          ∇Ei[j] += dot(Wp_i, (@view dRpair[j, :])) * (Rs[j] / rs[j])

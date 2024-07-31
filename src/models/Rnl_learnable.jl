@@ -8,18 +8,15 @@ import LuxCore
 function LearnableRnlrzzBasis(
             zlist, polys, transforms, envelopes, rin0cuts, 
             spec::AbstractVector{NT_NL_SPEC}; 
-            # weights=nothing, 
+            Winit = :glorot_normal, 
             meta=Dict{String, Any}())
    NZ = length(zlist) 
-   # if isnothing(weights) 
-   #    weights = fill(nothing, (1,1,1,1)) 
-   # end 
+   meta["Winit"] = string(Winit)
    LearnableRnlrzzBasis(_convert_zlist(zlist), 
                         polys, 
                         _make_smatrix(transforms, NZ), 
                         _make_smatrix(envelopes, NZ), 
                         # --------------
-                        # weights, 
                         _make_smatrix(rin0cuts, NZ),
                         collect(spec), 
                         meta)
@@ -34,11 +31,30 @@ function initialparameters(rng::AbstractRNG,
    len_q = length(basis.polys)
 
    Wnlq = zeros(len_nl, len_q, NZ, NZ)
-   for i = 1:NZ, j = 1:NZ
-      Wnlq[:, :, i, j] .= glorot_normal(rng, Float64, len_nl, len_q)
-   end
+   ps = (Wnlq = Wnlq, )
 
-   return (Wnlq = Wnlq, )
+   if !haskey(basis.meta, "Winit") 
+      @warn("No key Winit found for radial basis, use glorot_normal to initialize.")
+      basis.meta["Winit"] = "glorot_normal"
+   end
+   
+   if basis.meta["Winit"] == "glorot_normal"
+      for i = 1:NZ, j = 1:NZ
+         Wnlq[:, :, i, j] .= glorot_normal(rng, Float64, len_nl, len_q)
+      end
+
+   elseif basis.meta["Winit"] == "linear"
+      set_I_weights!(basis, ps)
+
+   elseif basis.meta["Winit"] == "zeros"
+      @warn("Setting inner basis weights to zero.")
+      Wnlq[:] .= 0 
+
+   else 
+      error("Unknown key Winit = $(basis.meta["Winit"]) to initialize radial basis weights.")
+   end 
+
+   return ps 
 end
 
 function initialstates(rng::AbstractRNG, 
@@ -52,6 +68,24 @@ function LuxCore.parameterlength(basis::LearnableRnlrzzBasis)
    len_nl = length(basis)
    len_q = length(basis.polys)
    return len_nl * len_q * NZ * NZ
+end
+
+"""
+Set the radial weights as they would be in a linear ACE model. 
+"""
+function set_I_weights!(rbasis::LearnableRnlrzzBasis, ps)
+   # Rnl(r, Z1, Z2) = ∑_q W[(nl), q, Z1, Z2] * P_q(r)
+   # For linear models this becomes Rnl(r, Z1, Z2) = Pn(r)
+   NZ = _get_nz(rbasis)
+   ps.Wnlq[:] .= 0 
+   for i = 1:NZ, j = 1:NZ
+      for (i_nl, nl) in enumerate(rbasis.spec)
+         if nl.n <= size(ps.Wnlq, 2)
+            ps.Wnlq[i_nl, nl.n, i, j] = 1 
+         end
+      end
+   end
+   return ps 
 end
 
 
