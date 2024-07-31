@@ -2,7 +2,8 @@ module ACEpotentials
 
 using Reexport 
 @reexport using JuLIP
-@reexport using ACE1
+using ACE1
+export ACE1 
 @reexport using ACE1x
 @reexport using ACEfit
 @reexport using ACEmd
