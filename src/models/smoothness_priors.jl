@@ -28,10 +28,18 @@ EuclideanDegree() = EuclideanDegree(1.0, 2/3)
 (l::EuclideanDegree)(bb::AbstractVector{<: NamedTuple}) = sqrt( sum(l(b)^2 for b in bb) )
 
 
-struct BasisSelector
-   order::Int 
-   maxlevels::AbstractVector{<: Number}
-   level
+# struct SparseBasisSelector
+#    order::Int 
+#    maxlevels::AbstractVector{<: Number}
+#    level
+# end
+
+function oneparticle_spec(level::Union{TotalDegree, EuclideanDegree}, maxlevel)
+   maxn1 = ceil(Int, maxlevel * level.wn)
+   maxl1 = ceil(Int, maxlevel * level.wl)
+   spec = [ (n = n, l = l) for n = 1:maxn1, l = 0:maxl1
+                  if level((n = n, l = l)) <= maxlevel ]
+   return sort(spec; by = x -> (x.l, x.n))                   
 end
 
 # --------------------------------------------------

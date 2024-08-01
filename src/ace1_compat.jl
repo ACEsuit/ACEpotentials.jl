@@ -3,6 +3,13 @@
 
 module ACE1compat
 
+using NamedTupleTools, StaticArrays
+import ACEpotentials: DefaultHypers, Models 
+
+using ACEpotentials.Models: agnesi_transform, 
+                            SplineRnlrzzBasis, 
+                            ace_learnable_Rnlrzz
+
 ace1_defaults() = deepcopy(_kw_defaults)
 
 const _kw_defaults = Dict(:elements => nothing,
@@ -29,8 +36,6 @@ const _kw_defaults = Dict(:elements => nothing,
                           :pair_envelope => (:r, 2),
                           #
                           :Eref => missing,
-                          #temporary variable to specify whether using the variable cutoffs or not
-                          :variable_cutoffs => false,
                           )
 
 const _kw_aliases = Dict( :N => :order,
@@ -56,6 +61,14 @@ function _clean_args(kwargs)
 
    if dargs[:pair_rcut] == :rcut
       dargs[:pair_rcut] = dargs[:rcut]
+   end
+
+   if haskey(dargs, :variable_cutoffs) 
+      @warn("variable_cutoffs argument is ignored")
+   end
+
+   if kwargs[:pure2b] || kwargs[:pure]
+      error("ACE1compat current does not support `pure2b` or `pure` options.")
    end
 
    return namedtuple(dargs)
@@ -145,12 +158,28 @@ end
 function _rin0cuts_rcut(zlist, cutoffs::Dict)
    function rin0cut(zi, zj) 
       r0 = DefaultHypers.bond_len(zi, zj)
-      return (rin = 0.0, r0 = r0, rcut = cutoffs[zi, zj])
+      rin, rcut = cutoffs[zi, zj]
+      return (rin = rin, r0 = r0, rcut = rcut)
    end
    NZ = length(zlist)
    return SMatrix{NZ, NZ}([ rin0cut(zi, zj) for zi in zlist, zj in zlist ])
 end
 
+
+function _ace1_rin0cuts(kwargs) 
+   elements = _get_elements(kwargs) 
+   r0 = _get_all_r0(kwargs)
+   rcut = _get_all_rcut(kwargs)
+   if rcut isa Number 
+      cutoffs = Dict([ (s1, s2) => (0.0, rcut) for s1 in elements, s2 in elements]...)
+   else
+      cutoffs = Dict([ (s1, s2) => (0.0, rcut[(s1, s2)]) for s1 in elements, s2 in elements]...)
+   end
+   # rcut = maximum(values(rcut))  # multitransform wants a single cutoff.
+
+   # construct the rin0cut structures 
+   rin0cuts = _rin0cuts_rcut(elements, cutoffs)
+end
 
 
 function _transform(kwargs; transform = kwargs[:transform])
@@ -161,20 +190,9 @@ function _transform(kwargs; transform = kwargs[:transform])
          if length(transform) != 3
             error("The ACE1 compatibility only supports (:agnesi, p, q) type transforms.")
          end
-
          p = transform[2]
          q = transform[3]
-         r0 = _get_all_r0(kwargs)
-         rcut = _get_all_rcut(kwargs)
-         if rcut isa Number || ! kwargs[:variable_cutoffs]
-            cutoffs = nothing
-         else
-            cutoffs = Dict([ (s1, s2) => (0.0, rcut[(s1, s2)]) for s1 in elements, s2 in elements]...)
-         end
-         # rcut = maximum(values(rcut))  # multitransform wants a single cutoff.
-
-         # construct the rin0cut structures 
-         rin0cuts = _rin0cuts_rcut(elements, cutoffs)
+         rin0cuts = _ace1_rin0cuts(kwargs)
          transforms = agnesi_transform.(rin0cuts, p, q)
          return transforms 
          
@@ -188,41 +206,73 @@ function _transform(kwargs; transform = kwargs[:transform])
    error("Unable to determine transform from the arguments provided.")
 end
 
-#=
+
+function _get_Rnl_spec(kwargs) 
+   maxdeg = maximum(kwargs[:totaldegree]) 
+   wL = kwargs[:wL] 
+   lvl = Models.TotalDegree(1.0, 1/wL)
+   return Models.oneparticle_spec(lvl, maxdeg)   
+end
+
 
 function _radial_basis(kwargs)
    rbasis = kwargs[:rbasis]
+   elements = _get_elements(kwargs)
 
-   if rbasis isa ACE1.ScalarBasis
+   if rbasis isa SplineRnlrzzBasis
       return rbasis
 
    elseif rbasis == :legendre
-      Deg, maxdeg, maxn = _get_degrees(kwargs)
-      cor_order = _get_order(kwargs)
-      envelope = kwargs[:envelope]
-      if envelope isa Tuple && envelope[1] == :x
-         pin = envelope[2]
-         pcut = envelope[3]
-         if (kwargs[:pure2b] || kwargs[:pure])
-            maxn += (pin + pcut) * (cor_order-1)
-         end
-      else
-         error("Cannot construct the radial basis automatically without knowing the envelope.")
-      end
 
       trans_ace = _transform(kwargs)
+      rin0cuts = _ace1_rin0cuts(kwargs)
+      Rnl_spec = _get_Rnl_spec(kwargs)
 
-      Rn_basis = transformed_jacobi(maxn, trans_ace; pcut = pcut, pin = pin)
-      # println("pcut is", pcut, "pin is", pin, "trans_ace is", trans_ace)
-      # println(kwargs)
-      #Rn_basis = transformed_jacobi(maxn, trans_ace, kwargs[:rcut], kwargs[:rin];)
-      return Rn_basis
+      envelope = kwargs[:envelope]
+      # this is the default envelope
+      # envelopes = PolyEnvelope2sX(-1.0, 1.0, 2, 2)
+      # just check that it hasn't been changed 
+      if envelope != (:x, 2, 2)
+         error("The ACE1 compatibility only supports (:x, 2, 2) type envelopes for the radial basis")
+      end
+
+      # finally we need to specify a polynomial basis. ACE1 incorporates 
+      # the envelope into the orthogonality. This corresponds to 
+      #  ∫ Pq(x) Pq(x) env(x)^2 dx = δ_{pq}
+      # which results in a Jacobi basis 
+      pin = envelope[2]
+      pcut = envelope[3]
+      polys = (:jacobi, Float64(2*pin), Float64(2*pcut))
+
+
+      # This is to be revisited if we re-introduce pure2b
+      # if envelope isa Tuple && envelope[1] == :x
+      #    if (kwargs[:pure2b] || kwargs[:pure])
+      #       maxn += (pin + pcut) * (cor_order-1)
+      #    end
+      # else
+      #    error("Cannot construct the radial basis automatically without knowing the envelope.")
+      # end
+      # Rn_basis = transformed_jacobi(maxn, trans_ace; pcut = pcut, pin = pin)
+
+      Rn_basis = ace_learnable_Rnlrzz(; spec = Rnl_spec, 
+                                        maxq = maximum(b.n for b in Rnl_spec),  
+                                        elements = elements, 
+                                        rin0cuts = rin0cuts,
+                                        transforms = trans_ace, 
+                                        polys = polys, 
+                                        Winit = "linear")
+
+      ps_Rn = Models.initialparameters(nothing, Rn_basis)
+      Rn_spl = Models.splinify(Rn_basis, ps_Rn)
+      return Rn_spl 
    end
 
    error("Unable to determine the radial basis from the arguments provided.")
 end
 
 
+#=
 
 
 function _pair_basis(kwargs)

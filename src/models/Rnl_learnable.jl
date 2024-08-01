@@ -24,7 +24,7 @@ end
 
 Base.length(basis::LearnableRnlrzzBasis) = length(basis.spec)
 
-function initialparameters(rng::AbstractRNG, 
+function initialparameters(rng::Union{AbstractRNG, Nothing}, 
                            basis::LearnableRnlrzzBasis)
    NZ = _get_nz(basis) 
    len_nl = length(basis)

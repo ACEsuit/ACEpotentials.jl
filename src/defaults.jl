@@ -1,10 +1,11 @@
 module DefaultHypers 
 
 import YAML
+using JuLIP: AtomicNumber, rnn
 
 # -------------- Bond-length heuristics
 
-_lengthscales_path = joinpath(@__DIR__, "..", "..", "data",
+_lengthscales_path = joinpath(@__DIR__, "..",  "data",
                               "length_scales_VASP_auto_length_scales.yaml")
 _lengthscales = YAML.load_file(_lengthscales_path)
 

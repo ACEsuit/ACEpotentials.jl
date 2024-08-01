@@ -1,30 +1,5 @@
 import Random 
 
-# --------------------------------------------------
-#   different notions of "level" / total degree.
-
-abstract type AbstractLevel end 
-struct TotalDegree <: AbstractLevel
-   wn::Float64
-   wl::Float64
-end 
-
-TotalDegree() = TotalDegree(1.0, 0.66)
-
-(l::TotalDegree)(b::NamedTuple) = b.n/l.wn + b.l/l.wl
-(l::TotalDegree)(bb::AbstractVector{<: NamedTuple}) = sum(l(b) for b in bb)
-
-
-struct EuclideanDegree <: AbstractLevel
-   wn::Float64
-   wl::Float64
-end
-
-EuclideanDegree() = EuclideanDegree(1.0, 0.66)
-
-(l::EuclideanDegree)(b::NamedTuple) = sqrt( (b.n/l.wn)^2 + (b.l/l.wl)^2 )
-(l::EuclideanDegree)(bb::AbstractVector{<: NamedTuple}) = sqrt( sum(l(b)^2 for b in bb) )
-
 
 # -------------------------------------------------------
 #  construction of Rnlrzz bases with lots of defaults
@@ -76,6 +51,14 @@ function ace_learnable_Rnlrzz(;
    if polys isa Symbol 
       if polys == :legendre
          polys = Polynomials4ML.legendre_basis(maxq) 
+      else
+         error("unknown polynomial type : $polys")
+      end
+   elseif polys isa Tuple 
+      if polys[1] == :jacobi 
+         α = polys[2]
+         β = polys[3]
+         polys = Polynomials4ML.jacobi_basis(maxq, α, β)
       else
          error("unknown polynomial type : $polys")
       end
@@ -186,3 +169,14 @@ end
 
 
 # -------------------------------------------------------
+
+
+function _default_rin0cuts(zlist; rinfactor = 0.0, rcutfactor = 2.5)
+   function rin0cut(zi, zj) 
+      r0 = ACE1x.get_r0(zi, zj)
+      return (rin = r0 * rinfactor, r0 = r0, rcut = r0 * rcutfactor)
+   end
+   NZ = length(zlist)
+   return SMatrix{NZ, NZ}([ rin0cut(zi, zj) for zi in zlist, zj in zlist ])
+end
+
