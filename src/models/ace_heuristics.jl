@@ -75,6 +75,14 @@ function ace_learnable_Rnlrzz(;
    elseif envelopes == :poly1sr
       envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, 1) 
                     for iz = 1:NZ, jz = 1:NZ ]
+   elseif envelopes isa Tuple && envelopes[1] == :x 
+      @assert length(envelopes) == 2 
+      envelopes = PolyEnvelope2sX(-1.0, 1.0, envelopes[2], envelopes[3])
+   elseif envelopes isa Tuple && envelopes[1] == :r 
+      envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, envelopes[2]) 
+                     for iz = 1:NZ, jz = 1:NZ ]
+   else
+      error("cannot read envelope : $envelopes")
    end
 
    if actual_maxn > length(polys)

@@ -166,10 +166,9 @@ function _rin0cuts_rcut(zlist, cutoffs::Dict)
 end
 
 
-function _ace1_rin0cuts(kwargs) 
+function _ace1_rin0cuts(kwargs; rcutkey = :rcut) 
    elements = _get_elements(kwargs) 
-   r0 = _get_all_r0(kwargs)
-   rcut = _get_all_rcut(kwargs)
+   rcut = _get_all_rcut(kwargs; _rcut = kwargs[rcutkey])
    if rcut isa Number 
       cutoffs = Dict([ (s1, s2) => (0.0, rcut) for s1 in elements, s2 in elements]...)
    else
@@ -182,7 +181,8 @@ function _ace1_rin0cuts(kwargs)
 end
 
 
-function _transform(kwargs; transform = kwargs[:transform])
+function _transform(kwargs; transform = kwargs[:transform], 
+                            rcutkey = :rcut)
    elements = _get_elements(kwargs) 
 
    if transform isa Tuple
@@ -192,7 +192,7 @@ function _transform(kwargs; transform = kwargs[:transform])
          end
          p = transform[2]
          q = transform[3]
-         rin0cuts = _ace1_rin0cuts(kwargs)
+         rin0cuts = _ace1_rin0cuts(kwargs; rcutkey = rcutkey)
          transforms = agnesi_transform.(rin0cuts, p, q)
          return transforms 
          
@@ -207,8 +207,8 @@ function _transform(kwargs; transform = kwargs[:transform])
 end
 
 
-function _get_Rnl_spec(kwargs) 
-   maxdeg = maximum(kwargs[:totaldegree]) 
+function _get_Rnl_spec(kwargs, 
+                     maxdeg = maximum(kwargs[:totaldegree]) )
    wL = kwargs[:wL] 
    lvl = Models.TotalDegree(1.0, 1/wL)
    return Models.oneparticle_spec(lvl, maxdeg)   
@@ -272,66 +272,60 @@ function _radial_basis(kwargs)
 end
 
 
-#=
-
-
 function _pair_basis(kwargs)
    rbasis = kwargs[:pair_basis]
    elements = _get_elements(kwargs) 
-   #elements has to be sorted becuase PolyPairBasis (see end of function) assumes sorted.
-   if kwargs[:variable_cutoffs]
-      elements = [chemical_symbol(z) for z in JuLIP.Potentials.ZList(elements, static=true).list]
-   end
+   rin0cuts = _ace1_rin0cuts(kwargs; rcutkey = :pair_rcut)
 
-   if rbasis isa ACE1.ScalarBasis
-      return rbasis
+   if rbasis == :legendre
 
-   elseif rbasis == :legendre
+      # SPECIFICATION 
       if kwargs[:pair_degree] == :totaldegree
-         Deg, maxdeg, maxn = _get_degrees(kwargs)
+         maxn = maximum(kwargs[:totaldegree])
       elseif kwargs[:pair_degree] isa Integer
          maxn = kwargs[:pair_degree]
       else
          error("Cannot determine `maxn` for pair basis from information provided.")
       end
+      pair_spec = [ (n = n, l = 0) for n in 1:maxn ]
 
-      allrcut = _get_all_rcut(kwargs; _rcut = kwargs[:pair_rcut])
-      if allrcut isa Number
-         allrcut = Dict([(s1, s2) => allrcut for s1 in elements, s2 in elements]...)
-      end
+      # TRANSFORM 
+      trans_pair = _transform(kwargs, transform = kwargs[:pair_transform], 
+                                      rcutkey = :pair_rcut)
 
-      trans_pair = _transform(kwargs, transform = kwargs[:pair_transform])
-      _s2i(s) = z2i(trans_pair.zlist, AtomicNumber(s))
-      alltrans = Dict([(s1, s2) => trans_pair.transforms[_s2i(s1), _s2i(s2)].t
-                       for s1 in elements, s2 in elements]...)
-
-      allr0 = _get_all_r0(kwargs)
-
-      function _r_basis(s1, s2, penv)
-         _env = ACE1.PolyEnvelope(penv, allr0[(s1, s2)], allrcut[(s1, s2)] )
-         return transformed_jacobi_env(maxn, alltrans[(s1, s2)], _env, allrcut[(s1, s2)])
-      end
-
-      _x_basis(s1, s2, pin, pcut)  = transformed_jacobi(maxn, alltrans[(s1, s2)], allrcut[(s1, s2)];
-                                             pcut = pcut, pin = pin)
-
+      # ENVELOPE 
+      # here we use the same convention, so this is fine
       envelope = kwargs[:pair_envelope]
-      if envelope isa Tuple
-         if envelope[1] == :x
-            pin = envelope[2]
-            pcut = envelope[3]
-            rbases = [ _x_basis(s1, s2, pin, pcut) for s1 in elements, s2 in elements ]
-         elseif envelope[1] == :r
-            penv = envelope[2]
-            rbases = [ _r_basis(s1, s2, penv) for s1 in elements, s2 in elements ]
-         end
-      end
+      
+      #  ------ Here it is getting weird? 
+      # _s2i(s) = z2i(trans_pair.zlist, AtomicNumber(s))
+      # alltrans = Dict([(s1, s2) => trans_pair.transforms[_s2i(s1), _s2i(s2)].t
+      #                  for s1 in elements, s2 in elements]...)
+      # allr0 = _get_all_r0(kwargs)
+      # function _r_basis(s1, s2, penv)
+      #    _env = ACE1.PolyEnvelope(penv, allr0[(s1, s2)], allrcut[(s1, s2)] )
+      #    return transformed_jacobi_env(maxn, alltrans[(s1, s2)], _env, allrcut[(s1, s2)])
+      # end
+      # _x_basis(s1, s2, pin, pcut)  = transformed_jacobi(maxn, alltrans[(s1, s2)], allrcut[(s1, s2)];
+      #                                        pcut = pcut, pin = pin)
+      pair_basis = ace_learnable_Rnlrzz(; spec = pair_spec, 
+                                    maxq = maxn,  
+                                    elements = elements, 
+                                    rin0cuts = rin0cuts,
+                                    transforms = trans_pair, 
+                                    envelopes = envelope, 
+                                    polys = :legendre, 
+                                    Winit = "linear" ) 
+      ps_pair = Models.initialparameters(nothing, pair_basis)
+      pair_spl = Models.splinify(pair_basis, ps_pair)
+      return pair_spl
    end
-
-   return PolyPairBasis(rbases, elements)
+   
+   error("Cannot determine the pair basis from the arguments provided.")
 end
 
 
+#=
 
 function mb_ace_basis(kwargs)
    elements = _get_elements(kwargs) 

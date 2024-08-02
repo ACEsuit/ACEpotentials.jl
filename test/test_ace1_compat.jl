@@ -78,5 +78,21 @@ println()
 
 ## 
 
+@info("Check the pair basis construction")
+pairbasis1 = model1.basis.BB[1]
+pairbasis2 = ACE1compat._pair_basis(params_clean)
+
+rr = range(0.001, params.rcut, length=200)
+P1 = reduce(hcat, [ ACE1.evaluate(pairbasis1, r, z1, z1) for r in rr ])
+P2 = reduce(hcat, [ pairbasis2(r, z2, z2, NamedTuple(), NamedTuple()) for r in rr])
+println_slim(@test size(P1) == size(P2))
+
+nmax = size(P1, 1)
+scal = [ sum(P1[n, 70:end]) / sum(P2[n, 70:end]) for n = 1:nmax ]
+P2 = Diagonal(scal) * P2
+
+err = norm( (P1 - P2) ./ (abs.(P1) .+ abs.(P2) .+ 1), Inf)
+@show err 
+println_slim(@test err < 0.01)
 
 
