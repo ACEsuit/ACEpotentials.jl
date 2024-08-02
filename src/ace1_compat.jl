@@ -99,12 +99,8 @@ function _get_degrees(kwargs)
       end
 
       wL = kwargs[:wL]
-      basis_selector = BasisSelector(cor_order, maxlevels, 
-                                     TotalDegree(1.0, wL))
-      maxn = maximum(maxlevels) 
 
-      # return basis_selector, maxdeg, maxn      
-      return basis_selector 
+      return Models.TotalDegree(1.0, 1/wL), maxlevels
    end
 
    error("Cannot determine total degree of ACE basis from the arguments provided.")
@@ -297,17 +293,6 @@ function _pair_basis(kwargs)
       # here we use the same convention, so this is fine
       envelope = kwargs[:pair_envelope]
       
-      #  ------ Here it is getting weird? 
-      # _s2i(s) = z2i(trans_pair.zlist, AtomicNumber(s))
-      # alltrans = Dict([(s1, s2) => trans_pair.transforms[_s2i(s1), _s2i(s2)].t
-      #                  for s1 in elements, s2 in elements]...)
-      # allr0 = _get_all_r0(kwargs)
-      # function _r_basis(s1, s2, penv)
-      #    _env = ACE1.PolyEnvelope(penv, allr0[(s1, s2)], allrcut[(s1, s2)] )
-      #    return transformed_jacobi_env(maxn, alltrans[(s1, s2)], _env, allrcut[(s1, s2)])
-      # end
-      # _x_basis(s1, s2, pin, pcut)  = transformed_jacobi(maxn, alltrans[(s1, s2)], allrcut[(s1, s2)];
-      #                                        pcut = pcut, pin = pin)
       pair_basis = ace_learnable_Rnlrzz(; spec = pair_spec, 
                                     maxq = maxn,  
                                     elements = elements, 
@@ -325,58 +310,75 @@ function _pair_basis(kwargs)
 end
 
 
-#=
+function ace1_model(; kwargs...)
 
-function mb_ace_basis(kwargs)
+   kwargs = _clean_args(kwargs)
+
    elements = _get_elements(kwargs) 
    cor_order = _get_order(kwargs)
-   Deg, maxdeg, maxn = _get_degrees(kwargs)
    rbasis = _radial_basis(kwargs)
-   pure2b = kwargs[:pure2b]
-
-   if pure2b && kwargs[:pure]
-      # error("Cannot use both `pure2b` and `pure` options.")
-      @info("Option `pure = true` overrides `pure2b=true`")
-      pure2b = false
-   end
-
-   if pure2b
-      rpibasis = Pure2b.pure2b_basis(species = AtomicNumber.(elements),
-                              Rn=rbasis,
-                              D=Deg,
-                              maxdeg=maxdeg,
-                              order=cor_order,
-                              delete2b = kwargs[:delete2b])
-   elseif kwargs[:pure]
-      dirtybasis = ACE1.ace_basis(species = AtomicNumber.(elements),
-                               rbasis=rbasis,
-                               D=Deg,
-                               maxdeg=maxdeg,
-                               N = cor_order, )
-      _rem = kwargs[:delete2b] ? 1 : 0
-      # remove all zero-basis functions that we might have accidentally created so that we purify less extra basis
-      dirtybasis = ACE1.RPI.remove_zeros(dirtybasis)
-      # and finally cleanup the rest of the basis 
-      dirtybasis = ACE1._cleanup(dirtybasis)
-      # finally purify
-      rpibasis = ACE1x.Purify.pureRPIBasis(dirtybasis; remove = _rem)
+   pairbasis = _pair_basis(kwargs)
+   lvl, maxlvl = _get_degrees(kwargs)
+   if all(maxlvl .== maximum(maxlvl))
+      maxlvl = maximum(maxlvl)
    else
-      rpibasis = ACE1.ace_basis(species = AtomicNumber.(elements),
-                               rbasis=rbasis,
-                               D=Deg,
-                               maxdeg=maxdeg,
-                               N = cor_order, )
+      error("ACE1-compat only supports a single-number totaldegree at the moment.")
    end
 
-   return rpibasis
+   # if pure2b && kwargs[:pure]
+      # error("Cannot use both `pure2b` and `pure` options.")
+      # @info("Option `pure = true` overrides `pure2b=true`")
+      # pure2b = false
+   # end
+
+   if kwargs[:pure2b] || kwargs[:pure]
+      error("ACE1compat does not yet support the `pure2b` or `pure` options.")
+   end
+
+
+   # if pure2b
+   #    rpibasis = Pure2b.pure2b_basis(species = AtomicNumber.(elements),
+   #                            Rn=rbasis,
+   #                            D=Deg,
+   #                            maxdeg=maxdeg,
+   #                            order=cor_order,
+   #                            delete2b = kwargs[:delete2b])
+   # elseif kwargs[:pure]
+   #    dirtybasis = ACE1.ace_basis(species = AtomicNumber.(elements),
+   #                             rbasis=rbasis,
+   #                             D=Deg,
+   #                             maxdeg=maxdeg,
+   #                             N = cor_order, )
+   #    _rem = kwargs[:delete2b] ? 1 : 0
+   #    # remove all zero-basis functions that we might have accidentally created so that we purify less extra basis
+   #    dirtybasis = ACE1.RPI.remove_zeros(dirtybasis)
+   #    # and finally cleanup the rest of the basis 
+   #    dirtybasis = ACE1._cleanup(dirtybasis)
+   #    # finally purify
+   #    rpibasis = ACE1x.Purify.pureRPIBasis(dirtybasis; remove = _rem)
+   # else
+
+   if ismissing(kwargs[:Eref])
+      E0s = nothing
+   else 
+      E0s = kwargs[:Eref]
+   end
+
+   model = Models.ace_model(; elements=elements, 
+                       order = cor_order, 
+                       Ytype = :spherical, 
+                       E0s = E0s, 
+                       rbasis = rbasis, 
+                       pair_basis = pairbasis, 
+                       rin0cuts = rbasis.rin0cuts, 
+                       level = lvl, 
+                       max_level = maxlvl,
+                       init_WB = :zeros,)
+
+   return model 
 end
 
-function ace_basis(; kwargs...)
-   kwargs = _clean_args(kwargs)
-   rpiB = mb_ace_basis(kwargs)
-   pairB = _pair_basis(kwargs)
-   return JuLIP.MLIPs.IPSuperBasis([pairB, rpiB]);
-end
-=#
 
 end 
+
+

@@ -156,14 +156,15 @@ function ace_model(; elements = nothing,
                rin0cuts = rbasis.rin0cuts,
                transforms = pair_transform, 
                envelopes = :poly1sr )
+
+      pair_basis.meta["Winit"] = init_Wpair 
+
+      if !pair_learnable
+         ps_pair = initialparameters(rng, pair_basis)
+         pair_basis = splinify(pair_basis, ps_pair)
+      end
    end
 
-   pair_basis.meta["Winit"] = init_Wpair 
-
-   if !pair_learnable
-      ps_pair = initialparameters(rng, pair_basis)
-      pair_basis = splinify(pair_basis, ps_pair)
-   end
 
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
