@@ -27,17 +27,13 @@ params = ( elements = [:Si,],
 
 
 model1 = acemodel(; params...)
+
 model2 = ACE1compat.ace1_model(; params...)
 ps, st = Lux.setup(rng, model2)
-
 
 ## 
 
 @info("check the transform construction")
-
-# params_clean = ACE1compat._clean_args(params)
-# rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
-# rbasis2 = ACE1compat._radial_basis(params_clean)
 
 rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
 rbasis2 = model2.rbasis
@@ -52,7 +48,6 @@ err_t1_t2 = maximum(abs.(t1 .- t2))
 println_slim(@test err_t1_t2 < 1e-12)
 
 # the envelope - check that the "choices" are the same 
-
 println_slim(@test rbasis1.envelope isa ACE1.OrthPolys.OneEnvelope)
 println_slim(@test rbasis1.J.pl == rbasis1.J.pr == 2 )
 println_slim(@test rbasis2.envelopes[1].p1 == rbasis2.envelopes[1].p2 == 2)
@@ -84,7 +79,6 @@ println()
 
 @info("Check the pair basis construction")
 pairbasis1 = model1.basis.BB[1]
-# pairbasis2 = ACE1compat._pair_basis(params_clean)
 pairbasis2 = model2.pairbasis
 
 rr = range(0.001, params.rcut, length=200)
@@ -121,17 +115,20 @@ _evaluate(basis::JuLIP.MLIPs.IPSuperBasis, Rs, Zs, z0) =
 
 B1 = reduce(hcat, [ _evaluate(model1.basis, x...) for x in XX1])
 B2 = reduce(hcat, [M.evaluate_basis(model2, x..., ps, st) for x in XX2])
-
-Nmb = length(spec1)
-B1_mb = B1[end-Nmb+1:end, :]
-B2_mb = B2[1:Nmb, :]
-
 # Compute linear transform between bases to show match
-C_mb = B1_mb' \ B2_mb'
-@show norm(B2_mb - C_mb' * B1_mb, Inf)
+C = B1' \ B2'
+@show norm(B2 - C' * B1, Inf)
+println_slim(@test norm(B2 - C' * B1, Inf) < 1e-3)
 
-B1_pair = B1[1:end-Nmb, :]
-B2_pair = B2[Nmb+1:end, :]
-C_pair = B1_pair' \ B2_pair'
-@show norm(B2_pair - C_pair' * B1_pair, Inf)
-norm(B2_pair - Diagonal(scal_pair) \ B1_pair)
+# Nmb = length(spec1)
+# B1_mb = B1[end-Nmb+1:end, :]
+# B2_mb = B2[1:Nmb, :]
+# 
+# C_mb = B1_mb' \ B2_mb'
+# @show norm(B2_mb - C_mb' * B1_mb, Inf)
+
+# B1_pair = B1[1:end-Nmb, :]
+# B2_pair = B2[Nmb+1:end, :]
+# C_pair = B1_pair' \ B2_pair'
+# @show norm(B2_pair - C_pair' * B1_pair, Inf)
+

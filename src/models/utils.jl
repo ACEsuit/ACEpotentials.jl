@@ -95,7 +95,8 @@ import ACE1
 
 rand_atenv(model::ACEModel, Nat) = rand_atenv(model.rbasis, Nat)
 
-function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat)
+function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat; 
+                    rin_fact = 0.9)
    z0 = rand(rbasis._i2z) 
    zs = rand(rbasis._i2z, Nat) 
    
@@ -106,6 +107,11 @@ function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat)
       x = 2 * rand() - 1 
       t_ij = rbasis.transforms[iz0, izj] 
       r_ij = inv_transform(t_ij, x)
+      r0_ij = rbasis.rin0cuts[iz0, izj].r0
+      r_in = rin_fact * r0_ij 
+      if r_ij < r_in 
+         r_ij = r_in + rand() * (r0_ij - r_in) 
+      end 
       push!(rs, r_ij)
    end
    Rs = [ r * ACE1.Random.rand_sphere() for r in rs ]
