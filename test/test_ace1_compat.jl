@@ -23,6 +23,7 @@ params = ( elements = [:Si,],
            pure2b = false,
            pair_envelope = (:r, 1),
            rcut = 5.5,
+           Eref = [:Si => -1.234 ]
          )
 
 
@@ -106,7 +107,7 @@ spec1 = [ [ (n = b.n, l = b.l) for b in bb ] for bb in _spec1 ]
 spec2 = M.get_nnll_spec(model2.tensor)
 println_slim(@test sort(sort.(spec1)) == sort(sort.(spec2))) 
 
-Nenv = 300
+Nenv = 1000
 XX2 = [ M.rand_atenv(model2, rand(6:10)) for _=1:Nenv ]
 XX1 = [ (x[1], AtomicNumber.(x[2]), AtomicNumber(x[3])) for x in XX2 ]
 
@@ -132,3 +133,35 @@ println_slim(@test norm(B2 - C' * B1, Inf) < 1e-3)
 # C_pair = B1_pair' \ B2_pair'
 # @show norm(B2_pair - C_pair' * B1_pair, Inf)
 
+##
+
+@info("Check E0s")
+E0s1 = model1.Vref.E0[:Si]
+E0s2 = model2.E0s[1]
+println_slim(@test E0s1 ≈ E0s2)
+
+##
+
+@info("Set some random parameteres and check site energies")
+
+lenB = size(B1, 1)
+θ2 = randn(lenB) ./ (1:lenB).^2
+θ1 = C * θ2
+ACE1x._set_params!(model1, θ1)
+
+calc2 = M.ACEPotential(model2, ps, st)
+M.set_parameters!(calc2, θ2)
+
+
+JuLIP.evaluate(V::JuLIP.OneBody, Rs, Zs, z0) = 
+      V.E0[JuLIP.Chemistry.chemical_symbol(z0)]
+
+_evaluate(pot::JuLIP.MLIPs.SumIP, Rs, Zs, z0) = 
+      sum(JuLIP.evaluate(V, Rs, Zs, z0) for V in pot.components)
+
+V1 = [ _evaluate(model1.potential, x...) for x in XX1 ]
+V2 = [ M.evaluate(calc2.model, x..., calc2.ps, calc2.st) for x in XX2 ]
+
+err = norm(V1 - V2, Inf)
+@show err
+println_slim(@test err < 1e-4)

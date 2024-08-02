@@ -3,7 +3,7 @@
 
 module ACE1compat
 
-using NamedTupleTools, StaticArrays
+using NamedTupleTools, StaticArrays, Unitful
 import ACEpotentials: DefaultHypers, Models 
 
 using ACEpotentials.Models: agnesi_transform, 
@@ -358,10 +358,11 @@ function ace1_model(; kwargs...)
    #    rpibasis = ACE1x.Purify.pureRPIBasis(dirtybasis; remove = _rem)
    # else
 
-   if ismissing(kwargs[:Eref])
+   Eref = kwargs[:Eref]
+   if ismissing(Eref) 
       E0s = nothing
    else 
-      E0s = kwargs[:Eref]
+      E0s = Dict([ key => val * u"eV" for (key, val) in Eref]...) 
    end
 
    model = Models.ace_model(; elements=elements, 
