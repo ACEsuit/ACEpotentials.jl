@@ -33,8 +33,9 @@ function ace_learnable_Rnlrzz(;
    NZ = length(zlist)
 
    if spec == nothing
+      _max_lvl = maximum(max_level)
       spec = [ (n = n, l = l) for n = 1:maxn, l = 0:maxl
-                              if level((n = n, l = l)) <= max_level ]
+                              if level((n = n, l = l)) <= _max_lvl ]
    end
 
    # now the actual maxn is the maximum n in the spec

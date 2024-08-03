@@ -319,11 +319,6 @@ function ace1_model(; kwargs...)
    rbasis = _radial_basis(kwargs)
    pairbasis = _pair_basis(kwargs)
    lvl, maxlvl = _get_degrees(kwargs)
-   if all(maxlvl .== maximum(maxlvl))
-      maxlvl = maximum(maxlvl)
-   else
-      error("ACE1-compat only supports a single-number totaldegree at the moment.")
-   end
 
    # if pure2b && kwargs[:pure]
       # error("Cannot use both `pure2b` and `pure` options.")

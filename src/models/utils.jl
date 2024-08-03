@@ -30,6 +30,14 @@ function sparse_AA_spec(; order = nothing,
                           r_spec = nothing, 
                           max_level = nothing, 
                           level = nothing, )
+
+   # convert the max_level to a list 
+   if max_level isa Number 
+      max_levels = fill(max_level, order)
+   else
+      max_levels = max_level
+   end
+
    # compute the r levels
    r_level = [ level(b) for b in r_spec ]
 
@@ -51,7 +59,7 @@ function sparse_AA_spec(; order = nothing,
 
    # generate the AA basis spec from the A basis spec
    tup2b = vv -> [ A_spec[v] for v in vv[vv .> 0]  ]
-   admissible = bb -> (length(bb) == 0) || level(bb) <= max_level
+   admissible = bb -> (length(bb) == 0) || (level(bb) <= max_levels[length(bb)])
    filter_ = EquivariantModels.RPE_filter_real(0)
 
    AA_spec = EquivariantModels.gensparse(; 

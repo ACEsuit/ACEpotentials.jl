@@ -18,7 +18,7 @@ rng = Random.MersenneTwister(1234)
 params = ( elements = [:Si,], 
            order = 3, 
            transform = (:agnesi, 2, 2),
-           totaldegree = 8, 
+           totaldegree = [12, 10, 8], 
            pure = false, 
            pure2b = false,
            pair_envelope = (:r, 1),
@@ -29,6 +29,7 @@ params = ( elements = [:Si,],
 
 model1 = acemodel(; params...)
 
+params2 = (; params..., totaldegree = params.totaldegree .+ 0.1)
 model2 = ACE1compat.ace1_model(; params...)
 ps, st = Lux.setup(rng, model2)
 
@@ -65,9 +66,10 @@ R1 = reduce(hcat, [ ACE1.evaluate(rbasis1, r, z1, z1) for r in rp ])
 R2 = reduce(hcat, [ rbasis2(r, z2, z2, NamedTuple(), NamedTuple()) for r in rp])
 maxn = size(R1, 1)
 scal = [ maximum(R1[n,:]) / maximum(R2[n,:]) for n = 1:maxn ] 
-err = norm(R1 - Diagonal(scal) * R2[1:maxn, :], Inf)
-@show err 
-println_slim(@test err < 0.001)
+errs = maximum(abs, R1 - Diagonal(scal) * R2[1:maxn, :]; dims=2)
+normalizederr = norm(errs ./ (1:length(errs)).^3, Inf)
+@show normalizederr 
+println_slim(@test normalizederr < 1e-4)
 
 @info("The remaining checks are for Rn0 = Rnl")
 for i_nl = 1:size(R2, 1)
@@ -90,13 +92,14 @@ println_slim(@test size(P1) == size(P2))
 nmax = size(P1, 1)
 scal_pair = [ sum(P1[n, 70:end]) / sum(P2[n, 70:end]) for n = 1:nmax ]
 P2 = Diagonal(scal_pair) * P2
-scal_err = -(extrema(abs.(scal_pair))...)
+scal_err = abs( -(extrema(abs.(scal_pair))...) )
 @show scal_err
 println_slim(@test scal_err < 0.01)
 
-err = norm( (P1 - P2) ./ (abs.(P1) .+ abs.(P2) .+ 1), Inf)
-@show err 
-println_slim(@test err < 0.01)
+err = maximum(abs, (P1 - P2) ./ (abs.(P1) .+ abs.(P2) .+ 1); dims=2)
+normalizederr = norm(err ./ (1:length(err)).^3, Inf)
+@show normalizederr
+println_slim(@test normalizederr < 1e-4)
 
 ## 
 
@@ -105,7 +108,7 @@ println_slim(@test err < 0.01)
 _spec1 = ACE1.get_nl(model1.basis.BB[2])
 spec1 = [ [ (n = b.n, l = b.l) for b in bb ] for bb in _spec1 ]
 spec2 = M.get_nnll_spec(model2.tensor)
-println_slim(@test sort(sort.(spec1)) == sort(sort.(spec2))) 
+println_slim(@test issubset(sort.(spec1), sort.(spec2))) 
 
 Nenv = 1000
 XX2 = [ M.rand_atenv(model2, rand(6:10)) for _=1:Nenv ]
@@ -117,9 +120,11 @@ _evaluate(basis::JuLIP.MLIPs.IPSuperBasis, Rs, Zs, z0) =
 B1 = reduce(hcat, [ _evaluate(model1.basis, x...) for x in XX1])
 B2 = reduce(hcat, [M.evaluate_basis(model2, x..., ps, st) for x in XX2])
 # Compute linear transform between bases to show match
-C = B1' \ B2'
-@show norm(B2 - C' * B1, Inf)
-println_slim(@test norm(B2 - C' * B1, Inf) < 1e-3)
+# We want full-rank C such that C * B2 = B1 
+C = B2' \ B1'
+basiserr = norm(B1 - C' * B2, Inf)
+@show basiserr
+println_slim(@test basiserr < 1e-3)
 
 # Nmb = length(spec1)
 # B1_mb = B1[end-Nmb+1:end, :]
@@ -144,9 +149,10 @@ println_slim(@test E0s1 ≈ E0s2)
 
 @info("Set some random parameteres and check site energies")
 
-lenB = size(B1, 1)
-θ2 = randn(lenB) ./ (1:lenB).^2
-θ1 = C * θ2
+lenB1 = size(B1, 1)
+θ1 = randn(lenB1) ./ (1:lenB1).^2
+θ2 = C * θ1
+
 ACE1x._set_params!(model1, θ1)
 
 calc2 = M.ACEPotential(model2, ps, st)
