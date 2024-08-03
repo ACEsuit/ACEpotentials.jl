@@ -15,6 +15,9 @@ using ACEpotentials, Test, LazyArtifacts
     # weird stuff 
     @testset "Weird bugs" begin include("test_bugs.jl") end
 
+    # ACE1 compatibility 
+    @testset "ACE1 Compat" begin include("ace1/test_ace1_compat.jl"); end 
+
     # outdated
     # @testset "Read data" begin include("outdated/test_data.jl") end 
     # @testset "Basis" begin include("outdated/test_basis.jl") end 

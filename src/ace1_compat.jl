@@ -290,8 +290,11 @@ function _pair_basis(kwargs)
                                       rcutkey = :pair_rcut)
 
       # ENVELOPE 
-      # here we use the same convention, so this is fine
+      # here we use a similar convention, just need to convert to ace1-style 
       envelope = kwargs[:pair_envelope]
+      if envelope isa Tuple && envelope[1] == :r 
+         envelope = (:r_ace1, envelope[2])
+      end 
       
       pair_basis = ace_learnable_Rnlrzz(; spec = pair_spec, 
                                     maxq = maxn,  
@@ -373,6 +376,35 @@ function ace1_model(; kwargs...)
 
    return model 
 end
+
+
+# ------------------------- 
+
+import ACEpotentials
+
+"""
+The pair basis radial envelope implemented in ACE1.jl 
+"""
+struct ACE1_PolyEnvelope1sR{T}
+   rcut::T
+   r0::T 
+   p::Int 
+end 
+
+
+ACE1_PolyEnvelope1sR(rcut, r0, p) = 
+   ACE1_PolyEnvelope1sR(rcut, r0, p, Dict{String, Any}())
+   
+function ACEpotentials.Models.evaluate(env::ACE1_PolyEnvelope1sR, r::T, x::T) where T 
+   p, r0, rcut = env.p, env.r0, env.rcut   
+   if r > rcut; return zero(T); end
+   s = r/r0; scut = rcut/r0 
+   return s^(-p) - scut^(-p) + p * scut^(-p-1) * (s - scut)
+end
+
+ACEpotentials.Models.evaluate_d(env::ACE1_PolyEnvelope1sR, r::T, x::T) where {T} = 
+      (ForwardDiff.derivative(x -> evaluate(env, x), r), 
+       zero(T),)
 
 
 end 

@@ -4,16 +4,20 @@ using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 
 ##
 
-using Plots
-using Random, Test, ACEbase, LinearAlgebra, Lux
-using ACEbase.Testing: print_tf, println_slim
+include(@__DIR__() * "/ace1_testutils.jl")
 
-using ACEpotentials
-M = ACEpotentials.Models
-ACE1compat = ACEpotentials.ACE1compat
-rng = Random.MersenneTwister(1234)
+@info(
+""" 
+==================================
+=== Testing ACE1 compatibility === 
+==================================
+""")
+
 
 ##
+# [1] 
+# a first test that was used to write the original 
+# ACE1 compat module and tests 
 
 params = ( elements = [:Si,], 
            order = 3, 
@@ -26,6 +30,26 @@ params = ( elements = [:Si,],
            Eref = [:Si => -1.234 ]
          )
 
+ACE1_TestUtils.check_compat(params) 
+
 ##
+# [2] 
+# same as [1] but with auto cutoff, a different pair envelope, 
+# different transforms, and a different chemical element, 
+# different choice of degrees  
+# 
+
+params = ( elements = [:Si,], 
+           order = 3, 
+           transform = (:agnesi, 2, 4),
+           totaldegree = [14, 12, 10], 
+           pure = false, 
+           pure2b = false,
+           pair_transform = (:agnesi, 1, 3), 
+           pair_envelope = (:r, 3),
+           rcut = 5.0,
+           Eref = [:Si => -1.234 ]
+         )
 
 ACE1_TestUtils.check_compat(params) 
+

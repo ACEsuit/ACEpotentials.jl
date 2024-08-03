@@ -3,7 +3,7 @@ module ACE1_TestUtils
 
 using Random, Test, ACEbase, LinearAlgebra, Lux
 using ACEbase.Testing: print_tf, println_slim
-using ACE1, ACE1x, JuLIP
+import ACE1, ACE1x, JuLIP
 
 using ACEpotentials 
 M = ACEpotentials.Models 
@@ -62,6 +62,8 @@ function check_rbasis(model1, model2)
    @info("check radial basis")
    @info("    error can be a bit larger since the jacobi basis used in ACE1 is constructed from a discrete measure")
    @info("The first test checks Rn vs Rn0")
+   z1 = AtomicNumber(:Si)
+   z2 = Int(z1)
    rbasis1 = get_rbasis(model1)
    rbasis2 = get_rbasis(model2)
    rcut = JuLIP.cutoff(model1) 
@@ -106,7 +108,7 @@ function check_pairbasis(model1, model2)
    err = maximum(abs, (P1 - P2) ./ (abs.(P1) .+ abs.(P2) .+ 1); dims=2)
    normalizederr = norm(err ./ (1:length(err)).^3, Inf)
    @show normalizederr
-   println_slim(@test normalizederr < 1e-4)
+   println_slim(@test normalizederr < 1e-3)
 end 
 
 

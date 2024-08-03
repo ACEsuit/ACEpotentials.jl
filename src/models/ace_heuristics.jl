@@ -1,4 +1,5 @@
-import Random 
+import Random
+import ACEpotentials: ACE1compat 
 
 
 # -------------------------------------------------------
@@ -71,16 +72,20 @@ function ace_learnable_Rnlrzz(;
       transforms = agnesi_transform.(rin0cuts, p, q)
    end
 
+   @show envelopes 
    if envelopes == :poly2sx
       envelopes = PolyEnvelope2sX(-1.0, 1.0, 2, 2)
    elseif envelopes == :poly1sr
       envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, 1) 
                     for iz = 1:NZ, jz = 1:NZ ]
    elseif envelopes isa Tuple && envelopes[1] == :x 
-      @assert length(envelopes) == 2 
+      @assert length(envelopes) == 3 
       envelopes = PolyEnvelope2sX(-1.0, 1.0, envelopes[2], envelopes[3])
    elseif envelopes isa Tuple && envelopes[1] == :r 
       envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, envelopes[2]) 
+                     for iz = 1:NZ, jz = 1:NZ ]
+   elseif envelopes isa Tuple && envelopes[1] == :r_ace1
+      envelopes = [ ACE1compat.ACE1_PolyEnvelope1sR(rin0cuts[iz, jz].rcut, rin0cuts[iz, jz].r0, envelopes[2])
                      for iz = 1:NZ, jz = 1:NZ ]
    else
       error("cannot read envelope : $envelopes")
