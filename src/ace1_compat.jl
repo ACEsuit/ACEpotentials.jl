@@ -130,7 +130,7 @@ end
 function _get_rcut(kwargs, s1, s2; _rcut = kwargs[:rcut])
    if _rcut isa Tuple  
       if _rcut[1] == :bondlen   # rcut = (:bondlen, rcut_factor)
-         return _rcut[2] * get_r0(s1, s2)
+         return _rcut[2] * _get_r0(kwargs, s1, s2)
       end
    elseif _rcut isa Number   # rcut = explicit value 
       return _rcut
@@ -377,34 +377,6 @@ function ace1_model(; kwargs...)
    return model 
 end
 
-
-# ------------------------- 
-
-import ACEpotentials
-
-"""
-The pair basis radial envelope implemented in ACE1.jl 
-"""
-struct ACE1_PolyEnvelope1sR{T}
-   rcut::T
-   r0::T 
-   p::Int 
-end 
-
-
-ACE1_PolyEnvelope1sR(rcut, r0, p) = 
-   ACE1_PolyEnvelope1sR(rcut, r0, p, Dict{String, Any}())
-   
-function ACEpotentials.Models.evaluate(env::ACE1_PolyEnvelope1sR, r::T, x::T) where T 
-   p, r0, rcut = env.p, env.r0, env.rcut   
-   if r > rcut; return zero(T); end
-   s = r/r0; scut = rcut/r0 
-   return s^(-p) - scut^(-p) + p * scut^(-p-1) * (s - scut)
-end
-
-ACEpotentials.Models.evaluate_d(env::ACE1_PolyEnvelope1sR, r::T, x::T) where {T} = 
-      (ForwardDiff.derivative(x -> evaluate(env, x), r), 
-       zero(T),)
 
 
 end 

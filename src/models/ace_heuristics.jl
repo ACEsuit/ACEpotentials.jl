@@ -85,7 +85,7 @@ function ace_learnable_Rnlrzz(;
       envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, envelopes[2]) 
                      for iz = 1:NZ, jz = 1:NZ ]
    elseif envelopes isa Tuple && envelopes[1] == :r_ace1
-      envelopes = [ ACE1compat.ACE1_PolyEnvelope1sR(rin0cuts[iz, jz].rcut, rin0cuts[iz, jz].r0, envelopes[2])
+      envelopes = [ ACE1_PolyEnvelope1sR(rin0cuts[iz, jz].rcut, rin0cuts[iz, jz].r0, envelopes[2])
                      for iz = 1:NZ, jz = 1:NZ ]
    else
       error("cannot read envelope : $envelopes")

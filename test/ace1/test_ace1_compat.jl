@@ -1,5 +1,5 @@
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 ##
@@ -47,8 +47,21 @@ params = ( elements = [:Si,],
            pure2b = false,
            pair_transform = (:agnesi, 1, 3), 
            pair_envelope = (:r, 3),
-           rcut = 5.0,
            Eref = [:Si => -1.234 ]
+         )
+
+ACE1_TestUtils.check_compat(params) 
+
+##
+# [3] 
+# A minimal example with as many defaults as possible 
+# 
+
+params = ( elements = [:Si,], 
+           order = 2, 
+           totaldegree = 10, 
+           pure = false, 
+           pure2b = false,
          )
 
 ACE1_TestUtils.check_compat(params) 
