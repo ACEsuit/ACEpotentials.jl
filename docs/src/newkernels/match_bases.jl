@@ -29,8 +29,8 @@ function matching_bases(; Z = :Si, order = 3, totaldegree = 10,
                        max_level = totaldegree,     # maximum level of the basis functions
                        pair_maxn = totaldegree,     # maximum number of basis functions for the pair potential 
                        init_WB = :zeros,            # how to initialize the ACE basis parmeters
-                       init_Wpair = "linear",         # how to initialize the pair potential parameters
-                       init_Wradial = :linear, 
+                       init_Wpair = :onehot,         # how to initialize the pair potential parameters
+                       init_Wradial = :onehot, 
                        pair_transform = (:agnesi, 1, 3), 
                        pair_learnable = true, 
                        rin0cuts = rin0cuts, 

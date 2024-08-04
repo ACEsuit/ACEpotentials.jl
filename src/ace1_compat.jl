@@ -99,8 +99,9 @@ function _get_degrees(kwargs)
       end
 
       wL = kwargs[:wL]
+      NZ = length(_get_elements(kwargs))
 
-      return Models.TotalDegree(1.0, 1/wL), maxlevels
+      return Models.TotalDegree(1.0*NZ, 1/wL), maxlevels
    end
 
    error("Cannot determine total degree of ACE basis from the arguments provided.")
@@ -206,7 +207,8 @@ end
 function _get_Rnl_spec(kwargs, 
                      maxdeg = maximum(kwargs[:totaldegree]) )
    wL = kwargs[:wL] 
-   lvl = Models.TotalDegree(1.0, 1/wL)
+   NZ = length(_get_elements(kwargs))
+   lvl = Models.TotalDegree(1.0*NZ, 1/wL)
    return Models.oneparticle_spec(lvl, maxdeg)   
 end
 
@@ -257,7 +259,7 @@ function _radial_basis(kwargs)
                                         rin0cuts = rin0cuts,
                                         transforms = trans_ace, 
                                         polys = polys, 
-                                        Winit = "linear")
+                                        Winit = :onehot)
 
       ps_Rn = Models.initialparameters(nothing, Rn_basis)
       Rn_spl = Models.splinify(Rn_basis, ps_Rn)
@@ -303,7 +305,7 @@ function _pair_basis(kwargs)
                                     transforms = trans_pair, 
                                     envelopes = envelope, 
                                     polys = :legendre, 
-                                    Winit = "linear" ) 
+                                    Winit = :onehot ) 
       ps_pair = Models.initialparameters(nothing, pair_basis)
       pair_spl = Models.splinify(pair_basis, ps_pair)
       return pair_spl

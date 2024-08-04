@@ -43,7 +43,7 @@ function initialparameters(rng::Union{AbstractRNG, Nothing},
          Wnlq[:, :, i, j] .= glorot_normal(rng, Float64, len_nl, len_q)
       end
 
-   elseif basis.meta["Winit"] == "linear"
+   elseif basis.meta["Winit"] == :onehot
       set_I_weights!(basis, ps)
 
    elseif basis.meta["Winit"] == "zeros"

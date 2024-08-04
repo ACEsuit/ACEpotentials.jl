@@ -62,7 +62,7 @@ function check_rbasis(model1, model2)
    @info("check radial basis")
    @info("    error can be a bit larger since the jacobi basis used in ACE1 is constructed from a discrete measure")
    @info("The first test checks Rn vs Rn0")
-   z1 = AtomicNumber(:Si)
+   z1 = model1.basis.BB[2].pibasis.zlist.list[1]
    z2 = Int(z1)
    rbasis1 = get_rbasis(model1)
    rbasis2 = get_rbasis(model2)
@@ -91,7 +91,7 @@ function check_pairbasis(model1, model2)
    pairbasis1 = model1.basis.BB[1]
    pairbasis2 = model2.pairbasis
    rcut = JuLIP.cutoff(model1)
-   z1 = AtomicNumber(:Si)
+   z1 = model1.basis.BB[2].pibasis.zlist.list[1]
    z2 = Int(z1)
    rr = range(0.001, rcut, length=200)
    P1 = reduce(hcat, [ ACE1.evaluate(pairbasis1, r, z1, z1) for r in rr ])
@@ -116,7 +116,7 @@ function check_basis(model1, model2; Nenv = :auto)
    ps, st = Lux.setup(rng, model2)
 
    @info("Check the bases span the same space")
-   NZ = M._get_nz(model2); @assert NZ == 1
+   NZ = M._get_nz(model2)
    if NZ == 1
       @info("   NZ == 1  >>>  check spec matches")
       _spec1 = ACE1.get_nl(model1.basis.BB[2])
@@ -137,6 +137,11 @@ function check_basis(model1, model2; Nenv = :auto)
    
    B1 = reduce(hcat, [ _evaluate(model1.basis, x...) for x in XX1])
    B2 = reduce(hcat, [ M.evaluate_basis(model2, x..., ps, st) for x in XX2])
+
+   if size(B2, 1) < size(B1, 1) 
+      error("ACE1 compat : ACE2 model must be at least as large as ACE1 model; aborting tests.")
+   end 
+   
    @info("Compute linear transform between bases to show match") 
    # We want full-rank C such that C * B2 = B1 
    # (note this allows B2 > B1)

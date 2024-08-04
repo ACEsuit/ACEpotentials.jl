@@ -72,7 +72,6 @@ function ace_learnable_Rnlrzz(;
       transforms = agnesi_transform.(rin0cuts, p, q)
    end
 
-   @show envelopes 
    if envelopes == :poly2sx
       envelopes = PolyEnvelope2sX(-1.0, 1.0, 2, 2)
    elseif envelopes == :poly1sr
@@ -124,7 +123,7 @@ function ace_model(; elements = nothing,
                      pair_basis = :auto, 
                      pair_learnable = false, 
                      pair_transform = (:agnesi, 1, 4), 
-                     init_Wpair = "linear", 
+                     init_Wpair = :onehot, 
                      rng = Random.default_rng(), 
                      )
 
