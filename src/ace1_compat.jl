@@ -273,15 +273,18 @@ end
 function _pair_basis(kwargs)
    rbasis = kwargs[:pair_basis]
    elements = _get_elements(kwargs) 
+   NZ = length(elements)
    rin0cuts = _ace1_rin0cuts(kwargs; rcutkey = :pair_rcut)
 
    if rbasis == :legendre
 
       # SPECIFICATION 
       if kwargs[:pair_degree] == :totaldegree
-         maxn = maximum(kwargs[:totaldegree])
+         maxq = maximum(kwargs[:totaldegree])
+         maxn = maxq * NZ 
       elseif kwargs[:pair_degree] isa Integer
-         maxn = kwargs[:pair_degree]
+         maxq = kwargs[:pair_degree]
+         maxn = maxq * NZ 
       else
          error("Cannot determine `maxn` for pair basis from information provided.")
       end
@@ -299,7 +302,7 @@ function _pair_basis(kwargs)
       end 
       
       pair_basis = ace_learnable_Rnlrzz(; spec = pair_spec, 
-                                    maxq = maxn,  
+                                    maxq = maxq,  
                                     elements = elements, 
                                     rin0cuts = rin0cuts,
                                     transforms = trans_pair, 

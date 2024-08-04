@@ -46,8 +46,8 @@ function ace_learnable_Rnlrzz(;
       maxq = ceil(Int, actual_maxn * maxq_fact)
    end 
 
-   if maxq < actual_maxn 
-      @warn("maxq < actual_maxn; this results in linear dependence")
+   if maxq < actual_maxn / NZ 
+      @warn("maxq < actual_maxn / NZ; likely linear dependence")
    end 
 
    if polys isa Symbol 
@@ -90,8 +90,8 @@ function ace_learnable_Rnlrzz(;
       error("cannot read envelope : $envelopes")
    end
 
-   if actual_maxn > length(polys)
-      error("actual_maxn > length of polynomial basis")
+   if actual_maxn > length(polys) * NZ 
+      @warn("actual_maxn/NZ > maxq; likely linear dependence")
    end
 
    return LearnableRnlrzzBasis(zlist, polys, transforms, envelopes, 

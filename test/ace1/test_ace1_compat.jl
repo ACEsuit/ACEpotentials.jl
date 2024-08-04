@@ -115,7 +115,7 @@ params = ( elements = [:Al, :Ti, :Cu],
 
 model1 = acemodel(; params...)
 params2 = (; params..., totaldegree = params.totaldegree .+ 1)
-model2 = ACE1compat.ace1_model(; params...)
+model2 = ACE1compat.ace1_model(; params2...)
 ps, st = Lux.setup(rng, model2)
 
 lenB1 = length(model1.basis)
@@ -144,9 +144,11 @@ z11 = AtomicNumber(:Al)
 z12 = Int(z1)
 z21 = AtomicNumber(:Ti)
 z22 = Int(z21)
+z31 = AtomicNumber(:Cu)
+z32 = Int(z31)
 
-rr = range(0.001, 5.0, length=200)
-R1 = reduce(hcat, [ ACE1.evaluate(rbasis1, r, z11, z21) for r in rr])
+rr = range(0.001, 6.0, length=200)
+R1 = reduce(hcat, [ ACE1.evaluate(rbasis1, r, z21, z11) for r in rr])
 R2 = reduce(hcat, [ rbasis2(r, z12, z22, NamedTuple(), NamedTuple()) for r in rr])
 
 # alternating basis functions must be zero.
@@ -167,5 +169,14 @@ end
 # end
 # plt
 
+##
 
+pairbasis1 = model1.basis.BB[1]
+pairbasis2 = model2.pairbasis
 
+rr = range(1.67, 6.0, length=200)
+P1 = reduce(hcat, [ ACE1.evaluate(pairbasis1, r, z31, z21) for r in rr])
+P2 = reduce(hcat, [ pairbasis2(r, z22, z32, NamedTuple(), NamedTuple()) for r in rr])
+
+scal = Diagonal([(-1)^(n+1) for n = 1:6]/sqrt(2))
+norm(P1[25:30, :] -  scal * P2[3:3:18, :], Inf)
