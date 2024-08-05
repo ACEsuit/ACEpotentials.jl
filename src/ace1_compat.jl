@@ -36,6 +36,8 @@ const _kw_defaults = Dict(:elements => nothing,
                           :pair_envelope => (:r, 2),
                           #
                           :Eref => missing,
+                          #
+                          :variable_cutoffs => false,
                           )
 
 const _kw_aliases = Dict( :N => :order,
@@ -61,10 +63,6 @@ function _clean_args(kwargs)
 
    if dargs[:pair_rcut] == :rcut
       dargs[:pair_rcut] = dargs[:rcut]
-   end
-
-   if haskey(dargs, :variable_cutoffs) 
-      @warn("variable_cutoffs argument is ignored")
    end
 
    if kwargs[:pure2b] || kwargs[:pure]
@@ -148,6 +146,9 @@ function _get_all_rcut(kwargs; _rcut = kwargs[:rcut])
    elements = _get_elements(kwargs) 
    rcut = Dict( [ (s1, s2) => _get_rcut(kwargs, s1, s2; _rcut = _rcut)
                    for s1 in elements, s2 in elements]... )
+   if !kwargs[:variable_cutoffs]
+      rcut = maximum(values(rcut))
+   end        
    return rcut
 end
 
@@ -280,10 +281,10 @@ function _pair_basis(kwargs)
 
       # SPECIFICATION 
       if kwargs[:pair_degree] == :totaldegree
-         maxq = maximum(kwargs[:totaldegree])
+         maxq = ceil(Int, maximum(kwargs[:totaldegree]))
          maxn = maxq * NZ 
       elseif kwargs[:pair_degree] isa Integer
-         maxq = kwargs[:pair_degree]
+         maxq = ceil(Int, kwargs[:pair_degree])
          maxn = maxq * NZ 
       else
          error("Cannot determine `maxn` for pair basis from information provided.")

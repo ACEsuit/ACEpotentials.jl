@@ -70,7 +70,10 @@ ACE1_TestUtils.check_compat(params)
 # [4] 
 # First multi-species examples 
 
-params = ( elements = [:Al, :Ti,], 
+# NB : Ti, Al is a bad example because default bondlengths 
+#      are the same. This can avoid some non-trivial behaviour 
+
+params = ( elements = [:Al, :Cu,], 
            order = 3, 
            totaldegree = 8, 
            pure = false, 
@@ -85,98 +88,10 @@ ACE1_TestUtils.check_compat(params)
 
 params = ( elements = [:Al, :Ti, :C], 
            order = 2, 
-           totaldegree = 6, 
+           totaldegree = 8, 
            pure = false, 
            pure2b = false,
          )
 
 ACE1_TestUtils.check_compat(params) 
 
-
-##
-
-using Random, Test, ACEbase, LinearAlgebra, Lux, Plots
-using ACEbase.Testing: print_tf, println_slim
-import ACE1, ACE1x, JuLIP
-
-using ACEpotentials 
-M = ACEpotentials.Models 
-ACE1compat = ACEpotentials.ACE1compat
-rng = Random.MersenneTwister(1234)
-
-##
-
-params = ( elements = [:Al, :Ti, :Cu], 
-           order = 2, 
-           totaldegree = 6, 
-           pure = false, 
-           pure2b = false,
-         )
-
-model1 = acemodel(; params...)
-params2 = (; params..., totaldegree = params.totaldegree .+ 1)
-model2 = ACE1compat.ace1_model(; params2...)
-ps, st = Lux.setup(rng, model2)
-
-lenB1 = length(model1.basis)
-Nenv = 10 * lenB1
-
-Random.seed!(12345)
-XX2 = [ M.rand_atenv(model2, rand(6:10)) for _=1:Nenv ]
-XX1 = [ (x[1], AtomicNumber.(x[2]), AtomicNumber(x[3])) for x in XX2 ]
-
-B1 = reduce(hcat, [ ACE1_TestUtils._evaluate(model1.basis, x...) for x in XX1])
-B2 = reduce(hcat, [ M.evaluate_basis(model2, x..., ps, st) for x in XX2])
-
-@info("Compute linear transform between bases to show match") 
-# We want full-rank C such that C * B2 = B1 
-# (note this allows B2 > B1)
-C = B2' \ B1'
-basiserr = norm(B1 - C' * B2, Inf)
-@show basiserr
-# println_slim(@test basiserr < .3e-2)
-
-##
-
-rbasis1 = model1.basis.BB[2].pibasis.basis1p.J
-rbasis2 = model2.rbasis
-z11 = AtomicNumber(:Al)
-z12 = Int(z1)
-z21 = AtomicNumber(:Ti)
-z22 = Int(z21)
-z31 = AtomicNumber(:Cu)
-z32 = Int(z31)
-
-rr = range(0.001, 6.0, length=200)
-R1 = reduce(hcat, [ ACE1.evaluate(rbasis1, r, z21, z11) for r in rr])
-R2 = reduce(hcat, [ rbasis2(r, z12, z22, NamedTuple(), NamedTuple()) for r in rr])
-
-# alternating basis functions must be zero.
-for n = 1:6
-   @assert norm(R2[3*(n-1) + 1, :]) == 0
-   @assert norm(R2[3*(n-1) + 3, :]) == 0
-   @assert norm(R2[3*(n-1) + 2, :]*sqrt(2) - R1[n, :])/n^2  < 1e-3
-end
-
-for (i_nl, nl) in enumerate(rbasis2.spec)
-   @assert R2[i_nl, :] ≈ R2[nl.n, :]
-end 
-
-# plt = plot() 
-# for n = 1:6
-#    plot!(R1[n, :], c = n, label = "R1,$n")
-#    plot!(R2[3*(n-1)+2, :]*sqrt(2), c = n, ls = :dash, label = "R2,$n")
-# end
-# plt
-
-##
-
-pairbasis1 = model1.basis.BB[1]
-pairbasis2 = model2.pairbasis
-
-rr = range(1.67, 6.0, length=200)
-P1 = reduce(hcat, [ ACE1.evaluate(pairbasis1, r, z31, z21) for r in rr])
-P2 = reduce(hcat, [ pairbasis2(r, z22, z32, NamedTuple(), NamedTuple()) for r in rr])
-
-scal = Diagonal([(-1)^(n+1) for n = 1:6]/sqrt(2))
-norm(P1[25:30, :] -  scal * P2[3:3:18, :], Inf)

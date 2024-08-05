@@ -13,7 +13,7 @@ end
 
 TotalDegree() = TotalDegree(1.0, 2/3)
 
-(l::TotalDegree)(b::NamedTuple) = b.n/l.wn + b.l/l.wl
+(l::TotalDegree)(b::NamedTuple) = b.n / l.wn + b.l/l.wl
 (l::TotalDegree)(bb::AbstractVector{<: NamedTuple}) = sum(l(b) for b in bb)
 
 

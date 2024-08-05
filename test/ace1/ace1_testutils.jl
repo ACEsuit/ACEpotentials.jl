@@ -96,11 +96,11 @@ function check_pairbasis(model1, model2)
    rr = range(0.001, rcut, length=200)
    P1 = reduce(hcat, [ ACE1.evaluate(pairbasis1, r, z1, z1) for r in rr ])
    P2 = reduce(hcat, [ pairbasis2(r, z2, z2, NamedTuple(), NamedTuple()) for r in rr])
-   println_slim(@test size(P1) == size(P2))
+   println_slim(@test size(P1) <= size(P2))
    
    nmax = size(P1, 1)
    scal_pair = [ sum(P1[n, 70:end]) / sum(P2[n, 70:end]) for n = 1:nmax ]
-   P2 = Diagonal(scal_pair) * P2
+   P2 = Diagonal(scal_pair) * P2[1:nmax, :] 
    scal_err = abs( -(extrema(abs.(scal_pair))...) )
    @show scal_err
    println_slim(@test scal_err < 0.01)
@@ -139,6 +139,8 @@ function check_basis(model1, model2; Nenv = :auto)
    B2 = reduce(hcat, [ M.evaluate_basis(model2, x..., ps, st) for x in XX2])
 
    if size(B2, 1) < size(B1, 1) 
+      @show size(B1, 1)
+      @show size(B2, 1)
       error("ACE1 compat : ACE2 model must be at least as large as ACE1 model; aborting tests.")
    end 
    
@@ -185,7 +187,7 @@ end
 function check_compat(params; deginc = 0.1) 
    model1 = acemodel(; params...)
    params2 = (; params..., totaldegree = params.totaldegree .+ deginc)
-   model2 = ACE1compat.ace1_model(; params...)
+   model2 = ACE1compat.ace1_model(; params2...)
 
    NZ = length(params.elements)
    if NZ == 1

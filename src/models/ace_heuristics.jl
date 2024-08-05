@@ -52,7 +52,7 @@ function ace_learnable_Rnlrzz(;
 
    if polys isa Symbol 
       if polys == :legendre
-         polys = Polynomials4ML.legendre_basis(maxq) 
+         polys = Polynomials4ML.legendre_basis(ceil(Int, maxq)) 
       else
          error("unknown polynomial type : $polys")
       end
@@ -60,7 +60,7 @@ function ace_learnable_Rnlrzz(;
       if polys[1] == :jacobi 
          α = polys[2]
          β = polys[3]
-         polys = Polynomials4ML.jacobi_basis(maxq, α, β)
+         polys = Polynomials4ML.jacobi_basis(ceil(Int, maxq), α, β)
       else
          error("unknown polynomial type : $polys")
       end
