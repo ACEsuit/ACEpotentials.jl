@@ -22,7 +22,7 @@ model = M.ace_model(; elements = elements, order = order, Ytype = :solid,
             maxq_fact = maxq_fact, 
             init_WB = :zeros, 
             init_Wpair = :zeros, 
-            init_Wradial = :linear)
+            init_Wradial = :onehot)
 
 ps, st = LuxCore.setup(rng, model)
 
@@ -42,7 +42,7 @@ model = M.ace_model(; elements = elements, order = order, Ytype = :solid,
             pair_maxn = 15, 
             init_WB = :zeros, 
             init_Wpair = :zeros, 
-            init_Wradial = :linear)
+            init_Wradial = :onehot)
 
 ps, st = LuxCore.setup(rng, model)
 

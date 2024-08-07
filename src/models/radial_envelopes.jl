@@ -25,6 +25,31 @@ evaluate_d(env::PolyEnvelope1sR, r::T, x::T) where {T} =
       (ForwardDiff.derivative(x -> evaluate(env, x), r), 
        zero(T),)
 
+# ----------------------------
+
+"""
+The pair basis radial envelope implemented in ACE1.jl 
+"""
+struct ACE1_PolyEnvelope1sR{T}
+   rcut::T
+   r0::T 
+   p::Int 
+end 
+
+
+ACE1_PolyEnvelope1sR(rcut, r0, p) = 
+   ACE1_PolyEnvelope1sR(rcut, r0, p, Dict{String, Any}())
+   
+function evaluate(env::ACE1_PolyEnvelope1sR, r::T, x::T) where T 
+   p, r0, rcut = env.p, env.r0, env.rcut   
+   if r > rcut; return zero(T); end
+   s = r/r0; scut = rcut/r0 
+   return s^(-p) - scut^(-p) + p * scut^(-p-1) * (s - scut)
+end
+
+evaluate_d(env::ACE1_PolyEnvelope1sR, r::T, x::T) where {T} = 
+      (ForwardDiff.derivative(x -> evaluate(env, x), r), 
+       zero(T),)
 
 # ----------------------------
 

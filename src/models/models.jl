@@ -18,6 +18,8 @@ import LuxCore: AbstractExplicitLayer,
 
 include("elements.jl")
 
+include("smoothness_priors.jl")
+
 include("radial_envelopes.jl")
 
 include("radial_transforms.jl")

@@ -1,29 +1,5 @@
-import Random 
-
-# --------------------------------------------------
-#   different notions of "level" / total degree.
-
-abstract type AbstractLevel end 
-struct TotalDegree <: AbstractLevel
-   wn::Float64
-   wl::Float64
-end 
-
-TotalDegree() = TotalDegree(1.0, 0.66)
-
-(l::TotalDegree)(b::NamedTuple) = b.n/l.wn + b.l/l.wl
-(l::TotalDegree)(bb::AbstractVector{<: NamedTuple}) = sum(l(b) for b in bb)
-
-
-struct EuclideanDegree <: AbstractLevel
-   wn::Float64
-   wl::Float64
-end
-
-EuclideanDegree() = EuclideanDegree(1.0, 0.66)
-
-(l::EuclideanDegree)(b::NamedTuple) = sqrt( (b.n/l.wn)^2 + (b.l/l.wl)^2 )
-(l::EuclideanDegree)(bb::AbstractVector{<: NamedTuple}) = sqrt( sum(l(b)^2 for b in bb) )
+import Random
+import ACEpotentials: ACE1compat 
 
 
 # -------------------------------------------------------
@@ -58,8 +34,9 @@ function ace_learnable_Rnlrzz(;
    NZ = length(zlist)
 
    if spec == nothing
+      _max_lvl = maximum(max_level)
       spec = [ (n = n, l = l) for n = 1:maxn, l = 0:maxl
-                              if level((n = n, l = l)) <= max_level ]
+                              if level((n = n, l = l)) <= _max_lvl ]
    end
 
    # now the actual maxn is the maximum n in the spec
@@ -69,13 +46,21 @@ function ace_learnable_Rnlrzz(;
       maxq = ceil(Int, actual_maxn * maxq_fact)
    end 
 
-   if maxq < actual_maxn 
-      @warn("maxq < actual_maxn; this results in linear dependence")
+   if maxq < actual_maxn / NZ 
+      @warn("maxq < actual_maxn / NZ; likely linear dependence")
    end 
 
    if polys isa Symbol 
       if polys == :legendre
-         polys = Polynomials4ML.legendre_basis(maxq) 
+         polys = Polynomials4ML.legendre_basis(ceil(Int, maxq)) 
+      else
+         error("unknown polynomial type : $polys")
+      end
+   elseif polys isa Tuple 
+      if polys[1] == :jacobi 
+         α = polys[2]
+         β = polys[3]
+         polys = Polynomials4ML.jacobi_basis(ceil(Int, maxq), α, β)
       else
          error("unknown polynomial type : $polys")
       end
@@ -92,10 +77,21 @@ function ace_learnable_Rnlrzz(;
    elseif envelopes == :poly1sr
       envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, 1) 
                     for iz = 1:NZ, jz = 1:NZ ]
+   elseif envelopes isa Tuple && envelopes[1] == :x 
+      @assert length(envelopes) == 3 
+      envelopes = PolyEnvelope2sX(-1.0, 1.0, envelopes[2], envelopes[3])
+   elseif envelopes isa Tuple && envelopes[1] == :r 
+      envelopes = [ PolyEnvelope1sR(rin0cuts[iz, jz].rcut, envelopes[2]) 
+                     for iz = 1:NZ, jz = 1:NZ ]
+   elseif envelopes isa Tuple && envelopes[1] == :r_ace1
+      envelopes = [ ACE1_PolyEnvelope1sR(rin0cuts[iz, jz].rcut, rin0cuts[iz, jz].r0, envelopes[2])
+                     for iz = 1:NZ, jz = 1:NZ ]
+   else
+      error("cannot read envelope : $envelopes")
    end
 
-   if actual_maxn > length(polys)
-      error("actual_maxn > length of polynomial basis")
+   if actual_maxn > length(polys) * NZ 
+      @warn("actual_maxn/NZ > maxq; likely linear dependence")
    end
 
    return LearnableRnlrzzBasis(zlist, polys, transforms, envelopes, 
@@ -127,7 +123,7 @@ function ace_model(; elements = nothing,
                      pair_basis = :auto, 
                      pair_learnable = false, 
                      pair_transform = (:agnesi, 1, 4), 
-                     init_Wpair = "linear", 
+                     init_Wpair = :onehot, 
                      rng = Random.default_rng(), 
                      )
 
@@ -165,14 +161,15 @@ function ace_model(; elements = nothing,
                rin0cuts = rbasis.rin0cuts,
                transforms = pair_transform, 
                envelopes = :poly1sr )
+
+      pair_basis.meta["Winit"] = init_Wpair 
+
+      if !pair_learnable
+         ps_pair = initialparameters(rng, pair_basis)
+         pair_basis = splinify(pair_basis, ps_pair)
+      end
    end
 
-   pair_basis.meta["Winit"] = init_Wpair 
-
-   if !pair_learnable
-      ps_pair = initialparameters(rng, pair_basis)
-      pair_basis = splinify(pair_basis, ps_pair)
-   end
 
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
@@ -186,3 +183,14 @@ end
 
 
 # -------------------------------------------------------
+
+
+function _default_rin0cuts(zlist; rinfactor = 0.0, rcutfactor = 2.5)
+   function rin0cut(zi, zj) 
+      r0 = ACE1x.get_r0(zi, zj)
+      return (rin = r0 * rinfactor, r0 = r0, rcut = r0 * rcutfactor)
+   end
+   NZ = length(zlist)
+   return SMatrix{NZ, NZ}([ rin0cut(zi, zj) for zi in zlist, zj in zlist ])
+end
+

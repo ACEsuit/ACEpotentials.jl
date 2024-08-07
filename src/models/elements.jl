@@ -30,14 +30,6 @@ function _convert_zlist(zlist)
    return ntuple(i -> convert(Int, zlist[i]), length(zlist))
 end
 
-function _default_rin0cuts(zlist; rinfactor = 0.0, rcutfactor = 2.5)
-   function rin0cut(zi, zj) 
-      r0 = ACE1x.get_r0(zi, zj)
-      return (rin = r0 * rinfactor, r0 = r0, rcut = r0 * rcutfactor)
-   end
-   NZ = length(zlist)
-   return SMatrix{NZ, NZ}([ rin0cut(zi, zj) for zi in zlist, zj in zlist ])
-end
 
 """
 Takes an object and converts it to an `SMatrix{NZ, NZ}` via the following rules: 
@@ -58,17 +50,4 @@ function _make_smatrix(obj, NZ)
    end
    return SMatrix{NZ, NZ}(fill(obj, (NZ, NZ)))
 end
-
-
-# a one-hot embedding for the z variable. 
-# function embed_z(ace, Rs, Zs)
-#    TF = eltype(eltype(Rs))
-#    Ez = acquire!(ace.pool, :Ez, (length(Zs), length(ace.rbasis)), TF)
-#    fill!(Ez, 0)
-#    for (j, z) in enumerate(Zs)
-#       iz = _z2i(ace.rbasis, z)
-#       Ez[j, iz] = 1
-#    end
-#    return Ez 
-# end
 

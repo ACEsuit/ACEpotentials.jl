@@ -30,6 +30,14 @@ function sparse_AA_spec(; order = nothing,
                           r_spec = nothing, 
                           max_level = nothing, 
                           level = nothing, )
+
+   # convert the max_level to a list 
+   if max_level isa Number 
+      max_levels = fill(max_level, order)
+   else
+      max_levels = max_level
+   end
+
    # compute the r levels
    r_level = [ level(b) for b in r_spec ]
 
@@ -51,7 +59,7 @@ function sparse_AA_spec(; order = nothing,
 
    # generate the AA basis spec from the A basis spec
    tup2b = vv -> [ A_spec[v] for v in vv[vv .> 0]  ]
-   admissible = bb -> (length(bb) == 0) || level(bb) <= max_level
+   admissible = bb -> (length(bb) == 0) || (level(bb) <= max_levels[length(bb)])
    filter_ = EquivariantModels.RPE_filter_real(0)
 
    AA_spec = EquivariantModels.gensparse(; 
@@ -95,7 +103,8 @@ import ACE1
 
 rand_atenv(model::ACEModel, Nat) = rand_atenv(model.rbasis, Nat)
 
-function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat)
+function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat; 
+                    rin_fact = 0.9)
    z0 = rand(rbasis._i2z) 
    zs = rand(rbasis._i2z, Nat) 
    
@@ -106,6 +115,11 @@ function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat)
       x = 2 * rand() - 1 
       t_ij = rbasis.transforms[iz0, izj] 
       r_ij = inv_transform(t_ij, x)
+      r0_ij = rbasis.rin0cuts[iz0, izj].r0
+      r_in = rin_fact * r0_ij 
+      if r_ij < r_in 
+         r_ij = r_in + rand() * (r0_ij - r_in) 
+      end 
       push!(rs, r_ij)
    end
    Rs = [ r * ACE1.Random.rand_sphere() for r in rs ]

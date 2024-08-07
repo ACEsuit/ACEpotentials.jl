@@ -24,7 +24,7 @@ end
 
 Base.length(basis::LearnableRnlrzzBasis) = length(basis.spec)
 
-function initialparameters(rng::AbstractRNG, 
+function initialparameters(rng::Union{AbstractRNG, Nothing}, 
                            basis::LearnableRnlrzzBasis)
    NZ = _get_nz(basis) 
    len_nl = length(basis)
@@ -43,8 +43,8 @@ function initialparameters(rng::AbstractRNG,
          Wnlq[:, :, i, j] .= glorot_normal(rng, Float64, len_nl, len_q)
       end
 
-   elseif basis.meta["Winit"] == "linear"
-      set_I_weights!(basis, ps)
+   elseif basis.meta["Winit"] == "onehot" 
+      set_onehot_weights!(basis, ps)
 
    elseif basis.meta["Winit"] == "zeros"
       @warn("Setting inner basis weights to zero.")
@@ -73,15 +73,21 @@ end
 """
 Set the radial weights as they would be in a linear ACE model. 
 """
-function set_I_weights!(rbasis::LearnableRnlrzzBasis, ps)
+function set_onehot_weights!(rbasis::LearnableRnlrzzBasis, ps)
    # Rnl(r, Z1, Z2) = ∑_q W[(nl), q, Z1, Z2] * P_q(r)
-   # For linear models this becomes Rnl(r, Z1, Z2) = Pn(r)
+   # For linear models this becomes R(n'z')l(r, Z1, Z2) = Pn'(r) * δ_{z',Z2}
+   # here, Z1 is the center atom, Z2 the neighbour atom. 
    NZ = _get_nz(rbasis)
    ps.Wnlq[:] .= 0 
-   for i = 1:NZ, j = 1:NZ
+   for iz1 = 1:NZ, iz2 = 1:NZ
       for (i_nl, nl) in enumerate(rbasis.spec)
-         if nl.n <= size(ps.Wnlq, 2)
-            ps.Wnlq[i_nl, nl.n, i, j] = 1 
+         # n    | 1    2    3    4    5    6    7    8    ...
+         # n'z' | 1,1  1,2  1,3  2,1  2,2  2,3  3,1  3,2  ...
+         # => z' = mod1(n, NZ), n' = div(n-1, NZ) + 1
+         z_ = mod1(nl.n, NZ)
+         n_ = div(nl.n - 1, NZ) + 1
+         if z_ == iz2 && n_ <= size(ps.Wnlq, 2) 
+            ps.Wnlq[i_nl, n_, iz1, iz2] = 1
          end
       end
    end

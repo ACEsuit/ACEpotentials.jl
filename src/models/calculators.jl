@@ -17,7 +17,7 @@ using Folds, ChunkSplitters, Unitful, NeighbourLists,
 
 import ChainRulesCore: rrule, NoTangent, ZeroTangent
 
-struct ACEPotential{MOD} <: SitePotential
+mutable struct ACEPotential{MOD} <: SitePotential
    model::MOD
    ps
    st 
@@ -41,6 +41,12 @@ set_psst!(V::ACEPotential, ps, st) = (V.ps = ps; V.st = st; V)
 
 splinify(V::ACEPotential) = splinify(V, V.ps) 
 splinify(V::ACEPotential, ps) = ACEPotential(splinify(V.model, ps), nothing, nothing) 
+
+function set_parameters!(V::ACEPotential, θ::AbstractVector{<: Number})
+   ps_vec, _restruct = destructure(V.ps)
+   ps = _restruct(θ)
+   return set_parameters!(V, ps)
+end
 
 # --------------------------------------------------------------- 
 #   EmpiricalPotentials / SitePotential based implementation 

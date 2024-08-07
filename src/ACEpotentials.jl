@@ -14,6 +14,8 @@ export ace_basis, smoothness_prior, ace_defaults, acemodel
 @reexport using ACEfit
 @reexport using ACEmd
 
+include("defaults.jl")
+
 include("atoms_data.jl")
 include("model.jl")
 include("export.jl")
@@ -27,6 +29,8 @@ include("analysis/dataset_analysis.jl")
 
 include("experimental.jl")
 include("models/models.jl")
+
+include("ace1_compat.jl")
 
 include("outdated/fit.jl")
 include("outdated/data.jl")
