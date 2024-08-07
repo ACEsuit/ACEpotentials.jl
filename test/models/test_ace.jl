@@ -29,7 +29,7 @@ order = 3
 msolid = M.ace_model(; elements = elements, order = order, Ytype = :solid, 
             level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :glorot_normal)
 mspherical = M.ace_model(; elements = elements, order = order, Ytype = :spherical, 
-            level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :zero)
+            level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :glorot_normal)
 ps, st = LuxCore.setup(rng, msolid)
 
 for ntest = 1:30 
@@ -46,7 +46,7 @@ println()
 for ybasis in [:spherical, :solid]
    # ybasis = :solid
    @info("=== Testing ybasis = $ybasis === ")
-   local ps, st, Nat
+   local ps, st, Nat, model 
    model = M.ace_model(; elements = elements, order = order, Ytype = ybasis, 
                         level = level, max_level = max_level, maxl = 8, 
                         pair_maxn = 15, 
@@ -186,7 +186,7 @@ for ybasis in [:spherical, :solid]
 ##
 
    @info("check splinification")
-   lin_ace = M.splinify(model, ps)
+   lin_ace = M.splinify(model, ps; nnodes = 1000)
    ps_lin, st_lin = LuxCore.setup(rng, lin_ace)
    ps_lin.WB[:] .= ps.WB[:] 
    ps_lin.Wpair[:] .= ps.Wpair[:]
@@ -202,7 +202,7 @@ for ybasis in [:spherical, :solid]
          abs(Ei - Ei_lin)
       end
       mae /= len 
-      print_tf(@test mae < 0.02)
+      print_tf(@test mae < 0.01)
    end
    println() 
 

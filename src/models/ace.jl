@@ -216,9 +216,9 @@ function LuxCore.parameterlength(model::ACEModel)
    return NZ^2 * length(model.pairbasis) + NZ * length(model.tensor)
 end
 
-function splinify(model::ACEModel, ps::NamedTuple)
-   rbasis_spl = splinify(model.rbasis, ps.rbasis)
-   pairbasis_spl = splinify(model.pairbasis, ps.pairbasis)
+function splinify(model::ACEModel, ps::NamedTuple; kwargs...)
+   rbasis_spl = splinify(model.rbasis, ps.rbasis; kwargs...)
+   pairbasis_spl = splinify(model.pairbasis, ps.pairbasis; kwargs...)
    return ACEModel(model._i2z, 
                      rbasis_spl, 
                      model.ybasis, 

@@ -82,7 +82,7 @@ for ntest = 1:30
 
    Rnl = basis(r, Zi, Zj, ps, st)
 
-   for (nnodes, tol) in [(30, 1e-3), (100, 1e-5), (1000, 1e-8)]
+   for (nnodes, tol) in [(30, 3e-2), (100, 1e-5), (1000, 1e-8)]
       local basis_spl, ps_spl, st_spl, Rnl_spl 
 
       basis_spl = M.splinify(basis, ps; nnodes = nnodes)

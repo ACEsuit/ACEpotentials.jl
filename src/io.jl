@@ -79,6 +79,7 @@ function save_potential(fname, potential; save_version_numbers=true, meta=nothin
         )
     end
     if !isnothing(meta)
+        @show meta 
         @assert isa(meta, Dict{String, <:Any}) "meta needs to be a Dict{String, Any}"
         data["meta"] = convert(Dict{String, Any}, meta)
     end
@@ -88,9 +89,20 @@ end
 
 # used to extraction version numbers when saving
 function extract_version(name::AbstractString)
-    vals = Pkg.dependencies()|> values |> collect
-    hit = filter(x->x.name==name, vals) |> only
-    return hit.version
+    try
+        vals = Pkg.dependencies()|> values |> collect
+        hit = filter(x->x.name==name, vals) |> only
+        return hit.version
+    catch 
+        try 
+            if name == Pkg.project().name 
+                return Pkg.project().version 
+            end
+        catch 
+            @error("Couldn't determine version of $name")
+            return v"0.0.0"
+        end
+    end 
 end
 
 

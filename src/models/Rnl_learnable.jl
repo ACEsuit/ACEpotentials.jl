@@ -24,8 +24,13 @@ end
 
 Base.length(basis::LearnableRnlrzzBasis) = length(basis.spec)
 
-function initialparameters(rng::Union{AbstractRNG, Nothing}, 
-                           basis::LearnableRnlrzzBasis)
+initialparameters(::Nothing, basis::LearnableRnlrzzBasis) = 
+         _initialparameters(nothing, basis)
+
+initialparameters(rng::AbstractRNG, basis::LearnableRnlrzzBasis) = 
+         _initialparameters(rng, basis)
+
+function _initialparameters(rng, basis::LearnableRnlrzzBasis)
    NZ = _get_nz(basis) 
    len_nl = length(basis)
    len_q = length(basis.polys)
@@ -37,21 +42,23 @@ function initialparameters(rng::Union{AbstractRNG, Nothing},
       @warn("No key Winit found for radial basis, use glorot_normal to initialize.")
       basis.meta["Winit"] = "glorot_normal"
    end
+
+   Winit = String(basis.meta["Winit"])
    
-   if basis.meta["Winit"] == "glorot_normal"
+   if Winit == "glorot_normal"
       for i = 1:NZ, j = 1:NZ
          Wnlq[:, :, i, j] .= glorot_normal(rng, Float64, len_nl, len_q)
       end
 
-   elseif basis.meta["Winit"] == "onehot" 
+   elseif Winit == "onehot" 
       set_onehot_weights!(basis, ps)
 
-   elseif basis.meta["Winit"] == "zeros"
+   elseif Winit == "zero"
       @warn("Setting inner basis weights to zero.")
       Wnlq[:] .= 0 
 
    else 
-      error("Unknown key Winit = $(basis.meta["Winit"]) to initialize radial basis weights.")
+      error("Unknown key Winit = $(Winit) to initialize radial basis weights.")
    end 
 
    return ps 
