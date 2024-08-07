@@ -1,4 +1,4 @@
-
+using LinearAlgebra: Diagonal
 
 # --------------------------------------------------
 #   different notions of "level" / total degree.
@@ -43,3 +43,49 @@ function oneparticle_spec(level::Union{TotalDegree, EuclideanDegree}, maxlevel)
 end
 
 # --------------------------------------------------
+
+   
+# this should maybe be moved elsewhere, but for now it can live here. 
+
+function _basis_length(model) 
+   len_tensor = length(get_nnll_spec(model.tensor))
+   len_pair = length(model.pairbasis.spec) 
+   return (len_tensor + len_pair) * _get_nz(model)
+end
+
+function _nnll_basis(model)
+   NTNL = typeof((n = 1, l = 0)) 
+   TBB = Vector{NTNL}
+   
+   global_spec = Vector{TBB}(undef, _basis_length(model))
+
+   nnll_tensor = get_nnll_spec(model.tensor)
+   nn_pair = [ [b,] for b in model.pairbasis.spec]
+   
+   for iz = 1:_get_nz(model) 
+      z = _i2z(model, iz)
+      global_spec[get_basis_inds(model, z)] = nnll_tensor
+      global_spec[get_pairbasis_inds(model, z)] = nn_pair
+   end
+
+   return global_spec
+end
+
+   
+function smoothness_prior(model, f)
+   nnll = _nnll_basis(model)
+   γ = zeros(length(nnll))
+   for (i, bb) in enumerate(nnll)
+      γ[i] = f(bb)
+   end
+   return Diagonal(γ)
+end
+
+algebraic_smoothness_prior(model; p = 4, wl = 3/2, wn = 1.0) = 
+      smoothness_prior(model, bb -> sum((b.l/wl)^p + (b.n/wn)^p for b in bb))
+
+exp_smoothness_prior(model; wl = 1.0, wn = 2/3) = 
+      smoothness_prior(model, bb -> exp( sum(b.l / wl + b.n / wn for b in bb) ))
+
+gaussian_smoothness_prior(model; wl = 1/sqrt(2), wn = 1/sqrt(2)) = 
+      smoothness_prior(model, bb -> exp( sum( (b.l/wl)^2 + (b.n/wn)^2 for b in bb) ))
