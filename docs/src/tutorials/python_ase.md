@@ -16,4 +16,8 @@ ats.calc = calc
 print(ats.get_potential_energy())
 ```
 
-See the `ase` [documentation](https://wiki.fysik.dtu.dk/ase/ase/calculators/calculators.html#module-ase.calculators) for more details. 
+See the `ase` [documentation](https://wiki.fysik.dtu.dk/ase/ase/calculators/calculators.html#module-ase.calculators) for more details.
+
+### Another option: ASE's LAMMPSlib calculator
+
+Alternatively, to avoid direct Julia-Python interaction, one can export to LAMMPS (see [LAMMPS](lammps.md)) and utilize ASE's [`LAMMPSlib` calculator](https://wiki.fysik.dtu.dk/ase/ase/calculators/lammpslib.html).
