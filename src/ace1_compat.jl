@@ -146,12 +146,8 @@ end
 
 function _radial_basis(kwargs)
     trans_ace = _transform(kwargs)
-    @show trans_ace
-    @show "!23"
     rin0cuts = _ace1_rin0cuts(kwargs)
-    @show rin0cuts
     Rnl_spec = _get_Rnl_spec(kwargs)
-    @show Rnl_spec
     polys = (:jacobi, 2.0, 2.0)
     return ace_learnable_Rnlrzz(
         spec = Rnl_spec,
@@ -184,19 +180,14 @@ end
 
 function ace1_model(; kwargs...)
     kwargs = _clean_args(kwargs)
-    @show "into ace1_model"
     elements = kwargs[:elements]
     cor_order = _get_order(kwargs)
-    @show "before constructing radial"
    # rbasis = _radial_basis(kwargs)
-    @show "after constructing radial"
     #pairbasis = _pair_basis(kwargs)
     lvl, maxlvl = _get_degrees(kwargs)
 
     rin0cuts = Models._default_rin0cuts(elements) #; rcutfactor = 2.29167)
 
-    @show maxlvl
-    @show lvl
     model = Models.ace_model(;
         elements = elements, 
         order = cor_order,               # correlation order 

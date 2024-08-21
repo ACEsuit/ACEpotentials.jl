@@ -2,12 +2,8 @@ working_dir = "/home/vekondra/ACEpotentials.jl/scripts"
 
 using Pkg
 Pkg.activate(joinpath(working_dir, "."))
-using ACEpotentials
-using ArgParse
-using JSON
-using Random
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
-      Unitful, Zygote, Optimisers, Folds, Printf, Optim, LineSearches
+      Unitful, Zygote, Optimisers, Folds, Printf, Optim, LineSearches, Random, JSON, ArgParse
 include(joinpath(working_dir, "/home/vekondra/ACEpotentials.jl/src/ace1_compat.jl"))
 include("/home/vekondra/ACEpotentials2.jl/docs/src/newkernels/llsq.jl")
 
@@ -24,7 +20,6 @@ parser = ArgParseSettings(description="Fit an ACE potential from parameters file
         arg_type = Int
         default = 1
 end
-
 
 #get_basis_size(d::Dict) =
 #    sum([length(ACEpotentials.generate_basis(basis_params)) for (basis_name, basis_params) in d])
@@ -58,7 +53,6 @@ if nprocs > 1
     controller.limit(limits=nprocs, user_api="blas")
     pyimport("pprint")["pprint"](controller.select(user_api="blas").info())
 end
-
 
 @info("making ACEmodel")
 model = make_acemodel(args_dict["model"])
