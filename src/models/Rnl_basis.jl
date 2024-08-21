@@ -33,7 +33,6 @@ mutable struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitL
    transforms::SMatrix{NZ, NZ, TT}
    envelopes::SMatrix{NZ, NZ, TENV}
    # -------------- 
-   # weights::Array{TW, 4}                      # learnable weights, `nothing` when using Lux
    rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
    spec::Vector{NT_NL_SPEC}       
    # --------------
@@ -49,9 +48,9 @@ mutable struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractExplicitLayer
    splines::SMatrix{NZ, NZ, SPL_OF_SVEC{LEN, T}}
    # -------------- 
    rin0cuts::SMatrix{NZ, NZ, NT_RIN0CUTS{T}}  # matrix of (rin, rout, rcut)
-   spec::Vector{NT_NL_SPEC}       
+   spec::Vector{NT_NL_SPEC}
    # --------------
-   meta::Dict{String, Any} 
+   meta::Dict{String, Any}
 end
 
 

@@ -31,3 +31,6 @@ ps, st = LuxCore.setup(rng, model)
 Γg = M.gaussian_smoothness_prior(model)
 
 [Γa.diag Γe.diag Γg.diag]
+
+##
+

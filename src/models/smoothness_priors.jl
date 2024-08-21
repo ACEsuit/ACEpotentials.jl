@@ -28,18 +28,12 @@ EuclideanDegree() = EuclideanDegree(1.0, 2/3)
 (l::EuclideanDegree)(bb::AbstractVector{<: NamedTuple}) = sqrt( sum(l(b)^2 for b in bb) )
 
 
-# struct SparseBasisSelector
-#    order::Int 
-#    maxlevels::AbstractVector{<: Number}
-#    level
-# end
-
 function oneparticle_spec(level::Union{TotalDegree, EuclideanDegree}, maxlevel)
    maxn1 = ceil(Int, maxlevel * level.wn)
    maxl1 = ceil(Int, maxlevel * level.wl)
    spec = [ (n = n, l = l) for n = 1:maxn1, l = 0:maxl1
                   if level((n = n, l = l)) <= maxlevel ]
-   return sort(spec; by = x -> (x.l, x.n))                   
+   return sort(spec; by = x -> (x.l, x.n))
 end
 
 # --------------------------------------------------
@@ -71,21 +65,44 @@ function _nnll_basis(model)
    return global_spec
 end
 
-   
+function _coupling_scalings(model) 
+   scal = ones(_basis_length(model))
+   for iz = 1:_get_nz(model)
+      z = _i2z(model, iz)
+      mb_inds = get_basis_inds(model, z)
+      @assert length(mb_inds) == size(model.tensor.A2Bmap, 1) 
+      for i = 1:length(mb_inds)
+         scal[mb_inds[i]] = sqrt(sum(abs2, model.tensor.A2Bmap[i,:]))
+      end
+   end
+   return scal 
+end
+
 function smoothness_prior(model, f)
    nnll = _nnll_basis(model)
    γ = zeros(length(nnll))
    for (i, bb) in enumerate(nnll)
       γ[i] = f(bb)
    end
-   return Diagonal(γ)
+   return Diagonal(γ) #  .* _coupling_scalings(model))
 end
 
-algebraic_smoothness_prior(model; p = 4, wl = 3/2, wn = 1.0) = 
+algebraic_smoothness_prior(model; p = 4, wl = 2/3, wn = 1.0) = 
       smoothness_prior(model, bb -> sum((b.l/wl)^p + (b.n/wn)^p for b in bb))
 
-exp_smoothness_prior(model; wl = 1.0, wn = 2/3) = 
+exp_smoothness_prior(model; wn = 1.0, wl = 2/3) = 
       smoothness_prior(model, bb -> exp( sum(b.l / wl + b.n / wn for b in bb) ))
 
 gaussian_smoothness_prior(model; wl = 1/sqrt(2), wn = 1/sqrt(2)) = 
       smoothness_prior(model, bb -> exp( sum( (b.l/wl)^2 + (b.n/wn)^2 for b in bb) ))
+
+
+function algebraic_smoothness_prior_ace1(model; p = 4, wL = 3/2) 
+   nnll = _nnll_basis(model)
+   γ = zeros(length(nnll))
+   for (i, bb) in enumerate(nnll)
+      γ[i] = sum(b.n^p + wL * b.l^p * (1 + b.l/(p+1)) for b in bb)
+   end
+   scal = _coupling_scalings(model)
+   return Diagonal(γ .* scal .+ 1)
+end 
