@@ -120,7 +120,7 @@ function evaluate!(Rnl, basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    env_ij = basis.envelopes[iz, jz]
    e = evaluate(env_ij, r, x)   
    Rnl[:] .= Wij * (P .* e)
-   return Rnl 
+   return Rnl
 end
 
 function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
@@ -132,7 +132,7 @@ function evaluate(basis::LearnableRnlrzzBasis, r::Real, Zi, Zj, ps, st)
    P = Polynomials4ML.evaluate(basis.polys, x)
    env_ij = basis.envelopes[iz, jz]
    e = evaluate(env_ij, r, x)   
-   return Wij * (P .* e) 
+   return Wij * (P .* e)
 end
 
 
@@ -244,7 +244,7 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
                                    rs, zi, zjs, ps, st)
    @assert length(rs) == length(zjs)                          
    # evaluate the first one to get the types and size
-   Rnl_1, _ = evaluate(basis, rs[1], zi, zjs[1], ps, st)
+   Rnl_1 = evaluate(basis, rs[1], zi, zjs[1], ps, st)
    # ... and then allocate storage
    Rnl = zeros(eltype(Rnl_1), (length(rs), length(Rnl_1)))
    
@@ -262,7 +262,7 @@ function pullback_evaluate_batched(Δ, basis::LearnableRnlrzzBasis,
       env_ij = basis.envelopes[iz, jz]
       e = evaluate(env_ij, rs[j], x)   
       P = Polynomials4ML.evaluate(basis.polys, x) .* e
-      # TODO: the P shouuld be stored inside a closure in the 
+      # TODO: the P should be stored inside a closure in the 
       #       forward pass and then resused. 
 
       # TODO:  ... and obviously this part here needs to be moved 

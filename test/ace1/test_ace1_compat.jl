@@ -95,3 +95,54 @@ params = ( elements = [:Al, :Ti, :C],
 
 ACE1_TestUtils.check_compat(params) 
 
+
+## [6] 
+# Confirm that the smoothness prior is the same in ACE1x and ACEpotentials 
+
+import ACE1, ACE1x, JuLIP, Random 
+using LinearAlgebra, ACEpotentials 
+M = ACEpotentials.Models 
+ACE1compat = ACEpotentials.ACE1compat
+rng = Random.MersenneTwister(1234)
+
+##
+
+@info("Testing scaling of smoothness priors")
+
+params = ( elements = [:Si,], 
+           order = 3, 
+           transform = (:agnesi, 2, 2),
+           totaldegree = [16, 13, 11], 
+           pure = false, 
+           pure2b = false,
+           pair_envelope = (:r, 1),
+           rcut = 5.5,
+           Eref = [:Si => -1.234 ]
+         )
+
+ACE1_TestUtils.check_compat(params)         
+
+_p = (p = 1, wL = 1.5) 
+ACE1_TestUtils.compare_smoothness_prior(params, :algebraic, _p, _p)
+
+_p = (p = 2, wL = 1.5) 
+ACE1_TestUtils.compare_smoothness_prior(params, :algebraic, _p, _p)
+
+_p = (p = 4, wL = 1.5) 
+ACE1_TestUtils.compare_smoothness_prior(params, :algebraic, _p, _p) 
+
+ACE1_TestUtils.compare_smoothness_prior(
+        params, :exponential, (al = 1.5, an = 1.0), (wl = 2/3, wn = 1.0) )
+
+ACE1_TestUtils.compare_smoothness_prior(
+        params, :exponential, (al = 0.234, an = 0.321), 
+                              (wl = 1 / 0.234, wn = 1/0.321) )
+
+ACE1_TestUtils.compare_smoothness_prior(
+        params, :gaussian, (σl = 2.0, σn = 2.0), 
+                           (wl = 1/sqrt(2), wn = 1/sqrt(2)) )
+
+ACE1_TestUtils.compare_smoothness_prior(
+        params, :gaussian, (σl = 1.234, σn = 0.89), 
+                           (wl = 1/sqrt(1.234), wn = 1/sqrt(0.89)) )
+
