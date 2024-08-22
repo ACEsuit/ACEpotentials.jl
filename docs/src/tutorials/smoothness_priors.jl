@@ -32,9 +32,9 @@ A, Y, W = ACEfit.assemble(data, model.basis);
 
 # In the following we demonstrate the usage of algebraic and gaussian priors. The choices for `σl, σn` made here may seem "magical", but there is a good justification and we plan to automate this in future releases. 
 
-Pa2 = algebraic_smoothness_prior(model.basis; p=2)
-Pa4 = algebraic_smoothness_prior(model.basis; p=4)
-Pg  = gaussian_smoothness_prior( model.basis, σl = (2/r_nn)^2, σn = (0.5/r_nn)^2);
+Pa2 = ACEpotentials.algebraic_smoothness_prior(model.basis; p=2)
+Pa4 = ACEpotentials.algebraic_smoothness_prior(model.basis; p=4)
+Pg  = ACEpotentials.gaussian_smoothness_prior( model.basis, σl = (2/r_nn)^2, σn = (0.5/r_nn)^2);
 
 # Each of these object `Pa2, Pa4, Pg` are diagonal matrices. For each prior constructed above we now solve the regularised least squares problem. Note how design matrix need only be assembled once if we want to play with many different priors. Most of the time we would just use defaults however and then these steps are all taken care of behind the scenes. 
 
