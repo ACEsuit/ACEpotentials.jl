@@ -3,13 +3,13 @@
 ### Exported
 
 ```@autodocs
-Modules = [ACEpotentials]
+Modules = [ACEpotentials, ACEpotentials.Models, ACEpotentials.ACE1compat]
 Private = false
 ``` 
 
 ### Not exported
 
 ```@autodocs
-Modules = [ACEpotentials]
+Modules = [ACEpotentials, ACEpotentials.Models, ACEpotentials.ACE1compat]
 Public = false
 ``` 
