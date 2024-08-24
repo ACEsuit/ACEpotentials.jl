@@ -183,11 +183,18 @@ function check_basis(model1, model2; Nenv = :auto)
    nothing 
 end 
 
-
-function check_compat(params; deginc = 0.1) 
+function make_models(params; deginc = 0.1)
    model1 = acemodel(; params...)
    params2 = (; params..., totaldegree = params.totaldegree .+ deginc)
    model2 = ACE1compat.ace1_model(; params2...)
+   return model1, model2
+end
+
+function check_compat(params; deginc = 0.1) 
+   model1, model2 = make_models(params, deginc = deginc)
+   # model1 = acemodel(; params...)
+   # params2 = (; params..., totaldegree = params.totaldegree .+ deginc)
+   # model2 = ACE1compat.ace1_model(; params2...)
 
    NZ = length(params.elements)
    if NZ == 1
@@ -200,5 +207,68 @@ function check_compat(params; deginc = 0.1)
    check_basis(model1, model2)
    nothing 
 end 
+
+
+function compare_smoothness_prior(params, 
+                                  priortype = :algebraic, 
+                                  priorparams1 = (p = 2, wl = 1.5), 
+                                  priorparams2 = (p = 2, wl = 2/3, wn = 1.0); 
+                                  deginc = 0.1)
+   model1, model2 = make_models(params, deginc = deginc)
+   # model1 = ACE1x.acemodel(; params...)
+   # params2 = (; params..., totaldegree = params.totaldegree .+ deginc)
+   # model2 = ACE1compat.ace1_model(; params2...)
+   
+   if priortype == :algebraic 
+      P1 = ACE1x.algebraic_smoothness_prior(model1.basis; priorparams1...)
+      P2 = M.algebraic_smoothness_prior_ace1(model2; priorparams2...)
+   elseif priortype == :exponential
+      P1 = ACE1x.exp_smoothness_prior(model1.basis; priorparams1...)
+      P2 = M.exp_smoothness_prior(model2; priorparams2...)
+   elseif priortype == :gaussian
+      P1 = ACE1x.gaussian_smoothness_prior(model1.basis; priorparams1...)
+      P2 = M.gaussian_smoothness_prior(model2; priorparams2...)
+   else  
+      error("unknown priortype: $priortype")
+   end
+
+   p1 = diag(P1)
+   p2 = diag(P2); l2 = length(p2) 
+   
+   _spec1 = ACE1.get_nl(model1.basis.BB[2])
+   spec1 = [ [ (n = b.n, l = b.l) for b in bb ] for bb in _spec1 ]
+   l1 = length(spec1)
+   p1mb = p1[end-l1+1:end]
+   
+   spec2 = M.get_nnll_spec(model2.tensor)
+   σ = [ findfirst(isequal(bb), spec2) for bb in spec1 ]
+   
+   l2 = length(spec2)
+   p2mb = p2[1:l2]
+   
+   ratios = Float64[] 
+   numerr = 0 
+   for i = 1:length(σ)
+     if σ[i] == nothing; continue; end
+     bb = spec1[i]
+     _p1 = p1mb[i]
+     _p2 = p2mb[σ[i]]
+     push!(ratios, _p1/_p2)
+     if !(0.5 <= _p1/_p2 <= 2.0)
+       @error("""scaling mismatch: 
+                     $("$bb"[32:end])
+                     $(round(_p1, digits=1))  vs  $(round(_p2, digits=1))
+                     i = $i, σ[i] = $(σ[i])
+               """)
+       println() 
+       numerr += 1 
+     end
+   end
+   @show numerr
+   @show extrema(ratios)
+   
+   @test 0.5 <= minimum(ratios) 
+   @test maximum(ratios) <= 2.0
+end
 
 end
