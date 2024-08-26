@@ -1,12 +1,11 @@
-working_dir = "/home/vekondra/ACEpotentials.jl/scripts"
-
 using Pkg
-Pkg.activate(joinpath(working_dir, "."))
-using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
-      Unitful, Zygote, Optimisers, Folds, Printf, Optim, LineSearches, Random, JSON, ArgParse
-include(joinpath(working_dir, "/home/vekondra/ACEpotentials.jl/src/ace1_compat.jl"))
-include("/home/vekondra/ACEpotentials2.jl/docs/src/newkernels/llsq.jl")
+Pkg.activate(joinpath(@__DIR__(), "../"))
 
+using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
+      Unitful, Zygote, Optimisers, Folds, Printf, Optim, Random, JSON, ArgParse
+
+
+include("../docs/src/newkernels/llsq.jl")
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin
@@ -38,7 +37,7 @@ end
 args = parse_args(parser)
 
 # load from json
-args_dict = load_dict(joinpath(working_dir, "fitting_params.json"))
+args_dict = load_dict(joinpath(@__DIR__(), "fitting_params.json"))
 
 # pretty print
 print(json(args_dict, 3))
@@ -53,6 +52,10 @@ if nprocs > 1
     controller.limit(limits=nprocs, user_api="blas")
     pyimport("pprint")["pprint"](controller.select(user_api="blas").info())
 end
+
+include("../src/ace1_compat.jl")
+include("../scripts/json_interface.jl")
+
 
 @info("making ACEmodel")
 model = make_acemodel(args_dict["model"])
@@ -79,6 +82,7 @@ A, y = LLSQ.assemble_lsq(calc_model, train2, weights, data_keys)
 @show size(A)
 
 θ = ACEfit.trunc_svd(svd(A), y, 1e-8)
+
 calc_model2_fit = LLSQ.set_linear_params(calc_model, θ)
 
 
