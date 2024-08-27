@@ -39,4 +39,6 @@ include("outdated/solver.jl")
 include("outdated/regularizer.jl")
 include("outdated/read_params.jl")
 
+include("json_interface.jl")
+
 end
