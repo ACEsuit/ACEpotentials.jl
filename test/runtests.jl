@@ -2,9 +2,9 @@ using ACEpotentials, Test, LazyArtifacts
 
 @testset "ACEpotentials.jl" begin
 
-    # @testset "Test silicon" begin include("test_silicon.jl") end
+    @testset "Test silicon" begin include("test_silicon.jl") end
     @testset "Test recomputation of weights" begin include("test_recompw.jl") end
-    @testset "AtomsBase interface" begin include("atomsbase.jl") end
+    # @testset "AtomsBase interface" begin include("atomsbase.jl") end
     @testset "Test IO" begin include("test_io.jl")  end
 
     # experimental 

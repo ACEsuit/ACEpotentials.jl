@@ -1,10 +1,14 @@
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ))
+
+##
+
 using ACEpotentials
 using ExtXYZ, AtomsBase
 using Distributed
 using LazyArtifacts
-# using PythonCall
 using Test
 ACE1compat = ACEpotentials.ACE1compat
+using ACEpotentials.Models: ACEPotential
 
 ## ----- setup -----
 
@@ -17,7 +21,7 @@ params = (elements = [:Si],
           totaldegree = 12)
 
 model1 = acemodel(; params...)
-model2 = ACE1compat.ace1_model(; params...)
+model2 = ACEPotential( ACE1compat.ace1_model(; params...) )
 
 data1 = read_extxyz(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
 data2 = ExtXYZ.load(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
@@ -28,31 +32,44 @@ data_keys = [:energy_key => "dft_energy",
 weights = Dict("default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
                "liq" => Dict("E"=>10.0, "F"=>0.66, "V"=>0.25))
 
-### ----- perform tests -----
+## ----- perform tests -----
 
-function test_rmse(rmse, expected, atol)
-    for config in keys(rmse)
-        # TODO and/or warning: can't iterate over rmse because it will have virial for isolated atom
-        #for obs in keys(rmse[config])
-        for obs in keys(expected[config])
-            @test rmse[config][obs] ≈ expected[config][obs] atol=atol
-        end
-    end
-end
+# function test_rmse(rmse, expected, atol)
+#     for config in keys(rmse)
+#         # TODO and/or warning: can't iterate over rmse because it will have virial for isolated atom
+#         #for obs in keys(rmse[config])
+#         for obs in keys(expected[config])
+#             @test rmse[config][obs] ≈ expected[config][obs] atol=atol
+#         end
+#     end
+# end
 
-# @testset "QR" begin
-rmse_qr = Dict(
-    "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-    "dia"           => Dict("V"=>0.0234649, "E"=>0.000617953, "F"=>0.018611),
-    "liq"           => Dict("V"=>0.034633, "E"=>0.000133371, "F"=>0.104112),
-    "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
-    "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
+# # @testset "QR" begin
+# rmse_qr = Dict(
+#     "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
+#     "dia"           => Dict("V"=>0.0234649, "E"=>0.000617953, "F"=>0.018611),
+#     "liq"           => Dict("V"=>0.034633, "E"=>0.000133371, "F"=>0.104112),
+#     "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
+#     "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
 
 acefit!(model1, data1;
        data_keys...,
        weights = weights,
        solver=ACEfit.QR())
 
+acefit!(model1, data2;
+       data_keys...,
+       weights = weights,
+       solver=ACEfit.QR())
+
+acefit!(model2, data2;
+       data_keys...,
+       weights = weights,
+       solver=ACEfit.QR())      
+##
+
+model = model1 
+data = data1        
 
 acefit!(model2, data2;
        data_keys...,

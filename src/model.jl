@@ -1,23 +1,36 @@
 
-using LinearAlgebra: I, Diagonal
+using LinearAlgebra: I, Diagonal, UniformScaling
 
 import ACE1x 
 import ACE1x: ACE1Model, acemodel, _set_params!, smoothness_prior
+import ACEpotentials.Models: ACEPotential
 
 export acefit!, export2json, export2lammps
 
-import JuLIP: energy, forces, virial, cutoff
+# import JuLIP: energy, forces, virial, cutoff
 import ACE1.Utils: get_maxn
 
 
 default_weights() = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0))
 
-function _make_prior(model, smoothness, P)
+function _make_prior(model::ACE1Model, smoothness, P)
    if P isa AbstractMatrix || P isa UniformScaling 
       return P 
    elseif smoothness isa Number 
       if smoothness >= 0 
-         return smoothness_prior(model; p = smoothness)
+         return ACE1x.smoothness_prior(model; p = smoothness)
+      end
+   end
+end
+
+function _make_prior(model::ACEpotentials.Models.ACEPotential, smoothness, P)
+   if P isa AbstractMatrix || P isa UniformScaling 
+      return P 
+   elseif smoothness isa Number 
+      if smoothness >= 0 
+         return ACEpotentials.Models.algebraic_smoothness_prior(model.model; p = smoothness)
+      else
+         error("smoothness must be >= 0")
       end
    end
 end
@@ -62,6 +75,9 @@ function acefit!(model, raw_data;
                 kwargs...
    )
 
+   _get_Vref(model::ACE1Model) = model.Vref 
+   _get_Vref(model::ACEPotential) = model.model.Vref 
+
    data = map( raw_data ) do data_point
       _apply_weight(
          data_point;
@@ -69,7 +85,7 @@ function acefit!(model, raw_data;
          force_key=force_key, 
          virial_key = virial_key, 
          weights = weights, 
-         v_ref = model.Vref
+         v_ref = _get_Vref(model)
       )
    end
 
@@ -98,14 +114,14 @@ function acefit!(model, raw_data;
    end
                   
    P = _make_prior(model, smoothness, prior)
+
    # We need this to allow control over new and old assembly
    A, Y, W = _dispatch_to_assebly(
       data, 
-      model.basis;
-      energy_key= Symbol(energy_key),
-      force_key = Symbol(force_key),
-      virial_key= Symbol(virial_key),
-      energy_ref= model.Vref,
+      model;
+      energy_key = Symbol(energy_key),
+      force_key  = Symbol(force_key),
+      virial_key = Symbol(virial_key),
       kwargs... 
    )
 
@@ -136,8 +152,9 @@ function acefit!(model, raw_data;
    return model 
 end
 
+# TODO: this is now useless and should be removed. 
 function _apply_weight(
-   data::JuLIP.Atoms;
+   system;
    energy_key = nothing, 
    force_key = nothing, 
    virial_key = nothing, 
@@ -146,7 +163,7 @@ function _apply_weight(
    kwargs...
 )
    return AtomsData(
-      data;
+      system;
       energy_key = energy_key,
       force_key  = force_key,
       virial_key = virial_key,
@@ -155,33 +172,38 @@ function _apply_weight(
    )
 end
 
-function _apply_weight(data; group_key=:config_type, kwargs...)
-   w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
-   if haskey(kwargs, :weights)
-      weights = kwargs[:weights]
-      if haskey(data, group_key) && haskey(weights, data[group_key])
-         w = weights[ data[group_key] ]
-      elseif haskey(weights, "defaults")
-         w = weights["defaults"]
-      end
-   end
-   return FlexibleSystem(
-      data;
-      energy_weight = w["E"],
-      force_weight  = w["F"],
-      virial_weight = w["V"]
-   )
-end
+# function _apply_weight(data; group_key=:config_type, kwargs...)
+#    w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
+#    if haskey(kwargs, :weights)
+#       weights = kwargs[:weights]
+#       if haskey(data, group_key) && haskey(weights, data[group_key])
+#          w = weights[ data[group_key] ]
+#       elseif haskey(weights, "defaults")
+#          w = weights["defaults"]
+#       end
+#    end
+#    return FlexibleSystem(
+#       data;
+#       energy_weight = w["E"],
+#       force_weight  = w["F"],
+#       virial_weight = w["V"]
+#    )
+# end
 
-function _dispatch_to_assebly(data::AbstractArray{AtomsData}, basis; kwargs...)
+function _dispatch_to_assebly(data::AbstractArray{AtomsData}, model; kwargs...)
+   # basis = model.basis 
+   # Vref = model.Vref 
    if haskey(kwargs, :new_assembly) && kwargs[:new_assembly] == true
       return ACEfit.assemble(data, basis; new_assembly=true)
    else
-      return ACEfit.assemble(data, basis)
+      return ACEfit.assemble(data, model)
    end
 end
 
-_dispatch_to_assebly(data, basis; kwargs...) = ACEfit.assemble(data, basis; kwargs...)
+
+# _dispatch_to_assebly(data, basis; kwargs...) = ACEfit.assemble(data, basis; kwargs...)
+
+
 
 function linear_errors(raw_data::AbstractArray{<:JuLIP.Atoms}, model::ACE1Model; 
                        energy_key = "energy", 

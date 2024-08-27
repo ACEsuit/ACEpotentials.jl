@@ -3,12 +3,12 @@
 
 using Unitful
 import AtomsCalculatorsUtilities, AtomsCalculators, JuLIP 
-import AtomsCalculators: energy_unit, length_unit, force_unit
+import AtomsCalculators: energy_unit, length_unit, force_unit, potential_energy
 import AtomsCalculatorsUtilities.SitePotentials: SitePotential, 
                                   cutoff_radius, 
                                   eval_site, 
                                   eval_grad_site 
-import AtomsBase: atomic_number 
+import AtomsBase: atomic_number, AbstractSystem
 
 _atomic_number(s) = atomic_number(s)
 _atomic_number(s::Symbol) = JuLIP.atomic_number(s)
@@ -50,3 +50,12 @@ eval_site(V::OneBody, Rs, Zs, zi::Integer) =
 eval_grad_site(V::OneBody{T}, Rs, Zs, zi) where {T} = 
       fill( zero(SVector{3, T}), length(Zs) )
 
+
+function AtomsCalculators.potential_energy(sys::AbstractSystem, V::OneBody)
+   energy = AtomsCalculators.zero_energy(sys, V)
+   for i = 1:length(sys) 
+      Zi = atomic_number(sys, i)
+      energy += V.E0[Zi] * energy_unit(V)
+   end
+   return energy
+end

@@ -549,11 +549,16 @@ function get_pairbasis_inds(model::ACEModel, Z)
    return (len_B + (i_z - 1) * len_pair) .+ (1:len_pair)
 end
 
-function len_basis(model::ACEModel)
+function length_basis(model::ACEModel)
    len_Bi = length(model.tensor)
    len_pair = length(model.pairbasis)
    NZ = _get_nz(model)
    return (len_Bi + len_pair) * NZ 
+end
+
+function len_basis(model::ACEModel)
+   @warn("len_basis is deprecated, use length_basis instead")
+   return length_basis(model)
 end
 
 
@@ -578,7 +583,7 @@ function evaluate_basis(model::ACEModel,
    # equivariant tensor product 
    Bi, _ = @withalloc evaluate!(model.tensor, Rnl, Ylm)
 
-   B = zeros(eltype(Bi), len_basis(model))
+   B = zeros(eltype(Bi), length_basis(model))
    B[get_basis_inds(model, Z0)] .= Bi
    
    # ------------------- 

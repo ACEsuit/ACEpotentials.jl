@@ -3,6 +3,7 @@ import AtomsBase: atomic_number
 
 import AtomsCalculators: energy_forces_virial, energy_unit, length_unit 
 
+import Random 
 import AtomsCalculatorsUtilities
 import AtomsCalculatorsUtilities.SitePotentials: SitePotential, 
                             cutoff_radius, 
@@ -23,7 +24,11 @@ mutable struct ACEPotential{MOD} <: SitePotential
    st 
 end
 
-ACEPotential(model) = ACEPotential(model, nothing, nothing)
+function ACEPotential(model) 
+   ps = initialparameters(Random.GLOBAL_RNG, model) 
+   st = initialstates(Random.GLOBAL_RNG, model)
+   ACEPotential(model, ps, st)
+end
 
 # TODO: allow user to specify what units the model is working with
 
@@ -248,6 +253,16 @@ end
 
 # --------------------------------------------------------
 #   Basis evaluation 
+
+function length_basis(calc::ACEPotential{<: ACEModel})
+   return length_basis(calc.model)
+end
+
+import ACEfit
+ACEfit.length_basis(model::ACEPotential) = length_basis(model.model)
+
+energy_forces_virial_basis(at, calc::ACEPotential{<: ACEModel}) = 
+      energy_forces_virial_basis(at, calc, calc.ps, calc.st)
 
 
 function energy_forces_virial_basis(

@@ -11,32 +11,34 @@ export ACE1x
 import ACE1x: ace_basis, smoothness_prior, ace_defaults, acemodel 
 export ace_basis, smoothness_prior, ace_defaults, acemodel
 
+using Unitful
+
 @reexport using ACEfit
-@reexport using ACEmd
+# @reexport using ACEmd
 
 include("defaults.jl")
+
+include("models/models.jl")
+include("ace1_compat.jl")
 
 include("atoms_data.jl")
 include("model.jl")
 include("export.jl")
 include("example_data.jl")
 include("descriptor.jl")
-include("atoms_base.jl")
-include("io.jl")
+# include("atoms_base.jl")
+# include("io.jl")
 
 include("analysis/potential_analysis.jl")
 include("analysis/dataset_analysis.jl")
 
 include("experimental.jl")
-include("models/models.jl")
 
-include("ace1_compat.jl")
-
-include("outdated/fit.jl")
-include("outdated/data.jl")
-include("outdated/basis.jl")
-include("outdated/solver.jl")
-include("outdated/regularizer.jl")
-include("outdated/read_params.jl")
+# include("outdated/fit.jl")
+# include("outdated/data.jl")
+# include("outdated/basis.jl")
+# include("outdated/solver.jl")
+# include("outdated/regularizer.jl")
+# include("outdated/read_params.jl")
 
 end
