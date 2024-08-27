@@ -570,6 +570,10 @@ end
 function evaluate_basis(model::ACEModel, 
                         Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                         ps, st) where {T}
+   if length(Rs) == 0 
+      return zeros(T, length_basis(model))
+   end
+
    # get the radii 
    rs = @withalloc radii!(Rs) 
 
@@ -604,6 +608,11 @@ __svecs(Rsvec::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, Rsvec)
 function evaluate_basis_ed(model::ACEModel, 
                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                            ps, st) where {T}
+
+   if length(Rs) == 0 
+      B = zeros(T, length_basis(model))
+      dB = zeros(SVector{3, T}, (0, length_basis(model)))
+   end
 
    B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
 

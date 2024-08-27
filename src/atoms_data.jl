@@ -3,14 +3,24 @@ using PrettyTables
 using OrderedCollections
 using StaticArrays: SVector
 
-import AtomsBase: AbstractSystem 
+import AtomsBase: AbstractSystem, FlexibleSystem, atomkeys
 import AtomsCalculators: energy_forces_virial, potential_energy, forces, virial 
 import ACEpotentials.Models: energy_forces_virial_basis, length_basis
+
+import ExtXYZ 
 
 # Some utilities 
 
 
 function _f_vec(f::AbstractVector{SVector{D, T}}) where {D, T}
+    return reinterpret(T, f)
+end
+
+function _f_vec(f::AbstractVector{Vector{T}}) where {T}
+    return reduce(vcat, f)
+end
+
+function _f_mat(f::AbstractMatrix{SVector{D, T}}) where {D, T} 
     return reinterpret(T, f)
 end
 
@@ -22,22 +32,59 @@ function _getfuzzy(coll, key)
     error("Couldn't find $key or similar in collection with keys $(keys(coll))")
 end
 
+_issimilarkey(k1, k2) = lowercase(String(k1)) == lowercase(String(k2))
+
 function _find_similar_key(coll, key) 
     for k in keys(coll) 
-        if lowercase(String(k)) == lowercase(String(key))
+        if _issimilarkey(k, key)
             return k 
         end
     end
     return nothing 
 end
 
+function _find_similar_key(sys::ExtXYZ.Atoms, key) 
+    for k in keys(sys.system_data)
+        if _issimilarkey(k, key)
+            return k 
+        end
+    end
+    for k in keys(sys.atom_data)
+        if _issimilarkey(k, key)
+            return k 
+        end
+    end
+    return nothing 
+end
+
+function _get_data_fuzzy(sys::ExtXYZ.Atoms, key)
+    k = _find_similar_key(sys, key) 
+    if k == nothing 
+        error("Couldn't find $key or similar in collection with keys $(keys(sys))")
+    end 
+    if haskey(sys.system_data, k)
+        return sys.system_data[k]
+    end
+    return sys.atom_data[k]    
+end
+
 _has_similar_key(coll, key) = (_find_similar_key(coll, key) != nothing)
 
-_get_data_fuzzy(sys::AbstractSystem, key::Union{String, Symbol}) = 
-        _getfuzzy(sys, key)  # sys[Symbol(key)]
+# _get_data_fuzzy(sys::AbstractSystem, key::Union{String, Symbol}) = 
+#         _getfuzzy(sys, key)  # sys[Symbol(key)]
 
-_get_data(sys::AbstractSystem, key::Union{String, Symbol}) = 
-        sys[Symbol(key)]
+# _get_data(sys::AbstractSystem, key::Union{String, Symbol}) = 
+#         sys[Symbol(key)]
+
+function _get_data(sys::ExtXYZ.Atoms, key)
+    if haskey(sys.system_data, key)
+        return sys.system_data[key]
+    elseif haskey(sys.atom_data, key)
+        return sys.atom_data[key]
+    else
+        error("Couldn't find $key in System")
+    end
+end
 
 
 # ~~~~~~~~~~~~~~ to be retired ~~~~~~~~~~~~~~
@@ -66,7 +113,8 @@ function energy_forces_virial_basis(sys::JuLIP.Atoms, model::ACE1Model)
     e = JuLIP.energy(model.basis, sys)
     f = JuLIP.forces(model.basis, sys)
     v = JuLIP.virial(model.basis, sys)
-    return (energy=e, forces=f, virial=v)
+    f_mat = reduce(hcat, f)
+    return (energy=e, forces=f_mat, virial=v)
 end
 
 function _convert_julip(sys::AbstractSystem) 
@@ -157,24 +205,25 @@ function ACEfit.count_observations(d::AtomsData)
 end
 
 
+# TODO: the usage of ustrip in feature_matrix is a bit dangerous. 
+#       it needs to be revisited, basically to unsure that all dimensions 
+#       are in the same units.
 
 function ACEfit.feature_matrix(d::AtomsData, model; kwargs...)
     dm = Array{Float64}(undef, ACEfit.count_observations(d), length_basis(model))
     efv = energy_forces_virial_basis(d.system, model)
     i = 1
     if !isnothing(d.energy_key)
-        dm[i,:] .= efv.energy
+        dm[i,:] .= ustrip(efv.energy)
         i += 1
     end
     if !isnothing(d.force_key)
-        for j in 1:length_basis(model)
-            dm[i:i+3*length(d.system)-1, j] .= _f_vec(efv.forces[j])
-        end
+        dm[i:i+3*length(d.system)-1, :] .= ustrip.(_f_mat(efv.forces))
         i += 3*length(d.system)
     end
     if !isnothing(d.virial_key)
         for j in 1:length_basis(model)
-            dm[i:i+5,j] .= (efv.virial[j])[SVector(1,5,9,6,3,2)]
+            dm[i:i+5,j] .= ustrip.( (efv.virial[j])[SVector(1,5,9,6,3,2)] )
         end
         i += 6
     end
@@ -241,11 +290,13 @@ function recompute_weights(raw_data;
 end
 
 function group_type(d::AtomsData; group_key="config_type")
-    gt = try 
-        _get_data(d.system, group_key)
-    catch 
-        "unspecified"
+    gk = _find_similar_key(d.system, group_key)
+    if gk == nothing
+        gt = "nil"
+    else 
+        gt = _get_data(d.system, gk)
     end
+
     # TODO: we could look at some kind of search like this again
     # for (k,v) in d.system.data
     #     if (lowercase(k)==group_key)
@@ -254,6 +305,7 @@ function group_type(d::AtomsData; group_key="config_type")
     # end
     return gt
 end
+
 
 function linear_errors(data::AbstractArray{AtomsData}, model; 
                        group_key="config_type", verbose=true)

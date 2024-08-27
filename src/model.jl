@@ -7,6 +7,11 @@ import ACEpotentials.Models: ACEPotential
 
 export acefit!, export2json, export2lammps
 
+
+_get_Vref(model::ACE1Model) = model.Vref 
+_get_Vref(model::ACEPotential) = model.model.Vref 
+
+
 # import JuLIP: energy, forces, virial, cutoff
 import ACE1.Utils: get_maxn
 
@@ -75,8 +80,6 @@ function acefit!(model, raw_data;
                 kwargs...
    )
 
-   _get_Vref(model::ACE1Model) = model.Vref 
-   _get_Vref(model::ACEPotential) = model.model.Vref 
 
    data = map( raw_data ) do data_point
       _apply_weight(
@@ -129,7 +132,13 @@ function acefit!(model, raw_data;
    Y = W .* Y
    result = ACEfit.solve(solver, Ap, Y)
    coeffs = P \ result["C"]
-   ACE1x._set_params!(model, coeffs)
+
+   # TODO: male this nicer / remove the need for this ... 
+   # dispatch setting of parameters 
+   __set_params!(model::ACE1Model, coeffs) = ACE1x._set_params!(model, coeffs)
+   __set_params!(model::ACEPotential, coeffs) = ACEpotentials.Models.set_parameters!(model, coeffs)
+   
+   __set_params!(model, coeffs)
 
    if haskey(result, "committee")
        co_coeffs = result["committee"]
@@ -205,18 +214,18 @@ end
 
 
 
-function linear_errors(raw_data::AbstractArray{<:JuLIP.Atoms}, model::ACE1Model; 
+function linear_errors(raw_data::AbstractArray{<:JuLIP.Atoms}, model; 
                        energy_key = "energy", 
                        force_key = "force", 
                        virial_key = "virial", 
                        weights = default_weights(), 
                        verbose = true )
-   Vref = model.Vref                       
+   Vref = _get_Vref(model)
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
-                          v_ref = model.Vref) 
+                          v_ref = Vref) 
             for at in raw_data ] 
-   return linear_errors(data, model.potential; verbose=verbose)
+   return linear_errors(data, model; verbose=verbose)
 end
 
 

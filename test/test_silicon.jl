@@ -20,7 +20,8 @@ params = (elements = [:Si],
           order = 3,
           totaldegree = 12)
 
-model1 = acemodel(; params...)
+model1a = acemodel(; params...)
+model1b = acemodel(; params...)
 model2 = ACEPotential( ACE1compat.ace1_model(; params...) )
 
 data1 = read_extxyz(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
@@ -52,12 +53,12 @@ weights = Dict("default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
 #     "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
 #     "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
 
-acefit!(model1, data1;
+acefit!(model1a, data1;
        data_keys...,
        weights = weights,
        solver=ACEfit.QR())
 
-acefit!(model1, data2;
+acefit!(model1b, data2;
        data_keys...,
        weights = weights,
        solver=ACEfit.QR())
@@ -66,6 +67,11 @@ acefit!(model2, data2;
        data_keys...,
        weights = weights,
        solver=ACEfit.QR())      
+##
+
+ACEpotentials.linear_errors(data1, model1a; weights=weights)
+
+
 ##
 
 model = model1 
