@@ -333,7 +333,7 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
 
        # energy errors
        if !isnothing(d.energy_key)
-           estim = efv.energy / length(d.system)
+           estim = ustrip(efv.energy) / length(d.system)
            exact = _get_data(d.system, d.energy_key) / length(d.system)
            mae["E"] += abs(estim-exact)
            rmse["E"] += (estim-exact)^2
@@ -345,7 +345,7 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
 
        # force errors
        if !isnothing(d.force_key)
-           estim = _f_vec(efv.forces)
+           estim = ustrip.(_f_vec(efv.forces))
            exact = _f_vec(_get_data(d.system, d.force_key))
            mae["F"] += sum(abs.(estim-exact))
            rmse["F"] += sum((estim-exact).^2)
@@ -357,7 +357,7 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
 
        # virial errors
        if !isnothing(d.virial_key)
-           estim = efv.virial[SVector(1,5,9,6,3,2)] / length(d.system)
+           estim = ustrip.( efv.virial[SVector(1,5,9,6,3,2)] / length(d.system) )
            # the following hack is necessary for 3-atom cells:
            #   https://github.com/JuliaMolSim/JuLIP.jl/issues/166
            #exact = d.system.data[d.virial_key].data[SVector(1,5,9,6,3,2)] ./ length(d.system)

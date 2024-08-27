@@ -1,8 +1,9 @@
 
 using ACEpotentials, Test
+using JuLIP 
 using Random: seed! 
 
-@info(" ============== Testing for ACEpotentials 208 ================")
+@info(" ============== Testing for ACEpotentials #208 ================")
 @info(" On Julia 1.9 some energy computations were inconsistent. ")   
 
 model = acemodel(elements = [:Ti, ],
@@ -18,7 +19,7 @@ params = randn(length(model.basis))
 ACEpotentials._set_params!(model, params)
 
 function energy_per_at(pot, i) 
-   at = bulk(:Ti) * i 
+   at = JuLIP.bulk(:Ti) * i 
    return JuLIP.energy(pot, at) / length(at)
 end
 

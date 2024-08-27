@@ -1,7 +1,6 @@
 
 
 # using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
-# using TestEnv; TestEnv.activate();
 
 ##
 
@@ -14,7 +13,7 @@ M = ACEpotentials.Models
 using Optimisers, ForwardDiff, Unitful
 import AtomsCalculators
 
-using AtomsBuilder, EmpiricalPotentials
+using AtomsBase, AtomsBuilder, EmpiricalPotentials
 AB = AtomsBuilder
 
 using AtomsCalculatorsUtilities.SitePotentials: get_neighbours

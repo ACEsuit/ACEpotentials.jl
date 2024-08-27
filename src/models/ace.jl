@@ -276,6 +276,10 @@ function evaluate(model::ACEModel,
                   {T}
    i_z0 = _z2i(model.rbasis, Z0)
 
+   if length(Rs) == 0 
+      return model.Vref.E0[Z0]
+   end 
+
    @no_escape begin 
 
    # get the radii 
@@ -321,6 +325,11 @@ function evaluate_ed(model::ACEModel,
                      ps, st) where {T}
 
    i_z0 = _z2i(model.rbasis, Z0)
+
+   if length(Rs) == 0 
+      return model.Vref.E0[Z0], SVector{3, T}[] 
+   end 
+
 
    @no_escape begin 
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
