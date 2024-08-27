@@ -1,19 +1,27 @@
 using ACEpotentials
+using ExtXYZ, AtomsBase
 using Distributed
 using LazyArtifacts
 # using PythonCall
 using Test
+ACE1compat = ACEpotentials.ACE1compat
 
 ## ----- setup -----
 
 @warn "test_silicon not fully converted yet."
 
-model = acemodel(elements = [:Si],
-                 Eref = [:Si => -158.54496821],
-                 rcut = 5.5,
-                 order = 3,
-                 totaldegree = 12)
-data = read_extxyz(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
+params = (elements = [:Si],
+          Eref = [:Si => -158.54496821],
+          rcut = 5.5,
+          order = 3,
+          totaldegree = 12)
+
+model1 = acemodel(; params...)
+model2 = ACE1compat.ace1_model(; params...)
+
+data1 = read_extxyz(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
+data2 = ExtXYZ.load(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
+
 data_keys = [:energy_key => "dft_energy",
              :force_key => "dft_force",
              :virial_key => "dft_virial"]
@@ -32,29 +40,35 @@ function test_rmse(rmse, expected, atol)
     end
 end
 
-@testset "QR" begin
-    rmse_qr = Dict(
-        "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-        "dia"           => Dict("V"=>0.0234649, "E"=>0.000617953, "F"=>0.018611),
-        "liq"           => Dict("V"=>0.034633, "E"=>0.000133371, "F"=>0.104112),
-        "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
-        "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
-    acefit!(model, data;
-            data_keys...,
-            weights = weights,
-            solver=ACEfit.QR())
-    #test_rmse(results["errors"]["rmse"], rmse_qr, 1e-5)
+# @testset "QR" begin
+rmse_qr = Dict(
+    "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
+    "dia"           => Dict("V"=>0.0234649, "E"=>0.000617953, "F"=>0.018611),
+    "liq"           => Dict("V"=>0.034633, "E"=>0.000133371, "F"=>0.104112),
+    "set"           => Dict("V"=>0.0437043, "E"=>0.00128242, "F"=>0.0819438),
+    "bt"            => Dict("V"=>0.0576748, "E"=>0.0017616, "F"=>0.0515637),)
 
-    # repeat with distributed assembly
-    addprocs(3, exeflags="--project=$(Base.active_project())")
-    @everywhere using ACEpotentials
-    acefit!(model, data;
+acefit!(model1, data1;
+       data_keys...,
+       weights = weights,
+       solver=ACEfit.QR())
+
+
+acefit!(model2, data2;
+       data_keys...,
+       weights = weights,
+       solver=ACEfit.QR())
+
+#test_rmse(results["errors"]["rmse"], rmse_qr, 1e-5)
+
+# repeat with distributed assembly
+addprocs(3, exeflags="--project=$(Base.active_project())")
+@everywhere using ACEpotentials
+acefit!(model, data;
             data_keys...,
             weights = weights,
             solver=ACEfit.QR())
-    rmprocs(workers())
-    #test_rmse(results["errors"]["rmse"], rmse_qr, 1e-5)
-end
+rmprocs(workers())
 
 @testset "LSQR" begin
     rmse_lsqr = Dict(
@@ -86,36 +100,6 @@ end
             solver = ACEfit.RRQR(rtol = 1e-12))
     #test_rmse(results["errors"]["rmse"], rmse_rrqr, 1e-5)
 end
-
-# @testset "SKLEARN_BRR" begin
-#     rmse_brr = Dict(
-#         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-#         "dia"           => Dict("V"=>0.0333241, "E"=>0.0013034, "F"=>0.0255757),
-#         "liq"           => Dict("V"=>0.0347208, "E"=>0.0003974, "F"=>0.1574544),
-#         "set"           => Dict("V"=>0.0619434, "E"=>0.0023868, "F"=>0.1219008),
-#         "bt"            => Dict("V"=>0.0823042, "E"=>0.0032196, "F"=>0.0627417),)
-#     acefit!(model, data;
-#             data_keys...,
-#             weights = weights,
-#             solver = ACEfit.SKLEARN_BRR(tol = 1e-4))
-#     #test_rmse(results["errors"]["rmse"], rmse_brr, 1e-5)
-# end
-
-# @testset "SKLEARN_ARD" begin
-#     rmse_ard = Dict(
-#         "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-#         "dia"           => Dict("V"=>0.1084975, "E"=>0.0070814, "F"=>0.0937790),
-#         "liq"           => Dict("V"=>0.0682268, "E"=>0.0090065, "F"=>0.3693146),
-#         "set"           => Dict("V"=>0.1839696, "E"=>0.0137778, "F"=>0.2883043),
-#         "bt"            => Dict("V"=>0.2413568, "E"=>0.0185958, "F"=>0.1507498),)
-#     acefit!(model, data;
-#             data_keys...,
-#             weights = weights,
-#             solver = ACEfit.SKLEARN_ARD(
-#                 tol = 2e-3, threshold_lambda = 5000, n_iter = 1000))
-#     @warn "The SKLEARN_ARD test tolerance is very loose."
-#     #test_rmse(results["errors"]["rmse"], rmse_ard, 1e-2)
-# end
 
 @testset "BLR" begin
     rmse_blr = Dict(

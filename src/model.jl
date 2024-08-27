@@ -46,7 +46,7 @@ the label of the data to which the parameters will be fitted.
 * `export_json` : path to a file to which the fitted potential will be exported 
    in a JSON format, which can be read from Julia or Python
 """
-function acefit!(model::ACE1Model, raw_data;
+function acefit!(model, raw_data;
                 solver = ACEfit.BLR(),
                 weights = default_weights(),
                 energy_key = "energy", 
@@ -60,7 +60,7 @@ function acefit!(model::ACE1Model, raw_data;
                 export_json = nothing, 
                 verbose=true,
                 kwargs...
-)
+   )
 
    data = map( raw_data ) do data_point
       _apply_weight(

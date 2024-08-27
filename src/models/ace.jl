@@ -13,7 +13,7 @@ import EquivariantModels
 # ------------------------------------------------------------
 #    ACE MODEL SPECIFICATION 
 
-mutable struct ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR} <: AbstractExplicitContainerLayer{(:rbasis,)}
+mutable struct ACEModel{NZ, TRAD, TY, TTEN, TPAIR, TVREF} <: AbstractExplicitContainerLayer{(:rbasis,)}
    _i2z::NTuple{NZ, Int}
    # --------------
    # embeddings of the particles 
@@ -27,7 +27,7 @@ mutable struct ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR} <: AbstractExplicitContain
    # --------------
    #   pair potential & Vref 
    pairbasis::TPAIR 
-   E0s::NTuple{NZ, T}
+   Vref::TVREF    # E0s::NTuple{NZ, T}   
    # --------------
    meta::Dict{String, Any}
 end
@@ -35,10 +35,10 @@ end
 # ------------------------------------------------------------
 #    CONSTRUCTORS AND UTILITIES
 
-# this is terrible : I'm assuming here that there is a unique 
-# output type, which is of course not the case. It is needed temporarily 
-# to make things work with AtomsCalculators and EmpiricalPotentials 
-fl_type(::ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR}) where {NZ, TRAD, TY, TTEN, T, TPAIR} = T 
+# # this is terrible : I'm assuming here that there is a unique 
+# # output type, which is of course not the case. It is needed temporarily 
+# # to make things work with AtomsCalculators and EmpiricalPotentials 
+# fl_type(::ACEModel{NZ, TRAD, TY, TTEN, T, TPAIR}) where {NZ, TRAD, TY, TTEN, T, TPAIR} = T 
 
 const NT_NLM = NamedTuple{(:n, :l, :m), Tuple{Int, Int, Int}}
 
@@ -77,10 +77,32 @@ function _make_Y_spec(maxl::Integer)
 end
 
 
+function _make_Vref_E0s(rbasis, E0s::Nothing)
+   NZ = _get_nz(rbasis)
+   return _make_Vref_E0s(rbasis, [ _i2z(rbasis, i) => 0.0 for i = 1:NZ ] )
+end
+
+# E0s can be anything with (key, value) pairs 
+function _make_Vref_E0s(rbasis, E0s)
+   _convert_E0s(E0s::Union{Dict, NamedTuple}) = E0s 
+   _convert_E0s(E0s::Union{AbstractVector, Tuple}) = Dict(E0s...)
+   _convert_E0s(E0s) = error("E0s must be nothing, a NamedTuple, Dict or list of pairs")
+   
+   NZ = _get_nz(rbasis)
+   V0 = OneBody(_convert_E0s(E0s))
+   if length(V0.E0) != NZ 
+      error("E0s must have the right number of elements")
+   end
+
+   return V0 
+end
+
+
 function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector, 
                              level = TotalDegree(), 
                              pair_basis = nothing, 
-                             E0s = nothing )
+                             E0s = nothing, 
+                             Vref = _make_Vref_E0s(rbasis, E0s), )
 
    # storing E0s with unit
    model_meta = Dict{String, Any}("E0s" => deepcopy(E0s))
@@ -124,27 +146,11 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
    aa_basis.meta["AA_spec"] = AA_spec  # (also store the human-readable spec)
 
-   # process E0s and ustrip any units
-   if isnothing(E0s)
-      NZ = _get_nz(rbasis)
-      E0s = ntuple(i -> 0.0, NZ)
-   elseif E0s isa Dict{Symbol, <: Quantity}
-      NZ = _get_nz(rbasis)
-      _E0s = zeros(NZ)
-      for sym in keys(E0s)
-         idx = findfirst(==(AtomicNumber(sym).z), rbasis._i2z)
-         _E0s[idx] = ustrip(E0s[sym])
-      end
-      E0s = Tuple(_E0s)
-   else
-      error("E0s can either be nothing, or in form of a dictionary with keys 'Symbol' and values 'Uniful.Quantity'.")
-   end
-
    tensor = SparseEquivTensor(a_basis, aa_basis, AA2BB_map, 
                               Dict{String, Any}())
 
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
-                   tensor, pair_basis, E0s, 
+                   tensor, pair_basis, Vref, 
                    model_meta )
 end
 
@@ -224,7 +230,7 @@ function splinify(model::ACEModel, ps::NamedTuple; kwargs...)
                      model.ybasis, 
                      model.tensor, 
                      pairbasis_spl, 
-                     model.E0s,
+                     model.Vref,
                      model.meta)
 end
 
@@ -298,8 +304,9 @@ function evaluate(model::ACEModel,
       val += dot(Apair, (@view ps.Wpair[:, i_z0]))
    end
    # ------------------- 
-   #  E0s 
-   val += model.E0s[i_z0]
+   #  TODO - Vref : assume it is a OneBody 
+   @assert model.Vref isa OneBody
+   val += model.Vref.E0[Z0]
    # ------------------- 
 
    end # @no_escape
@@ -385,8 +392,9 @@ function evaluate_ed(model::ACEModel,
       end
    end
    # ------------------- 
-   #  E0s 
-   Ei += model.E0s[i_z0]
+   #  TODO - generiv Vref, for now assume it is a OneBody 
+   @assert model.Vref isa OneBody
+   Ei += model.Vref.E0[Z0]
    # ------------------- 
 
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -474,8 +482,9 @@ function grad_params(model::ACEModel,
       ∂Wpair[:, i_z0] = Apair
    end
    # ------------------- 
-   #  E0s 
-   Ei += model.E0s[i_z0]
+   #  TODO - generic Vref, assume OneBody for now
+   @assert model.Vref isa OneBody
+   Ei += model.Vref.E0[Z0]
    # ------------------- 
 
 

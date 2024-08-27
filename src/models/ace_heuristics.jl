@@ -1,5 +1,4 @@
 import Random
-import ACEpotentials: ACE1compat 
 
 
 # -------------------------------------------------------

@@ -27,9 +27,11 @@ order = 3
 
 @info("Test ybasis of the Model is used correctly")
 msolid = M.ace_model(; elements = elements, order = order, Ytype = :solid, 
-            level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+            level = level, max_level = max_level, maxl = 8, pair_maxn = 15, 
+            init_WB = :glorot_normal, init_Wpair = :glorot_normal)
 mspherical = M.ace_model(; elements = elements, order = order, Ytype = :spherical, 
-            level = level, max_level = max_level, maxl = 8, pair_maxn = 15, init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+            level = level, max_level = max_level, maxl = 8, pair_maxn = 15, 
+            init_WB = :glorot_normal, init_Wpair = :glorot_normal)
 ps, st = LuxCore.setup(rng, msolid)
 
 for ntest = 1:30 
