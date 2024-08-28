@@ -65,7 +65,7 @@ function _clean_args(kwargs)
       dargs[:pair_rcut] = dargs[:rcut]
    end
 
-   if kwargs[:pure2b] || kwargs[:pure]
+   if dargs[:pure2b] || dargs[:pure]
       error("ACE1compat current does not support `pure2b` or `pure` options.")
    end
 

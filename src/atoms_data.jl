@@ -1,20 +1,164 @@
-import ACEfit
-import JuLIP: Atoms, energy, forces, mat
+import ACEfit, AtomsBase, AtomsCalculators
 using PrettyTables
 using OrderedCollections
 using StaticArrays: SVector
+
+import AtomsBase: AbstractSystem, FlexibleSystem, atomkeys
+import AtomsCalculators: energy_forces_virial, potential_energy, forces, virial 
+import ACEpotentials.Models: energy_forces_virial_basis, length_basis
+
+import ExtXYZ 
+
+# Some utilities 
+
+
+function _f_vec(f::AbstractVector{SVector{D, T}}) where {D, T}
+    return reinterpret(T, f)
+end
+
+function _f_vec(f::AbstractVector{Vector{T}}) where {T}
+    return reduce(vcat, f)
+end
+
+function _f_mat(f::AbstractMatrix{SVector{D, T}}) where {D, T} 
+    return reinterpret(T, f)
+end
+
+function _getfuzzy(coll, key)
+    k = _find_similar_key(coll, key) 
+    if k != nothing 
+        return coll[k] 
+    end 
+    error("Couldn't find $key or similar in collection with keys $(keys(coll))")
+end
+
+_issimilarkey(k1, k2) = lowercase(String(k1)) == lowercase(String(k2))
+
+function _find_similar_key(coll, key) 
+    for k in keys(coll) 
+        if _issimilarkey(k, key)
+            return k 
+        end
+    end
+    return nothing 
+end
+
+function _find_similar_key(sys::ExtXYZ.Atoms, key) 
+    for k in keys(sys.system_data)
+        if _issimilarkey(k, key)
+            return k 
+        end
+    end
+    for k in keys(sys.atom_data)
+        if _issimilarkey(k, key)
+            return k 
+        end
+    end
+    return nothing 
+end
+
+function _get_data_fuzzy(sys::ExtXYZ.Atoms, key)
+    k = _find_similar_key(sys, key) 
+    if k == nothing 
+        error("Couldn't find $key or similar in collection with keys $(keys(sys))")
+    end 
+    if haskey(sys.system_data, k)
+        return sys.system_data[k]
+    end
+    return sys.atom_data[k]    
+end
+
+_has_similar_key(coll, key) = (_find_similar_key(coll, key) != nothing)
+
+# _get_data_fuzzy(sys::AbstractSystem, key::Union{String, Symbol}) = 
+#         _getfuzzy(sys, key)  # sys[Symbol(key)]
+
+# _get_data(sys::AbstractSystem, key::Union{String, Symbol}) = 
+#         sys[Symbol(key)]
+
+function _get_data(sys::ExtXYZ.Atoms, key)
+    if haskey(sys.system_data, key)
+        return sys.system_data[key]
+    elseif haskey(sys.atom_data, key)
+        return sys.atom_data[key]
+    else
+        error("Couldn't find $key in System")
+    end
+end
+
+
+# ~~~~~~~~~~~~~~ to be retired ~~~~~~~~~~~~~~
+
+import JuLIP
+import ACE1x: ACE1Model 
+
+_get_data_fuzzy(sys::JuLIP.Atoms, key) = 
+        _getfuzzy(sys.data, key).data 
+
+_get_data(sys::JuLIP.Atoms, key) = 
+        sys.data[key].data
+
+_has_similar_key(sys::JuLIP.Atoms, key) = _has_similar_key(sys.data, key)
+
+_find_similar_key(sys::JuLIP.Atoms, key) = _find_similar_key(sys.data, key)
+
+function energy_forces_virial(sys::JuLIP.Atoms, model::ACE1Model)
+    e = JuLIP.energy(model.potential, sys)
+    f = JuLIP.forces(model.potential, sys)
+    v = JuLIP.virial(model.potential, sys)
+    return (energy=e, forces=f, virial=v)
+end
+
+function energy_forces_virial_basis(sys::JuLIP.Atoms, model::ACE1Model)
+    e = JuLIP.energy(model.basis, sys)
+    f = JuLIP.forces(model.basis, sys)
+    v = JuLIP.virial(model.basis, sys)
+    f_mat = reduce(hcat, f)
+    return (energy=e, forces=f_mat, virial=v)
+end
+
+function _convert_julip(sys::AbstractSystem) 
+    X = [ ustrip.(u"Å", AtomsBase.position(sys,i) ) for i in 1:length(sys)  ]
+    V = [ ustrip.(u"eV^0.5/u^0.5", AtomsBase.velocity(sys,i) ) for i in 1:length(sys)  ]
+    M = [ ustrip(u"u", AtomsBase.atomic_mass(sys,i) ) for i in 1:length(sys) ]
+    Z = [ (AtomicNumber ∘ AtomsBase.atomic_number)(sys,i) for i in 1:length(sys) ]
+    cell = map( x -> ustrip.(u"Å", x), sys[:bounding_box])
+    pbc = map( x -> x == AtomsBase.Periodic ? true : false , AtomsBase.boundary_conditions(sys))
+
+    return JuLIP.Atoms(X, M .* V, M, Z, hcat(cell...)', pbc)
+end
+
+energy_forces_virial(sys::AbstractSystem, model::ACE1Model) = 
+        energy_forces_virial(_convert_julip(sys), model::ACE1Model)
+
+energy_forces_virial_basis(sys::AbstractSystem, model::ACE1Model) = 
+        energy_forces_virial_basis(_convert_julip(sys), model::ACE1Model)
+
+potential_energy(sys::AbstractSystem, calc::JuLIP.AbstractCalculator) = 
+        JuLIP.energy(calc, _convert_julip(sys))
+
+potential_energy(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
+        JuLIP.energy(calc, sys)
+
+function length_basis(model::ACE1Model)
+    return length(model.basis)
+end
+
+ACEfit.length_basis(model::ACE1Model) = length_basis(model)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export AtomsData, 
        print_rmse_table, print_mae_table, print_errors_tables
 
 struct AtomsData <: ACEfit.AbstractData
-    atoms::Atoms
-    energy_key::Union{String, Nothing}
-    force_key::Union{String, Nothing}
-    virial_key::Union{String, Nothing}
+    system  # an AtomsBase.AbstractSystem object 
+    energy_key::Union{String, Symbol, Nothing}
+    force_key::Union{String, Symbol, Nothing}
+    virial_key::Union{String, Symbol, Nothing}
     weights
     energy_ref
-    function AtomsData(atoms::Atoms;
+    function AtomsData(system;
                        energy_key=nothing,
                        force_key=nothing,
                        virial_key=nothing,
@@ -24,95 +168,97 @@ struct AtomsData <: ACEfit.AbstractData
 
         # set energy, force, and virial keys for this configuration
         # ("nothing" indicates data that are absent or ignored)
-        ek, fk, vk = nothing, nothing, nothing
-        if !isnothing(energy_key)
-            for key in keys(atoms.data)
-                (lowercase(energy_key)==lowercase(key)) && (ek=key)
-            end
-        end
-        if !isnothing(force_key)
-            for key in keys(atoms.data)
-                (lowercase(force_key)==lowercase(key)) && (fk=key)
-            end
-        end
-        if !isnothing(virial_key)
-            for key in keys(atoms.data)
-                (lowercase(virial_key)==lowercase(key)) && (vk=key)
-            end
-        end
+        ek = _find_similar_key(system, energy_key)
+        fk = _find_similar_key(system, force_key)
+        vk = _find_similar_key(system, virial_key)
 
         # set weights for this configuration
-        if "default" in keys(weights)
-            w = weights["default"]
-        else
-            w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
-        end
-        for (key, val) in atoms.data
-            if lowercase(key)==weight_key && (lowercase(val.data) in lowercase.(keys(weights)))
-                w = weights[val.data]
+        w = nothing
+        if _has_similar_key(system, weight_key)
+            cfg_type = _get_data_fuzzy(system, weight_key)
+            if _has_similar_key(weights, cfg_type)
+                w = _getfuzzy(weights, cfg_type)
+            end
+        end 
+        if isnothing(w) 
+            if "default" in keys(weights)
+                w = weights["default"]
+            else
+                w = Dict("E"=>1.0, "F"=>1.0, "V"=>1.0)
             end
         end
 
         if isnothing(v_ref)
             e_ref = 0.0
         else
-            e_ref = energy(v_ref, atoms)
+            e_ref = potential_energy(system, v_ref)
         end
 
-        return new(atoms, ek, fk, vk, w, e_ref)
+        return new(system, ek, fk, vk, w, e_ref)
     end
 end
 
 function ACEfit.count_observations(d::AtomsData)
     return !isnothing(d.energy_key) +
-           3*length(d.atoms)*!isnothing(d.force_key) +
+           3*length(d.system)*!isnothing(d.force_key) +
            6*!isnothing(d.virial_key)
 end
 
-function ACEfit.feature_matrix(d::AtomsData, basis; kwargs...)
-    dm = Array{Float64}(undef, ACEfit.count_observations(d), length(basis))
+
+# TODO: the usage of ustrip in feature_matrix is a bit dangerous. 
+#       it needs to be revisited, basically to unsure that all dimensions 
+#       are in the same units.
+
+function ACEfit.feature_matrix(d::AtomsData, model; kwargs...)
+    dm = Array{Float64}(undef, ACEfit.count_observations(d), length_basis(model))
+    efv = energy_forces_virial_basis(d.system, model)
     i = 1
     if !isnothing(d.energy_key)
-        dm[i,:] .= energy(basis, d.atoms)
+        dm[i,:] .= ustrip(efv.energy)
         i += 1
     end
     if !isnothing(d.force_key)
-        f = mat.(forces(basis, d.atoms))
-        for j in 1:length(basis)
-            dm[i:i+3*length(d.atoms)-1,j] .= f[j][:]
-        end
-        i += 3*length(d.atoms)
+        dm[i:i+3*length(d.system)-1, :] .= ustrip.(_f_mat(efv.forces))
+        i += 3*length(d.system)
     end
     if !isnothing(d.virial_key)
-        v = virial(basis, d.atoms)
-        for j in 1:length(basis)
-            dm[i:i+5,j] .= v[j][SVector(1,5,9,6,3,2)]
+        for j in 1:length_basis(model)
+            dm[i:i+5,j] .= ustrip.( (efv.virial[j])[SVector(1,5,9,6,3,2)] )
         end
         i += 6
     end
     return dm
 end
 
+
+
 function ACEfit.target_vector(d::AtomsData; kwargs...)
     y = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
-        e = d.atoms.data[d.energy_key].data
+        e = _get_data(d.system, d.energy_key) 
         y[i] = e - d.energy_ref
         i += 1
     end
     if !isnothing(d.force_key)
-        f = mat(d.atoms.data[d.force_key].data)
-        y[i:i+3*length(d.atoms)-1] .= f[:]
-        i += 3*length(d.atoms)
+        # f = mat(d.system.data[d.force_key].data)
+        f = _f_vec( _get_data(d.system, d.force_key) )
+        y[i:i+3*length(d.system)-1] .= f
+        i += 3*length(d.system)
     end
     if !isnothing(d.virial_key)
+        try 
         # the following hack is necessary for 3-atom cells:
         #   https://github.com/JuliaMolSim/JuLIP.jl/issues/166
-        #v = vec(d.atoms.data[d.virial_key].data)
-        v = vec(hcat(d.atoms.data[d.virial_key].data...))
+        #v = vec(d.system.data[d.virial_key].data)
+        v = vec(hcat(_get_data(d.system, d.virial_key)...))
         y[i:i+5] .= v[SVector(1,5,9,6,3,2)]
         i += 6
+        catch 
+            @show keys(d.system.data)
+            @show length(d.system)
+            @show d.virial_key 
+        end
     end
     return y
 end
@@ -121,15 +267,15 @@ function ACEfit.weight_vector(d::AtomsData; kwargs...)
     w = Array{Float64}(undef, ACEfit.count_observations(d))
     i = 1
     if !isnothing(d.energy_key)
-        w[i] = d.weights["E"] / sqrt(length(d.atoms))
+        w[i] = d.weights["E"] / sqrt(length(d.system))
         i += 1
     end
     if !isnothing(d.force_key)
-        w[i:i+3*length(d.atoms)-1] .= d.weights["F"]
-        i += 3*length(d.atoms)
+        w[i:i+3*length(d.system)-1] .= d.weights["F"]
+        i += 3*length(d.system)
     end
     if !isnothing(d.virial_key)
-        w[i:i+5] .= d.weights["V"] / sqrt(length(d.atoms))
+        w[i:i+5] .= d.weights["V"] / sqrt(length(d.system))
         i += 6
     end
     return w
@@ -144,16 +290,25 @@ function recompute_weights(raw_data;
 end
 
 function group_type(d::AtomsData; group_key="config_type")
-    group_type = "default"
-    for (k,v) in d.atoms.data
-        if (lowercase(k)==group_key)
-            group_type = v.data
-        end
+    gk = _find_similar_key(d.system, group_key)
+    if gk == nothing
+        gt = "nil"
+    else 
+        gt = _get_data(d.system, gk)
     end
-    return group_type
+
+    # TODO: we could look at some kind of search like this again
+    # for (k,v) in d.system.data
+    #     if (lowercase(k)==group_key)
+    #         group_type = v.data
+    #     end
+    # end
+    return gt
 end
 
-function linear_errors(data::AbstractArray{AtomsData}, model; group_key="config_type", verbose=true)
+
+function linear_errors(data::AbstractArray{AtomsData}, model; 
+                       group_key="config_type", verbose=true)
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
    rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
@@ -174,10 +329,12 @@ function linear_errors(data::AbstractArray{AtomsData}, model; group_key="config_
           merge!(config_num, Dict(c_t=>Dict("E"=>0, "F"=>0, "V"=>0)))
        end
 
+       efv = energy_forces_virial(d.system, model)
+
        # energy errors
        if !isnothing(d.energy_key)
-           estim = energy(model, d.atoms) / length(d.atoms)
-           exact = d.atoms.data[d.energy_key].data / length(d.atoms)
+           estim = ustrip(efv.energy) / length(d.system)
+           exact = _get_data(d.system, d.energy_key) / length(d.system)
            mae["E"] += abs(estim-exact)
            rmse["E"] += (estim-exact)^2
            num["E"] += 1
@@ -188,28 +345,30 @@ function linear_errors(data::AbstractArray{AtomsData}, model; group_key="config_
 
        # force errors
        if !isnothing(d.force_key)
-           estim = mat(forces(model, d.atoms))
-           exact = mat(d.atoms.data[d.force_key].data)
+           estim = ustrip.(_f_vec(efv.forces))
+           exact = _f_vec(_get_data(d.system, d.force_key))
            mae["F"] += sum(abs.(estim-exact))
            rmse["F"] += sum((estim-exact).^2)
-           num["F"] += 3*length(d.atoms)
-           config_mae[c_t]["F"] += sum(abs.(estim-exact))
-           config_rmse[c_t]["F"] += sum((estim-exact).^2)
-           config_num[c_t]["F"] += 3*length(d.atoms)
+           num["F"] += 3*length(d.system)
+           config_mae[c_t]["F"] += sum(abs, estim - exact)
+           config_rmse[c_t]["F"] += sum(abs2, estim - exact)
+           config_num[c_t]["F"] += 3*length(d.system)
        end
 
        # virial errors
        if !isnothing(d.virial_key)
-           estim = virial(model, d.atoms)[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
+           estim = ustrip.( efv.virial[SVector(1,5,9,6,3,2)] / length(d.system) )
            # the following hack is necessary for 3-atom cells:
            #   https://github.com/JuliaMolSim/JuLIP.jl/issues/166
-           #exact = d.atoms.data[d.virial_key].data[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
-           exact = hcat(d.atoms.data[d.virial_key].data...)[SVector(1,5,9,6,3,2)] ./ length(d.atoms)
+           #exact = d.system.data[d.virial_key].data[SVector(1,5,9,6,3,2)] ./ length(d.system)
+        #    exact = hcat(d.system.data[d.virial_key].data...)[SVector(1,5,9,6,3,2)] ./ length(d.system)
+           v = vec(hcat(_get_data(d.system, d.virial_key)...))
+           exact = v[SVector(1,5,9,6,3,2)] / length(d.system)
            mae["V"] += sum(abs.(estim-exact))
            rmse["V"] += sum((estim-exact).^2)
            num["V"] += 6
-           config_mae[c_t]["V"] += sum(abs.(estim-exact))
-           config_rmse[c_t]["V"] += sum((estim-exact).^2)
+           config_mae[c_t]["V"] += sum(abs, estim-exact)
+           config_rmse[c_t]["V"] += sum(abs2, estim-exact)
            config_num[c_t]["V"] += 6
        end
     end
@@ -335,4 +494,4 @@ _has_forces(data::AtomsData; kwargs...) = !isnothing(data.force_key)
 _has_virial(data::AtomsData; kwargs...) = !isnothing(data.virial_key)
 
 
-Base.length(a::AtomsData) = length(a.atoms)
+Base.length(a::AtomsData) = length(a.system)

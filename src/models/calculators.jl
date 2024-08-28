@@ -1,16 +1,17 @@
 
-import EmpiricalPotentials 
-import EmpiricalPotentials: SitePotential, 
+import AtomsBase: atomic_number
+
+import AtomsCalculators: energy_forces_virial, energy_unit, length_unit 
+
+import Random 
+import AtomsCalculatorsUtilities
+import AtomsCalculatorsUtilities.SitePotentials: SitePotential, 
                             cutoff_radius, 
                             eval_site, 
                             eval_grad_site, 
                             site_virial, 
                             PairList, 
-                            get_neighbours, 
-                            atomic_number
-
-import AtomsCalculators
-import AtomsCalculators: energy_forces_virial
+                            get_neighbours
 
 using Folds, ChunkSplitters, Unitful, NeighbourLists, 
       Optimisers, LuxCore, ChainRulesCore 
@@ -23,14 +24,16 @@ mutable struct ACEPotential{MOD} <: SitePotential
    st 
 end
 
-ACEPotential(model) = ACEPotential(model, nothing, nothing)
+function ACEPotential(model) 
+   ps = initialparameters(Random.GLOBAL_RNG, model) 
+   st = initialstates(Random.GLOBAL_RNG, model)
+   ACEPotential(model, ps, st)
+end
 
 # TODO: allow user to specify what units the model is working with
 
-energy_unit(::ACEPotential) = 1.0u"eV"
-distance_unit(::ACEPotential) = 1.0u"Å"
-force_unit(V) = energy_unit(V) / distance_unit(V)
-Base.zero(V::ACEPotential) =  zero(energy_unit(V))
+energy_unit(::ACEPotential) = u"eV"
+length_unit(::ACEPotential) = u"Å"
 
 initialparameters(rng::AbstractRNG, V::ACEPotential) = initialparameters(rng, V.model) 
 initialstates(rng::AbstractRNG, V::ACEPotential) = initialstates(rng, V.model)
@@ -49,14 +52,14 @@ function set_parameters!(V::ACEPotential, θ::AbstractVector{<: Number})
 end
 
 # --------------------------------------------------------------- 
-#   EmpiricalPotentials / SitePotential based implementation 
+#   AtomsCalculatorsUtilities / SitePotential based implementation 
 #
 #   this currently doesn't know how to handle ps and st 
 #   it assumes implicitly without checking that the model is 
 #   storing its own parameters. 
 
 cutoff_radius(V::ACEPotential{<: ACEModel}) = 
-      maximum(x.rcut for x in V.model.rbasis.rin0cuts) * distance_unit(V)
+      maximum(x.rcut for x in V.model.rbasis.rin0cuts) * length_unit(V)
 
 eval_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0) = 
       evaluate(V.model, Rs, Zs, z0, V.ps, V.st) 
@@ -72,7 +75,6 @@ end
 #   but basically copied from the EmpiricalPotentials implementation 
 
 import AtomsBase
-using EmpiricalPotentials: PairList, get_neighbours, site_virial
 
 using Unitful: ustrip
 _ustrip(x) = ustrip(x)
@@ -91,24 +93,25 @@ function energy_forces_virial_serial(
          nlist    = PairList(at, cutoff_radius(V)), 
          )
 
-   T = fl_type(V.model) # this is ACE specific 
-   energy = zero(T)
-   forces = zeros(SVector{3, T}, length(at))
-   virial = zero(SMatrix{3, 3, T})
+   uE = energy_unit(V)
+   uF = force_unit(V)         
+   energy = AtomsCalculators.zero_energy(at, V) 
+   forces = AtomsCalculators.zero_forces(at, V)
+   virial = AtomsCalculators.zero_virial(at, V)
 
    for i in domain
       Js, Rs, Zs, z0 = get_neighbours(at, V, nlist, i) 
       v, dv = evaluate_ed(V.model, Rs, Zs, z0, ps, st)
-      energy += v
+      energy += v * uE 
       for α = 1:length(Js) 
-         forces[Js[α]] -= dv[α]
-         forces[i]     += dv[α]
+         forces[Js[α]] -= dv[α] * uF 
+         forces[i]     += dv[α] * uF 
       end
-      virial += _site_virial(dv, Rs)
+      virial += _site_virial(dv, Rs) * uE 
    end
-   return (energy = energy * energy_unit(V), 
-           forces = forces * force_unit(V), 
-           virial = virial * energy_unit(V) )
+   return (energy = energy, 
+           forces = forces, 
+           virial = virial )
 end
 
 
@@ -121,10 +124,9 @@ function energy_forces_virial(
          kwargs...
          )
 
-   T = fl_type(V.model) # this is ACE specific 
-   init_e() = zero(T) * energy_unit(V)
-   init_f() = zeros(SVector{3, T}, length(at)) * force_unit(V)
-   init_v() = zero(SMatrix{3, 3, T}) * energy_unit(V)
+   init_e() = AtomsCalculators.zero_energy(at, V) 
+   init_f() = AtomsCalculators.zero_forces(at, V)
+   init_v() = AtomsCalculators.zero_virial(at, V)
 
    # TODO: each task needs its own state if that is where  
    #       the temporary arrays will be stored? 
@@ -164,7 +166,7 @@ function pullback_EFV(Δefv,
                kwargs...
                )
 
-   T = fl_type(V.model) 
+   T = typeof(ustrip(AtomsCalculators.zero_energy(at, V)))
    ps_vec, _restruct = destructure(ps)
    TP = promote_type(eltype(ps_vec), T) 
 
@@ -252,6 +254,16 @@ end
 # --------------------------------------------------------
 #   Basis evaluation 
 
+function length_basis(calc::ACEPotential{<: ACEModel})
+   return length_basis(calc.model)
+end
+
+import ACEfit
+ACEfit.length_basis(model::ACEPotential) = length_basis(model.model)
+
+energy_forces_virial_basis(at, calc::ACEPotential{<: ACEModel}) = 
+      energy_forces_virial_basis(at, calc, calc.ps, calc.st)
+
 
 function energy_forces_virial_basis(
             at, calc::ACEPotential{<: ACEModel}, ps, st;
@@ -265,8 +277,9 @@ function energy_forces_virial_basis(
    Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, 1)            
    E1 = evaluate_basis(calc.model, Rs, Zs, z0, ps, st)
    N_basis = length(E1)
-   T = fl_type(calc.model) # this is ACE specific 
 
+   _e0 = AtomsCalculators.zero_energy(at, calc)
+   T = typeof(ustrip(_e0))
    E = fill(zero(T) * energy_unit(calc), N_basis)
    F = fill(zero(SVector{3, T}) * force_unit(calc), length(at), N_basis)
    V = fill(zero(SMatrix{3, 3, T}) * energy_unit(calc), N_basis)
