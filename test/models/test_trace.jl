@@ -1,11 +1,12 @@
 
-
 using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 
 ##
 
 using Test, ACEbase
 using ACEbase.Testing: print_tf, println_slim
+using AtomsBase, AtomsBuilder, AtomsCalculators
+AB = AtomsBuilder
 
 using ACEpotentials
 M = ACEpotentials.Models
@@ -24,28 +25,17 @@ order = 4
 
 ##
 
-NZ = length(elements)
-rin0cuts = M._default_rin0cuts(elements)
-maxn = 6
-maxq = maxlevel * 2
-level = M.TraceLevel(maxn)
-
-rbasis = M.ace_learnable_Rnlrzz(; max_level = max_level, level = level, 
-                                   maxl = maxlevel, maxn = maxn, 
-                                   maxq = maxq, 
-                                   elements = elements, 
-                                   rin0cuts = rin0cuts, 
-                                   Winit = :glorot_normal)
-
-
-rspec = rbasis.spec  
-aa_spec = M.sym_trace_spec(; order=order, r_spec = rspec, max_level = maxlevel)                                 
-
-##
-
 model = M.trace_model(; elements=elements, 
                         order=order, 
                         max_level = maxlevel, 
                         maxn = 6, 
                         pair_maxn = 10, ) 
 
+potential = M.ACEPotential(model)   
+
+sys = AB.bulk(:C, cubic=true)*2
+AB.randz!(sys, [:C => 0.4, :O => 0.2, :H => 0.4])
+AB.rattle!(sys, 0.1)
+
+potential.ps.WB[:,:] .= randn(size(potential.ps.WB))
+efv = M.energy_forces_virial(sys, potential)

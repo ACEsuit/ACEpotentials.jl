@@ -41,5 +41,7 @@ include("calculators.jl")
 
 include("utils.jl")
 
+include("trace.jl")
+
 
 end 

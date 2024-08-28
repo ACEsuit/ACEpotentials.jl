@@ -102,6 +102,8 @@ function trace_model(; elements = nothing,
       end
    end
 
+   # this is a naive spec generator and the AA_spec is therefore much 
+   # too big. But it will be sparsified in the symmetrization step 
    AA_spec = sym_trace_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
@@ -111,7 +113,7 @@ function trace_model(; elements = nothing,
    model.meta["model_type"] = "trace"
    model.meta["tensor_format"] = "symcp"
 
-   return nothing
+   return model
 end
 
 
@@ -134,8 +136,8 @@ end
 function _mrange(ll) 
    MM1 = CartesianIndices( ntuple(i -> -ll[i]:ll[i], length(ll)) )
    MM2 = [ mm.I for mm in MM1 ] 
-   MM3 = filter( mm -> sum(mm) == 0, MM2 ) 
-   return MM3 
+   # MM3 = filter( mm -> sum(mm) == 0, MM2 ) 
+   return MM2
 end
 
 
@@ -161,9 +163,9 @@ function sym_trace_spec(; order = nothing,
    NT_NLM = NamedTuple{(:n, :l, :m), Tuple{Int, Int, Int}}
    AA_spec = Vector{NT_NLM}[] 
    
-   for n = 1:maxn
-      for ll in LL 
-         for mm in _mrange(ll) 
+   for ll in LL 
+      for mm in _mrange(ll) 
+         for n = 1:maxn
             bb = [ (n = n, l = ll[i], m = mm[i], ) for i = 1:length(ll) ]
             push!(AA_spec, bb)
          end
