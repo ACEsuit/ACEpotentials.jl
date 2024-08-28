@@ -61,6 +61,20 @@ function _initialparameters(rng, basis::LearnableRnlrzzBasis)
       error("Unknown key Winit = $(Winit) to initialize radial basis weights.")
    end 
 
+   if haskey(basis.meta, "radial_scaling")
+      scal = basis.meta["radial_scaling"]
+      if scal[1] == :algebraic
+         p = scal[2]
+         for i = 1:NZ, j = 1:NZ, i_nl = 1:len_nl
+            for q = 1:len_q
+               Wnlq[i_nl, q, i, j] *= (1/max(1, q))^p
+            end
+         end
+      else
+         error("Unknown radial scaling $scal")
+      end
+   end
+
    return ps 
 end
 
