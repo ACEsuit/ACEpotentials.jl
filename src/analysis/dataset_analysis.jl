@@ -1,7 +1,7 @@
 
 using JuLIP: Atoms, energy, cutoff
 using JuLIP.Potentials: AbstractZList
-
+using LinearAlgebra
 
 function copy_zz_sym!(D::Dict)
    _zz = collect(keys(D))

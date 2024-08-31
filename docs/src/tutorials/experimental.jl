@@ -28,8 +28,8 @@ fpot = ACEpotentials.Experimental.fast_evaluator(model);
 
 for ntest = 1:10
    at = rattle!(rand(data), 0.01) 
-   E = energy(model.potential, at) 
-   E_fast = energy(fpot, at)
+   E = JuLIP.energy(model.potential, at) 
+   E_fast = JuLIP.energy(fpot, at)
    @show abs(E - E_fast) 
 end;
 
@@ -37,13 +37,13 @@ end;
 # new evaluator. Note that the speedup will be different depending on 
 # the size of the model and the architecture of the computer.
 
-forces(model.potential, data[1]);
-forces(fpot, data[1]);
+JuLIP.forces(model.potential, data[1]);
+JuLIP.forces(fpot, data[1]);
 print("Energy, old evaluator: ")
-@time for d in data; energy(model.potential, d); end
+@time for d in data; JuLIP.energy(model.potential, d); end
 print("Energy, new evaluator: ")
-@time for d in data; energy(fpot, d); end
+@time for d in data; JuLIP.energy(fpot, d); end
 print("Forces, old evaluator: ")
-@time for d in data; forces(model.potential, d); end
+@time for d in data; JuLIP.forces(model.potential, d); end
 print("Forces, new evaluator: ")
-@time for d in data; forces(fpot, d); end
+@time for d in data; JuLIP.forces(fpot, d); end

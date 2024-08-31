@@ -81,11 +81,11 @@ ACEpotentials.linear_errors(test, pot_1);
 @info("Second Potential: ")
 ACEpotentials.linear_errors(test, pot_2);
 
-# If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS.
+# If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS. This functionality is currently disabled.
+# 
+# # save_potential("./TiAl_tutorial_pot.json", pot_1)
 
-save_potential("./TiAl_tutorial_pot.json", pot_1)
-
-# The fitted potential can also be exported to a format compatible with LAMMPS (ML-PACE)
-
-export2lammps("./TiAl_tutorial_pot.yace", pot_1)
+# The fitted potential can also be exported to a format compatible with LAMMPS (ML-PACE). This functionality is currently disabled.
+#
+# # export2lammps("./TiAl_tutorial_pot.yace", pot_1)
 
