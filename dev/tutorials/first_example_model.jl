@@ -32,8 +32,8 @@ data_keys = (energy_key = "energy", force_key = "forces")
 function gen_dat()
    sw = StillingerWeber() 
    at = rattle!(bulk(:Si, cubic=true) * rand(2:3), 0.3)
-   set_data!(at, data_keys.energy_key, energy(sw,at))
-   set_data!(at, data_keys.force_key, forces(sw,at))
+   set_data!(at, data_keys.energy_key, JuLIP.energy(sw,at))
+   set_data!(at, data_keys.force_key, JuLIP.forces(sw,at))
    return at
 end
 
