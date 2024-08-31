@@ -81,7 +81,7 @@ acefit!(model1b, data2;
 acefit!(model2, data2;
        data_keys...,
        weights = weights,
-       solver=ACEfit.QR())      
+       solver=ACEfit.QR())
 ##
 
 err11 = ACEpotentials.linear_errors(data1, model1a; data_keys..., weights=weights)
@@ -91,7 +91,7 @@ err22 = ACEpotentials.linear_errors(data2, model2; data_keys..., weights=weights
 @show compare_errors(err11, err22)
 @test compare_errors(err11, err22) < 0.2
 
-@warn("The model1 - data2 test fails: probably a JuLIP converstion error")
+@warn("The model1 - data2 test fails: probably a JuLIP conversion error")
 @show compare_errors(err11, err21)
 
 ##

@@ -170,7 +170,7 @@ println()
 @info("Test splinified calculator basis usage")
 
 for ntest = 1:10
-   local ps_lin, st_lin, at, efv, _restruct
+   local ps_lin, st_lin, at, efv, _restruct, ps_vec
 
    ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
