@@ -27,17 +27,16 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-          # - x86 (this fails, why?)
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.arch }}
       - uses: actions/setup-python@v2
         with: 
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v1
+      - uses: julia-actions/cache@v2
         env:
           cache-name: cache-artifacts
         with:
@@ -109,8 +108,8 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
       - run: |
