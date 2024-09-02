@@ -2,12 +2,10 @@ using Pkg
 Pkg.activate(joinpath(@__DIR__(), "../"))
 
 using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
-      Unitful, Zygote, Optimisers, Folds, Printf, Optim, Random, JSON, ArgParse
+      Unitful, Zygote, Optimisers, Folds, Printf, Optim, Random, JSON, ArgParse, ExtXYZ, Dates
 
 M = ACEpotentials.Models
 rng = Random.GLOBAL_RNG
-
-include("../docs/src/newkernels/llsq.jl") 
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 @add_arg_table parser begin
@@ -28,17 +26,6 @@ args = parse_args(parser)
 # load from json
 args_dict = load_dict(args["params"])
 
-# TODO: make it work later, mt assemble is not working with the new kernel yet
-# nprocs = args["num-blas-threads"]
-# if nprocs > 1
-#     using LinearAlgebra
-#     @info "Using $nprocs threads for BLAS"
-#     BLAS.set_num_threads(nprocs)
-#     controller = pyimport("threadpoolctl")["ThreadpoolController"]()
-#     controller.limit(limits=nprocs, user_api="blas")
-#     pyimport("pprint")["pprint"](controller.select(user_api="blas").info())
-# end
-
 @info("making ACEmodel")
 model = ACEpotentials.make_acemodel(args_dict["model"])
 
@@ -46,34 +33,41 @@ model = ACEpotentials.make_acemodel(args_dict["model"])
 ps, st = Lux.setup(rng, model)
 calc_model = M.ACEPotential(model, ps, st)
 
-# load data from example dataset, in practice it should be 
-# ```
-# train = read_extxyz(args_dict["data"]["in_data"]["train_file"])
-# test = read_extxyz(args_dict["data"]["in_data"]["test_file"])
-# ```
-train, test, _ = ACEpotentials.example_dataset(args_dict["data"]["in_data"]["train_file"])
-train = train[1:3:end]
+train = ExtXYZ.load(args_dict["data"]["in_data"]["train_file"])
+test = ExtXYZ.load(args_dict["data"]["in_data"]["test_file"])
 
 # wrap this into AtomsBase format
-train2 = FlexibleSystem.(train)
-test2 = FlexibleSystem.(test)
+# train2 = FlexibleSystem.(train)
+# test2 = FlexibleSystem.(test)
 
-# things that we should get from dict
-data_keys = (E_key = :energy, F_key = :force, )
-
-# TODO: in here weight should be also depending on config_type
-wE = 30.0; wF = 1.0; wV = 1.0
-weights = (wE = wE/u"eV", wF = wF / u"eV/Å", )
-A, y = LLSQ.assemble_lsq(calc_model, train2, weights, data_keys)
-θ = ACEfit.trunc_svd(svd(A), y, 1e-8)
-calc_model2_fit = LLSQ.set_linear_params(calc_model, θ)
-
-##
+data_keys = [:energy_key => "dft_energy",
+             :force_key => "dft_force",
+             :virial_key => "dft_virial"]
+weights = Dict("default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
+               "liq" => Dict("E"=>10.0, "F"=>0.66, "V"=>0.25))
+        
+acefit!(calc_model, train;
+        data_keys...,
+        weights = weights,
+        solver=ACEfit.LSQR())
 
 # errors
-E_train, F_train = LLSQ.rmse(train2, calc_model2_fit)
-E_test, F_test = LLSQ.rmse(test2, calc_model2_fit)
+E_train, F_train = ACEpotentials.linear_errors(train, calc_model; data_keys..., weights=weights)
+E_test, F_test = ACEpotentials.linear_errors(test, calc_model; data_keys..., weights=weights)
 
-@printf("       |      E    |    F  \n")
-@printf(" train | %.2e  |  %.2e  \n", E_train, F_train)
-@printf("  test | %.2e  |  %.2e  \n", E_test, F_test)
+
+function save_results_to_disk(E_train, F_train, E_test, F_test; dir="results", filename="results_log.txt")
+    mkpath(dir)
+    content = """
+    Files created: $(now())
+    ----------------------------------------
+           |      E    |    F  
+     train | $(E_train)  |  $(F_train)  
+      test | $(E_test)  |  $(F_test)  
+    """
+    open(joinpath(dir, filename), "w") do file
+        write(file, content)
+    end
+end
+
+save_results_to_disk(E_train, F_train, E_test, F_test)
