@@ -59,7 +59,7 @@ E_test, F_test = ACEpotentials.linear_errors(test, calc_model; data_keys..., wei
 function save_results_to_disk(E_train, F_train, E_test, F_test; dir="results", filename="results_log.txt")
     mkpath(dir)
     content = """
-    Files created: $(now())
+    Files created: $(now()) 
     ----------------------------------------
            |      E    |    F  
      train | $(E_train)  |  $(F_train)  
