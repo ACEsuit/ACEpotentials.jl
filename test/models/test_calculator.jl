@@ -13,7 +13,8 @@ M = ACEpotentials.Models
 using Optimisers, ForwardDiff, Unitful
 import AtomsCalculators
 
-using AtomsBase, AtomsBuilder, EmpiricalPotentials
+using AtomsBase, AtomsBuilder
+# using EmpiricalPotentials
 AB = AtomsBuilder
 
 using AtomsCalculatorsUtilities.SitePotentials: get_neighbours

@@ -1,8 +1,7 @@
 
-using JuLIP: AtomicNumber
-using StaticArrays: SMatrix
-import ACE1x
 
+using StaticArrays: SMatrix
+import AtomsBase: ChemicalSpecies, atomic_number 
 
 _i2z(obj, i::Integer) = obj._i2z[i] 
 
@@ -25,8 +24,10 @@ end
 
 function _convert_zlist(zlist) 
    if eltype(zlist) == Symbol 
-      return ntuple(i -> convert(Int, AtomicNumber(zlist[i])), length(zlist))
-   end
+      return _convert_zlist( ntuple(i -> convert(Int, ChemicalSpecies(zlist[i])), length(zlist)) ) 
+   elseif eltype(zlist) == ChemicalSpecies
+      return tuple( atomic_number.(zlist)... )
+   end 
    return ntuple(i -> convert(Int, zlist[i]), length(zlist))
 end
 

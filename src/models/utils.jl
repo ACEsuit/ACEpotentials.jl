@@ -99,8 +99,6 @@ function get_nnll_spec(model::ACEModel)
 end
 
 
-import ACE1 
-
 rand_atenv(model::ACEModel, Nat) = rand_atenv(model.rbasis, Nat)
 
 function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat; 
