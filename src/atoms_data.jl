@@ -144,7 +144,7 @@ function length_basis(model::ACE1Model)
     return length(model.basis)
 end
 
-ACEfit.length_basis(model::ACE1Model) = length_basis(model)
+ACEfit.basis_size(model::ACE1Model) = length_basis(model)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
