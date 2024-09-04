@@ -259,7 +259,7 @@ function length_basis(calc::ACEPotential{<: ACEModel})
 end
 
 import ACEfit
-ACEfit.basis_size(model::ACEPotential) = length_basis(model.model)
+ACEfit.basis_size(calc::ACEPotential) = length_basis(calc)
 
 energy_forces_virial_basis(at, calc::ACEPotential{<: ACEModel}) = 
       energy_forces_virial_basis(at, calc, calc.ps, calc.st)

@@ -109,10 +109,15 @@ function energy_forces_virial(sys::JuLIP.Atoms, model::ACE1Model)
     return (energy=e, forces=f, virial=v)
 end
 
-function energy_forces_virial_basis(sys::JuLIP.Atoms, model::ACE1Model)
-    e = JuLIP.energy(model.basis, sys)
-    f = JuLIP.forces(model.basis, sys)
-    v = JuLIP.virial(model.basis, sys)
+import JuLIP.MLIPs: IPSuperBasis
+
+energy_forces_virial_basis(sys::JuLIP.Atoms, model::ACE1Model) = 
+        energy_forces_virial_basis(sys, model.basis) 
+
+function energy_forces_virial_basis(sys::JuLIP.Atoms, basis::IPSuperBasis)
+    e = JuLIP.energy(basis, sys)
+    f = JuLIP.forces(basis, sys)
+    v = JuLIP.virial(basis, sys)
     f_mat = reduce(hcat, f)
     return (energy=e, forces=f_mat, virial=v)
 end
@@ -129,10 +134,10 @@ function _convert_julip(sys::AbstractSystem)
 end
 
 energy_forces_virial(sys::AbstractSystem, model::ACE1Model) = 
-        energy_forces_virial(_convert_julip(sys), model::ACE1Model)
+        energy_forces_virial(_convert_julip(sys), model)
 
-energy_forces_virial_basis(sys::AbstractSystem, model::ACE1Model) = 
-        energy_forces_virial_basis(_convert_julip(sys), model::ACE1Model)
+energy_forces_virial_basis(sys::AbstractSystem, model::Union{ACE1Model, IPSuperBasis}) = 
+        energy_forces_virial_basis(_convert_julip(sys), model)
 
 potential_energy(sys::AbstractSystem, calc::JuLIP.AbstractCalculator) = 
         JuLIP.energy(calc, _convert_julip(sys))
@@ -140,11 +145,22 @@ potential_energy(sys::AbstractSystem, calc::JuLIP.AbstractCalculator) =
 potential_energy(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
         JuLIP.energy(calc, sys)
 
+forces(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
+        JuLIP.forces(calc, sys)
+
+virial(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
+        JuLIP.virial(calc, sys)
+
 function length_basis(model::ACE1Model)
     return length(model.basis)
 end
 
-ACEfit.basis_size(model::ACE1Model) = length_basis(model)
+function length_basis(basis::IPSuperBasis)
+    return length(basis)
+end
+
+
+ACEfit.basis_size(model::Union{ACE1Model, IPSuperBasis}) = length_basis(model)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
