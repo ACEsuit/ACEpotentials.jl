@@ -1,4 +1,5 @@
 using LinearAlgebra: Diagonal
+import ACEpotentials.Models: ACEPotential
 
 # --------------------------------------------------
 #   different notions of "level" / total degree.
@@ -78,6 +79,9 @@ function _coupling_scalings(model)
    return scal 
 end
 
+smoothness_prior(model::ACEPotential, f; kwargs...) = 
+      smoothness_prior(model.model, f; kwargs...)
+
 function smoothness_prior(model, f)
    nnll = _nnll_basis(model)
    γ = zeros(length(nnll))
@@ -96,6 +100,9 @@ exp_smoothness_prior(model; wn = 1.0, wl = 2/3) =
 gaussian_smoothness_prior(model; wl = 1/sqrt(2), wn = 1/sqrt(2)) = 
       smoothness_prior(model, bb -> exp( sum( (b.l/wl)^2 + (b.n/wn)^2 for b in bb) ))
 
+
+algebraic_smoothness_prior_ace1(model::ACEPotential; kwargs...) = 
+         algebraic_smoothness_prior_ace1(model.model, kwargs...)
 
 function algebraic_smoothness_prior_ace1(model; p = 4, wL = 3/2) 
    nnll = _nnll_basis(model)

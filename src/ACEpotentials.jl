@@ -33,4 +33,18 @@ include("example_data.jl")
 # TODO: this is basically the UFACE interface which we need to revive
 # include("experimental.jl")
 
+
+# ----------------- Exports that seem important to make the tutorials work. 
+
+import ACEpotentials.ACE1compat: ace1_model 
+import ACEpotentials.Models: algebraic_smoothness_prior, 
+                             exp_smoothness_prior, 
+                             gaussian_smoothness_prior
+
+export ace1_model,
+       length_basis, 
+       algebraic_smoothness_prior, 
+       exp_smoothness_prior, 
+       gaussian_smoothness_prior 
+
 end
