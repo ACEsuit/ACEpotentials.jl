@@ -66,7 +66,7 @@ makedocs(;
         "Home" => "index.md",
         "Getting Started" => Any[
             "gettingstarted/installation.md",
-            "gettingstarted/saving-and-loading.md", ] 
+            "gettingstarted/saving-and-loading.md", ], 
         "Tutorials" => Any[
                 "tutorials/index.md",
                 "literate_tutorials/first_example_model.md",
