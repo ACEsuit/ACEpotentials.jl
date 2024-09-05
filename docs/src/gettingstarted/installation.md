@@ -18,7 +18,7 @@ If these instructions don't make sense please see the detailed instructions belo
    Pkg.add("ACEpotentials")
    ```
 
-   `ACEpotentials` will come with the most important packages you need, in particular `ACE1.jl` and `ACEfit.jl`.
+   `ACEpotentials` will come with the most important packages you need, in particular `ACEfit.jl` and various `AtomsBase.jl` related packages. 
 
 3. You need to activate the project folder when starting julia.
 This can be done by starting julia with `julia --project=pathtoproject` command,
