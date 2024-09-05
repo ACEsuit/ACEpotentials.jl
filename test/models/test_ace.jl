@@ -4,8 +4,8 @@
 
 ##
 
-using Test, ACEbase
-using ACEbase.Testing: print_tf, println_slim
+using Test, ACEbase 
+using Polynomials4ML.Testing: print_tf, println_slim
 
 using ACEpotentials
 M = ACEpotentials.Models

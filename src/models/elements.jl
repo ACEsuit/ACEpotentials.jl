@@ -24,7 +24,8 @@ end
 
 function _convert_zlist(zlist) 
    if eltype(zlist) == Symbol 
-      return _convert_zlist( ntuple(i -> convert(Int, ChemicalSpecies(zlist[i])), length(zlist)) ) 
+      return _convert_zlist( ntuple(i -> atomic_number( ChemicalSpecies(zlist[i]) ), 
+                                    length(zlist) ) ) 
    elseif eltype(zlist) == ChemicalSpecies
       return tuple( atomic_number.(zlist)... )
    end 

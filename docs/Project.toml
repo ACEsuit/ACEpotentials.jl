@@ -1,10 +1,10 @@
 [deps]
-ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
-ACE1x = "5cc4c08c-8782-4a30-af6d-550b302e9707"
+# ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
+# ACE1x = "5cc4c08c-8782-4a30-af6d-550b302e9707"
 ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
 ACEpotentials = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
+# JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -13,7 +13,7 @@ MultivariateStats = "6f286f6a-111f-5878-ab1e-185364afe411"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-UltraFastACE = "8bb720ee-daac-48fb-af73-8a282a9cbbd7"
+# UltraFastACE = "8bb720ee-daac-48fb-af73-8a282a9cbbd7"
 
 [compat]
 Literate = "2.13.2,3"

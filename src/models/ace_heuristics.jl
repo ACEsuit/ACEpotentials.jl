@@ -1,4 +1,5 @@
 import Random
+import ACEpotentials: DefaultHypers
 
 
 # -------------------------------------------------------
@@ -186,7 +187,7 @@ end
 
 function _default_rin0cuts(zlist; rinfactor = 0.0, rcutfactor = 2.5)
    function rin0cut(zi, zj) 
-      r0 = ACE1x.get_r0(zi, zj)
+      r0 = DefaultHypers.bond_len(zi, zj)
       return (rin = r0 * rinfactor, r0 = r0, rcut = r0 * rcutfactor)
    end
    NZ = length(zlist)

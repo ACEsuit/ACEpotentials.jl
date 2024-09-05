@@ -120,13 +120,18 @@ function rand_atenv(rbasis::Union{LearnableRnlrzzBasis, SplineRnlrzzBasis}, Nat;
       end 
       push!(rs, r_ij)
    end
-   Rs = [ r * ACE1.Random.rand_sphere() for r in rs ]
+   Rs = [ r * rand_sphere() for r in rs ]
    return Rs, zs, z0 
 end
 
 
-using StaticArrays: @SMatrix 
+using StaticArrays: @SMatrix, @SVector 
 using LinearAlgebra: qr
+
+function rand_sphere() 
+   𝐫 = @SVector randn(3) 
+   return 𝐫 / norm(𝐫)
+end
 
 function rand_rot()
    A = @SMatrix randn(3, 3) 

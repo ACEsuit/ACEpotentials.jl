@@ -10,7 +10,7 @@ _lengthscales_path = joinpath(@__DIR__, "..",  "data",
 _lengthscales = YAML.load_file(_lengthscales_path)
 
 bond_len(s::Symbol) = bond_len(ChemicalSpecies(s))
-bond_len(s::ChemicalSpecies) = bond_len(atomic_number(s.Z))
+bond_len(s::ChemicalSpecies) = bond_len(atomic_number(s.atomic_number))
 
 
 function bond_len(z::Integer)   # assume Integer == atomic number 
