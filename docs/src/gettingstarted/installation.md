@@ -28,34 +28,6 @@ using Pkg
 pkg"activate pathtoproject"
 ```
 
-### Setting up the Python ASE calculator
-
-!!! warning 
-    The current version of ACEpotentials does not have a tested ASE interface. If you need an ASE interface, consider using a version 
-    < 0.8 of ACEpotentials.
-
-<!-- 
-!!! warning
-    At present, it is necessary to have `ASE`, `JuLIP` and `ACE1` installed in your Julia project to use `pyjulip`.
-
-
-We use a wrapper called `pyjulip` to call julia and evaluate ACE potentials. In a terminal, with the correct julia project and python environment selected, run the following code:
-
-```
-python -m pip install julia
-python -c "import julia; julia.install()"
-```
-
-Make sure to use the correct python and pip, e.g. the ones that are in the correct Conda environment.
-Then, to set up `pyjulip`:
-
-```
-git clone https://github.com/casv2/pyjulip.git
-cd pyjulip
-pip install .
-``` 
--->
-
 
 ### Detailed Instructions
 
@@ -89,6 +61,32 @@ Depending on your usage you may also need to add other packages, e.g. `AtomsBase
 #### Returning to a project
 
 When returning to a project, there are several methods for reactivating it. One is to simply `activate .` in the package manager, as above. Alternatively set the `JULIA_PROJECT` environment variable to the directory with `Project.toml` before starting julia, or call julia as `julia --project=<dir>`. Special syntax like `JULIA_PROJECT=@.` or `julia --project=@.` searches the current directory and its parents for a `Project.toml` file.
+
+
+### Setting up the Python ASE calculator
+
+!!! warning 
+    The current version of ACEpotentials does not have a tested ASE interface. If you need an ASE interface, consider using a version 
+    < 0.8 of ACEpotentials.
+
+
+
+We use a wrapper called `pyjulip` to call julia and evaluate ACE potentials. In a terminal, with the correct julia project and python environment selected, run the following code:
+
+```
+python -m pip install julia
+python -c "import julia; julia.install()"
+```
+
+Make sure to use the correct python and pip, e.g. the ones that are in the correct Conda environment.
+Then, to set up `pyjulip`:
+
+```
+git clone https://github.com/casv2/pyjulip.git
+cd pyjulip
+pip install .
+``` 
+
 
 ### Trouble-shooting
 

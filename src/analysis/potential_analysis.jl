@@ -1,18 +1,29 @@
 
-using JuLIP: Atoms, energy, cutoff
+using AtomsBase: FastSystem, ChemicalSpecies, Unitful
+using AtomsCalculatorsUtilities.SitePotentials: cutoff_radius 
+using AtomsCalculators: potential_energy, energy_unit 
+using StaticArrays
 
-__2z(z::AtomicNumber) = z 
-__2z(s::Symbol) = AtomicNumber(s)
-__2z(s::String) = AtomicNumber(Symbol(s))
+__2z(z::Integer) = z 
+__2z(s::Symbol) = atomic_number(s)
+__2z(s::String) = atomic_number(Symbol(s))
+__2z(s::ChemicalSpecies) = atomic_number(s)
 
 
 """
 `function at_dimer(r, z1, z0)` : generates a dimer with separation `r` and 
 atomic numbers `z1` and `z0`.  (can also use symbols or strings)
 """
-at_dimer(r, z1, z0) = Atoms(X = [ SVector(0.0,0.0,0.0), SVector(r, 0.0, 0.0)], 
-                            Z = __2z.([z0, z1]), pbc = false, 
-                            cell = [r+1 0 0; 0 1 0; 0 0 1])
+function at_dimer(r, z1, z0) 
+   uL = unit(r)
+   s = ustrip(r)  
+   box = ( SA[s+1, 0.0, 0.0]*uL, SA[0.0, 1.0, 0.0]*uL, SA[0.0, 0.0, 1.0]*uL )
+   pbc = (false, false, false)
+   positions = [ SA[0.0,0.0,0.0] * uL, SA[s, 0.0, 0.0] * uL ]
+   Z = __2z.([z0, z1])
+   M = fill( 1.0 * u"u", length(Z) )
+   return FastSystem(box, pbc, positions, Z, M)
+end
 
 """
 `function at_trimer(r1, r2, θ, z0, z1, z2)` : generates a trimer with
@@ -20,19 +31,35 @@ separations `r1` and `r2`, angle `θ` and atomic numbers `z0`, `z1` and `z2`
 (can also use symbols or strings),  where `z0` is the species of the central 
 atom, `z1` at distance `r1` and `z2` at distance `r2`.
 """
-at_trimer(r1, r2, θ, z0, z1, z2) = Atoms(X = [SVector(0.0, 0.0, 0.0), SVector(r1, 0.0, 0.0), SVector(r2 * cos(θ), r2 * sin(θ), 0.0)],
-                            Z = [z0, z1, z2], pbc = false, #
-                            cell = [ 1.0 + maximum([r1, r2]) 0.0 0.0;
-                            0.0 (1 + r2) 0.0;
-                            0.0 0.0 1])
+function at_trimer(r1, r2, θ, z0, z1, z2) 
+   s1 = ustrip(r1)
+   s2 = ustrip(r2)
+   uL = unit(r1)
+   @assert uL == unit(r2)
+   box = (   SA[1.0 + maximum([s1, s2]), 0.0, 0.0]*uL, 
+             SA[0.0, 1.0 + s2, 0.0]*uL, 
+             SA[0.0, 0.0, 1.0]*uL  )
+   pbc = (false, false, false)
+   positions = [ SVector(0.0, 0.0, 0.0) * uL, 
+                 SVector(s1, 0.0, 0.0) * uL, 
+                 SVector(s2 * cos(θ), s2 * sin(θ), 0.0) * uL ]
+   Z = __2z.([z0, z1, z2])
+   M = fill( 1.0 * u"u", length(Z) )
+   return FastSystem(box, pbc, positions, Z, M)
+end                 
+
 
 """
 `function atom_energy(IP, z0)` : energy of an isolated atom
 """                            
 function atom_energy(IP, z0)
-   at = Atoms(X = [SVector(0.0,0.0,0.0),], Z = [z0, ], 
-              pbc = false, cell = [1.0 0 0; 0 1.0 0; 0 0 1.0])
-   return energy(IP, at)                  
+   box = ( SA[1.0, 0.0, 0.0]*u"Å", SA[0.0, 1.0, 0.0]*u"Å", SA[0.0, 0.0, 1.0]*u"Å" )
+   pbc = (false, false, false)
+   positions = [ SA[0.0,0.0,0.0] * u"Å" ]
+   Z = [__2z(z0), ] 
+   M = fill( 1.0 * u"u", length(Z) )
+   sys = FastSystem(box, pbc, positions, Z, M)
+   return potential_energy(sys, IP)
 end
 
 """
@@ -41,8 +68,8 @@ with separation `r` and atomic numbers `z1` and `z0` using the potential `pot`;
 subtracting the 1-body contributions. 
 """
 function dimer_energy(IP, r, z1, z0)
-   at = at_dimer(r, z1, z0)
-   return energy(IP, at) - atom_energy(IP, z0) - atom_energy(IP, z1)
+   sys = at_dimer(r, z1, z0)
+   return potential_energy(sys, IP) - atom_energy(IP, z0) - atom_energy(IP, z1)
 end
 
 """
@@ -50,9 +77,9 @@ end
 trimer, subtracting the 2-body and 1-body contributions.
 """
 function trimer_energy(IP, r1, r2, θ, z0, z1, z2)
-   at = at_trimer(r1, r2, θ, z0, z1, z2)
+   sys = at_trimer(r1, r2, θ, z0, z1, z2)
    dr1r2 = sqrt(r1 ^ 2 + r2 ^ 2 - 2 * r1 * r2 * cos(θ))
-   return ( energy(IP, at) 
+   return ( potential_energy(sys, IP) 
             - dimer_energy(IP, r1, z1, z0) 
             - dimer_energy(IP, r2, z2, z0) 
             - dimer_energy(IP, dr1r2, z1, z2)
@@ -61,11 +88,13 @@ function trimer_energy(IP, r1, r2, θ, z0, z1, z2)
             - atom_energy(IP, z2) )
 end
 
-# TODO: this needs a PR to JuLIP 
-_cutoff(potential) = cutoff(potential)
-_cutoff(potential::JuLIP.MLIPs.SumIP) = maximum(_cutoff.(potential.components))
-_cutoff(potential::JuLIP.OneBody) = 0.1   # not sure how 0.0 will behave
-
+function copy_zz_sym!(D::Dict)
+   _zz = collect(keys(D))
+   for z12 in _zz
+      sym12 = Symbol.( ChemicalSpecies.(z12) ) 
+      D[sym12] = D[z12]
+   end
+end
 
 """
 `dimers(potential, elements; kwargs...)` : 
@@ -77,13 +106,15 @@ The function returns a dictionary `Ddim` such that `D[(s1, s2)]` contains
 pairs or arrays `(rr, E)` which can be plotted `plot(rr, E)`. 
 """
 function dimers(potential, elements; 
-                rr = range(1e-3, _cutoff(potential), length=200), 
-                minE = -1e5, maxE = 1e5, )
-   zz = AtomicNumber.(elements)
+                rmax = cutoff_radius(potential),
+                rmin = 1e-4 * rmax, 
+                rr = range(rmin, rmax, length=200), 
+                minE = -1e5 * energy_unit(potential), 
+                maxE = 1e5  * energy_unit(potential), )
    dimers = Dict() 
-   for i = 1:length(zz), j = 1:i
-      z1 = zz[i]
-      z0 = zz[j]
+   for i = 1:length(elements), j = 1:i
+      z1 = __2z(elements[i])
+      z0 = __2z(elements[j])
       v01 = dimer_energy.(Ref(potential), rr, z1, z0)
       v01 = max.(min.(v01, maxE), minE)
       dimers[(z1, z0)] = (rr, v01)
@@ -105,13 +136,13 @@ pairs or arrays `(θ, E)` which can be plotted `plot(θ, E)`.
 """
 function trimers(potential, elements, r1, r2; 
                 θ = range(-pi, pi, length = 200), 
-                minE = -1e5, maxE = 1e5, )
-   zz = AtomicNumber.(elements)
+                minE = -1e5 * energy_unit(potential), 
+                maxE = 1e5  * energy_unit(potential), )
    trimers = Dict() 
-   for i = 1:length(zz), j = 1:i, k = 1:j
-      z0 = zz[i]
-      z1 = zz[j]
-      z2 = zz[k]
+   for i = 1:length(elements), j = 1:i, k = 1:j
+      z0 = elements[i]
+      z1 = elements[j]
+      z2 = elements[k]
       v01 = trimer_energy.(Ref(potential), r1, r2, θ, z0, z1, z2)
       v01 = max.(min.(v01, maxE), minE)
       trimers[(z0, z1, z2)] = (θ, v01)
@@ -122,6 +153,7 @@ end
 
 
 
+#=
 
 """
 Generate a decohesion curve for testing the smoothness of a potential. 
@@ -200,3 +232,5 @@ function get_transforms(model::ACE1x.ACE1Model)
 
    return mb_transforms, pair_transforms 
 end
+
+=#

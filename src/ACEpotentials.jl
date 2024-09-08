@@ -22,7 +22,7 @@ include("example_data.jl")
 # Misc 
 # TODO: all of this just needs to be moved from JuLIP to AtomsBase
 # include("descriptor.jl")
-# include("analysis/potential_analysis.jl")
+include("analysis/potential_analysis.jl")
 # include("analysis/dataset_analysis.jl")
 
 # TODO: to be completely rewritten
@@ -39,12 +39,14 @@ include("example_data.jl")
 import ACEpotentials.ACE1compat: ace1_model 
 import ACEpotentials.Models: algebraic_smoothness_prior, 
                              exp_smoothness_prior, 
-                             gaussian_smoothness_prior
+                             gaussian_smoothness_prior, 
+                             set_parameters!
 
 export ace1_model,
        length_basis, 
        algebraic_smoothness_prior, 
        exp_smoothness_prior, 
-       gaussian_smoothness_prior 
+       gaussian_smoothness_prior, 
+         set_parameters!
 
 end

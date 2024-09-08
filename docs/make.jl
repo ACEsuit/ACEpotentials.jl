@@ -16,7 +16,7 @@ _tutorial_out = joinpath(@__DIR__(), "src", "literate_tutorials")
 _tutorial_src = joinpath(@__DIR__(), "src", "tutorials")
 
 
-Literate.markdown(_tutorial_src * "/basic_workflow.jl", 
+Literate.markdown(_tutorial_src * "/basic_julia_workflow.jl", 
                   _tutorial_out; documenter = true)
 
 
@@ -72,9 +72,8 @@ makedocs(;
             ], 
         "Tutorials" => Any[
                 "tutorials/index.md",
-                "literate_tutorials/basic_workflow.md",
-                # "literate_tutorials/TiAl_basis.md",
-                # "literate_tutorials/smoothness_priors.md",
+                "literate_tutorials/basic_julia_workflow.md",
+                "literate_tutorials/smoothness_priors.md",
                 # "literate_tutorials/dataset_analysis.md",
                 # "tutorials/lammps.md",
                 # "tutorials/python_ase.md",
@@ -87,8 +86,9 @@ makedocs(;
         "Additional Topics" => Any[
             "gettingstarted/parallel-fitting.md",
             "gettingstarted/aceintro.md",
+            "gettingstarted/pkg.md",
         ],
-        "Reference" => "ACEpotentials/all_exported.md",
+        "Reference" => "all_exported.md",
             ] 
     )
 
