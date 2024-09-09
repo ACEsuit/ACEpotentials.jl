@@ -41,6 +41,7 @@ import ACEpotentials.Models: algebraic_smoothness_prior,
                              exp_smoothness_prior, 
                              gaussian_smoothness_prior, 
                              set_parameters!
+import JSON 
 
 export ace1_model,
        length_basis, 
@@ -49,6 +50,9 @@ export ace1_model,
        gaussian_smoothness_prior, 
          set_parameters!
 
+
 include("json_interface.jl")
+
+
 
 end

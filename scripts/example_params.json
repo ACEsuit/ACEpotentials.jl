@@ -56,15 +56,14 @@
     }
   },
   "data": {
-    "train_file": "/home/vekondra/AcePot/Si_tiny.xyz",
+    "train_file": "Si_tiny.xyz",
     "force_key": "dft_force",
-    "test_file": "/home/vekondra/AcePot/Si_tiny.xyz",
-    "energy_key": ":dft_energy",
+    "test_file": "Si_tiny.xyz",
+    "energy_key": "dft_energy",
     "virial_key": "dft_virial"
   },
   "output": {
     "model": "ACE.json"
   }
 }
- 
  

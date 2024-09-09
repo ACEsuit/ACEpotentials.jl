@@ -1,12 +1,13 @@
-using Pkg
-Pkg.activate(joinpath(@__DIR__(), "../"))
+#
+# julia --project=. runfit.jl -p example_params.json
+#
 
-using ACEpotentials, Unitful, Random, JSON, ArgParse, ExtXYZ, Lux
-
-M = ACEpotentials.Models
-rng = Random.GLOBAL_RNG
+using ACEpotentials
+using ACEpotentials: JSON, ExtXYZ
+using ACEpotentials.ArgParse: ArgParseSettings, @add_arg_table, parse_args
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
+
 @add_arg_table parser begin
     "--params", "-p"
         help = "A JSON or YAML filename with parameters for the fit"
@@ -19,18 +20,17 @@ parser = ArgParseSettings(description="Fit an ACE potential from parameters file
         default = 1
 end
 
-# parse arg
+# parse the command 
 args = parse_args(parser)
 
-# load from json
-args_dict = load_dict(args["params"])
+@info("Load parameter file") 
+args_dict = JSON.parsefile(args["params"])
 
-@info("making ACEmodel")
-calc_model = let model = ACEpotentials.make_model(args_dict["model"]); ps, st = Lux.setup(rng, model); M.ACEPotential(model, ps, st); end
+@info("Construct ACEmodel of type $(args_dict["model"]["model_name"])")
+model = ACEpotentials.make_model(args_dict["model"])
 
-# Load the training data 
+@info("Load datasets")  
 train = ExtXYZ.load(args_dict["data"]["train_file"])
-test = ExtXYZ.load(args_dict["data"]["test_file"])
 
 data_keys = (
     force_key = args_dict["data"]["force_key"],
@@ -43,32 +43,22 @@ solver = ACEpotentials.make_solver(args_dict["solve"]["solver"])
  
 # TODO: make prior
 
-acefit!(calc_model, train;
-        data_keys...,
-        weights = weights,
-        solver = solver)
+acefit!(train, model;
+       data_keys..., weights = weights, solver = solver)
 
-# errors
-err_train = ACEpotentials.linear_errors(train, calc_model; data_keys..., weights=weights)
-err_test = ACEpotentials.linear_errors(test, calc_model; data_keys..., weights=weights)
-err = Dict("train" => err_train, "test" => err_test)
+# training errors
+err_train = ACEpotentials.linear_errors(train, model; data_keys..., weights=weights)
+err = Dict("train" => err_train)
+
+# test errors (if a test dataset exists)
+if haskey(args_dict["data"], "test_file")
+    test = ExtXYZ.load(args_dict["data"]["test_file"])
+    err_test = ACEpotentials.linear_errors(test, model; data_keys..., weights=weights)
+    err["test"] = err_test
+end
 
 # saving results
-function nested_namedtuple_to_dict(nt)
-    return Dict(k => isa(v, NamedTuple) ? nested_namedtuple_to_dict(v) : v for (k, v) in pairs(nt))
- end
- 
- function save_results_to_file(args_dict, err, calc_model, filename)
-    model_params_dict = nested_namedtuple_to_dict(calc_model.ps)
-    results = Dict(
-        "args_dict" => args_dict,
-        "err" => err,
-        "model_parameters" => model_params_dict
-    )
-    open(filename, "w") do io
-        write(io, JSON.json(results, 4))
-    end
-    @info "Results saved to file: $filename"
- end
-
-save_results_to_file(args_dict, err, calc_model, "scripts/results.json")
+result_file = args_dict["output"]["model"]
+ACEpotentials.save_model(model, @__DIR__() * "/results.json"; 
+                         make_model_args = args_dict, 
+                         errors = err, )
