@@ -3,6 +3,8 @@ using AtomsBase: FastSystem, ChemicalSpecies, Unitful
 using AtomsCalculatorsUtilities.SitePotentials: cutoff_radius 
 using AtomsCalculators: potential_energy, energy_unit 
 using StaticArrays
+using AtomsBuilder 
+using LinearAlgebra: norm 
 
 __2z(z::Integer) = z 
 __2z(s::Symbol) = atomic_number(s)
@@ -88,13 +90,13 @@ function trimer_energy(IP, r1, r2, θ, z0, z1, z2)
             - atom_energy(IP, z2) )
 end
 
-function copy_zz_sym!(D::Dict)
-   _zz = collect(keys(D))
-   for z12 in _zz
-      sym12 = Symbol.( ChemicalSpecies.(z12) ) 
-      D[sym12] = D[z12]
-   end
-end
+# function copy_zz_sym!(D::Dict)
+#    _zz = collect(keys(D))
+#    for z12 in _zz
+#       sym12 = Symbol.( ChemicalSpecies.(z12) ) 
+#       D[sym12] = D[z12]
+#    end
+# end
 
 """
 `dimers(potential, elements; kwargs...)` : 
@@ -153,7 +155,7 @@ end
 
 
 
-#=
+
 
 """
 Generate a decohesion curve for testing the smoothness of a potential. 
@@ -169,68 +171,61 @@ Keyword Arguments:
 function decohesion_curve(at0, pot; 
                dim = 1, mult = 10, 
                aa = :auto, npoints = 100)
+
+   # TODO: technically we should first relax the cell; for the moment we will 
+   #       make the user responsible for this!!! But we should come back. 
+   # set_calculator!(at0, pot)
+   # variablecell!(at0)
+   # minimise!(at0)
+
+   E0 = potential_energy(at0, pot) / length(at0)
+
+   atref = at0 * ntuple(i -> (i == dim ? mult : 1), 3) # (mult, 1, 1) if dim == 1
+   Cref = deepcopy(bounding_box(atref)) 
+   Xref = deepcopy(position(atref, :))
+
    if aa == :auto 
-      rcut = _cutoff(pot) 
-      aa = range(0.0, rcut, length=npoints)
+      rcut = cutoff_radius(pot)
+      uL = unit(rcut)
+      a_max = rcut / norm(Cref[dim]) 
+      aa = range(0.0, a_max, length=npoints)
    end
-                
-   set_calculator!(at0, pot)
-   variablecell!(at0)
-   minimise!(at0)
 
-   E0 = energy(pot, at0) / length(at0)
-
-   atref = at0 * (8, 1, 1)
-   Cref = copy(Matrix(atref.cell))
-   Xref = copy(positions(atref))
 
    function decoh_energy(_a_)
-      C = copy(Cref); C[1] += _a_
-      at = deepcopy(atref)
-      set_cell!(at, C)
-      set_positions!(at, Xref)
-      return energy(pot, at) - length(at) * E0
+      C = [ deepcopy(Cref)... ]; C[dim] *= (1+_a_)
+      at = AbstractSystem(atref; bounding_box = tuple(C...))
+      return potential_energy(at, pot) - length(at) * E0
    end
 
    E = decoh_energy.(aa)
    dE = [[0.0]; (E[2:end] - E[1:end-1])/(aa[2]-aa[1])]
+   rr = aa * norm(Cref[dim]) 
 
-   return aa, E, dE 
+   return rr, E, dE 
 end   
 
 
+# some additional imports needed only locally 
 
-function get_transforms(model::ACE1x.ACE1Model)
+import ACEpotentials 
+import ACEpotentials: ACEPotential 
+import ACEpotentials.Models: ACEModel
+
+function get_transforms(model::ACEPotential{<: ACEModel})
    mb_transforms = Dict() 
    pair_transforms = Dict()
+   _i2z = ACEpotentials.Models._i2z
 
-   pair_basis = model.basis.BB[1] 
-   @assert typeof(pair_basis) <: PolyPairBasis
-   for iz0 = 1:JuLIP.numz(pair_basis), iz = 1:JuLIP.numz(pair_basis)
-      Pr = pair_basis.J[iz0,iz]
-      z = JuLIP.i2z(pair_basis, iz)
-      z0 = JuLIP.i2z(pair_basis, iz0)
-      s = chemical_symbol(z)
-      s0 = chemical_symbol(z0)
-      mb_transforms[(z0, z)] = Pr.trans
-      mb_transforms[(s0, s)] = Pr.trans
+   NZ = ACEpotentials.Models._get_nz(model.model)
+   for iz0 = 1:NZ, iz = 1:NZ 
+      z0 = _i2z(model.model, iz0); z = _i2z(model.model, iz)
+      mb_transforms[(z0, z)] = model.model.rbasis.transforms[iz0,iz]
+      pair_transforms[(z0, z)] = model.model.pairbasis.transforms[iz0,iz]
    end
 
-   ace_basis = model.basis.BB[2] 
-   @assert typeof(ace_basis) <: RPIBasis
-   basis1p = ace_basis.pibasis.basis1p 
-   mtrans = basis1p.J.trans
-   @assert mtrans isa ACE1.Transforms.MultiTransform
-   for iz0 = 1:JuLIP.numz(basis1p), iz = 1:JuLIP.numz(basis1p)
-      z = JuLIP.i2z(basis1p, iz)
-      z0 = JuLIP.i2z(basis1p, iz0)
-      s = chemical_symbol(z)
-      s0 = chemical_symbol(z0)
-      mb_transforms[(z0, z)] = mtrans.transforms[iz0,iz]
-      mb_transforms[(s0, s)] = mtrans.transforms[iz0,iz] 
-   end
+   copy_zz_sym!(mb_transforms)
+   copy_zz_sym!(pair_transforms)
 
    return mb_transforms, pair_transforms 
 end
-
-=#

@@ -1,6 +1,6 @@
 # # Smoothness Priors
 
-using ACEpotentials, LinearAlgebra, Plots, LaTeXStrings
+using ACEpotentials, LinearAlgebra, Plots, LaTeXStrings, Unitful 
 
 # ACEpotentials models make heavy use of smoothness priors, i.e., prior parameter distributions that impose smoothness on the fitted potential. This tutorial demonstrates how to use the smoothness priors implemented in ACEpotentials.
 # We start by reading in a tiny testing dataset, and bring the data into a format
@@ -88,12 +88,13 @@ plt_trim
 
 # Finally, we plot a decohesion curve, which contains more significant many-body effects. Arguably, none of our potentials perform very well on this test. Usually larger datasets, and longer cutoffs help in this case. 
 
+using AtomsBuilder  # gives us `bulk`
+
 at0 = bulk(:Si, cubic=true)
 plt_dec = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "strain [eV/Å]", 
                 xlim = (0.0, 5.0))
 for l in labels
-    aa, E, dE = ACEpotentials.decohesion_curve(at0, pots[l])
-    plot!(plt_dec, aa, dE, label = l, lw=2)
+    rr, E, dE = ACEpotentials.decohesion_curve(at0, pots[l])
+    plot!(plt_dec, ustrip.(rr), ustrip.(dE), label = l, lw=2)
 end
 plt_dec
-

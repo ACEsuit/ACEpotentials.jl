@@ -19,25 +19,24 @@ _tutorial_src = joinpath(@__DIR__(), "src", "tutorials")
 Literate.markdown(_tutorial_src * "/basic_julia_workflow.jl", 
                   _tutorial_out; documenter = true)
 
+Literate.markdown(_tutorial_src * "/smoothness_priors.jl", 
+                  _tutorial_out; documenter = true)
+
+Literate.markdown(_tutorial_src * "/dataset_analysis.jl", 
+                  _tutorial_out; documenter = true)
+
+# Literate.markdown(_tutorial_src * "/descriptor.jl",
+#                   _tutorial_out; documenter = true)
+
 
 # Literate.markdown(_tutorial_src * "/first_example_model.jl", 
 #                   _tutorial_out; documenter = true)
 
-
 # Literate.markdown(_tutorial_src * "/TiAl_basis.jl", 
-#                   _tutorial_out; documenter = true)
-
-# Literate.markdown(_tutorial_src * "/smoothness_priors.jl", 
-#                   _tutorial_out; documenter = true)
-
-# Literate.markdown(_tutorial_src * "/dataset_analysis.jl", 
 #                   _tutorial_out; documenter = true)
 
 # bring back once we fix the JSON interface 
 # Literate.markdown(_tutorial_src * "/ACEpotentials_TiAl.jl", 
-#                   _tutorial_out; documenter = true)
-
-# Literate.markdown(_tutorial_src * "/descriptor.jl",
 #                   _tutorial_out; documenter = true)
 
 # Literate.markdown(_tutorial_src * "/committee.jl",
@@ -45,11 +44,6 @@ Literate.markdown(_tutorial_src * "/basic_julia_workflow.jl",
 
 # Literate.markdown(_tutorial_src * "/experimental.jl",
 #                   _tutorial_out; documenter = true)
-
-# ???? cf Jump.jl docs, they do also this: 
-# postprocess = _link_example,
-# # Turn off the footer. We manually add a modified one.
-# credit = false,
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -74,7 +68,7 @@ makedocs(;
                 "tutorials/index.md",
                 "literate_tutorials/basic_julia_workflow.md",
                 "literate_tutorials/smoothness_priors.md",
-                # "literate_tutorials/dataset_analysis.md",
+                "literate_tutorials/dataset_analysis.md",
                 # "tutorials/lammps.md",
                 # "tutorials/python_ase.md",
                 # "tutorials/molly.md",
