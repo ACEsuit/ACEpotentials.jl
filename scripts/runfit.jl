@@ -27,12 +27,7 @@ args = parse_args(parser)
 args_dict = load_dict(args["params"])
 
 @info("making ACEmodel")
-model = ACEpotentials.make_acemodel(args_dict["model"])
-
-# convet the model into lux calculator
-# TODO: integrate with line above
-ps, st = Lux.setup(rng, model)
-calc_model = M.ACEPotential(model, ps, st)
+calc_model = let model = ACEpotentials.make_acemodel(args_dict["model"]); ps, st = Lux.setup(rng, model); M.ACEPotential(model, ps, st); end
 
 # Load the training data 
 train = ExtXYZ.load(args_dict["data"]["in_data"]["train_file"])
@@ -55,13 +50,6 @@ err_test = ACEpotentials.linear_errors(test, calc_model; data_keys..., weights=w
 err = Dict("train" => err_train, "test" => err_test)
 
 # save results
-# - args_dict
-# - err
-# - model parameters : calc_model.ps
-#   nested named tuple to convert to Dict
-# => generate a dictionary => store as JSON
-
-
 function nested_namedtuple_to_dict(nt)
     return Dict(k => isa(v, NamedTuple) ? nested_namedtuple_to_dict(v) : v for (k, v) in pairs(nt))
 end
