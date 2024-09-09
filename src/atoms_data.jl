@@ -70,12 +70,6 @@ end
 
 _has_similar_key(coll, key) = (_find_similar_key(coll, key) != nothing)
 
-# _get_data_fuzzy(sys::AbstractSystem, key::Union{String, Symbol}) = 
-#         _getfuzzy(sys, key)  # sys[Symbol(key)]
-
-# _get_data(sys::AbstractSystem, key::Union{String, Symbol}) = 
-#         sys[Symbol(key)]
-
 function _get_data(sys::ExtXYZ.Atoms, key)
     if haskey(sys.system_data, key)
         return sys.system_data[key]
@@ -86,83 +80,6 @@ function _get_data(sys::ExtXYZ.Atoms, key)
     end
 end
 
-
-# ~~~~~~~~~~~~~~ to be retired ~~~~~~~~~~~~~~
-
-import JuLIP
-import ACE1x: ACE1Model 
-
-_get_data_fuzzy(sys::JuLIP.Atoms, key) = 
-        _getfuzzy(sys.data, key).data 
-
-_get_data(sys::JuLIP.Atoms, key) = 
-        sys.data[key].data
-
-_has_similar_key(sys::JuLIP.Atoms, key) = _has_similar_key(sys.data, key)
-
-_find_similar_key(sys::JuLIP.Atoms, key) = _find_similar_key(sys.data, key)
-
-function energy_forces_virial(sys::JuLIP.Atoms, model::ACE1Model)
-    e = JuLIP.energy(model.potential, sys)
-    f = JuLIP.forces(model.potential, sys)
-    v = JuLIP.virial(model.potential, sys)
-    return (energy=e, forces=f, virial=v)
-end
-
-import JuLIP.MLIPs: IPSuperBasis
-
-energy_forces_virial_basis(sys::JuLIP.Atoms, model::ACE1Model) = 
-        energy_forces_virial_basis(sys, model.basis) 
-
-function energy_forces_virial_basis(sys::JuLIP.Atoms, basis::IPSuperBasis)
-    e = JuLIP.energy(basis, sys)
-    f = JuLIP.forces(basis, sys)
-    v = JuLIP.virial(basis, sys)
-    f_mat = reduce(hcat, f)
-    return (energy=e, forces=f_mat, virial=v)
-end
-
-function _convert_julip(sys::AbstractSystem) 
-    X = [ ustrip.(u"Å", AtomsBase.position(sys,i) ) for i in 1:length(sys)  ]
-    V = [ ustrip.(u"eV^0.5/u^0.5", AtomsBase.velocity(sys,i) ) for i in 1:length(sys)  ]
-    M = [ ustrip(u"u", AtomsBase.atomic_mass(sys,i) ) for i in 1:length(sys) ]
-    Z = [ (AtomicNumber ∘ AtomsBase.atomic_number)(sys,i) for i in 1:length(sys) ]
-    cell = map( x -> ustrip.(u"Å", x), sys[:bounding_box])
-    pbc = map( x -> x == AtomsBase.Periodic ? true : false , AtomsBase.boundary_conditions(sys))
-
-    return JuLIP.Atoms(X, M .* V, M, Z, hcat(cell...)', pbc)
-end
-
-energy_forces_virial(sys::AbstractSystem, model::ACE1Model) = 
-        energy_forces_virial(_convert_julip(sys), model)
-
-energy_forces_virial_basis(sys::AbstractSystem, model::Union{ACE1Model, IPSuperBasis}) = 
-        energy_forces_virial_basis(_convert_julip(sys), model)
-
-potential_energy(sys::AbstractSystem, calc::JuLIP.AbstractCalculator) = 
-        JuLIP.energy(calc, _convert_julip(sys))
-
-potential_energy(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
-        JuLIP.energy(calc, sys)
-
-forces(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
-        JuLIP.forces(calc, sys)
-
-virial(sys::JuLIP.Atoms, calc::JuLIP.AbstractCalculator) = 
-        JuLIP.virial(calc, sys)
-
-function length_basis(model::ACE1Model)
-    return length(model.basis)
-end
-
-function length_basis(basis::IPSuperBasis)
-    return length(basis)
-end
-
-
-ACEfit.basis_size(model::Union{ACE1Model, IPSuperBasis}) = length_basis(model)
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 export AtomsData, 
        print_rmse_table, print_mae_table, print_errors_tables
@@ -313,12 +230,6 @@ function group_type(d::AtomsData; group_key="config_type")
         gt = _get_data(d.system, gk)
     end
 
-    # TODO: we could look at some kind of search like this again
-    # for (k,v) in d.system.data
-    #     if (lowercase(k)==group_key)
-    #         group_type = v.data
-    #     end
-    # end
     return gt
 end
 

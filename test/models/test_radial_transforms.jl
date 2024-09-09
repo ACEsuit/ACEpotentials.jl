@@ -3,7 +3,7 @@
 # using TestEnv; TestEnv.activate();
 
 using ACEpotentials, Test 
-using ACEbase.Testing: print_tf, println_slim
+using Polynomials4ML.Testing: print_tf, println_slim
 
 # there are no real tests for envelopes yet. The only thing we have is 
 # a plot of the envelopes to inspect manually.

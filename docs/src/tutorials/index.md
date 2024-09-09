@@ -1,29 +1,21 @@
 
 # Tutorials Overview
 
-### Fitting potentials from Julia scripts
+* [Basic Julia Workflow](../literate_tutorials/basic_julia_workflow.md) : minimal example to fit a potential to an existing dataset using a julia script 
+* [Smoothness Priors](../literate_tutorials/smoothness_priors.md) : brief introduction to smoothness priors
+* [Basic Dataset Analysis](../literate_tutorials/dataset_analysis.md) : basic techniques to visualize training datasets and correlate such observations to the choice of geometric priors
 
-These tutorials use the direct Julia interface provided by `ACEpotentials.jl` (interfacing with `ACE1.jl, ACE1x.jl, ACEfit.jl`). They are provided in [Literate.jl](https://github.com/fredrikekre/Literate.jl) format and can also be run as scripts if that is preferred. 
+```@raw html
+<!-- ### Using `ACEpotentials` Potentials in External Software
+* [ACE descriptors](../literate_tutorials/descriptor.md)
 
-* [First Example](../literate_tutorials/first_example_model.md)
-* [Model Interface](../literate_tutorials/TiAl_model.md)
-* [Basis Interface](../literate_tutorials/TiAl_basis.md)
-
-The next two tutorials show some additional techniques to better understand how to make good hyperparameter choices. 
-
-* [Smoothness Priors](../literate_tutorials/smoothness_priors.md) : a basic introduction to smoothness priors 
-* [Dataset Analysis](../literate_tutorials/dataset_analysis.md) : some basic techniques to visualize training datasets and correlate such observations to the choice of geometric priors
-
-
-### Using `ACEpotentials` Potentials in External Software
 
 * [LAMMPS](lammps.md)
 * [Python with `ase`](python_ase.md)
-* [`Molly.jl`](molly.md)
+* [`Molly.jl`](molly.md) -->
 
-### Structure analysis with ACE1 descriptors
+<!-- ### Structure analysis with ACE1 descriptors
 
-* [ACE descriptors](../literate_tutorials/descriptor.md)
 
 ### Committee Potentials
 
@@ -31,8 +23,8 @@ The next two tutorials show some additional techniques to better understand how 
 
 ### Experimental Features
 
-* [Experimental Features](../literate_tutorials/experimental.md)
-
+* [Experimental Features](../literate_tutorials/experimental.md) -->
+```
 
 ```@raw html 
 <!---

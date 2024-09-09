@@ -1,5 +1,11 @@
 # Saving and Loading Potentials
 
+!!! warning 
+    Saving and loading potentials is currently not automated; the 
+    following documentation is out of date. 
+
+
+
 ## Saving Potentials for Julia use
 
 To save potentials for future Julia use can use

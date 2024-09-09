@@ -1,11 +1,11 @@
 
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 
 ##
 
-using Test, ACEbase, Random 
-using ACEbase.Testing: print_tf, println_slim
+using Test, Random 
+using Polynomials4ML.Testing: print_tf, println_slim
 using Lux, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
 Random.seed!(11)

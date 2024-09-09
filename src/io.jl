@@ -62,11 +62,6 @@ function save_potential(fname, potential; save_version_numbers=true, meta=nothin
     if save_version_numbers
         versions = Dict()
         versions["ACEpotentials"] = extract_version("ACEpotentials")
-        versions["ACE1"] = extract_version("ACE1")
-        versions["ACE1x"] = extract_version("ACE1x")
-        versions["ACEmd"] = extract_version("ACEmd")
-        versions["ACEbase"] = extract_version("ACEbase")
-        versions["JuLIP"] = extract_version("JuLIP")
         versions["ACEfit"] = extract_version("ACEfit")
 
         data = Dict(

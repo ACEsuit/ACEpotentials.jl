@@ -1,9 +1,9 @@
 
 
 
-using ACEpotentials, Test, JuLIP, LazyArtifacts
+using ACEpotentials, Test, LazyArtifacts
 using ACE1.Testing: println_slim
-using JuLIP.Testing: print_tf
+using Polynomials4ML.Testing: print_tf
 
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
 
