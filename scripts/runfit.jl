@@ -1,8 +1,7 @@
 using Pkg
 Pkg.activate(joinpath(@__DIR__(), "../"))
 
-using ACEpotentials, AtomsBase, AtomsBuilder, Lux, StaticArrays, LinearAlgebra, 
-      Unitful, Zygote, Optimisers, Folds, Printf, Optim, Random, JSON, ArgParse, Dates, ExtXYZ
+using ACEpotentials, Unitful, Random, JSON, ArgParse, ExtXYZ, Lux
 
 M = ACEpotentials.Models
 rng = Random.GLOBAL_RNG
@@ -27,7 +26,7 @@ args = parse_args(parser)
 args_dict = load_dict(args["params"])
 
 @info("making ACEmodel")
-calc_model = let model = ACEpotentials.make_acemodel(args_dict["model"]); ps, st = Lux.setup(rng, model); M.ACEPotential(model, ps, st); end
+calc_model = let model = ACEpotentials.make_model(args_dict["model"]); ps, st = Lux.setup(rng, model); M.ACEPotential(model, ps, st); end
 
 # Load the training data 
 train = ExtXYZ.load(args_dict["data"]["train_file"])
@@ -39,11 +38,15 @@ data_keys = (
     virial_key = args_dict["data"]["virial_key"])
 
 weights = args_dict["solve"]["weights"]
-        
+
+solver = ACEpotentials.make_solver(args_dict["solve"]["solver"])
+ 
+# TODO: make prior
+
 acefit!(calc_model, train;
         data_keys...,
-        weights=weights,
-        solver=ACEfit.LSQR())
+        weights = weights,
+        solver = solver)
 
 # errors
 err_train = ACEpotentials.linear_errors(train, calc_model; data_keys..., weights=weights)

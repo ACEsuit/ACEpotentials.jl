@@ -24,7 +24,7 @@ end
 ##
 
 # === make fits === 
-function make_acemodel(model_dict::Dict)
+function make_model(model_dict::Dict)
    if model_dict["model_name"] == "ACE1"
       model_nt = _sanitize_dict(model_dict)
       return ACE1compat.ace1_model(; model_nt...)
@@ -34,14 +34,17 @@ function make_acemodel(model_dict::Dict)
 end
 
 # chho: make this support other solvers
-# function make_solver(solver_dict::Dict)
-#    if solver_dict["name"] == "BLR"
-#       params_nt = _sanitize_dict(solver_dict["param"])
-#       return ACEfit.BLR(; params_nt...)
-#    else
-#       error("Not implemented.")
-#    end
-# end
+function make_solver(solver_dict::Dict)
+   if solver_dict["name"] == "BLR"
+      params_nt = _sanitize_dict(solver_dict["param"])
+      return ACEfit.BLR(; params_nt...)
+   elseif solver_dict["name"] == "LSQR"
+      params_nt = _sanitize_dict(solver_dict["param"])
+      return ACEfit.LSQR(; params_nt...)
+   else
+      error("Not implemented.")
+   end
+end
 
 # function make_prior(model, prior_dict::Dict)
 #    if prior_dict["name"] === "algebraic"
