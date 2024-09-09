@@ -19,7 +19,7 @@ params = (elements = [:Si],
           order = 3,
           totaldegree = 12)
 
-model = ACEPotential( ACE1compat.ace1_model(; params...) )
+model = ACE1compat.ace1_model(; params...) 
 
 data = ExtXYZ.load(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
 

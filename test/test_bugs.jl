@@ -13,7 +13,7 @@ model = ace1_model(elements = [:Ti, ],
 					    order = 3,
 					    totaldegree = 10,
 					    rcut = 6.0,
-					    Eref = [:Ti => -1586.0195, ]) |> ACEPotential
+					    Eref = [:Ti => -1586.0195, ])
 
 
 # generate random parameters 
