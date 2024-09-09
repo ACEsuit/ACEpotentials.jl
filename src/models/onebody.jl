@@ -2,17 +2,18 @@
 # TODO: move this to AtomsCalculatorsUtilities or EmpiricalPotentials
 
 using Unitful
-import AtomsCalculatorsUtilities, AtomsCalculators, JuLIP 
+import AtomsCalculatorsUtilities, AtomsCalculators 
 import AtomsCalculators: energy_unit, length_unit, force_unit, potential_energy
 import AtomsCalculatorsUtilities.SitePotentials: SitePotential, 
                                   cutoff_radius, 
                                   eval_site, 
                                   eval_grad_site 
-import AtomsBase: atomic_number, AbstractSystem
+import AtomsBase: atomic_number, AbstractSystem, ChemicalSpecies
 
 _atomic_number(s) = atomic_number(s)
-_atomic_number(s::Symbol) = JuLIP.atomic_number(s)
+_atomic_number(s::Symbol) = atomic_number(ChemicalSpecies(s))
 _atomic_number(z::Integer) = z 
+_atomic_number(s::ChemicalSpecies) = atomic_number(s)
 
 """
 `mutable struct OneBody{T}`

@@ -1,12 +1,15 @@
-
-using JuLIP: Atoms, energy, cutoff
-using JuLIP.Potentials: AbstractZList
-using LinearAlgebra
+using AtomsBase: AbstractSystem, ChemicalSpecies, atomic_number
+import NeighbourLists
+using AtomsCalculatorsUtilities.SitePotentials: cutoff_radius, PairList, get_neighbours
+using AtomsCalculators: potential_energy, energy_unit 
+using StaticArrays
+using AtomsBuilder 
+using LinearAlgebra: norm, dot 
 
 function copy_zz_sym!(D::Dict)
    _zz = collect(keys(D))
    for z12 in _zz
-      sym12 = chemical_symbol.(z12) 
+      sym12 = Symbol.( ChemicalSpecies.(z12) ) 
       D[sym12] = D[z12]
    end
 end
@@ -20,24 +23,25 @@ radius `r_cut`. Keyword arguments:
 * `r0 = :min` : parameter for resampling. If `:min` then the minimum r occuring in the dataset is taken. 
 * `maxsamples = 100_000` : maximum number of samples to return. 
 """
-function get_rdf(data::AbstractVector{<: Atoms}, r_cut; 
+function get_rdf(data::AbstractVector{<: AbstractSystem}, r_cut; 
                  rescale = true, 
                  r0 = :min, 
                  maxsamples = 100_000)
 
-   zz = AtomicNumber[] 
+   zz = Int[] 
    for at in data 
-      zz = unique(append!(zz, unique(at.Z)))
+      zz = unique(append!(zz, unique(atomic_number(at, :))))
    end        
             
    zz_pairs = [ (z0, z) for z0 in zz for z in zz ]
    R0 = Dict{Any, Vector{Float64}}([ z12 => Float64[] for z12 in zz_pairs ]...)
    R = deepcopy(R0)         
 
-   for at in data 
-      nlist = JuLIP.neighbourlist(at, r_cut; recompute=true)
+   for sys in data 
+      nlist = PairList(sys, r_cut)
+      Z = atomic_number(sys, :)
       for (i, j, rr) in pairs(nlist) 
-         z12 = (at.Z[i], at.Z[j])
+         z12 = (Z[i], Z[j])
          push!(R[z12], norm(rr))
       end
    end
@@ -79,6 +83,7 @@ function get_rdf(data::AbstractVector{<: Atoms}, r_cut;
    return R1
 end
 
+
 """
 `function get_adf(data::AbstractVector{<: Atoms}, r_cut; kwargs...)` :
 
@@ -87,18 +92,18 @@ of length at most `r_cut`. Keyword arguments:
 * `skip = 3` : only consider every `skip`th atom in the dataset.
 * `maxsamples = 100_000` : maximum number of samples to return.
 """
-function get_adf(data::AbstractVector{<: Atoms}, r_cut; 
+function get_adf(data::AbstractVector{<: AbstractSystem}, r_cut; 
                  skip = 3, 
                  maxsamples = 100_000)
    skip = max(skip, 1)                 
    A = Float64[] 
    ctr = -1
-   for at in data 
-      nlist = JuLIP.neighbourlist(at, r_cut; recompute=true)
-      for i = 1:length(at)
+   for sys in data 
+      nlist = PairList(sys, r_cut)
+      for i = 1:length(sys)
          ctr = mod(ctr + 1, skip); if ctr != 0; continue; end 
 
-         Js, Rs = neigs(nlist, i)
+         Js, Rs = NeighbourLists.neigs(nlist, i)
          for a1 = 1:length(Js)-1, a2 = a1+1:length(Js)
             r̂1 = Rs[a1] / norm(Rs[a1])
             r̂2 = Rs[a2] / norm(Rs[a2])

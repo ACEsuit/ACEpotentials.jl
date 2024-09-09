@@ -1,8 +1,8 @@
 
 module ACE1_TestUtils 
 
-using Random, Test, ACEbase, LinearAlgebra, Lux
-using ACEbase.Testing: print_tf, println_slim
+using Random, Test, LinearAlgebra, Lux
+using Polynomials4ML.Testing: print_tf, println_slim
 import ACE1, ACE1x, JuLIP
 
 using ACEpotentials 

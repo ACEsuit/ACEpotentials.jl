@@ -1,44 +1,52 @@
 module ACEpotentials
 
-using Reexport 
-@reexport using JuLIP
+using Unitful, AtomsBase, AtomsCalculators, Reexport
 
-using ACE1
-export ACE1 
+@reexport using ACEfit 
 
-using ACE1x
-export ACE1x 
-import ACE1x: ace_basis, smoothness_prior, ace_defaults, acemodel 
-export ace_basis, smoothness_prior, ace_defaults, acemodel
+# TODO: make a list of exports while re-writing the docs and tutorials 
+#       should we re-export ACEfit? I'm not convinced. 
 
-using Unitful
-
-@reexport using ACEfit
-# @reexport using ACEmd
-
+# Constructing models 
 include("defaults.jl")
-
 include("models/models.jl")
 include("ace1_compat.jl")
 
+# Fitting
 include("atoms_data.jl")
-include("model.jl")
-include("export.jl")
+include("fit_model.jl")
+
+# Data 
 include("example_data.jl")
-include("descriptor.jl")
-# include("atoms_base.jl")
-# include("io.jl")
 
-include("analysis/potential_analysis.jl")
+# Misc 
+# TODO: all of this just needs to be moved from JuLIP to AtomsBase
 include("analysis/dataset_analysis.jl")
+include("analysis/potential_analysis.jl")
+# include("descriptor.jl")
 
-include("experimental.jl")
+# TODO: to be completely rewritten
+# include("io.jl")
+# include("export.jl")
 
-# include("outdated/fit.jl")
-# include("outdated/data.jl")
-# include("outdated/basis.jl")
-# include("outdated/solver.jl")
-# include("outdated/regularizer.jl")
-# include("outdated/read_params.jl")
+# Experimental 
+# TODO: this is basically the UFACE interface which we need to revive
+# include("experimental.jl")
+
+
+# ----------------- Exports that seem important to make the tutorials work. 
+
+import ACEpotentials.ACE1compat: ace1_model 
+import ACEpotentials.Models: algebraic_smoothness_prior, 
+                             exp_smoothness_prior, 
+                             gaussian_smoothness_prior, 
+                             set_parameters!
+
+export ace1_model,
+       length_basis, 
+       algebraic_smoothness_prior, 
+       exp_smoothness_prior, 
+       gaussian_smoothness_prior, 
+         set_parameters!
 
 end

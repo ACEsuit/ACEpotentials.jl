@@ -1,5 +1,5 @@
-using ACEpotentials, JuLIP, LazyArtifacts, Test
-using JuLIP.Testing: print_tf
+using ACEpotentials, LazyArtifacts, Test
+using Polynomials4ML.Testing: print_tf
 
 test_train_set = joinpath(artifact"TiAl_tiny_dataset", "TiAl_tiny.xyz")
 expected_errors_json = joinpath(artifact"ACE1pack_test_files", "expected_fit_errors.json")

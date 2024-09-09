@@ -7,8 +7,8 @@
 using ACEpotentials
 M = ACEpotentials.Models
 
-using Random, LuxCore, Test, ACEbase, LinearAlgebra
-using ACEbase.Testing: print_tf
+using Random, LuxCore, Test, LinearAlgebra, ACEbase
+using Polynomials4ML.Testing: print_tf
 rng = Random.MersenneTwister(1234)
 Random.seed!(1234)
 

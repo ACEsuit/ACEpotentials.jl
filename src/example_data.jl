@@ -4,8 +4,6 @@ using LazyArtifacts
 # Meta-data for these datasets are stored in the ACEdata  repository 
 #   https://github.com/ACEsuit/ACEData
 #
-#
-
 
 _example_data = Dict(
    "Si_tiny" => (  art = "Si_tiny_dataset", 
@@ -32,22 +30,14 @@ function list_example_datasets()
    return sort(collect(keys(_example_data)))
 end   
 
-function example_dataset(id::Union{String, Symbol}; atoms_base=false)
+function example_dataset(id::Union{String, Symbol})
    art = _example_data[id].art
    path = (@artifact_str "$art")
    train_path = joinpath(path, _example_data[id].train)
-   if atoms_base
-      train = ExtXYZ.load(train_path)
-   else
-      train = read_extxyz(train_path)
-   end
+   train = ExtXYZ.load(train_path)
    if _example_data[id].test != nothing
       test_path = joinpath(path, _example_data[id].test)
-      if atoms_base
-         test = ExtXYZ.load(test_path)
-      else
-         test = read_extxyz(test_path)
-      end
+      test = ExtXYZ.load(test_path)
    else
       test = nothing
    end
