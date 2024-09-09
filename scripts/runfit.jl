@@ -30,18 +30,19 @@ args_dict = load_dict(args["params"])
 calc_model = let model = ACEpotentials.make_acemodel(args_dict["model"]); ps, st = Lux.setup(rng, model); M.ACEPotential(model, ps, st); end
 
 # Load the training data 
-train = ExtXYZ.load(args_dict["data"]["in_data"]["train_file"])
-test = ExtXYZ.load(args_dict["data"]["in_data"]["test_file"])
+train = ExtXYZ.load(args_dict["data"]["train_file"])
+test = ExtXYZ.load(args_dict["data"]["test_file"])
 
-data_keys = Dict(:energy_key => "dft_energy",
-                 :force_key => "dft_force",
-                 :virial_key => "dft_virial")
-weights = Dict("default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
-               "liq" => Dict("E"=>10.0, "F"=>0.66, "V"=>0.25))
+data_keys = (
+    force_key = args_dict["data"]["force_key"],
+    energy_key = args_dict["data"]["energy_key"],
+    virial_key = args_dict["data"]["virial_key"])
+
+weights = args_dict["solve"]["weights"]
         
 acefit!(calc_model, train;
         data_keys...,
-        weights = weights,
+        weights=weights,
         solver=ACEfit.LSQR())
 
 # errors
@@ -49,12 +50,12 @@ err_train = ACEpotentials.linear_errors(train, calc_model; data_keys..., weights
 err_test = ACEpotentials.linear_errors(test, calc_model; data_keys..., weights=weights)
 err = Dict("train" => err_train, "test" => err_test)
 
-# save results
+# saving results
 function nested_namedtuple_to_dict(nt)
     return Dict(k => isa(v, NamedTuple) ? nested_namedtuple_to_dict(v) : v for (k, v) in pairs(nt))
-end
-
-function save_results_to_file(args_dict, err, calc_model, filename)
+ end
+ 
+ function save_results_to_file(args_dict, err, calc_model, filename)
     model_params_dict = nested_namedtuple_to_dict(calc_model.ps)
     results = Dict(
         "args_dict" => args_dict,
@@ -65,6 +66,6 @@ function save_results_to_file(args_dict, err, calc_model, filename)
         write(io, JSON.json(results, 4))
     end
     @info "Results saved to file: $filename"
-end
+ end
 
 save_results_to_file(args_dict, err, calc_model, "scripts/results.json")
