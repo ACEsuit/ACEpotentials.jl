@@ -29,6 +29,13 @@ end
 ##
 
 # === make fits === 
+
+""" 
+      make_model(model_dict::Dict) 
+
+User-facing script to generate a model from a dictionary. See documentation 
+for details.       
+"""
 function make_model(model_dict::Dict)
    if model_dict["model_name"] == "ACE1"
       model_nt = _sanitize_dict(model_dict)
@@ -59,7 +66,17 @@ end
 #    end
 # end
 
+"""
+      copy_runfit(dest)
 
+Copies the `runfit.jl` script and an example model parameter file to `dest`.
+If called from the destination directory, use 
+```julia
+ACEpotentials.copy_runfit(@__DIR__())
+```
+This is intended to setup a local project directory with the necessary 
+scripts to run a fitting job.
+"""
 function copy_runfit(dest)
    script_path = joinpath(@__DIR__(), "..", "scripts")
    runfit_orig = joinpath(script_path, "runfit.jl")
@@ -72,7 +89,18 @@ function copy_runfit(dest)
 end
 
 
+"""
+      save_model(model, filename; kwargs...) 
 
+save model constructor, model parameters, and other information to a JSON file. 
+
+* `model` : the model to be saved
+* `filename` : the name of the file to which the model will be saved
+* `make_model_args` : the arguments used to construct the model; without this 
+            the model cannot be reconstructed unless the original script is available
+* `errors` : the fitting / test errors computed during the fitting 
+* `verbose` : print information about the saving process     
+"""
 function save_model(model, filename; 
                     make_model_args = nothing, 
                     errors = nothing, 

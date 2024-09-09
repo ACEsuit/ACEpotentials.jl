@@ -1,15 +1,45 @@
 
 tmpproj = tempname()
-ap_dir = joinpath(@__DIR__(), "..", "..")
+ap_dir = joinpath(@__DIR__(), "..")
 using LazyArtifacts
 datafile = artifact"Si_tiny_dataset" * "/Si_tiny.xyz"
 julia_cmd = Base.julia_cmd()
 
+# prepare the project folder 
 run(`mkdir $tmpproj`)
-run(`cp $datafile $(tmpproj*"/")`); 
-prep_proj = "using Pkg; Pkg.activate(tmpproj); Pkg.develop(; path = ap_dir); using ACEpotentials; ACEpotentials.copy_runfit(tmpproj);"
-run(`$( String(julia_cmd) * "-e '" * prep_proj * "'" )`)
-# run(`$(Base.julia_cmd()) --project=$tmpproj $tmpproj/runfit.jl $tmpproj/example_params.json`)
+run(`cp $datafile $(tmpproj*"/")`);
+prep_proj = """
+   begin 
+      using Pkg; 
+      Pkg.activate(\"$tmpproj\"); 
+      Pkg.develop(; path = \"$ap_dir\"); 
+      using ACEpotentials; 
+      ACEpotentials.copy_runfit(\"$tmpproj\"); 
+   end
+"""
+run(`$julia_cmd -e $prep_proj`)
+
+# run the fit 
+cd(tmpproj) do 
+   run(`pwd`)
+   run(`$julia_cmd --project=. runfit.jl -p example_params.json`)
+end
+
+# load the results in the current process! 
+@info("Load the results")
+using JSON 
+example_params = JSON.parsefile(joinpath(tmpproj, "example_params.json"))
+results = JSON.parsefile(joinpath(tmpproj, "results.json"))
+
+@info("Clean up temporary project")
+run(`rm -rf $tmpproj`)
+
+##
+
+using ACEpotentials
+
+@info("Check that runfit gives the same results as a julia script")
+@info("TODO: ")
 
 ##
 

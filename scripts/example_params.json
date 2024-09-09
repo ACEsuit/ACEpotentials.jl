@@ -63,7 +63,7 @@
     "virial_key": "dft_virial"
   },
   "output": {
-    "model": "ACE.json"
+    "model": "results.json"
   }
 }
  

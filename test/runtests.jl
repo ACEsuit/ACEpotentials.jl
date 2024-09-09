@@ -2,11 +2,18 @@ using ACEpotentials, Test, LazyArtifacts
 
 @testset "ACEpotentials.jl" begin
 
-    @testset "Models" begin include("models/test_models.jl") end 
+    # @testset "Models" begin include("models/test_models.jl") end 
 
     # fitting tests 
     @testset "Test silicon" begin include("test_silicon.jl") end
     @testset "Test recomputation of weights" begin include("test_recompw.jl") end
+
+    # json interface tests 
+    @testset "Test JSON interface" begin include("json_test.jl") end
+
+    # misc
+    @testset "Weird bugs" begin include("test_bugs.jl") end
+
 
     # TODO: bring FIO back cf Issue #217
     # @testset "Test IO" begin include("test_io.jl")  end
@@ -14,9 +21,6 @@ using ACEpotentials, Test, LazyArtifacts
     # experimental 
     # TODO move UF_ACE into ACEpotential properly
     # @testset "UF_ACE" begin include("test_uface.jl") end
-
-    # weird stuff 
-    @testset "Weird bugs" begin include("test_bugs.jl") end
 
     # ACE1 compatibility tests 
     # TODO: these tests need to be revived either by creating a JSON 

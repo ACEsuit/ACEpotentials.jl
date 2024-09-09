@@ -59,6 +59,6 @@ end
 
 # saving results
 result_file = args_dict["output"]["model"]
-ACEpotentials.save_model(model, @__DIR__() * "/results.json"; 
+ACEpotentials.save_model(model, joinpath(@__DIR__(), args_dict["output"]["model"]); 
                          make_model_args = args_dict, 
                          errors = err, )
