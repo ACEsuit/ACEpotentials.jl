@@ -3,7 +3,6 @@ uuid = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
 version = "0.8.0-dev"
 
 [deps]
-# ACEbase = "14bae519-eb20-449c-a949-9c58ed33163e"
 ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
 AtomsBase = "a963bdd2-2df7-4f54-a1ee-49d51e6be12a"
 AtomsBuilder = "f5cc8831-eeb7-4288-8d9f-d6c1ddb77004"
