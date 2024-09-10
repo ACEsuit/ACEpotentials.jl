@@ -1,7 +1,7 @@
 
 # Tutorials Overview
 
-* [Basic Julia Workflow](../literate_tutorials/basic_julia_workflow.md) : minimal example to fit a potential to an existing dataset using a julia script 
+* [Basic Julia Workflow](../literate_tutorials/basic_julia_workflow.md) : minimal example to fit a potential to an existing dataset using a Julia script 
 * [Smoothness Priors](../literate_tutorials/smoothness_priors.md) : brief introduction to smoothness priors
 * [Basic Dataset Analysis](../literate_tutorials/dataset_analysis.md) : basic techniques to visualize training datasets and correlate such observations to the choice of geometric priors
 
