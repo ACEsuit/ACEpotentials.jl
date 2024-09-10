@@ -1,6 +1,6 @@
 name = "ACEpotentials"
 uuid = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
-version = "0.6.9"
+version = "0.6.10"
 
 [deps]
 ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
@@ -24,7 +24,7 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 [compat]
 ACE1 = "0.12"
 ACE1x = "0.1.8"
-ACEfit = "0.1.4"
+ACEfit = "0.1.4, 0.2.2"
 ACEmd = "0.1.6"
 ExtXYZ = "0.1.14"
 JuLIP = "0.13.9, 0.14.2"
