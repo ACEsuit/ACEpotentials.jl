@@ -38,9 +38,9 @@ model = ace1_model(; hyperparams...)
 
 # The next line specifies the regression weights: in the least squares loss different observations are given different weights,
 # ```math 
-#   \sum_{R} \Big( w^E_R | E(R) - y_R^E |^2
-#            + w^F_R | {\rm forces}(R) - y_R^F |^2 
-#            + w^V_R | {\rm virial}(R) - y_R^V |^2 \Big),
+#   \sum_{R} \Big( w_{E,R}^2 | E(R) - y_R^E |^2
+#            + w_{F,R}^2 | {\rm forces}(R) - y_R^F |^2 
+#            + w_{V,R}^2 | {\rm virial}(R) - y_R^V |^2 \Big),
 # ```
 # and this is specificed via the following dictionary. The keys correspond to the `config_type` of the training structures. 
 
