@@ -69,6 +69,7 @@ makedocs(;
                 "literate_tutorials/basic_julia_workflow.md",
                 "literate_tutorials/smoothness_priors.md",
                 "literate_tutorials/dataset_analysis.md",
+                "tutorials/scripting.md", 
                 # "tutorials/lammps.md",
                 # "tutorials/python_ase.md",
                 # "tutorials/molly.md",

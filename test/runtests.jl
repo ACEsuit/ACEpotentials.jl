@@ -2,7 +2,7 @@ using ACEpotentials, Test, LazyArtifacts
 
 @testset "ACEpotentials.jl" begin
 
-    # @testset "Models" begin include("models/test_models.jl") end 
+    @testset "Models" begin include("models/test_models.jl") end 
 
     # fitting tests 
     @testset "Test silicon" begin include("test_silicon.jl") end
