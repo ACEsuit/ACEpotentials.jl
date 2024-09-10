@@ -2,10 +2,10 @@
 #
 # This short tutorial introduces the minimal workflow for people working 
 # purely in Julia. There are (or are in development) separate tutorials 
-# on using ACEpotentials via shell scripts or via Python, and tutorials 
+# on using `ACEpotentials` via shell scripts or via Python, and tutorials 
 # on more advanced usage. 
 #
-# Start by importing ACEpotentials (and possibly other required libraries)
+# Start by importing `ACEpotentials` (and possibly other required libraries)
 
 using ACEpotentials
 
@@ -15,7 +15,7 @@ using ACEpotentials
 # data_file = "path/to/TiAl_tutorial.xyz"
 # data = read_extxyz(data_file)
 # ```
-# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the structures for training and testing to keep the regression problem small.
+# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the structures for training and testing to keep the regression problem small.
 
 data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
 train_data = data[1:5:end];
@@ -80,7 +80,7 @@ open("TiAl_model.json", "w") do f
 	 JSON.print(f, Dict("hyperparams" => hyperparams, "params" => model.ps))
 end
 
-# To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should ot be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.
+# To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.
 
-# cleaning up ... 
+# Finally, we delete the model to clean up.
 rm("TiAl_model.json")
