@@ -28,7 +28,7 @@ Then we choose a one-particle basis
 ```math 
 \phi_v({\bm r}) = \phi_{nlm}({\bm r}) = R_n(r) Y_l^m(\hat{\bm r})
 ```
-and project ``\rho``` onto that basis, 
+and project ``\rho`` onto that basis, 
 ```math 
 A_{v} = A_{nlm} = \langle \phi_{nlm}, \rho \rangle = 
    \sum_j \phi_{nlm}({\bm r}_j).
