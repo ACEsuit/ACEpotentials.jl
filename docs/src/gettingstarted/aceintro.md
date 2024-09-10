@@ -38,7 +38,7 @@ A_{v} = A_{nlm} = \langle \phi_{nlm}, \rho \rangle =
 
 Next, we form the $$N$$-correlations of the density, ``\rho^{\otimes N}`` and project them onto the tensor project basis, 
 ```math 
-   {\bm A}_{{\bm nlm}} 
+   {\bm A}_{\mathbf{nlm}}
    = \Big\langle \otimes_{t = 1}^N \phi_{n_t l_t m_t}, \rho^{\otimes N} \Big\rangle 
    = \prod_{t = 1}^N A_{n_t l_t m_t}.
 ```
