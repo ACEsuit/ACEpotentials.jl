@@ -122,13 +122,11 @@ function save_model(model, filename;
                     errors = nothing,
                     verbose = true,
                     meta = Dict(),
-                    save_project = true)  # Added save_project flag with default value true
+                    save_project = true)  
 
-    # Initialize the data dictionary
     D = Dict("model_parameters" => model.ps,
              "meta" => meta)
 
-    # Handle make_model_args
     if isnothing(make_model_args)
         if verbose
             @warn("Only model parameters are saved but no information to reconstruct the model.")
@@ -137,12 +135,10 @@ function save_model(model, filename;
         D["make_model_args"] = make_model_args
     end
 
-    # Add errors if present
     if !isnothing(errors)
         D["errors"] = errors
     end
 
-    # Read Manifest.toml if save_project is true
     if save_project
         manifest_path = find_manifest()
         if manifest_path !== nothing
@@ -161,7 +157,6 @@ function save_model(model, filename;
         end
     end
 
-    # Save the data to the specified filename
     open(filename, "w") do io
         write(io, JSON.json(D, 3))
     end
