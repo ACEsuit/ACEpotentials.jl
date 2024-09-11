@@ -341,11 +341,8 @@ function evaluate_ed(model::ACEModel,
    rs, ∇rs = @withalloc radii_ed!(Rs)
 
    # evaluate the radial basis
-   # TODO: using @withalloc causes stack overflow 
    Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
                                                ps.rbasis, st.rbasis)
-   # Rnl, dRnl = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
-   #                                 ps.rbasis, st.rbasis)
 
    # evaluate the Y basis
    Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
@@ -653,3 +650,63 @@ function jacobian_grad_params(model::ACEModel,
    return Ei, ∂Ei_vec, ∂∂Ei, st
 end
 
+
+
+# ---------------------------------------------------------
+#  experimental pushforwards 
+
+function _evaluate_basis_ed(model::ACEModel, 
+                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                            ps, st) where {T}
+   
+   @no_escape begin 
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
+
+   # get the radii 
+   rs, ∇rs = @withalloc radii_ed!(Rs)
+
+   # evaluate the radial basis
+   Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
+                                               ps.rbasis, st.rbasis)
+
+   # evaluate the Y basis
+   Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
+
+   # compute vectorial dRnl 
+   ∂Ylm = dYlm 
+   ∂Rnl = @alloc(eltype(dYlm), size(dRnl)...)
+   for nl = 1:size(dRnl, 2)
+      # @inbounds begin 
+      # @simd ivdep 
+         for j = 1:size(dRnl, 1)
+            ∂Rnl[j, nl] = dRnl[j, nl] * ∇rs[j]
+         end
+      # end
+   end
+
+   # pushfoward through the sparse tensor - this completes the MB jacobian. 
+   B, ∂B = _pfwd(model.tensor, Rnl, Ylm, ∂Rnl, ∂Ylm)
+
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing    
+      Rnl2, dRnl2 = @withalloc evaluate_ed_batched!(model.pairbasis, 
+                                 rs, Z0, Zs, 
+                                 ps.pairbasis, st.pairbasis)
+      Apair = sum(Rnl2, dims=1)[:]
+      ∂Apair = zeros(eltype(∂B), size(Rnl2, 2), size(Rnl2, 1))
+      for nl = 1:size(dRnl2, 2)
+         for j = 1:size(dRnl2, 1)
+            ∂Apair[nl, j] = dRnl2[j, nl] * ∇rs[j]
+         end
+      end
+
+      B = [ B; Apair ]
+      ∂B = [ ∂B; ∂Apair ]
+   end
+
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
+   end  # @no_escape
+
+   return B, ∂B 
+end
