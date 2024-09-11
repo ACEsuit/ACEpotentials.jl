@@ -32,6 +32,24 @@ end
 
 # ---------------- the main fitting function
 
+function make_atoms_data(raw_data::AbstractArray{<: AbstractSystem}, model; 
+                         energy_key, force_key, virial_key, weights) 
+   
+   # convert raw data to AtomsData, which ACEfit.jl understands 
+   data = map( raw_data ) do d
+      AtomsData(d;
+         energy_key = energy_key, 
+         force_key  = force_key, 
+         virial_key = virial_key, 
+         weights = weights, 
+         v_ref = _get_Vref(model)
+      )
+   end
+   
+   return data    
+end
+
+
 """
    acefit!(rawdata, model; kwargs...)
 
@@ -72,16 +90,11 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
                 kwargs...
    )
 
-   # convert raw data to AtomsData, which ACEfit.jl understands 
-   data = map( raw_data ) do d
-      AtomsData(d;
-         energy_key = energy_key, 
-         force_key=force_key, 
-         virial_key = virial_key, 
-         weights = weights, 
-         v_ref = _get_Vref(model)
-      )
-   end
+   data = make_atoms_data(raw_data, model; 
+                          energy_key = energy_key, 
+                          force_key = force_key, 
+                          virial_key = virial_key, 
+                          weights = weights)
 
    # print some information about the dataset 
    # (how many observations in each class)
@@ -170,10 +183,10 @@ end
 
 
 function assemble(raw_data::AbstractArray{<: AbstractSystem}, model; 
-                     weights = default_weights(),
-                     energy_key = "energy", 
-                     force_key = "force", 
-                     virial_key = "virial", 
+                weights = default_weights(),
+                energy_key = "energy", 
+                force_key = "force", 
+                virial_key = "virial", 
                      # smoothness = 4, 
                      # prior = nothing, 
                      repulsion_restraint = false, 
@@ -181,9 +194,11 @@ function assemble(raw_data::AbstractArray{<: AbstractSystem}, model;
                      mode = :serial, 
                      weights_only = false)
 
-   data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
-                  virial_key = virial_key, weights = weights, 
-                  v_ref = model.Vref)  for at in raw_data ]
+   data = make_atoms_data(raw_data, model; 
+                          energy_key = energy_key, 
+                          force_key = force_key, 
+                          virial_key = virial_key, 
+                          weights = weights)
 
    if repulsion_restraint 
       error("Repulsion restraint is currently not implemented")
@@ -195,6 +210,6 @@ function assemble(raw_data::AbstractArray{<: AbstractSystem}, model;
       return W
    end 
       
-   A, Y, W = assemble(data, model.basis, mode)
+   A, Y, W = assemble(data, model)
    return A, Y, W
 end
