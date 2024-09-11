@@ -1,13 +1,15 @@
+# This script reproduces the error table from the 2023/24 ACEpotentials 
+# paper, but with the new version 0.8 ACE models.
+
 using Distributed 
 addprocs(10, exeflags="--project=$(Base.active_project())")
 @everywhere using ACEpotentials, PrettyTables
 
 # the dataset is provided via ACE1pack artifacts as a convenient benchmarkset
 # the following chemical symbols are available:
-# syms = [:Ni, :Cu, :Li, :Mo, :Si, :Ge]
-syms = [:Ni, :Cu, ] 
+syms = [:Ni, :Cu, :Li, :Mo, :Si, :Ge]
 
-totaldegree_tiny = [ 18, 14, 10 ]   # very small model: ~ 100  basis functions
+totaldegree_tiny = [ 16, 12, 8 ]   # very small model: ~ 120  basis functions
 totaldegree_sm = [ 20, 16, 12 ]   # small model: ~ 300  basis functions
 totaldegree_lge = [ 25, 21, 17 ]  # large model: ~ 1000 basis functions              
 
@@ -19,7 +21,6 @@ err = Dict("lge" => Dict("E" => Dict(), "F" => Dict()),
 for sym in syms 
    @info("---------- fitting $(sym) ----------")
    train, test, _ = ACEpotentials.example_dataset("Zuo20_$sym")
-   train = train[1:5:end]
 
    # specify the models 
    model_sm = ace1_model(elements = [sym,], order = 3, totaldegree = totaldegree_sm)
@@ -27,8 +28,9 @@ for sym in syms
    @info("$sym models: length = $(length_basis(model_lge)), $(length_basis(model_sm))")
 
    # train the model 
-   acefit!(train, model_sm;  solver=ACEfit.BLR()); GC.gc()
-   acefit!(train, model_lge; solver=ACEfit.BLR()); GC.gc() 
+   solver = ACEfit.BLR(; factorization = :svd)
+   acefit!(train, model_sm;  solver=solver); GC.gc()
+   acefit!(train, model_lge; solver=solver); GC.gc() 
 
    # compute and store errors for later visualisation
    err_sm  = ACEpotentials.linear_errors(test, model_sm)
@@ -64,5 +66,5 @@ pretty_table(f_table; header = header)
 
 ##
 
-pretty_table(e_table, backend = Val(:latex), label = "Energy MAE", header = header)
-pretty_table(f_table, backend = Val(:latex), label = "Forces MAE", header = header)
+# pretty_table(e_table, backend = Val(:latex), label = "Energy MAE", header = header)
+# pretty_table(f_table, backend = Val(:latex), label = "Forces MAE", header = header)
