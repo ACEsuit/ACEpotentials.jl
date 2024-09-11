@@ -19,7 +19,7 @@ ACE models are defined in terms of body-ordered invariant features of atomic env
 
 * G. Dusson, M. Bachmayr, G. Csanyi, S. Etter, C. van der Oord, and C. Ortner. Atomic cluster expansion: Completeness, efficiency and stability. J. Comp. Phys. 454, 110946, 2022. [[DOI]](https://doi.org/10.1016/j.jcp.2022.110946) [[arxiv]](https://arxiv.org/abs/1911.03550)
 
-* William C. Witt, Cas van der Oord, Elena Gelžinyté, Teemu Järvinen, Andres Ross, James P. Darby, Cheuk Hin Ho, William J. Baldwin, Matthias Sachs, James Kermode, Noam Bernstein, Gábor Csányi, and Christoph Ortner. ACEpotentials.jl: A Julia Implementation of the Atomic Cluster Expansion. J. Chem. Phys., 159:164101, 2023. [[DOI]](https://doi.org/10.1063/5.0158783) [[arxiv]](https://arxiv.org/abs/2309.03161)
+* W. C. Witt, C. van der Oord, E. Gelžinyté, T. Järvinen, A. Ross, J. P. Darby, C. H. Ho, W. J. Baldwin, M. Sachs, J. Kermode, N. Bernstein, G. Csányi, and C. Ortner. ACEpotentials.jl: A Julia Implementation of the Atomic Cluster Expansion. J. Chem. Phys., 159:164101, 2023. [[DOI]](https://doi.org/10.1063/5.0158783) [[arxiv]](https://arxiv.org/abs/2309.03161)
 
 ### Key Dependencies
 

@@ -88,6 +88,6 @@ pip install .
 ``` 
 
 
-### Trouble-shooting
+### Troubleshooting
 
-There are currently no known recurring problems with ACEpotentials installation. 
+There are currently no known recurring problems with `ACEpotentials` installation.

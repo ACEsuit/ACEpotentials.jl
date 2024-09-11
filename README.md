@@ -4,7 +4,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://acesuit.github.io/ACEpotentials.jl/stable)
 [![Build Status](https://github.com/acesuit/ACEpotentials.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/acesuit/ACEpotentials.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
-`ACEpotentials.jl` facilitates the creation and use of atomic cluster expansion (ACE) interatomic potentials. See [the documentation](https://acesuit.github.io/ACEpotentials.jl/stable) for installation instructions, tutorials, and more.
+`ACEpotentials.jl` facilitates the creation and use of atomic cluster expansion (ACE) interatomic potentials. See [the documentation](https://acesuit.github.io/ACEpotentials.jl/dev) for installation instructions, tutorials, and more.
 
 ## Notes on Versions
 

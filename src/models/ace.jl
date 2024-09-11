@@ -341,11 +341,8 @@ function evaluate_ed(model::ACEModel,
    rs, ∇rs = @withalloc radii_ed!(Rs)
 
    # evaluate the radial basis
-   # TODO: using @withalloc causes stack overflow 
    Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
                                                ps.rbasis, st.rbasis)
-   # Rnl, dRnl = evaluate_ed_batched(model.rbasis, rs, Z0, Zs, 
-   #                                 ps.rbasis, st.rbasis)
 
    # evaluate the Y basis
    Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
@@ -614,23 +611,24 @@ end
 __vec(Rs::AbstractVector{SVector{3, T}}) where {T} = reinterpret(T, Rs)
 __svecs(Rsvec::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, Rsvec)
 
-function evaluate_basis_ed(model::ACEModel, 
+function evaluate_basis_ed_old(model::ACEModel, 
                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                            ps, st) where {T}
 
    if length(Rs) == 0 
       B = zeros(T, length_basis(model))
       dB = zeros(SVector{3, T}, (0, length_basis(model)))
-   end
+   else
 
-   B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
+      B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
 
-   dB_vec = ForwardDiff.jacobian( 
-            _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st),
-            __vec(Rs))
-   dB1 = __svecs(collect(dB_vec')[:])
-   dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
-                               (2, 1) ) )
+      dB_vec = ForwardDiff.jacobian( 
+               _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st),
+               __vec(Rs))
+      dB1 = __svecs(collect(dB_vec')[:])
+      dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
+                                 (2, 1) ) )
+   end 
 
    return B, dB         
 end
@@ -653,3 +651,77 @@ function jacobian_grad_params(model::ACEModel,
    return Ei, ∂Ei_vec, ∂∂Ei, st
 end
 
+
+
+# ---------------------------------------------------------
+#  experimental pushforwards 
+
+function evaluate_basis_ed(model::ACEModel, 
+                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+                            ps, st) where {T}
+
+   TB = T
+   ∂TB = SVector{3, T}
+   B = zeros(TB, length_basis(model))
+   ∂B = zeros(∂TB, length_basis(model), length(Rs))
+
+   if length(Rs) == 0
+      return B, ∂B
+   end
+   
+   @no_escape begin 
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
+
+   # get the radii 
+   rs, ∇rs = @withalloc radii_ed!(Rs)
+
+   # evaluate the radial basis
+   Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
+                                               ps.rbasis, st.rbasis)
+
+   # evaluate the Y basis
+   Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
+
+   # compute vectorial dRnl 
+   ∂Ylm = dYlm 
+   ∂Rnl = @alloc(eltype(dYlm), size(dRnl)...)
+   for nl = 1:size(dRnl, 2)
+      # @inbounds begin 
+      # @simd ivdep 
+         for j = 1:size(dRnl, 1)
+            ∂Rnl[j, nl] = dRnl[j, nl] * ∇rs[j]
+         end
+      # end
+   end
+
+   # pushfoward through the sparse tensor - this completes the MB jacobian. 
+   Bmb_i, ∂Bmb_i = _pfwd(model.tensor, Rnl, Ylm, ∂Rnl, ∂Ylm)
+
+   # ------------------- 
+   #  pair potential 
+   if model.pairbasis != nothing    
+      Rnl2, dRnl2 = @withalloc evaluate_ed_batched!(model.pairbasis, 
+                                 rs, Z0, Zs, 
+                                 ps.pairbasis, st.pairbasis)
+      B2_i = sum(Rnl2, dims=1)[:]
+      ∂B2_i = zeros(eltype(∂Bmb_i), size(Rnl2, 2), size(Rnl2, 1))
+      for nl = 1:size(dRnl2, 2)
+         for j = 1:size(dRnl2, 1)
+            ∂B2_i[nl, j] = dRnl2[j, nl] * ∇rs[j]
+         end
+      end
+   else 
+      B2_i = zeros(eltype(Bmb_i), 0)
+      ∂B2_i = zeros(eltype(∂Bmb_i), 0, size(Bmb_i, 2))
+   end 
+
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
+   end  # @no_escape
+
+   B[get_basis_inds(model, Z0)] .= Bmb_i
+   B[get_pairbasis_inds(model, Z0)] .= B2_i
+   ∂B[get_basis_inds(model, Z0), :] .= ∂Bmb_i
+   ∂B[get_pairbasis_inds(model, Z0), :] .= ∂B2_i
+
+   return B, ∂B 
+end
