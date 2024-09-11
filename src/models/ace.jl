@@ -659,6 +659,15 @@ end
 function evaluate_basis_ed(model::ACEModel, 
                             Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                             ps, st) where {T}
+
+   TB = T
+   ∂TB = SVector{3, T}
+   B = zeros(TB, length_basis(model))
+   ∂B = zeros(∂TB, length_basis(model), length(Rs))
+
+   if length(Rs) == 0
+      return B, ∂B
+   end
    
    @no_escape begin 
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
@@ -709,12 +718,8 @@ function evaluate_basis_ed(model::ACEModel,
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
    end  # @no_escape
 
-   TB = promote_type(eltype(Bmb_i), eltype(B2_i))
-   ∂TB = promote_type(eltype(∂Bmb_i), eltype(∂B2_i))
-   B = zeros(TB, length_basis(model))
    B[get_basis_inds(model, Z0)] .= Bmb_i
    B[get_pairbasis_inds(model, Z0)] .= B2_i
-   ∂B = zeros(∂TB, length_basis(model), size(∂Bmb_i, 2))
    ∂B[get_basis_inds(model, Z0), :] .= ∂Bmb_i
    ∂B[get_pairbasis_inds(model, Z0), :] .= ∂B2_i
 

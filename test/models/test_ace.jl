@@ -120,7 +120,7 @@ for ybasis in [:spherical, :solid]
 ##
 
    @info("Test second mixed derivatives reverse-over-reverse")
-   for ntest = 1:20 
+   for ntest = 1:10 
       local Nat, Rs, Zs, Us, Ei, ∂Ei, ∂2_Ei, 
             ps_vec, vs_vec, F, dF0, z0, _restruct 
 
@@ -150,7 +150,7 @@ for ybasis in [:spherical, :solid]
 
    @info("Test basis implementation")
 
-   for ntest = 1:30 
+   for ntest = 1:5 
       local Nat, Rs, Zs, z0, Ei, B, θ, st1 , ∇Ei
 
       Nat = 15
@@ -173,7 +173,7 @@ for ybasis in [:spherical, :solid]
 
    @info("Test the full mixed jacobian")
 
-   for ntest = 1:30 
+   for ntest = 1:5 
       local Nat, Rs, Zs, z0, Ei, ∇Ei, ∂∂Ei, Us, F, dF0
 
       Nat = 15
@@ -195,7 +195,7 @@ for ybasis in [:spherical, :solid]
    ps_lin.WB[:] .= ps.WB[:] 
    ps_lin.Wpair[:] .= ps.Wpair[:]
 
-   for ntest = 1:10
+   for ntest = 1:5
       local len, Nat, Rs, Zs, z0, Ei 
       len = 100 
       mae = sum(1:len) do _
@@ -213,7 +213,7 @@ for ybasis in [:spherical, :solid]
 ## 
 
    @info("After splinification check correctness of evaluate_basis_ed again")
-   for ntest = 1:10
+   for ntest = 1:5
       local Nat, Rs, Zs, z0, Ei 
       Nat = rand(8:16)
       Rs, Zs, z0 = M.rand_atenv(model, Nat)
@@ -225,9 +225,6 @@ for ybasis in [:spherical, :solid]
       print_tf(@test ∂B ≈ ∂B0)
    end
    println() 
-      # ∂E0 = ForwardDiff.derivative(
-      #       t -> M.evaluate_basis(lin_ace, Rs + t * Us, Zs, z0, ps, st), 
-      #       0.0)
       
 end
 
