@@ -5,6 +5,7 @@
 using ACEpotentials
 using ACEpotentials: JSON, ExtXYZ
 using ACEpotentials.ArgParse: ArgParseSettings, @add_arg_table, parse_args
+using TOML
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 
@@ -61,4 +62,4 @@ end
 result_file = args_dict["output"]["model"]
 ACEpotentials.save_model(model, joinpath(@__DIR__(), args_dict["output"]["model"]); 
                          make_model_args = args_dict, 
-                         errors = err, )
+                         errors = err,)
