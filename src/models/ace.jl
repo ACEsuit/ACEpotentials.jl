@@ -611,23 +611,24 @@ end
 __vec(Rs::AbstractVector{SVector{3, T}}) where {T} = reinterpret(T, Rs)
 __svecs(Rsvec::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, Rsvec)
 
-function evaluate_basis_ed(model::ACEModel, 
+function evaluate_basis_ed_old(model::ACEModel, 
                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                            ps, st) where {T}
 
    if length(Rs) == 0 
       B = zeros(T, length_basis(model))
       dB = zeros(SVector{3, T}, (0, length_basis(model)))
-   end
+   else
 
-   B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
+      B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
 
-   dB_vec = ForwardDiff.jacobian( 
-            _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st),
-            __vec(Rs))
-   dB1 = __svecs(collect(dB_vec')[:])
-   dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
-                               (2, 1) ) )
+      dB_vec = ForwardDiff.jacobian( 
+               _Rs -> evaluate_basis(model, __svecs(_Rs),  Zs, Z0, ps, st),
+               __vec(Rs))
+      dB1 = __svecs(collect(dB_vec')[:])
+      dB = collect( permutedims( reshape(dB1, length(Rs), length(B)), 
+                                 (2, 1) ) )
+   end 
 
    return B, dB         
 end
@@ -655,7 +656,7 @@ end
 # ---------------------------------------------------------
 #  experimental pushforwards 
 
-function _evaluate_basis_ed(model::ACEModel, 
+function evaluate_basis_ed(model::ACEModel, 
                             Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
                             ps, st) where {T}
    
@@ -685,7 +686,7 @@ function _evaluate_basis_ed(model::ACEModel,
    end
 
    # pushfoward through the sparse tensor - this completes the MB jacobian. 
-   B, ∂B = _pfwd(model.tensor, Rnl, Ylm, ∂Rnl, ∂Ylm)
+   Bmb_i, ∂Bmb_i = _pfwd(model.tensor, Rnl, Ylm, ∂Rnl, ∂Ylm)
 
    # ------------------- 
    #  pair potential 
@@ -693,20 +694,29 @@ function _evaluate_basis_ed(model::ACEModel,
       Rnl2, dRnl2 = @withalloc evaluate_ed_batched!(model.pairbasis, 
                                  rs, Z0, Zs, 
                                  ps.pairbasis, st.pairbasis)
-      Apair = sum(Rnl2, dims=1)[:]
-      ∂Apair = zeros(eltype(∂B), size(Rnl2, 2), size(Rnl2, 1))
+      B2_i = sum(Rnl2, dims=1)[:]
+      ∂B2_i = zeros(eltype(∂Bmb_i), size(Rnl2, 2), size(Rnl2, 1))
       for nl = 1:size(dRnl2, 2)
          for j = 1:size(dRnl2, 1)
-            ∂Apair[nl, j] = dRnl2[j, nl] * ∇rs[j]
+            ∂B2_i[nl, j] = dRnl2[j, nl] * ∇rs[j]
          end
       end
-
-      B = [ B; Apair ]
-      ∂B = [ ∂B; ∂Apair ]
-   end
+   else 
+      B2_i = zeros(eltype(Bmb_i), 0)
+      ∂B2_i = zeros(eltype(∂Bmb_i), 0, size(Bmb_i, 2))
+   end 
 
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
    end  # @no_escape
+
+   TB = promote_type(eltype(Bmb_i), eltype(B2_i))
+   ∂TB = promote_type(eltype(∂Bmb_i), eltype(∂B2_i))
+   B = zeros(TB, length_basis(model))
+   B[get_basis_inds(model, Z0)] .= Bmb_i
+   B[get_pairbasis_inds(model, Z0)] .= B2_i
+   ∂B = zeros(∂TB, length_basis(model), size(∂Bmb_i, 2))
+   ∂B[get_basis_inds(model, Z0), :] .= ∂Bmb_i
+   ∂B[get_pairbasis_inds(model, Z0), :] .= ∂B2_i
 
    return B, ∂B 
 end

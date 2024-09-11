@@ -133,9 +133,9 @@ end
 function rrule(::typeof(evaluate_batched), 
                basis::SplineRnlrzzBasis, 
                rs, zi, zjs, ps, st)
-   Rnl, st = evaluate_batched(basis, rs, zi, zjs, ps, st)
+   Rnl = evaluate_batched(basis, rs, zi, zjs, ps, st)
 
-   return (Rnl, st), 
+   return Rnl, 
          Δ -> (NoTangent(), NoTangent(), NoTangent(), NoTangent(), 
               NamedTuple(), NoTangent())
 end

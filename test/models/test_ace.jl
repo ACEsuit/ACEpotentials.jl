@@ -162,7 +162,9 @@ for ybasis in [:spherical, :solid]
       print_tf(@test Ei ≈ dot(B, θ))
 
       Ei, ∇Ei = M.evaluate_ed(model, Rs, Zs, z0, ps, st)
-      B, ∇B = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
+
+      B1, ∇B = M.evaluate_basis_ed(model, Rs, Zs, z0, ps, st)
+      print_tf(@test B ≈ B1)
       print_tf(@test ∇Ei ≈ sum(θ .* ∇B, dims=1)[:])   
    end
    println() 
@@ -208,6 +210,25 @@ for ybasis in [:spherical, :solid]
    end
    println() 
 
+## 
+
+   @info("After splinification check correctness of evaluate_basis_ed again")
+   for ntest = 1:10
+      local Nat, Rs, Zs, z0, Ei 
+      Nat = rand(8:16)
+      Rs, Zs, z0 = M.rand_atenv(model, Nat)
+      Us = randn(SVector{3, Float64}, Nat) / sqrt(Nat)
+      B, ∂B = M.evaluate_basis_ed(lin_ace, Rs, Zs, z0, ps, st)
+      B0 = M.evaluate_basis(lin_ace, Rs, Zs, z0, ps, st)
+      ∂B0 = M.jacobian_grad_params(lin_ace, Rs, Zs, z0, ps, st)[3]
+      print_tf(@test B ≈ B0)
+      print_tf(@test ∂B ≈ ∂B0)
+   end
+   println() 
+      # ∂E0 = ForwardDiff.derivative(
+      #       t -> M.evaluate_basis(lin_ace, Rs + t * Us, Zs, z0, ps, st), 
+      #       0.0)
+      
 end
 
 ##
