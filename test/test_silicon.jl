@@ -49,7 +49,6 @@ rmse_qr = Dict(
     "set"           => Dict("V"=>0.057, "E"=>0.0017, "F"=>0.12),
     "bt"            => Dict("V"=>0.08, "E"=>0.0022, "F"=>0.07),)
 
-
 acefit!(data, model; 
        data_keys...,
        weights = weights,

@@ -124,3 +124,78 @@ function get_nnll_spec(tensor::SparseEquivTensor{T}) where {T}
    return nnll_list
 end
 
+
+
+# ----------------------------------------
+#  experimental pushforwards 
+
+function _pfwd(tensor::SparseEquivTensor{T}, Rnl, Ylm, ∂Rnl, ∂Ylm) where {T}
+   A, ∂A = _pfwd(tensor.abasis, (Rnl, Ylm), (∂Rnl, ∂Ylm))
+   _AA, _∂AA = _pfwd(tensor.aabasis, A, ∂A)
+
+   # project to the actual AA basis 
+   proj = tensor.aabasis.projection
+   AA = _AA[proj]  
+   ∂AA = _∂AA[proj, :]
+
+   # evaluate the coupling coefficients
+   B = tensor.A2Bmap * AA 
+   ∂B = tensor.A2Bmap * ∂AA 
+   return B, ∂B 
+end
+
+
+function _pfwd(abasis::Polynomials4ML.PooledSparseProduct{2}, RY, ∂RY) 
+   R, Y = RY 
+   TA = typeof(R[1] * Y[1])
+   ∂R, ∂Y = ∂RY
+   ∂TA = typeof(R[1] * ∂Y[1] + ∂R[1] * Y[1])
+
+   # check lengths 
+   nX = size(R, 1)
+   @assert nX == size(R, 1) == size(∂R, 1) == size(Y, 1) == size(∂Y, 1)
+
+   A = zeros(TA, length(abasis.spec))
+   ∂A = zeros(∂TA, size(∂R, 1), length(abasis.spec))
+
+   for i = 1:length(abasis.spec)
+      @inbounds begin 
+         n1, n2 = abasis.spec[i]
+         ai = zero(TA)
+         @simd ivdep for α = 1:nX 
+            ai += R[α, n1] * Y[α, n2]
+            ∂A[α, i] = R[α, n1] * ∂Y[α, n2] + ∂R[α, n1] * Y[α, n2]
+         end 
+         A[i] = ai
+      end 
+   end 
+   return A, ∂A
+end 
+
+
+function _pfwd(aabasis::Polynomials4ML.SparseSymmProdDAG, A, ∂A)
+   n∂ = size(∂A, 1)
+   num1 = aabasis.num1 
+   nodes = aabasis.nodes 
+   AA = zeros(eltype(A), length(nodes))
+   T∂AA = typeof(A[1] * ∂A[1])
+   ∂AA = zeros(T∂AA, length(nodes), size(∂A, 1))
+   for i = 1:num1 
+      AA[i] = A[i] 
+      for α = 1:n∂
+         ∂AA[i, α] = ∂A[α, i]
+      end
+   end 
+   for iAA = num1+1:length(nodes)
+      n1, n2 = nodes[iAA]
+      AA_n1 = AA[n1]
+      AA_n2 = AA[n2]
+      AA[iAA] = AA_n1 * AA_n2
+      for α = 1:n∂
+         ∂AA[iAA, α] = AA_n2 * ∂AA[n1, α] + AA_n1 * ∂AA[n2, α]
+      end
+   end
+   return AA, ∂AA
+end
+
+
