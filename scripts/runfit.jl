@@ -1,14 +1,14 @@
 #
-# julia --project=. runfit.jl -p example_params.json
+# See ACEpotentials.jl documentation for correct usage of this script. 
 #
 
 using ACEpotentials
 using ACEpotentials: JSON, ExtXYZ
-using ACEpotentials.ArgParse: ArgParseSettings, @add_arg_table, parse_args
+using ACEpotentials.ArgParse: ArgParseSettings, @add_arg_table!, parse_args
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
 
-@add_arg_table parser begin
+@add_arg_table! parser begin
     "--params", "-p"
         help = "A JSON or YAML filename with parameters for the fit"
     "--dry-run"
@@ -39,12 +39,14 @@ data_keys = (
 
 weights = args_dict["solve"]["weights"]
 
-solver = ACEpotentials.make_solver(args_dict["solve"]["solver"])
+solver = ACEpotentials.make_solver(model, 
+                                   args_dict["solve"]["solver"], 
+                                   args_dict["solve"]["prior"])
  
-# TODO: make prior
-
 acefit!(train, model;
-       data_keys..., weights = weights, solver = solver)
+       data_keys..., 
+       weights = weights, 
+       solver = solver)
 
 # training errors
 err_train = ACEpotentials.linear_errors(train, model; data_keys..., weights=weights)

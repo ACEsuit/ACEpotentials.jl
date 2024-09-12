@@ -9,7 +9,7 @@ using ACEpotentials, Test, LazyArtifacts
     @testset "Test recomputation of weights" begin include("test_recompw.jl") end
 
     # json interface tests 
-    @testset "Test JSON interface" begin include("json_test.jl") end
+    @testset "Test JSON interface" begin include("test_json.jl") end
 
     # misc
     @testset "Weird bugs" begin include("test_bugs.jl") end

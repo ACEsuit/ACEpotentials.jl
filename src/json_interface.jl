@@ -1,5 +1,5 @@
 import ArgParse 
-
+using NamedTupleTools
 import .ACE1compat
 using ACEfit
 
@@ -46,7 +46,20 @@ function make_model(model_dict::Dict)
 end
 
 # chho: make this support other solvers
-function make_solver(solver_dict::Dict)
+function make_solver(model, solver_dict::Dict, prior_dict::Dict)
+   
+   # if no prior is specified, then use I as default, which is dumb
+   if isempty(prior_dict)
+      P = I 
+   else 
+      P = make_prior(model, prior_dict)
+   end 
+
+   # if no solver is specified, then use BLR as default 
+   if isempty(solver_dict) 
+      return BLR(; P = P) 
+   end 
+
    if solver_dict["name"] == "BLR"
       params_nt = _sanitize_dict(solver_dict["param"])
       return ACEfit.BLR(; params_nt...)
@@ -58,13 +71,11 @@ function make_solver(solver_dict::Dict)
    end
 end
 
-# function make_prior(model, prior_dict::Dict)
-#    if prior_dict["name"] === "algebraic"
-#       return ACEpotentials.Models.algebraic_smoothness_prior(model.basis; p = prior_dict["param"])
-#    else
-#       error("Not implemented.")
-#    end
-# end
+# calles into functions defined in ACEpotentials.Models
+function make_prior(model, prior_dict::Dict)
+   return ACEpotentials.Models.make_prior(model, namedtuple(prior_dict))
+end
+
 
 """
       copy_runfit(dest)
