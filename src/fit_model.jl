@@ -75,6 +75,7 @@ the label of the data to which the parameters will be fitted.
    in a JSON format, which can be read from Julia or Python
 """
 function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
+                validation_set = nothing, 
                 solver = ACEfit.BLR(),
                 weights = default_weights(),
                 energy_key = "energy", 
@@ -133,8 +134,25 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
    # then solve the transformed problem 
    Ap = Diagonal(W) * (A / P) 
    Y = W .* Y
-   result = ACEfit.solve(solver, Ap, Y)
-   coeffs = P \ result["C"]
+
+   if isnothing(validation_set) 
+      result = ACEfit.solve(solver, Ap, Y)
+
+   else
+      @info("assemble validation system")
+      val_data = make_atoms_data(validation_set, model; 
+                                 energy_key = energy_key, 
+                                 force_key = force_key, 
+                                 virial_key = virial_key, 
+                                 weights = weights)
+      Av, Yv, Wv = ACEfit.assemble(val_data, model)
+      Avp = Diagonal(Wv) * (Av / P)
+      Yv = Wv .* Yv
+
+      result = ACEfit.solve(solver, Ap, Y, Avp, Yv)
+   end
+   
+   coeffs = P \ result["C"]   
 
    # dispatch setting of parameters 
    __set_params!(model, coeffs)
