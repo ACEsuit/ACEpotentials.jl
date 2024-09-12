@@ -28,6 +28,15 @@ args = parse_args(parser)
 @info("Load parameter file") 
 args_dict = JSON.parsefile(args["params"])
 
+# outputs
+if args["result_folder"] === nothing
+    @info("result_folder not specified, create result folder at $(args["params"][1:end-5] * "results")")
+    args["result_folder"] = args["params"][1:end-5] * "_results"
+end
+res_path = args["result_folder"]
+mkpath(res_path)
+@info("result storing at $(res_path)")
+
 @info("Construct ACEmodel of type $(args_dict["model"]["model_name"])")
 model = ACEpotentials.make_model(args_dict["model"])
 
