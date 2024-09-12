@@ -20,15 +20,23 @@ model = ace1_model(elements = [:Si],
 data = [ AtomsData(at; datakeys..., v_ref = model.model.Vref) for at in rawdata ]
 A, Y, W = ACEfit.assemble(data, model);
 
-# A positive definite matrix P specifies a normal prior distribution in the Bayesian framework, but for the purpose of this tutorial it is maybe more intuitive to simply think of it as a regularisation operator. The regularised linear least squares problem is 
+# A positive definite matrix P specifies a normal prior distribution in the Bayesian framework, but for the purpose of this tutorial it is maybe more intuitive to simply think of it as a regularisation operator. The regularised linear least squares problem is
 # ```math
 #   \| A c - y \|^2 + \lambda \| P c \|^2
 # ```
 # where `A` is the design matrix, ``y`` is the vector of observations, ``c`` is the vector of parameters, and ``\lambda`` is a regularisation parameter. The prior matrix ``P`` is specified by the user. At present we support diagonal operators ``P``. The diagonal elements of ``P`` are the prior variances. The larger the prior variance, the smoother the fitted potential.
-# Although not *strictly* true, we can think of each basis function as specified by a the parameters ``(n_t, l_t)_{t = 1}^N``, where ``N`` is the correlation-order. 
-# The corresponding prior matrix element must be a function of those ``n_t, l_t`` values. We currently support three classes: algebraic, exponential and gaussian. 
-
-# **TODO:** write down the precise definitions.
+# Although not *strictly* true, we can think of each basis function as specified by a the parameters ``(n_t, l_t)_{t = 1}^N``, where ``N`` is the correlation-order, i.e., corresponding prior matrix element must be a function of those ``n_t, l_t`` values, 
+# ```math
+#    P_{\bf k \bf k} = \gamma({\bf k}).
+# ```
+# We currently provide convenient interfaces for three classes: algebraic, exponential and gaussian. Technically, (but loosely speaking) an algebraic prior declares that the target function has `p` derivatives (for some parameter `p`), the exponential prior declares that the target function is analytic, while the gaussian prior declares that the target function is entire. 
+# In practice, especially for small datasets when the model is underdetermined, one may use a stronger prior than is justified by our knowledge about the target function. For large and diverse datasets it can happen that too strong a prior will adversely affect the fit accuracy. 
+# For the definition of the three main prior classes, see the documentation for 
+# ```julia
+# ?algebraic_smoothness_prior
+# ?exp_smoothness_prior
+# ?gaussian_smoothness_prior
+# ```
 
 # In the following we demonstrate the usage of algebraic and gaussian priors. The choices for `σl, σn` made here may seem "magical", but there is a good justification and we plan to automate this in future releases. 
 
