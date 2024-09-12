@@ -110,3 +110,13 @@ test_rmse(err_blr["rmse"], rmse_blr)
 #             solver = ACEfit.BLR(factorization = :svd, committee_size = 10))
 #     #test_rmse(results["errors"]["rmse"], rmse_blr, 1e-5)
 # end
+
+
+##
+# Add a descriptor test 
+
+using AtomsBuilder
+sys = rattle!(bulk(:Si, cubic=true) * 2, 0.1)
+X = site_descriptors(sys, model)
+X234 = site_descriptors(sys, model; domain = [2,3,4])
+X234 == X[2:4]
