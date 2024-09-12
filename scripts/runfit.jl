@@ -62,5 +62,10 @@ end
 # saving results
 result_file = args_dict["output"]["model"]
 ACEpotentials.save_model(model, joinpath(@__DIR__(), args_dict["output"]["model"]); 
-                         make_model_args = args_dict, 
+                         model_spec = args_dict, 
                          errors = err, )
+
+
+# To load the model, active the same Julia environment, then run 
+# `model, meta = ACEpotentials.load_model("path/to/model.json")`
+# the resulting `model` object should be equivalent to the fitted `model`.

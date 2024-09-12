@@ -2,15 +2,14 @@ import ArgParse
 using NamedTupleTools
 import .ACE1compat
 using ACEfit
+using Optimisers: destructure
 
 # === nt utilities ===
-function create_namedtuple(dict)
-   return NamedTuple{Tuple(Symbol.(keys(dict)))}(values(dict))
-end
 
-function nested_namedtuple_to_dict(nt)
-   return Dict(k => isa(v, NamedTuple) ? nested_namedtuple_to_dict(v) : v for (k, v) in pairs(nt))
-end
+recursive_dict2nt(x) = x
+
+recursive_dict2nt(D::Dict) = (;
+      [ Symbol(key) => recursive_dict2nt(D[key]) for key in keys(D)]... )
  
 function _sanitize_arg(arg)
    if isa(arg, Vector)  
@@ -107,26 +106,26 @@ save model constructor, model parameters, and other information to a JSON file.
 
 * `model` : the model to be saved
 * `filename` : the name of the file to which the model will be saved
-* `make_model_args` : the arguments used to construct the model; without this 
+* `model_spec` : the arguments used to construct the model; without this 
             the model cannot be reconstructed unless the original script is available
 * `errors` : the fitting / test errors computed during the fitting 
 * `verbose` : print information about the saving process     
 """
 function save_model(model, filename; 
-                    make_model_args = nothing, 
+                    model_spec = nothing, 
                     errors = nothing, 
                     verbose = true, 
                     meta = Dict(), )
 
-   D = Dict("model_parameters" => model.ps, 
+   D = Dict("model_parameters" => destructure(model.ps)[1], 
             "meta" => meta)
 
-   if isnothing(make_model_args) 
+   if isnothing(model_spec) 
       if verbose
          @warn("Only model parameters are saved but no information to reconstruct the model.")
       end
    else 
-      D["make_model_args"] = make_model_args
+      D["model_spec"] = model_spec
    end
 
    if !isnothing(errors)
@@ -140,4 +139,12 @@ function save_model(model, filename;
    if verbose
       @info "Results saved to file: $filename"
    end
+end
+
+
+function load_model(filename) 
+   D = JSON.parsefile(filename)
+   model = make_model(D["model_spec"])
+   set_parameters!(model, D["model_parameters"])
+   return model, D
 end
