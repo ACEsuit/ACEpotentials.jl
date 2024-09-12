@@ -34,10 +34,11 @@ Suppose the result of `runfit.jl` (or an analogous approach) is saved to
 `path/result.json`. If the original or a compatible Julia environment is 
 activated, then 
 ```julia
-model = ACEpotentials.load_model("path/result.json")
+model, meta = ACEpotentials.load_model("path/result.json")
 ```
 will return a `model::ACEPotential` structure that should be equivalent 
-to the original fitted potential. 
+to the original fitted potential. The `meta::Dict` dictionary contains all 
+the remaining information saved in `result.json`. 
 
 ### Recovering the Julia environment 
 
