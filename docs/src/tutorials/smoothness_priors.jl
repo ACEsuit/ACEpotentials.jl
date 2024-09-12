@@ -1,6 +1,6 @@
 # # Smoothness Priors
 
-using ACEpotentials, LinearAlgebra, Plots, LaTeXStrings
+using ACEpotentials, LinearAlgebra, Plots, LaTeXStrings, Unitful 
 
 # ACEpotentials models make heavy use of smoothness priors, i.e., prior parameter distributions that impose smoothness on the fitted potential. This tutorial demonstrates how to use the smoothness priors implemented in ACEpotentials.
 # We start by reading in a tiny testing dataset, and bring the data into a format
@@ -12,29 +12,37 @@ datakeys = (energy_key = "dft_energy", force_key = "dft_force", virial_key = "df
 rcut = 6.0     # cut off distance 
 r_nn = 2.3     # typical nearest neighbour distance
 
-model = ACE1x.acemodel(elements = [:Si],
-                       order = 3, totaldegree = 12,
-                       rcut = rcut, r0 = r_nn, 
-                       Eref = Dict("Si" => -158.54496821))
+model = ace1_model(elements = [:Si],
+                    order = 3, totaldegree = 12,
+                    rcut = rcut, r0 = r_nn, 
+                    Eref = Dict(:Si => -158.54496821))
 
-data = [ AtomsData(at; datakeys..., v_ref = model.Vref) for at in rawdata ]
-A, Y, W = ACEfit.assemble(data, model.basis);
+data = [ AtomsData(at; datakeys..., v_ref = model.model.Vref) for at in rawdata ]
+A, Y, W = ACEfit.assemble(data, model);
 
-# A positive definite matrix P specifies a normal prior distribution in the Bayesian framework, but for the purpose of this tutorial it is maybe more intuitive to simply think of it as a regularisation operator. The regularised linear least squares problem is 
+# A positive definite matrix P specifies a normal prior distribution in the Bayesian framework, but for the purpose of this tutorial it is maybe more intuitive to simply think of it as a regularisation operator. The regularised linear least squares problem is
 # ```math
 #   \| A c - y \|^2 + \lambda \| P c \|^2
 # ```
 # where `A` is the design matrix, ``y`` is the vector of observations, ``c`` is the vector of parameters, and ``\lambda`` is a regularisation parameter. The prior matrix ``P`` is specified by the user. At present we support diagonal operators ``P``. The diagonal elements of ``P`` are the prior variances. The larger the prior variance, the smoother the fitted potential.
-# Although not *strictly* true, we can think of each basis function as specified by a the parameters ``(n_t, l_t)_{t = 1}^N``, where ``N`` is the correlation-order. 
-# The corresponding prior matrix element must be a function of those ``n_t, l_t`` values. We currently support three classes: algebraic, exponential and gaussian. 
-
-# **TODO:** write down the precise definitions.
+# Although not *strictly* true, we can think of each basis function as specified by a the parameters ``(n_t, l_t)_{t = 1}^N``, where ``N`` is the correlation-order, i.e., corresponding prior matrix element must be a function of those ``n_t, l_t`` values, 
+# ```math
+#    P_{\bf k \bf k} = \gamma({\bf k}).
+# ```
+# We currently provide convenient interfaces for three classes: algebraic, exponential and gaussian. Technically, (but loosely speaking) an algebraic prior declares that the target function has `p` derivatives (for some parameter `p`), the exponential prior declares that the target function is analytic, while the gaussian prior declares that the target function is entire. 
+# In practice, especially for small datasets when the model is underdetermined, one may use a stronger prior than is justified by our knowledge about the target function. For large and diverse datasets it can happen that too strong a prior will adversely affect the fit accuracy. 
+# For the definition of the three main prior classes, see the documentation for 
+# ```julia
+# ?algebraic_smoothness_prior
+# ?exp_smoothness_prior
+# ?gaussian_smoothness_prior
+# ```
 
 # In the following we demonstrate the usage of algebraic and gaussian priors. The choices for `σl, σn` made here may seem "magical", but there is a good justification and we plan to automate this in future releases. 
 
-Pa2 = ACE1x.algebraic_smoothness_prior(model.basis; p=2)
-Pa4 = ACE1x.algebraic_smoothness_prior(model.basis; p=4)
-Pg  = ACE1x.gaussian_smoothness_prior( model.basis, σl = (2/r_nn)^2, σn = (0.5/r_nn)^2);
+Pa2 = algebraic_smoothness_prior(model; p=2)
+Pa4 = algebraic_smoothness_prior(model; p=4)
+Pg  = gaussian_smoothness_prior( model; wl = (2/r_nn)^2, wn = (0.5/r_nn)^2);
 
 # Each of these object `Pa2, Pa4, Pg` are diagonal matrices. For each prior constructed above we now solve the regularised least squares problem. Note how design matrix need only be assembled once if we want to play with many different priors. Most of the time we would just use defaults however and then these steps are all taken care of behind the scenes. 
 
@@ -49,12 +57,13 @@ for (prior_name, P) in priors
     Ã = Diagonal(W) * (A / P)
     ỹ = Diagonal(W) * Y
     c̃ = ACEfit.solve(ACEfit.BLR(; verbose=false), Ã, ỹ)["C"]
-    ACE1x._set_params!(model, P \ c̃)
+    _modl = deepcopy(model)
+    set_parameters!(_modl, P \ c̃)
 
     ## compute errors and store them for later use (don't print them here)
-    errs = ACEpotentials.linear_errors(rawdata, model; verbose=false, datakeys...)
+    errs = linear_errors(rawdata, model; verbose=false, datakeys...)
     rmse[prior_name] = errs["rmse"]["set"]["F"]
-    pots[prior_name] = model.potential
+    pots[prior_name] = _modl
     println(" force=rmse = ", rmse[prior_name])
 end
 
@@ -77,9 +86,9 @@ plt_dim
 # Next, we look at a trimer curve. This is generated using `ACEpotentials.trimers`. Both the `Id` and `Algebraic(2)` regularised models contain fairly significant oscillations while the `Algebraic(4)` and `Gaussian` models are much smoother. In addition, it appears that the `Gaussian` regularised model is somewhat more physically realistic on this slice with high energy at small bond-angles (thought the low energy at angle π seems somewhat strange).
 
 plt_trim = plot(legend = :topright, xlabel = L"\theta", ylabel = "E [eV]", 
-               xlims = (0, pi), ylims = (-0.35, 0.8))
+               xlims = (0, pi), ylims = (-0.6, 0.2))
 for l in labels
-    D = ACEpotentials.trimers(pots[l], [:Si,], r_nn,  r_nn)
+    D = ACEpotentials.trimers(pots[l], [:Si,], r_nn*u"Å",  r_nn*u"Å")
     plot!(plt_trim, D[(:Si, :Si, :Si)]..., label = l, lw=2)
 end
 vline!(plt_trim, [1.90241,], lw=2, label = "equilibrium angle")
@@ -87,12 +96,13 @@ plt_trim
 
 # Finally, we plot a decohesion curve, which contains more significant many-body effects. Arguably, none of our potentials perform very well on this test. Usually larger datasets, and longer cutoffs help in this case. 
 
+using AtomsBuilder  # gives us `bulk`
+
 at0 = bulk(:Si, cubic=true)
 plt_dec = plot(legend = :topright, xlabel = L"r [\AA]", ylabel = "strain [eV/Å]", 
                 xlim = (0.0, 5.0))
 for l in labels
-    aa, E, dE = ACEpotentials.decohesion_curve(at0, pots[l])
-    plot!(plt_dec, aa, dE, label = l, lw=2)
+    rr, E, dE = ACEpotentials.decohesion_curve(at0, pots[l])
+    plot!(plt_dec, ustrip.(rr), ustrip.(dE), label = l, lw=2)
 end
 plt_dec
-

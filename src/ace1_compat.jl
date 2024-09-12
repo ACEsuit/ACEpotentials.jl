@@ -8,7 +8,8 @@ import ACEpotentials: DefaultHypers, Models
 
 using ACEpotentials.Models: agnesi_transform, 
                             SplineRnlrzzBasis, 
-                            ace_learnable_Rnlrzz
+                            ace_learnable_Rnlrzz, 
+                            ACEPotential
 
 ace1_defaults() = deepcopy(_kw_defaults)
 
@@ -380,11 +381,10 @@ function ace1_model(; kwargs...)
                        max_level = maxlvl,
                        init_WB = :zeros,)
 
-   return model 
+   return ACEPotential(model)
 end
 
 
 
 end 
-
 

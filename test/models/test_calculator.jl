@@ -4,8 +4,8 @@
 
 ##
 
-using Test, ACEbase
-using ACEbase.Testing: print_tf, println_slim
+using Test, ACEbase 
+using Polynomials4ML.Testing: print_tf, println_slim
 
 using ACEpotentials
 M = ACEpotentials.Models
@@ -13,17 +13,18 @@ M = ACEpotentials.Models
 using Optimisers, ForwardDiff, Unitful
 import AtomsCalculators
 
-using AtomsBase, AtomsBuilder, EmpiricalPotentials
+using AtomsBase, AtomsBuilder
+# using EmpiricalPotentials
 AB = AtomsBuilder
 
-using AtomsCalculatorsUtilities.SitePotentials: get_neighbours
+using AtomsCalculatorsUtilities.SitePotentials: get_neighbours, PairList
 
 using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
 
 function _calc_E0s(at, calc)
    out = 0.0 
-   Zs = AtomsBase.atomic_number(at) 
+   Zs = AtomsBase.atomic_number(at, :) 
    for z in Zs
       out += calc.model.Vref.E0[z] 
    end
@@ -41,7 +42,7 @@ E0s = Dict( :Si => -158.54496821u"eV",
 NZ = length(elements)
 
 function make_rin0cut(zi, zj) 
-   r0 = ACE1x.get_r0(zi, zj)
+   r0 = ACEpotentials.DefaultHypers.bond_len(zi, zj)
    return (rin = 0.0, r0 = r0, rcut = 6.5)
 end
 
@@ -70,8 +71,8 @@ for ntest = 1:20
    local Rs, Zs, z0, at, efv 
    at = AB.randz!( AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1), 
                    (:Si => 0.6, :O => 0.5), )
-   n_Si = count(x -> x == 14, AtomsBase.atomic_number(at))                   
-   n_O = count(x -> x == 8, AtomsBase.atomic_number(at))
+   n_Si = count(x -> x == 14, AtomsBase.atomic_number(at, :))                   
+   n_O = count(x -> x == 8, AtomsBase.atomic_number(at, :))
    nlist = PairList(at, M.cutoff_radius(calc))
    efv = M.energy_forces_virial(at, calc, ps_zero, st)
    _E0 = E0s[:Si] * n_Si + E0s[:O] * n_O
@@ -128,12 +129,12 @@ for ntest = 1:10
    local at, Us, dF0, X0, F, Z
 
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBase.atomic_number(at)
+   Z = AtomsBase.atomic_number(at, :)
    Z[[3,6,8]] .= 8
    at = AtomsBuilder.set_elements(at, Z)
    Us = randn(SVector{3, Float64}, length(at)) / length(at) * u"Å"
    dF0 = - dot(Us, M.energy_forces_virial_serial(at, calc, ps, st).forces)
-   X0 = AtomsBase.position(at)
+   X0 = AtomsBase.position(at, :)
    F(t) = M.energy_forces_virial_serial(
                AtomsBuilder.set_positions(at, X0 + t * Us), 
                calc, ps, st).energy |> ustrip 
@@ -154,7 +155,7 @@ for ntest = 1:10
    len = 10 
    mae = sum(1:len) do _
       at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-      Z = AtomsBase.atomic_number(at)
+      Z = AtomsBase.atomic_number(at, :)
       Z[[3,6,8]] .= 8
       E = M.energy_forces_virial(at, calc, ps, st).energy
       E_lin = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin).energy
@@ -170,11 +171,11 @@ println()
 @info("Test splinified calculator basis usage")
 
 for ntest = 1:10
-   local ps_lin, st_lin, at, efv, _restruct
+   local ps_lin, st_lin, at, efv, _restruct, ps_vec
 
    ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBase.atomic_number(at)
+   Z = AtomsBase.atomic_number(at, :)
    Z[[3,6,8]] .= 8
 
    efv = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin)
@@ -203,7 +204,7 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
 
    # random structure 
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
-   Z = AtomsBase.atomic_number(at)
+   Z = AtomsBase.atomic_number(at, :)
    Z[[3,6,8]] .= 8
 
    function loss(at, calc, ps, st)

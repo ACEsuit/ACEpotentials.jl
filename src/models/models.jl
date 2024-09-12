@@ -22,8 +22,6 @@ include("elements.jl")
 
 include("onebody.jl")
 
-include("smoothness_priors.jl")
-
 include("radial_envelopes.jl")
 
 include("radial_transforms.jl")
@@ -38,6 +36,8 @@ include("ace_heuristics.jl")
 include("ace.jl")
 
 include("calculators.jl")
+
+include("smoothness_priors.jl")
 
 include("utils.jl")
 
