@@ -1,5 +1,6 @@
 using LinearAlgebra: Diagonal
 import ACEpotentials.Models: ACEPotential
+using NamedTupleTools: delete 
 
 # --------------------------------------------------
 #   different notions of "level" / total degree.
@@ -94,12 +95,20 @@ end
 algebraic_smoothness_prior(model; p = 4, wl = 2/3, wn = 1.0) = 
       smoothness_prior(model, bb -> sum((b.l/wl)^p + (b.n/wn)^p for b in bb))
 
+make_prior(model, ::Val{:algebraic}; kwargs...) = 
+      algebraic_smoothness_prior(model; kwargs...)
+
 exp_smoothness_prior(model; wn = 1.0, wl = 2/3) = 
       smoothness_prior(model, bb -> exp( sum(b.l / wl + b.n / wn for b in bb) ))
+
+make_prior(model, ::Union{Val{:exp}, Val{:exponential}}; kwargs...) = 
+      exp_smoothness_prior(model; kwargs...)      
 
 gaussian_smoothness_prior(model; wl = 1/sqrt(2), wn = 1/sqrt(2)) = 
       smoothness_prior(model, bb -> exp( sum( (b.l/wl)^2 + (b.n/wn)^2 for b in bb) ))
 
+make_prior(model, ::Val{:gaussian}; kwargs...) = 
+      gaussian_smoothness_prior(model; kwargs...)      
 
 algebraic_smoothness_prior_ace1(model::ACEPotential; kwargs...) = 
          algebraic_smoothness_prior_ace1(model.model, kwargs...)
@@ -113,3 +122,11 @@ function algebraic_smoothness_prior_ace1(model; p = 4, wL = 3/2)
    scal = _coupling_scalings(model)
    return Diagonal(γ .* scal .+ 1)
 end 
+
+
+make_prior(model::ACEPotential, params::NamedTuple) = 
+      make_prior(model.model, params) 
+
+make_prior(model, params::NamedTuple) = 
+      make_prior(model, Val(Symbol(params.name)); delete(params, :name)...)
+
