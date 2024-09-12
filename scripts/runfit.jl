@@ -137,9 +137,9 @@ if args_dict["output"]["make_plots"]
                                )
         end
         pall = plot(
-            PP["train"]["E"], PP["train"]["F"], 
-            PP["train"]["V"], PP["test"]["E"], 
-            PP["test"]["F"], PP["test"]["V"],
+            PP["train"]["E"], PP["test"]["E"], 
+            PP["train"]["F"], PP["test"]["F"], 
+            PP["test"]["V"], PP["test"]["V"],
             layout=(3, 2), size=(800, 800),
         )
         savefig(pall, joinpath(res_path, "scatter.png"))
