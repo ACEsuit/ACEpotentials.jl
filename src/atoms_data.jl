@@ -235,7 +235,9 @@ end
 
 
 function linear_errors(data::AbstractArray{AtomsData}, model; 
-                       group_key="config_type", verbose=true)
+                       group_key="config_type", verbose=true,
+                       return_efv = false
+                       )
 
    mae = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
    rmse = Dict("E"=>0.0, "F"=>0.0, "V"=>0.0)
@@ -245,6 +247,11 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
    config_mae = Dict{String,Any}()
    config_rmse = Dict{String,Any}()
    config_num = Dict{String,Any}()
+
+   evf_dict = Dict("Epred" => [], "Eref" => [],
+                   "Fpred" => [], "Fref" => [],
+                   "Vpred" => [], "Vref" => [],
+                   )
 
    for d in data
 
@@ -268,6 +275,8 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
            config_mae[c_t]["E"] += abs(estim-exact)
            config_rmse[c_t]["E"] += (estim-exact)^2
            config_num[c_t]["E"] += 1
+           push!(evf_dict["Epred"], estim)
+           push!(evf_dict["Eref"], exact)
        end
 
        # force errors
@@ -280,6 +289,8 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
            config_mae[c_t]["F"] += sum(abs, estim - exact)
            config_rmse[c_t]["F"] += sum(abs2, estim - exact)
            config_num[c_t]["F"] += 3*length(d.system)
+           push!(evf_dict["Fpred"], estim)
+           push!(evf_dict["Fref"], exact)
        end
 
        # virial errors
@@ -297,6 +308,8 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
            config_mae[c_t]["V"] += sum(abs, estim-exact)
            config_rmse[c_t]["V"] += sum(abs2, estim-exact)
            config_num[c_t]["V"] += 6
+           push!(evf_dict["Vpred"], estim)
+           push!(evf_dict["Vref"], exact)
        end
     end
 
@@ -327,7 +340,11 @@ function linear_errors(data::AbstractArray{AtomsData}, model;
         print_errors_tables(config_errors)
     end 
 
-    return config_errors
+    if return_efv
+        return config_errors, evf_dict
+    else
+        return config_errors
+    end
 end
 
 
