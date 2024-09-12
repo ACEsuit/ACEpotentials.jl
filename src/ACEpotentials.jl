@@ -23,7 +23,8 @@ include("example_data.jl")
 # TODO: all of this just needs to be moved from JuLIP to AtomsBase
 include("analysis/dataset_analysis.jl")
 include("analysis/potential_analysis.jl")
-# include("descriptor.jl")
+include("descriptor.jl")
+
 
 # TODO: to be completely rewritten
 # include("io.jl")
