@@ -1,55 +1,48 @@
 # Saving and Loading Potentials
 
 !!! warning 
-    Saving and loading potentials is currently not automated; the 
-    following documentation is out of date. 
+    Saving and loading potentials is currently only supported for the 
+    a workflow that uses JSON / dictionaries to specify models. For anything 
+    "too creative" the user is responsible for ensuring reproducability. 
+
+### General Principles 
+
+Loading a saved potentials is only guaranteed if the Julia environment 
+remains the same. A new project should therefore always work with a specified 
+`Project.toml` and `Manifest.toml`. See [out Pkg intro](pkg.md) for a brief 
+introduction and references to further details. 
+
+If the manifest changes, but the ACEpotentials version remains the same or 
+a backward compatible update (cf semver) then in principle a saved potential 
+should remain loadable. We cannot guarntee this but would consider it a bug 
+if this is not the case.
+
+Normally, we save the entire Julia environment together with a fitted 
+potential. This way it should always be possible to reconstruct the 
+environment and hence the potential. More details follow. 
 
 
+### Saving JSON-specified potentials
 
-## Saving Potentials for Julia use
+If using the `runfit.jl` script, then an output folder is specified, where 
+all information including the full model specification and model parameters 
+are stored as a JSON file (together with other meta-information). 
 
-To save potentials for future Julia use can use
+### Loading a JSON-specified potential
 
+Suppose the result of `runfit.jl` (or an analogous approach) is saved to 
+`path/result.json`. If the original or a compatible Julia environment is 
+activated, then 
 ```julia
-save_potential("my-potential-file.json", potential)
+model = ACEpotentials.load_model("path/result.json")
 ```
+will return a `model::ACEPotential` structure that should be equivalent 
+to the original fitted potential. 
 
-This will save the potential in `json` format. You can also use `yml` and `yace` suffixes.
+### Recovering the Julia environment 
 
-The format used for saving can be either ACEmodel from `acemodel` function, `JuLIP` style potentials or `ACEmd` style `ACEpotential`.
+At the moment, this process is not implemented, but the `result.json` file
+can loaded into a dictionary which can then be investigated to manually 
+reconstruct the environment and then load the potential as described in 
+the previous section. 
 
-## Loading Potentials
-
-To load potential use
-
-```julia
-potential = load_potential("my-potential-file.json")
-```
-
-By default this should print information about version in use when the potential was saved. E.g. like following
-
-```txt
-This potential was saved with following versions:
-
-JuLIP v0.14.5
-ACEbase v0.4.3
-ACE1x v0.1.8
-ACE1 v0.11.16
-ACEmd v0.1.7
-ACEpotentials v0.6.3
-ACEfit v0.1.4
-
-If you have problems using this potential, pin your installation to above versions.
-```
-
-If you have problems with the potential, you can use the given version numbers to build an installation that should have the potential working.
-
-By default the loaded potential is in JuLIP style format. To load a new `ACEmd` style `ACEpotential` you can give keyword `new_format=true`
-
-```julia
-potential = load_potential("my-potential-file.json"; new_format=true)
-```
-
-## Exporting Potentials for Other Programs
-
-LAMMPS export is described in section [ACEpotentials potentials in LAMMPS](@ref).
