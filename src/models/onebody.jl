@@ -49,7 +49,7 @@ eval_site(V::OneBody, Rs, Zs, zi::Integer) =
       V.E0[zi]
 
 eval_grad_site(V::OneBody{T}, Rs, Zs, zi) where {T} = 
-      fill( zero(SVector{3, T}), length(Zs) )
+      eval_site(V, Rs, Zs, zi), fill( zero(SVector{3, T}), length(Zs) )
 
 
 function AtomsCalculators.potential_energy(sys::AbstractSystem, V::OneBody)

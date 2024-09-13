@@ -129,6 +129,15 @@ function eval_site(pot::FastACE, Rs, Zs, z0)
           eval_site(pot.Vref, Rs, Zs, z0)
 end
 
+function eval_grad_site(pot::FastACE, Rs, Zs, z0) 
+   iz0 = findfirst(isequal(z0), pot._i2z)
+   iz0 == nothing && error("z0 = $z0 not found in the model")
+   v1, ∇v_inner = eval_grad_site(pot.inner[iz0], Rs, Zs, z0)
+   v2, ∇v_pair = eval_grad_site(pot.pair, Rs, Zs, z0)
+   v3, ∇v_ref = eval_grad_site(pot.Vref, Rs, Zs, z0)
+   return v1 + v2 + v3, ∇v_inner + ∇v_pair + ∇v_ref
+end
+
 function eval_pair(pot::FastACEpair, r, z1, z0) 
    iz = findfirst(isequal(z0), pot._i2z)
    jz = findfirst(isequal(z1), pot._i2z)
@@ -154,6 +163,43 @@ function eval_site(pot::FastACEinner, Rs, Zs, z0)
    return out 
 end
 
+function eval_grad_site(pot::FastACEinner, Rs, Zs, z0) 
+   @no_escape begin
+   rs, ∇rs = @withalloc radii_ed!(Rs)
+   Rnl, dRnl = @withalloc evaluate_ed_batched!(pot.rbasis, rs, z0, Zs, 
+                                         NamedTuple(), NamedTuple())
+   Ylm, dYlm = @withalloc P4ML.evaluate_ed!(pot.ybasis, Rs)
+   A = @withalloc P4ML.evaluate!(pot.abasis, (Rnl, Ylm))
+
+   # evaluate output and pullback through aadot at the same time 
+   ∂A = @alloc(eltype(A), length(A))
+   v = eval_and_grad!(∂A, pot.aadot, A) 
+
+   # pullback through A
+   # P4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
+   ∂Rnl, ∂Ylm = @withalloc P4ML.pullback!(∂A, pot.abasis, (Rnl, Ylm))
+   
+   # pullback through Rnl and Ylm 
+   # ---------- ASSEMBLE DERIVATIVES ------------
+   # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
+   # as follows: 
+   #    ∂Ei / ∂𝐫ⱼ = ∑_nl ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂𝐫ⱼ 
+   #              + ∑_lm ∂Ei / ∂Ylm[j] * ∂Ylm[j] / ∂𝐫ⱼ
+   ∇v = zeros(eltype(Rs), length(Rs))
+   for t = 1:size(∂Rnl, 2)
+      for j = 1:size(∂Rnl, 1)
+         ∇v[j] += (∂Rnl[j, t] * dRnl[j, t]) * ∇rs[j]
+      end
+   end
+   for t = 1:size(∂Ylm, 2)
+      for j = 1:size(∂Ylm, 1)
+         ∇v[j] += ∂Ylm[j, t] * dYlm[j, t]
+      end
+   end
+
+   end 
+   return v, ∇v 
+end
 
 # ----------------------------------------- 
 #  standard evaluator for AA ⋅ θ
