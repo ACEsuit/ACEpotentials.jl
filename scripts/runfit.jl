@@ -95,6 +95,10 @@ ACEpotentials.save_model(model, joinpath(res_path, args_dict["output"]["model"])
                          errors = err,
                          meta = D)
 
+# To load the model, active the same Julia environment, then run 
+# `model, meta = ACEpotentials.load_model("path/to/model.json")`
+# the resulting `model` object should be equivalent to the fitted `model`.
+
 if args_dict["output"]["error_table"]
     et_file = open(joinpath(res_path, "error_table.txt"), "w")
     ori_stdout = stdout; ori_stderr = stderr
