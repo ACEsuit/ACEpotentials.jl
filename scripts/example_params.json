@@ -67,7 +67,8 @@
     "dimer": true,
     "error_table": true,
     "scatter": true,
-    "make_plots": false
+    "make_plots": false,
+    "save_project": true
   }
 }
  

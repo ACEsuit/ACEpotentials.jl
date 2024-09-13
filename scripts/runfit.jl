@@ -94,6 +94,7 @@ end
 ACEpotentials.save_model(model, joinpath(res_path, args_dict["output"]["model"]),
                          model_spec = args_dict, 
                          errors = err,
+                         save_project = args_dict["output"]["save_project"],
                          meta = D)
 
 # To load the model, active the same Julia environment, then run 

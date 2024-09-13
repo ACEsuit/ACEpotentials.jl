@@ -112,16 +112,19 @@ save model constructor, model parameters, and other information to a JSON file.
             the model cannot be reconstructed unless the original script is available
 * `errors` : the fitting / test errors computed during the fitting 
 * `verbose` : print information about the saving process     
+* `save_project` : save Project.toml and Manifest.toml for reproducibility
 """
 
-    # NOTE: save_model conflicts were not fully resolved!!!
-    
-    function save_model(model, filename; 
-                    model_spec = nothing, 
-                    errors = nothing, 
-                    verbose = true, 
-                    meta = Dict(), )
+# NOTE: save_model conflicts were not fully resolved!!!
 
+function save_model(model, filename; 
+               model_spec = nothing, 
+               errors = nothing, 
+               verbose = true, 
+               save_project = true,
+               meta = Dict(), )
+
+   # --- 1. model spec, parameters and analysis ---
    D = Dict("model_parameters" => destructure(model.ps)[1], 
             "meta" => meta)
 
@@ -133,69 +136,44 @@ save model constructor, model parameters, and other information to a JSON file.
       D["model_spec"] = model_spec
    end
 
+   if !isnothing(errors)
+      D["errors"] = errors
+   end
+   ##
 
-function find_manifest()
-    project_info = Pkg.project()
-    project_path = project_info.path
-    project_dir = joinpath(splitpath(project_path)[1:end-1]...)
-    manifest_path = joinpath(project_dir, "Manifest.toml")
-    if isfile(manifest_path)
-        return manifest_path
-    else
-        return nothing
-    end
+   # --- 2. environment for the fit ----
+   if save_project
+      @info("saving project")
+      project_path, manifest_path = find_project_manifest()
+      D["project"] = TOML.parsefile(project_path)
+      if manifest_path === nothing
+         verbose && @info("Manifest not found, saving project file only")
+      else
+         D["manifest"] = TOML.parsefile(manifest_path)
+      end
+   end
+   ## 
+
+   open(filename, "w") do io
+      write(io, JSON.json(D, 3))
+   end
+
+   if verbose
+      @info "Results saved to file: $filename"
+   end
 end
 
-
-function save_model(model, filename;
-                    make_model_args = nothing,
-                    errors = nothing,
-                    verbose = true,
-                    meta = Dict(),
-                    save_project = true)  
-
-    D = Dict("model_parameters" => model.ps,
-             "meta" => meta)
-
-    if isnothing(make_model_args)
-        if verbose
-            @warn("Only model parameters are saved but no information to reconstruct the model.")
-        end
-    else
-        D["make_model_args"] = make_model_args
-    end
-
-    if !isnothing(errors)
-        D["errors"] = errors
-    end
-
-    if save_project
-        manifest_path = find_manifest()
-        if manifest_path !== nothing
-            try
-                manifest_content = TOML.parsefile(manifest_path)
-                D["manifest"] = manifest_content
-            catch e
-                @warn("Failed to read Manifest.toml: $e")
-            end
-        else
-            @warn("Manifest.toml file not found in the project directory or any parent directories.")
-        end
-    else
-        if verbose
-            @info("Skipping saving of Manifest file.")
-        end
-    end
-
-    open(filename, "w") do io
-        write(io, JSON.json(D, 3))
-    end
-
-    if verbose
-        @info "Results saved to file: $filename"
-    end
+function find_project_manifest()
+   project_info = Pkg.project()
+   project_path = project_info.path
+   project_dir = joinpath(splitpath(project_path)[1:end-1]...)
+   manifest_path = joinpath(project_dir, "Manifest.toml")
+   if ispath(manifest_path)
+      return project_path, manifest_path
+   else
+      return project_path, nothing 
+   end
 end
-
 
 function load_model(filename) 
    D = JSON.parsefile(filename)
