@@ -2,6 +2,8 @@ import ArgParse
 using NamedTupleTools
 import .ACE1compat
 using ACEfit
+using TOML
+using Pkg
 using Optimisers: destructure
 
 # === nt utilities ===
@@ -111,7 +113,10 @@ save model constructor, model parameters, and other information to a JSON file.
 * `errors` : the fitting / test errors computed during the fitting 
 * `verbose` : print information about the saving process     
 """
-function save_model(model, filename; 
+
+    # NOTE: save_model conflicts were not fully resolved!!!
+    
+    function save_model(model, filename; 
                     model_spec = nothing, 
                     errors = nothing, 
                     verbose = true, 
@@ -128,17 +133,67 @@ function save_model(model, filename;
       D["model_spec"] = model_spec
    end
 
-   if !isnothing(errors)
-      D["errors"] = errors
-   end
 
-   open(filename, "w") do io
-       write(io, JSON.json(D, 3))
-   end
+function find_manifest()
+    project_info = Pkg.project()
+    project_path = project_info.path
+    project_dir = joinpath(splitpath(project_path)[1:end-1]...)
+    manifest_path = joinpath(project_dir, "Manifest.toml")
+    if isfile(manifest_path)
+        return manifest_path
+    else
+        return nothing
+    end
+end
 
-   if verbose
-      @info "Results saved to file: $filename"
-   end
+
+function save_model(model, filename;
+                    make_model_args = nothing,
+                    errors = nothing,
+                    verbose = true,
+                    meta = Dict(),
+                    save_project = true)  
+
+    D = Dict("model_parameters" => model.ps,
+             "meta" => meta)
+
+    if isnothing(make_model_args)
+        if verbose
+            @warn("Only model parameters are saved but no information to reconstruct the model.")
+        end
+    else
+        D["make_model_args"] = make_model_args
+    end
+
+    if !isnothing(errors)
+        D["errors"] = errors
+    end
+
+    if save_project
+        manifest_path = find_manifest()
+        if manifest_path !== nothing
+            try
+                manifest_content = TOML.parsefile(manifest_path)
+                D["manifest"] = manifest_content
+            catch e
+                @warn("Failed to read Manifest.toml: $e")
+            end
+        else
+            @warn("Manifest.toml file not found in the project directory or any parent directories.")
+        end
+    else
+        if verbose
+            @info("Skipping saving of Manifest file.")
+        end
+    end
+
+    open(filename, "w") do io
+        write(io, JSON.json(D, 3))
+    end
+
+    if verbose
+        @info "Results saved to file: $filename"
+    end
 end
 
 

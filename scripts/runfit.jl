@@ -4,6 +4,7 @@
 
 using ACEpotentials
 using ACEpotentials: JSON, ExtXYZ
+using TOML
 using ACEpotentials.ArgParse: ArgParseSettings, @add_arg_table!, parse_args
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
