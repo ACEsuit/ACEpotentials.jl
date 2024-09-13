@@ -59,6 +59,7 @@ function _make_A_spec(AA_spec, level)
    for bb in AA_spec 
       append!(A_spec, bb)
    end
+   A_spec = unique(A_spec)
    A_spec_level = [ level(b) for b in A_spec ]
    p = sortperm(A_spec_level)
    A_spec = A_spec[p]
@@ -76,6 +77,20 @@ function _make_Y_spec(maxl::Integer)
    return y_spec 
 end
 
+function _make_idx_A_spec(A_spec, r_spec, y_spec)
+   inv_r_spec = _inv_list(r_spec)
+   inv_y_spec = _inv_list(y_spec)
+   A_spec_idx = [ (inv_r_spec[(n=b.n, l=b.l)], inv_y_spec[(l=b.l, m=b.m)]) 
+                  for b in A_spec ]
+   return A_spec_idx                  
+end
+
+function _make_idx_AA_spec(AA_spec, A_spec) 
+   inv_A_spec = _inv_list(A_spec)
+   AA_spec_idx = [ [ inv_A_spec[b] for b in bb ] for bb in AA_spec ]
+   sort!.(AA_spec_idx)
+   return AA_spec_idx
+end 
 
 function _make_Vref_E0s(rbasis, E0s::Nothing)
    NZ = _get_nz(rbasis)
@@ -130,18 +145,15 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    y_spec = _make_Y_spec(maxl)
 
    # get the idx version of A_spec 
-   inv_r_spec = _inv_list(r_spec)
-   inv_y_spec = _inv_list(y_spec)
-   A_spec_idx = [ (inv_r_spec[(n=b.n, l=b.l)], inv_y_spec[(l=b.l, m=b.m)]) 
-                  for b in A_spec ]
+   A_spec_idx = _make_idx_A_spec(A_spec, r_spec, y_spec)
+
    # from this we can now generate the A basis layer                   
    a_basis = Polynomials4ML.PooledSparseProduct(A_spec_idx)
    a_basis.meta["A_spec"] = A_spec  #(also store the human-readable spec)
 
    # get the idx version of AA_spec
-   inv_A_spec = _inv_list(A_spec)
-   AA_spec_idx = [ [ inv_A_spec[b] for b in bb ] for bb in AA_spec ]
-   sort!.(AA_spec_idx)
+   AA_spec_idx = _make_idx_AA_spec(AA_spec, A_spec) 
+
    # from this we can now generate the AA basis layer
    aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
    aa_basis.meta["AA_spec"] = AA_spec  # (also store the human-readable spec)

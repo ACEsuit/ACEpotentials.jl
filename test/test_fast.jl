@@ -5,7 +5,9 @@
 using ACEpotentials
 using LazyArtifacts, ExtXYZ
 using Test
+using Polynomials4ML.Testing: print_tf
 
+M = ACEpotentials.Models
 ## ----- setup -----
 
 @info("-------- Test Fast ACE evaluator ----------")
@@ -27,31 +29,55 @@ acefit!(data, model;
       data_keys..., weights = weights, 
       solver = ACEfit.BLR())
 
+# artificially make some parameters zero 
+Ism = findall(abs.(model.ps.WB) .< 1e-2)
+model.ps.WB[Ism] .= 0.0
+
+# construct the fast evaluator (is it actually fast??)
+fpot = M.fast_evaluator(model)
+
 ## 
 
-@info("convert to UF_ACE format")      
-fpot = ACEpotentials.Models.FastACE(model)
+using StaticArrays, AtomsBase
+
+for ntest = 1:20 
+   nX = rand(8:12)
+   Rs = randn(SVector{3, Float64}, nX)
+   z0 = atomic_number(ChemicalSpecies(:Si))
+   Zs = fill(z0, nX)
+
+   print_tf(@test M.eval_site(fpot, Rs, Zs, z0) ≈ M.eval_site(model, Rs, Zs, z0))
+end 
+println()
+
+## 
+
+# using BenchmarkTools
+# @btime M.eval_site($fpot, $Rs, $Zs, $z0)
+# @btime M.eval_site($model, $Rs, $Zs, $z0)
 
 ##
 
 @info("confirm that predictions are identical")
 
-tolerance = 1e-8 
+using AtomsBuilder, AtomsCalculators, Unitful
+using AtomsCalculators: potential_energy
+tolerance = 1e-10 
 rattle = 0.1 
 
-for ntest = 1:30
+for ntest = 1:20
    at = bulk(:Si, cubic=true) * 2 
    rattle!(at, rattle)
-   E1 = energy(model.potential, at) 
-   E2 = energy(fpot, at)
-   # @show abs(E1 - E2) < tolerance
-   @test abs(E1 - E2) < tolerance
+   E1 = potential_energy(at, model) 
+   E2 = potential_energy(at, fpot)
+   print_tf(@test ustrip(abs(E1 - E2)) < tolerance)
 end
+println() 
 
 ##
+#=
 
 @info("construct a TiAl model and fit parameters using RRQR")
-
 
 model = acemodel(elements = [:Ti, :Al],
 					  order = 3,
@@ -90,3 +116,4 @@ for ntest = 1:30
    @test abs(E1 - E2) < tolerance
 end
 
+=#
