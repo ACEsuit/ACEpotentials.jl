@@ -107,7 +107,7 @@ function _make_pair_splines(basis, W)
 
    NZ = length(basis._i2z)
    spl = SMatrix{NZ, NZ}(
-         [ _make_pair_spline(basis.splines[iz0, iz], W[:, iz0, iz])
+         [ _make_pair_spline(basis.splines[iz0, iz], W[:, iz0])
            for iz0 = 1:NZ, iz = 1:NZ]  )
    return spl   
 end
@@ -130,8 +130,8 @@ function eval_site(pot::FastACE, Rs, Zs, z0)
 end
 
 function eval_pair(pot::FastACEpair, r, z1, z0) 
-   iz = findfirst(isequal(z1), pot._i2z)
-   jz = findfirst(isequal(z0), pot._i2z)
+   iz = findfirst(isequal(z0), pot._i2z)
+   jz = findfirst(isequal(z1), pot._i2z)
    T_ij = pot.transforms[iz, jz]
    env_ij = pot.envelopes[iz, jz]
    spl_ij = pot.spl[iz, jz]

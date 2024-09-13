@@ -3,8 +3,7 @@
 ##
 
 using ACEpotentials
-using LazyArtifacts, ExtXYZ
-using Test
+using LazyArtifacts, ExtXYZ, LinearAlgebra
 using Polynomials4ML.Testing: print_tf
 
 M = ACEpotentials.Models
@@ -75,45 +74,55 @@ end
 println() 
 
 ##
-#=
 
-@info("construct a TiAl model and fit parameters using RRQR")
+@info("construct a TiAl model and set random parameters")
 
-model = acemodel(elements = [:Ti, :Al],
-					  order = 3,
-					  totaldegree = 6, 
-					  rcut = 5.5, 
-					  Eref = [:Ti => -1586.0195, :Al => -105.5954])
-@show length(model.basis);	
+model = ace1_model(elements = [:Ti, :Al],
+					    order = 3,
+					    totaldegree = 8, 
+					    rcut = 5.5, 
+					    Eref = [:Ti => -1.586, :Al => -1.055])  # BAD E0s, don't copy!!!
 
-weights = Dict(
-        "FLD_TiAl" => Dict("E" => 60.0, "F" => 1.0 , "V" => 1.0 ),
-        "TiAl_T5000" => Dict("E" => 5.0, "F" => 1.0 , "V" => 1.0 ));
-
-solver = ACEfit.LSQR(damp = 1e-2, atol = 1e-6);
-P = smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)
-
-data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
-data_train = data[1:5:end]
-acefit!(model, data_train; solver=solver, prior = P);
+model.ps.WB .= randn( size(model.ps.WB) )
+lenB = size(model.ps.WB, 1)
+model.ps.WB[:, :] = Diagonal((1:lenB).^(-2)) * model.ps.WB[:, :]
+model.ps.Wpair[:] = randn(size(model.ps.Wpair))
+len2 = size(model.ps.Wpair, 1)
+model.ps.Wpair[:, :] = Diagonal((1:len2).^(-2)) * model.ps.Wpair[:, :]
 
 ##
+
 @info("convert to UF_ACE format")      
-fpot = ACEpotentials.Experimental.fast_evaluator(model)
+fpot = M.fast_evaluator(model)
 
 ##
-@info("confirm that predictions are identical")
 
-tolerance = 1e-8 
+@info("confirm that predictions are identical on a site")
+
+for ntest = 1:20 
+   nX = rand(8:12)
+   Rs = randn(SVector{3, Float64}, nX)
+   zTi = atomic_number(ChemicalSpecies(:Ti))
+   zAl = atomic_number(ChemicalSpecies(:Al))
+   z0 = rand([zTi, zAl])
+   Zs = rand([zTi, zAl], nX)
+
+   print_tf(@test M.eval_site(model, Rs, Zs, z0)  ≈ M.eval_site(fpot, Rs, Zs, z0))
+end 
+println() 
+
+##
+
+@info("confirm that predictions are identical on systems")
+
+tolerance = 1e-12 
 rattle = 0.01 
 
-for ntest = 1:30
-   at = rand(data) 
-   rattle!(at, rattle)
-   E1 = energy(model.potential, at) 
-   E2 = energy(fpot, at)
-   # @show abs(E1 - E2)  < tolerance
-   @test abs(E1 - E2) < tolerance
+for ntest = 1:20
+   sys = rattle!(bulk(:Al, cubic=true) * 2, 0.1)
+   randz!(sys, [:Ti => 0.5, :Al => 0.5])
+   E1 = potential_energy(sys, model)
+   E2 = potential_energy(sys, fpot)
+   print_tf(@test ustrip(abs(E1 - E2)) < tolerance)
 end
-
-=#
+println() 
