@@ -16,9 +16,8 @@ using ACEpotentials, Test, LazyArtifacts
     # make sure miscellaneous and weird bugs 
     @testset "Weird bugs" begin include("test_bugs.jl") end
 
-    # experimental 
-    # TODO move UF_ACE into ACEpotential properly
-    # @testset "UF_ACE" begin include("test_uface.jl") end
+    # fast evaluator
+    @testset "Fast Evaluator" begin include("test_fast.jl") end
 
     # ACE1 compatibility tests 
     # TODO: these tests need to be revived either by creating a JSON 
