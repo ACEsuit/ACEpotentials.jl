@@ -15,7 +15,7 @@ model = ace1_model(; hyperparams...)
            + w_{F,R}^2 | {\rm forces}(R) - y_R^F |^2
            + w_{V,R}^2 | {\rm virial}(R) - y_R^V |^2 \Big),\]</p><p>and this is specificed via the following dictionary. The keys correspond to the <code>config_type</code> of the training structures.</p><pre><code class="language-julia hljs">weights = Dict(
         &quot;FLD_TiAl&quot; =&gt; Dict(&quot;E&quot; =&gt; 60.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ),
-        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ));</code></pre><p>To estimate the parameters we still need to choose a solver for the least squares system. In this tutorial we use a Bayesian linear regression, which is the recommended default at the moment. Many other solvers are available, and can be explored by looking at the documentation of <code>ACEfit.jl</code>.</p><pre><code class="language-julia hljs">solver = ACEfit.BLR()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ACEfit.BLR(Dict{Any, Any}())</code></pre><p>ACEpotentials provides a heuristic smoothness prior which assigns to each basis function <code>Bi</code> a scaling parameter <code>si</code> that estimates how &quot;rough&quot; that basis function is. The following line generates a regularizer (prior) with <code>si^q</code> on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential.</p><pre><code class="language-julia hljs">P = algebraic_smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">270×270 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
+        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ));</code></pre><p>To estimate the parameters we still need to choose a solver for the least squares system. In this tutorial we use a Bayesian linear regression, which is the recommended default at the moment. Many other solvers are available, and can be explored by looking at the documentation of <a href="https://github.com/ACEsuit/ACEfit.jl"><code>ACEfit.jl</code></a>.</p><pre><code class="language-julia hljs">solver = ACEfit.BLR()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ACEfit.BLR(Dict{Any, Any}())</code></pre><p>ACEpotentials provides a heuristic smoothness prior which assigns to each basis function <code>Bi</code> a scaling parameter <code>si</code> that estimates how &quot;rough&quot; that basis function is. The following line generates a regularizer (prior) with <code>si^q</code> on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential.</p><pre><code class="language-julia hljs">P = algebraic_smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">270×270 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
  1.0    ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅        ⋅        ⋅        ⋅ 
   ⋅   16.0    ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
   ⋅     ⋅   81.0     ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
@@ -47,63 +47,63 @@ model = ace1_model(; hyperparams...)
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (1770, 270).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:07:37</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:02:40</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:01:46</span><span class="sgr32">Progress:  18%|███████▌                                 |  ETA: 0:01:19</span><span class="sgr32">Progress:  23%|█████████▍                               |  ETA: 0:01:02</span><span class="sgr32">Progress:  27%|███████████▏                             |  ETA: 0:00:50</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:42</span><span class="sgr32">Progress:  36%|██████████████▉                          |  ETA: 0:00:36</span><span class="sgr32">Progress:  41%|████████████████▊                        |  ETA: 0:00:31</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:26</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:23</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:19</span><span class="sgr32">Progress:  59%|████████████████████████▎                |  ETA: 0:00:17</span><span class="sgr32">Progress:  64%|██████████████████████████▏              |  ETA: 0:00:14</span><span class="sgr32">Progress:  68%|████████████████████████████             |  ETA: 0:00:12</span><span class="sgr32">Progress:  73%|█████████████████████████████▉           |  ETA: 0:00:10</span><span class="sgr32">Progress:  77%|███████████████████████████████▋         |  ETA: 0:00:08</span><span class="sgr32">Progress:  82%|█████████████████████████████████▌       |  ETA: 0:00:06</span><span class="sgr32">Progress:  86%|███████████████████████████████████▍     |  ETA: 0:00:04</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:03</span><span class="sgr32">Progress:  95%|███████████████████████████████████████▏ |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:30</span>
+<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:07:37</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:02:40</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:01:46</span><span class="sgr32">Progress:  18%|███████▌                                 |  ETA: 0:01:18</span><span class="sgr32">Progress:  23%|█████████▍                               |  ETA: 0:01:02</span><span class="sgr32">Progress:  27%|███████████▏                             |  ETA: 0:00:50</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:42</span><span class="sgr32">Progress:  36%|██████████████▉                          |  ETA: 0:00:36</span><span class="sgr32">Progress:  41%|████████████████▊                        |  ETA: 0:00:30</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:26</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:23</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:19</span><span class="sgr32">Progress:  59%|████████████████████████▎                |  ETA: 0:00:17</span><span class="sgr32">Progress:  64%|██████████████████████████▏              |  ETA: 0:00:14</span><span class="sgr32">Progress:  68%|████████████████████████████             |  ETA: 0:00:12</span><span class="sgr32">Progress:  73%|█████████████████████████████▉           |  ETA: 0:00:10</span><span class="sgr32">Progress:  77%|███████████████████████████████▋         |  ETA: 0:00:08</span><span class="sgr32">Progress:  82%|█████████████████████████████████▌       |  ETA: 0:00:06</span><span class="sgr32">Progress:  86%|███████████████████████████████████▍     |  ETA: 0:00:04</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:03</span><span class="sgr32">Progress:  95%|███████████████████████████████████████▏ |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:30</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 <span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:00:04</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:00</span>
 Iter     Function value   Gradient norm
      0     4.531070e+03     2.176975e+03
- * time: 0.016076087951660156
+ * time: 0.01585698127746582
      1     4.511962e+03     3.381033e+02
- * time: 0.9976780414581299
+ * time: 0.9904019832611084
      2     3.126360e+03     4.498989e+02
- * time: 1.0102930068969727
+ * time: 1.0030419826507568
      3     3.075386e+03     3.787742e+02
- * time: 1.018862009048462
+ * time: 1.0115981101989746
      4     3.042578e+03     3.110060e+02
- * time: 1.0231871604919434
+ * time: 1.0157551765441895
      5     2.996447e+03     1.577183e+02
- * time: 1.0274600982666016
+ * time: 1.020035982131958
      6     2.956635e+03     1.426538e+02
- * time: 1.031857967376709
+ * time: 1.0242531299591064
      7     2.904828e+03     5.021431e+02
- * time: 1.0381951332092285
+ * time: 1.0304491519927979
      8     2.633319e+03     3.264234e+03
- * time: 1.0465161800384521
+ * time: 1.0386409759521484
      9     2.132198e+03     9.266791e+02
- * time: 1.05287504196167
+ * time: 1.0448729991912842
     10     1.305131e+03     2.650596e+01
- * time: 1.0672380924224854
+ * time: 1.0591909885406494
     11     1.300301e+03     1.728341e+02
- * time: 1.0754470825195312
+ * time: 1.067363977432251
     12     1.136213e+03     1.788406e+03
- * time: 1.0816760063171387
+ * time: 1.0735750198364258
     13     9.266028e+02     1.724264e+03
- * time: 1.0878021717071533
+ * time: 1.0796830654144287
     14     8.683957e+02     8.369458e+02
- * time: 1.094062089920044
+ * time: 1.0857939720153809
     15     8.542065e+02     1.202458e+01
- * time: 1.0982019901275635
+ * time: 1.089874029159546
     16     8.460816e+02     6.359850e+02
- * time: 1.1042821407318115
+ * time: 1.0959529876708984
     17     8.383414e+02     2.348007e+02
- * time: 1.1103739738464355
+ * time: 1.102025032043457
     18     8.375127e+02     1.452398e+01
- * time: 1.1165800094604492
+ * time: 1.1081340312957764
     19     8.374630e+02     3.587759e+00
- * time: 1.1226310729980469
+ * time: 1.1141631603240967
     20     8.374628e+02     8.462346e-02
- * time: 1.1266770362854004
+ * time: 1.1182820796966553
     21     8.374628e+02     1.975340e-04
- * time: 1.132784128189087
+ * time: 1.124284029006958
     22     8.374628e+02     4.682667e-05
- * time: 1.1396360397338867
+ * time: 1.1302909851074219
     23     8.374628e+02     9.691217e-06
- * time: 1.1458091735839844
+ * time: 1.136275053024292
     24     8.374628e+02     2.150332e-05
- * time: 1.1500301361083984
+ * time: 1.1403331756591797
     25     8.374628e+02     5.243516e-06
- * time: 1.1542210578918457
+ * time: 1.1443421840667725
  * Status: success (objective increased between iterations)
 
  * Candidate solution
@@ -164,4 +164,4 @@ err_test = ACEpotentials.linear_errors(test_data, model; weights=weights);</code
 └────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can simply save the hyperparameters and the parameters. At the moment this must be done manually but a more complete and convenient interface for this will be provided, also adding various sanity checks.</p><pre><code class="language-julia hljs">using JSON
 open(&quot;TiAl_model.json&quot;, &quot;w&quot;) do f
 	 JSON.print(f, Dict(&quot;hyperparams&quot; =&gt; hyperparams, &quot;params&quot; =&gt; model.ps))
-end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Friday 13 September 2024 05:54">Friday 13 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Friday 13 September 2024 07:43">Friday 13 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -51,7 +51,8 @@ weights = Dict(
 # To estimate the parameters we still need to choose a solver for the least squares system. 
 # In this tutorial we use a Bayesian linear regression, which is the recommended default 
 # at the moment. 
-# Many other solvers are available, and can be explored by looking at the documentation of `ACEfit.jl`.
+# Many other solvers are available, and can be explored by looking at the 
+# documentation of [`ACEfit.jl`](https://github.com/ACEsuit/ACEfit.jl).
 
 solver = ACEfit.BLR()
 
