@@ -2,6 +2,7 @@ using ACEpotentials, Test, LazyArtifacts
 
 @testset "ACEpotentials.jl" begin
 
+    # core package functionality 
     @testset "Models" begin include("models/test_models.jl") end 
 
     # fitting tests 
@@ -10,13 +11,10 @@ using ACEpotentials, Test, LazyArtifacts
 
     # json interface tests 
     @testset "Test JSON interface" begin include("test_json.jl") end
+    @testset "Test IO" begin include("test_io.jl")  end
 
-    # misc
+    # make sure miscellaneous and weird bugs 
     @testset "Weird bugs" begin include("test_bugs.jl") end
-
-
-    # TODO: bring FIO back cf Issue #217
-    # @testset "Test IO" begin include("test_io.jl")  end
 
     # experimental 
     # TODO move UF_ACE into ACEpotential properly
