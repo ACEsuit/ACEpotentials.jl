@@ -91,7 +91,7 @@ end
 
 # saving results to folder
 ACEpotentials.save_model(model, joinpath(res_path, args_dict["output"]["model"]),
-                         make_model_args = args_dict, 
+                         model_spec = args_dict, 
                          errors = err,
                          meta = D)
 
