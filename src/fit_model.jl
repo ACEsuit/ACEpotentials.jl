@@ -32,6 +32,24 @@ end
 
 # ---------------- the main fitting function
 
+function make_atoms_data(raw_data::AbstractArray{<: AbstractSystem}, model; 
+                         energy_key, force_key, virial_key, weights) 
+   
+   # convert raw data to AtomsData, which ACEfit.jl understands 
+   data = map( raw_data ) do d
+      AtomsData(d;
+         energy_key = energy_key, 
+         force_key  = force_key, 
+         virial_key = virial_key, 
+         weights = weights, 
+         v_ref = _get_Vref(model)
+      )
+   end
+   
+   return data    
+end
+
+
 """
    acefit!(rawdata, model; kwargs...)
 
@@ -57,6 +75,7 @@ the label of the data to which the parameters will be fitted.
    in a JSON format, which can be read from Julia or Python
 """
 function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
+                validation_set = nothing, 
                 solver = ACEfit.BLR(),
                 weights = default_weights(),
                 energy_key = "energy", 
@@ -72,16 +91,11 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
                 kwargs...
    )
 
-   # convert raw data to AtomsData, which ACEfit.jl understands 
-   data = map( raw_data ) do d
-      AtomsData(d;
-         energy_key = energy_key, 
-         force_key=force_key, 
-         virial_key = virial_key, 
-         weights = weights, 
-         v_ref = _get_Vref(model)
-      )
-   end
+   data = make_atoms_data(raw_data, model; 
+                          energy_key = energy_key, 
+                          force_key = force_key, 
+                          virial_key = virial_key, 
+                          weights = weights)
 
    # print some information about the dataset 
    # (how many observations in each class)
@@ -120,8 +134,25 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
    # then solve the transformed problem 
    Ap = Diagonal(W) * (A / P) 
    Y = W .* Y
-   result = ACEfit.solve(solver, Ap, Y)
-   coeffs = P \ result["C"]
+
+   if isnothing(validation_set) 
+      result = ACEfit.solve(solver, Ap, Y)
+
+   else
+      @info("assemble validation system")
+      val_data = make_atoms_data(validation_set, model; 
+                                 energy_key = energy_key, 
+                                 force_key = force_key, 
+                                 virial_key = virial_key, 
+                                 weights = weights)
+      Av, Yv, Wv = ACEfit.assemble(val_data, model)
+      Avp = Diagonal(Wv) * (Av / P)
+      Yv = Wv .* Yv
+
+      result = ACEfit.solve(solver, Ap, Y, Avp, Yv)
+   end
+   
+   coeffs = P \ result["C"]   
 
    # dispatch setting of parameters 
    __set_params!(model, coeffs)
@@ -158,22 +189,24 @@ function linear_errors(raw_data::AbstractArray{<: AbstractSystem}, model;
                        force_key = "force", 
                        virial_key = "virial", 
                        weights = default_weights(), 
-                       verbose = true )
+                       verbose = true,
+                       return_efv = false
+                       )
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
                           v_ref = _get_Vref(model)) 
             for at in raw_data ]
-   return linear_errors(data, model; verbose=verbose)
+   return linear_errors(data, model; verbose=verbose, return_efv = return_efv)
 end
 
 
 
 
 function assemble(raw_data::AbstractArray{<: AbstractSystem}, model; 
-                     weights = default_weights(),
-                     energy_key = "energy", 
-                     force_key = "force", 
-                     virial_key = "virial", 
+                weights = default_weights(),
+                energy_key = "energy", 
+                force_key = "force", 
+                virial_key = "virial", 
                      # smoothness = 4, 
                      # prior = nothing, 
                      repulsion_restraint = false, 
@@ -181,9 +214,11 @@ function assemble(raw_data::AbstractArray{<: AbstractSystem}, model;
                      mode = :serial, 
                      weights_only = false)
 
-   data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
-                  virial_key = virial_key, weights = weights, 
-                  v_ref = model.Vref)  for at in raw_data ]
+   data = make_atoms_data(raw_data, model; 
+                          energy_key = energy_key, 
+                          force_key = force_key, 
+                          virial_key = virial_key, 
+                          weights = weights)
 
    if repulsion_restraint 
       error("Repulsion restraint is currently not implemented")
@@ -195,6 +230,6 @@ function assemble(raw_data::AbstractArray{<: AbstractSystem}, model;
       return W
    end 
       
-   A, Y, W = assemble(data, model.basis, mode)
+   A, Y, W = assemble(data, model)
    return A, Y, W
 end

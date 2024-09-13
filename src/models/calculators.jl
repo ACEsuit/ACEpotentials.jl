@@ -38,14 +38,14 @@ length_unit(::ACEPotential) = u"Å"
 initialparameters(rng::AbstractRNG, V::ACEPotential) = initialparameters(rng, V.model) 
 initialstates(rng::AbstractRNG, V::ACEPotential) = initialstates(rng, V.model)
 
-set_parameters!(V::ACEPotential, ps) = (V.ps = ps; V)
+set_parameters!(V::ACEPotential, ps::NamedTuple) = (V.ps = ps; V)
 set_states!(V::ACEPotential, st) = (V.st = st; V)
 set_psst!(V::ACEPotential, ps, st) = (V.ps = ps; V.st = st; V)
 
 splinify(V::ACEPotential) = splinify(V, V.ps) 
 splinify(V::ACEPotential, ps) = ACEPotential(splinify(V.model, ps), nothing, nothing) 
 
-function set_parameters!(V::ACEPotential, θ::AbstractVector{<: Number})
+function set_parameters!(V::ACEPotential, θ::AbstractVector)
    ps_vec, _restruct = destructure(V.ps)
    ps = _restruct(θ)
    return set_parameters!(V, ps)

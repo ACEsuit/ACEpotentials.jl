@@ -1,18 +1,17 @@
 import ArgParse 
-
+using NamedTupleTools
 import .ACE1compat
 using ACEfit
 using TOML
 using Pkg
+using Optimisers: destructure
 
 # === nt utilities ===
-function create_namedtuple(dict)
-   return NamedTuple{Tuple(Symbol.(keys(dict)))}(values(dict))
-end
 
-function nested_namedtuple_to_dict(nt)
-   return Dict(k => isa(v, NamedTuple) ? nested_namedtuple_to_dict(v) : v for (k, v) in pairs(nt))
-end
+recursive_dict2nt(x) = x
+
+recursive_dict2nt(D::Dict) = (;
+      [ Symbol(key) => recursive_dict2nt(D[key]) for key in keys(D)]... )
  
 function _sanitize_arg(arg)
    if isa(arg, Vector)  
@@ -48,7 +47,20 @@ function make_model(model_dict::Dict)
 end
 
 # chho: make this support other solvers
-function make_solver(solver_dict::Dict)
+function make_solver(model, solver_dict::Dict, prior_dict::Dict)
+   
+   # if no prior is specified, then use I as default, which is dumb
+   if isempty(prior_dict)
+      P = I 
+   else 
+      P = make_prior(model, prior_dict)
+   end 
+
+   # if no solver is specified, then use BLR as default 
+   if isempty(solver_dict) 
+      return BLR(; P = P) 
+   end 
+
    if solver_dict["name"] == "BLR"
       params_nt = _sanitize_dict(solver_dict["param"])
       return ACEfit.BLR(; params_nt...)
@@ -60,13 +72,11 @@ function make_solver(solver_dict::Dict)
    end
 end
 
-# function make_prior(model, prior_dict::Dict)
-#    if prior_dict["name"] === "algebraic"
-#       return ACEpotentials.Models.algebraic_smoothness_prior(model.basis; p = prior_dict["param"])
-#    else
-#       error("Not implemented.")
-#    end
-# end
+# calles into functions defined in ACEpotentials.Models
+function make_prior(model, prior_dict::Dict)
+   return ACEpotentials.Models.make_prior(model, namedtuple(prior_dict))
+end
+
 
 """
       copy_runfit(dest)
@@ -98,11 +108,31 @@ save model constructor, model parameters, and other information to a JSON file.
 
 * `model` : the model to be saved
 * `filename` : the name of the file to which the model will be saved
-* `make_model_args` : the arguments used to construct the model; without this 
+* `model_spec` : the arguments used to construct the model; without this 
             the model cannot be reconstructed unless the original script is available
 * `errors` : the fitting / test errors computed during the fitting 
 * `verbose` : print information about the saving process     
 """
+
+    # NOTE: save_model conflicts were not fully resolved!!!
+    
+    function save_model(model, filename; 
+                    model_spec = nothing, 
+                    errors = nothing, 
+                    verbose = true, 
+                    meta = Dict(), )
+
+   D = Dict("model_parameters" => destructure(model.ps)[1], 
+            "meta" => meta)
+
+   if isnothing(model_spec) 
+      if verbose
+         @warn("Only model parameters are saved but no information to reconstruct the model.")
+      end
+   else 
+      D["model_spec"] = model_spec
+   end
+
 
 function find_manifest()
     project_info = Pkg.project()
@@ -164,4 +194,12 @@ function save_model(model, filename;
     if verbose
         @info "Results saved to file: $filename"
     end
+end
+
+
+function load_model(filename) 
+   D = JSON.parsefile(filename)
+   model = make_model(D["model_spec"])
+   set_parameters!(model, D["model_parameters"])
+   return model, D
 end

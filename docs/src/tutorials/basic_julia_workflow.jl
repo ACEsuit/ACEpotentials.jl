@@ -2,10 +2,10 @@
 #
 # This short tutorial introduces the minimal workflow for people working 
 # purely in Julia. There are (or are in development) separate tutorials 
-# on using ACEpotentials via shell scripts or via Python, and tutorials 
+# on using `ACEpotentials` via shell scripts or via Python, and tutorials 
 # on more advanced usage. 
 #
-# Start by importing ACEpotentials (and possibly other required libraries)
+# Start by importing `ACEpotentials` (and possibly other required libraries)
 
 using ACEpotentials
 
@@ -15,7 +15,7 @@ using ACEpotentials
 # data_file = "path/to/TiAl_tutorial.xyz"
 # data = read_extxyz(data_file)
 # ```
-# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it conveniently accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the structures for training and testing to keep the regression problem small.
+# For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the structures for training and testing to keep the regression problem small.
 
 data, _, meta = ACEpotentials.example_dataset("TiAl_tutorial")
 train_data = data[1:5:end];
@@ -38,9 +38,9 @@ model = ace1_model(; hyperparams...)
 
 # The next line specifies the regression weights: in the least squares loss different observations are given different weights,
 # ```math 
-#   \sum_{R} \Big( w^E_R | E(R) - y_R^E |^2
-#            + w^F_R | {\rm forces}(R) - y_R^F |^2 
-#            + w^V_R | {\rm virial}(R) - y_R^V |^2 \Big),
+#   \sum_{R} \Big( w_{E,R}^2 | E(R) - y_R^E |^2
+#            + w_{F,R}^2 | {\rm forces}(R) - y_R^F |^2 
+#            + w_{V,R}^2 | {\rm virial}(R) - y_R^V |^2 \Big),
 # ```
 # and this is specificed via the following dictionary. The keys correspond to the `config_type` of the training structures. 
 
@@ -51,7 +51,8 @@ weights = Dict(
 # To estimate the parameters we still need to choose a solver for the least squares system. 
 # In this tutorial we use a Bayesian linear regression, which is the recommended default 
 # at the moment. 
-# Many other solvers are available, and can be explored by looking at the documentation of `ACEfit.jl`.
+# Many other solvers are available, and can be explored by looking at the 
+# documentation of [`ACEfit.jl`](https://github.com/ACEsuit/ACEfit.jl).
 
 solver = ACEfit.BLR()
 
@@ -80,7 +81,7 @@ open("TiAl_model.json", "w") do f
 	 JSON.print(f, Dict("hyperparams" => hyperparams, "params" => model.ps))
 end
 
-# To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should ot be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.
+# To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.
 
-# cleaning up ... 
+# Finally, we delete the model to clean up.
 rm("TiAl_model.json")

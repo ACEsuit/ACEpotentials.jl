@@ -29,7 +29,7 @@ end
 @info("Load the results")
 using JSON 
 example_params = JSON.parsefile(joinpath(tmpproj, "example_params.json"))
-results = JSON.parsefile(joinpath(tmpproj, "results.json"))
+results = JSON.parsefile(joinpath(tmpproj, "example_params_results/results.json"))
 
 @info("Clean up temporary project")
 run(`rm -rf $tmpproj`)

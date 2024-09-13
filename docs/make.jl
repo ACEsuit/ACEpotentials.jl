@@ -25,8 +25,8 @@ Literate.markdown(_tutorial_src * "/smoothness_priors.jl",
 Literate.markdown(_tutorial_src * "/dataset_analysis.jl", 
                   _tutorial_out; documenter = true)
 
-# Literate.markdown(_tutorial_src * "/descriptor.jl",
-#                   _tutorial_out; documenter = true)
+Literate.markdown(_tutorial_src * "/descriptor.jl",
+                  _tutorial_out; documenter = true)
 
 
 # Literate.markdown(_tutorial_src * "/first_example_model.jl", 
@@ -70,10 +70,10 @@ makedocs(;
                 "literate_tutorials/smoothness_priors.md",
                 "literate_tutorials/dataset_analysis.md",
                 "tutorials/scripting.md", 
+                "literate_tutorials/descriptor.md",
                 # "tutorials/lammps.md",
                 # "tutorials/python_ase.md",
                 # "tutorials/molly.md",
-                # "literate_tutorials/descriptor.md",
                 # "literate_tutorials/committee.md",
                 # "tutorials/AtomsBase_interface.md",
                 # "literate_tutorials/experimental.md",

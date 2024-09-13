@@ -1,25 +1,45 @@
-export site_descriptor, site_descriptors
+export site_descriptors
+
+using ACEpotentials.Models: evaluate_basis
+
+import AtomsCalculatorsUtilities.SitePotentials: SitePotential, 
+                            cutoff_radius, 
+                            eval_site, 
+                            PairList, 
+                            get_neighbours
+
+
+# I'm RETIRING THIS FOR NOW BECAUSE IT IS HIGHLY INEFFICIENT
+# """
+#     site_descriptor(basis, atoms::AbstractSystem, i::Integer)
+
+# Compute the site descriptor for the `i`th atom in `atoms`.
+# """
+# site_descriptor(model::ACEPotential, args...) = site_descriptor(model.model, args...)
+
+# function site_descriptor(model::ACEModel, atoms::AbstractSystem, i::Integer) 
+# end
 
 
 """
-    site_descriptor(basis, atoms::AbstractAtoms, i::Integer)
+    site_descriptors(system::AbstractSystem, model::ACEPotential;
+                     domain, nlist)
 
-Compute the site descriptor for the `i`th atom in `atoms`.
-"""
-function site_descriptor(basis, atoms::AbstractAtoms, i::Integer)
-   return site_energy(basis, atoms, i)
-end
-
-
-"""
-    site_descriptors(basis, atoms::AbstractAtoms[, domain])
-
-Compute site descriptors for all atoms in `atoms`, returning them as
-a vector of vectors. If the optional argument `domain` is passed as a list of 
+Compute site descriptors for all atoms in `system`, returning them as
+a vector of vectors. If the optional kw argument `domain` is passed as a list of 
 integers (atom indices), then only the site descriptors for those atoms are 
-computed and returned. 
+computed and returned. The neighbourlist `nlist` can be supplied optionally
+as a kw arg, otherwise it is recomputed. 
 """
-function site_descriptors(basis, atoms::AbstractAtoms, 
-                          domain = 1:length(atoms))
-    return [site_descriptor(basis, atoms, i) for i in domain]
+function site_descriptors(system::AbstractSystem, model::ACEPotential;  
+                          domain = 1:length(system), 
+                          nlist = PairList(system, cutoff_radius(model)))
+    
+    function _site_descriptor(system, model, i, nlist)
+        Js, Rs, Zs, z0 = get_neighbours(system, model, nlist, i) 
+        return evaluate_basis(model.model, Rs, Zs, z0, model.ps, model.st)
+    end                    
+
+    return [ _site_descriptor(system, model, i, nlist) 
+             for i in domain ]
 end
