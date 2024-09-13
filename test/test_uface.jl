@@ -1,34 +1,36 @@
 
+# using Pkg; Pkg.activate(joinpath(@__DIR__, "..", ))
+##
+
 using ACEpotentials
-using LazyArtifacts
+using LazyArtifacts, ExtXYZ
 using Test
 
 ## ----- setup -----
 
-@info("Test UF_ACE evaluator")
+@info("-------- Test Fast ACE evaluator ----------")
 
-@info("construct a Si model and fit parameters using RRQR")
-model = acemodel(elements = [:Si],
-                 Eref = [:Si => -158.54496821],
-                 rcut = 5.5,
-                 order = 3,
-                 totaldegree = 10)
-data = read_extxyz(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
+@info("construct a Si model and fit parameters using BLR")
+model = ace1_model(elements = [:Si],
+                   Eref = [:Si => -158.54496821],
+                   rcut = 5.5,
+                   order = 3,
+                   totaldegree = 10)
+data = ExtXYZ.load(artifact"Si_tiny_dataset" * "/Si_tiny.xyz")
 data_keys = [:energy_key => "dft_energy",
              :force_key => "dft_force",
              :virial_key => "dft_virial"]
 weights = Dict("default" => Dict("E"=>30.0, "F"=>1.0, "V"=>1.0),
                "liq" => Dict("E"=>10.0, "F"=>0.66, "V"=>0.25))
 
-acefit!(model, data;
-      data_keys...,
-      weights = weights,
-      solver = ACEfit.RRQR(rtol = 1e-6))
-
+acefit!(data, model;
+      data_keys..., weights = weights, 
+      solver = ACEfit.BLR())
 
 ## 
+
 @info("convert to UF_ACE format")      
-fpot = ACEpotentials.Experimental.fast_evaluator(model)
+fpot = ACEpotentials.Models.FastACE(model)
 
 ##
 
