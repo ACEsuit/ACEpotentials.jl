@@ -114,15 +114,12 @@ save model constructor, model parameters, and other information to a JSON file.
 * `verbose` : print information about the saving process     
 * `save_project` : save Project.toml and Manifest.toml for reproducibility
 """
-
-# NOTE: save_model conflicts were not fully resolved!!!
-
 function save_model(model, filename; 
-               model_spec = nothing, 
-               errors = nothing, 
-               verbose = true, 
-               save_project = true,
-               meta = Dict(), )
+                    model_spec = nothing, 
+                    errors = nothing, 
+                    verbose = true, 
+                    save_project = true,
+                    meta = Dict(), )
 
    # --- 1. model spec, parameters and analysis ---
    D = Dict("model_parameters" => destructure(model.ps)[1], 
