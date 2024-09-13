@@ -63,7 +63,11 @@
     "virial_key": "dft_virial"
   },
   "output": {
-    "model": "results.json"
+    "model": "results.json",
+    "dimer": true,
+    "error_table": true,
+    "scatter": true,
+    "make_plots": false
   }
 }
  

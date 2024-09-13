@@ -189,12 +189,14 @@ function linear_errors(raw_data::AbstractArray{<: AbstractSystem}, model;
                        force_key = "force", 
                        virial_key = "virial", 
                        weights = default_weights(), 
-                       verbose = true )
+                       verbose = true,
+                       return_efv = false
+                       )
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
                           v_ref = _get_Vref(model)) 
             for at in raw_data ]
-   return linear_errors(data, model; verbose=verbose)
+   return linear_errors(data, model; verbose=verbose, return_efv = return_efv)
 end
 
 
