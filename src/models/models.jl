@@ -41,5 +41,7 @@ include("smoothness_priors.jl")
 
 include("utils.jl")
 
+include("trace.jl")
+
 
 end 

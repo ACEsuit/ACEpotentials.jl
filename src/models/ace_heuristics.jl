@@ -103,7 +103,7 @@ end
 
 function ace_model(; elements = nothing, 
                      order = nothing, 
-                     Ytype = :solid,  
+                     Ytype = :spherical,  
                      E0s = nothing,
                      rin0cuts = :auto,
                      # radial basis 
