@@ -35,6 +35,7 @@ model.ps.WB[Ism] .= 0.0
 
 # construct the fast evaluator (is it actually fast??)
 fpot = M.fast_evaluator(model)
+fpot_d = M.fast_evaluator(model, aa_static=false)
 
 ## 
 
@@ -47,9 +48,10 @@ for ntest = 1:20
    E2 = M.eval_site(model, Rs, Zs, z0)
    v1, ∇v1 = M.eval_grad_site(fpot, Rs, Zs, z0)
    v2, ∇v2 = M.eval_grad_site(model, Rs, Zs, z0)
+   v3, ∇v3 = M.eval_grad_site(fpot_d, Rs, Zs, z0)
 
-   print_tf(@test E1 ≈ E2 ≈ v1 ≈ v2)
-   print_tf(@test all(∇v1 .≈ ∇v2))
+   print_tf(@test E1 ≈ E2 ≈ v1 ≈ v2 ≈ v3)
+   print_tf(@test all(∇v1 .≈ ∇v2 .≈ ∇v3))
 end 
 println()
 
@@ -69,14 +71,15 @@ tolerance = 1e-10
 rattle = 0.1 
 
 for ntest = 1:20
-   local at 
+   local at, efv1, efv2, efv3  
    at = bulk(:Si, cubic=true) * 2 
    rattle!(at, rattle)
    efv1 = energy_forces_virial(at, model) 
    efv2 = energy_forces_virial(at, fpot)
+   efv3 = energy_forces_virial(at, fpot_d)
    print_tf(@test ustrip(abs(efv1.energy - efv2.energy)) < tolerance)
-   print_tf(@test all(efv1.forces .≈ efv2.forces))
-   print_tf(@test all(efv1.virial .≈ efv2.virial))
+   print_tf(@test all(efv1.forces .≈ efv2.forces .≈ efv3.forces))
+   print_tf(@test all(efv1.virial .≈ efv2.virial .≈ efv3.virial))
 end
 println() 
 
@@ -101,6 +104,7 @@ model.ps.Wpair[:, :] = Diagonal((1:len2).^(-2)) * model.ps.Wpair[:, :]
 
 @info("convert to UF_ACE format")      
 fpot = M.fast_evaluator(model)
+fpot_d = M.fast_evaluator(model, aa_static=false)
 
 ##
 
@@ -112,9 +116,10 @@ for ntest = 1:20
    E2 = M.eval_site(model, Rs, Zs, z0)
    v1, ∇v1 = M.eval_grad_site(fpot, Rs, Zs, z0)
    v2, ∇v2 = M.eval_grad_site(model, Rs, Zs, z0)
+   v3, ∇v3 = M.eval_grad_site(fpot_d, Rs, Zs, z0)
 
-   print_tf(@test E1 ≈ E2 ≈ v1 ≈ v2)
-   print_tf(@test all(∇v1 .≈ ∇v2))
+   print_tf(@test E1 ≈ E2 ≈ v1 ≈ v2 ≈ v3)
+   print_tf(@test all(∇v1 .≈ ∇v2 .≈ ∇v3))
 
 end 
 println() 
@@ -127,18 +132,15 @@ tolerance = 1e-12
 rattle = 0.01 
 
 for ntest = 1:20
-   local sys 
+   local sys, efv1, efv2, efv3 
    sys = rattle!(bulk(:Al, cubic=true) * 2, 0.1)
    randz!(sys, [:Ti => 0.5, :Al => 0.5])
 
    efv1 = energy_forces_virial(sys, model) 
    efv2 = energy_forces_virial(sys, fpot)
+   efv3 = energy_forces_virial(sys, fpot_d)
    print_tf(@test ustrip(abs(efv1.energy - efv2.energy)) < tolerance)
-   print_tf(@test all(efv1.forces .≈ efv2.forces))
-   print_tf(@test all(efv1.virial .≈ efv2.virial))
-
-   # E1 = potential_energy(sys, model)
-   # E2 = potential_energy(sys, fpot)
-   # print_tf(@test ustrip(abs(E1 - E2)) < tolerance)
+   print_tf(@test all(efv1.forces .≈ efv2.forces .≈ efv3.forces))
+   print_tf(@test all(efv1.virial .≈ efv2.virial .≈ efv3.virial))
 end
 println() 
