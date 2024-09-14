@@ -76,6 +76,22 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    return FastACEinner(rbasis, ybasis, a_basis, aadot)   
 end   
 
+"""
+      fast_evaluator(model; aa_static = :auto)
+
+Constructs an experimental "fast evaluator" for a fitted model, which merges 
+some operations resulting in a "slimmer" and usually faster evaluator. 
+In some cases the performance gain can be significant, especially when the 
+fitted parameters are sparse.
+
+To construct the fast evaluator, 
+```julia 
+fpot = fast_evaluator(model)
+```
+An optional keyword argument `aa_static = true` can be used to enforce 
+optimizing the n-correlation layer for very small models (at most a few 
+hundred parameters). For larger models this results in a stack overflow.
+"""
 function fast_evaluator(model::ACEPotential{<: ACEModel}; 
                         aa_static = :auto)
    if aa_static == :auto 

@@ -17,6 +17,7 @@ ACEpotentials.save_model(model, fname; model_spec = model_spec)
 model1, meta = ACEpotentials.load_model(fname)
 
 for ntest = 1:10 
+    local sys 
     sys = rattle!(bulk(:Al, cubic=true) * 2, 0.1) 
     sys = randz!(sys, [:Ti => 0.5, :Al => 0.5]) 
     print_tf( @test potential_energy(sys, model) ≈ potential_energy(sys, model1) ) 

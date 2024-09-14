@@ -71,7 +71,7 @@ tolerance = 1e-10
 rattle = 0.1 
 
 for ntest = 1:20
-   local at 
+   local at, efv1, efv2, efv3  
    at = bulk(:Si, cubic=true) * 2 
    rattle!(at, rattle)
    efv1 = energy_forces_virial(at, model) 
@@ -132,7 +132,7 @@ tolerance = 1e-12
 rattle = 0.01 
 
 for ntest = 1:20
-   local sys 
+   local sys, efv1, efv2, efv3 
    sys = rattle!(bulk(:Al, cubic=true) * 2, 0.1)
    randz!(sys, [:Ti => 0.5, :Al => 0.5])
 

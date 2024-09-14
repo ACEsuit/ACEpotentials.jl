@@ -50,7 +50,7 @@ model_100  = set_parameters!( deepcopy(model),
                   ACEfit.asp_select(asp_result, (:bysize, 100))[1])
 
 # generate sparsified, faster evaluators 
-pot_1000 = fast_evaluator(model_1000; aa_static = true)
+pot_1000 = fast_evaluator(model_1000; aa_static = false) # static can cause stack overflow
 pot_300 = fast_evaluator(model_300; aa_static = true)
 pot_100 = fast_evaluator(model_100; aa_static = true)
 
