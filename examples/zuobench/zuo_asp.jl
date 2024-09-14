@@ -2,6 +2,7 @@
 using Distributed, Random, SparseArrays 
 addprocs(10, exeflags="--project=$(Base.active_project())")
 @everywhere using ACEpotentials, PrettyTables
+using ACEpotentials.Models: fast_evaluator
 
 ##
 
@@ -50,14 +51,17 @@ I100 = findfirst(nnzs .>= 100)
 
 model_1000 = deepcopy(model)
 set_parameters!(model_1000, path[I1000].solution)
+pot_1000 = fast_evaluator(model_1000)
 model_300 = deepcopy(model)
 set_parameters!(model_300, path[I300].solution)
+pot_300 = fast_evaluator(model_300; aa_static = true)
 model_100 = deepcopy(model)
 set_parameters!(model_100, path[I100].solution)
+pot_100 = fast_evaluator(model_100; aa_static = true)
 
-err_100 = ACEpotentials.linear_errors(test_data, model_100)
-err_300 = ACEpotentials.linear_errors(test_data, model_300)
-err_1000 = ACEpotentials.linear_errors(test_data, model_1000)
+err_100 = ACEpotentials.linear_errors(test_data,  pot_100)
+err_300 = ACEpotentials.linear_errors(test_data,  pot_300)
+err_1000 = ACEpotentials.linear_errors(test_data, pot_1000)
 
 
 ##

@@ -136,9 +136,5 @@ for ntest = 1:20
    print_tf(@test ustrip(abs(efv1.energy - efv2.energy)) < tolerance)
    print_tf(@test all(efv1.forces .≈ efv2.forces))
    print_tf(@test all(efv1.virial .≈ efv2.virial))
-
-   # E1 = potential_energy(sys, model)
-   # E2 = potential_energy(sys, fpot)
-   # print_tf(@test ustrip(abs(E1 - E2)) < tolerance)
 end
 println() 
