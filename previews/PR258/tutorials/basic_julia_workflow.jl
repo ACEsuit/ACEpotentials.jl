@@ -85,3 +85,20 @@ end
 
 # Finally, we delete the model to clean up.
 rm("TiAl_model.json")
+
+# ### Fast Evaluator 
+#
+# `ACEpotentials.jl` provides an experimental "fast evaluator". This tries to 
+# merge some of the operations in the full model resulting in a "slimmer" and 
+# usually faster evaluator. In some cases the performance gain can be multiple 
+# factors up to an order of magnitude. This is particularly important when 
+# using a parameter estimation solver that sparsifies. In that case, the 
+# performance gain can be significant. 
+#
+# To construct the fast evaluator, simply use 
+# ```julia 
+# fpot = fast_evaluator(model)
+# ```
+# An optional keyword argument `aa_static = true` can be used to optimize the 
+# n-correlation layer for very small models (at most a few hundred parameters). 
+# For larger models this leads to a stack overflow.
