@@ -322,6 +322,8 @@ end
 
 function ace1_model(; kwargs...)
 
+   model_spec = Dict{Symbol, Any}(:model_name => "ACE1", kwargs...)
+
    kwargs = _clean_args(kwargs)
 
    elements = _get_elements(kwargs) 
@@ -380,7 +382,8 @@ function ace1_model(; kwargs...)
                        level = lvl, 
                        max_level = maxlvl,
                        init_WB = :zeros,)
-
+   model.meta["model_spec"] = model_spec            
+   
    return ACEPotential(model)
 end
 

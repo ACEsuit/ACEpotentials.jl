@@ -1,9 +1,9 @@
 # This script reproduces the error table from the 2023/24 ACEpotentials 
 # paper, but with the new version 0.8 ACE models.
 
-using Distributed 
+using Distributed, PrettyTables
 addprocs(10, exeflags="--project=$(Base.active_project())")
-@everywhere using ACEpotentials, PrettyTables
+@everywhere using ACEpotentials
 
 # the dataset is provided via ACE1pack artifacts as a convenient benchmarkset
 # the following chemical symbols are available:
