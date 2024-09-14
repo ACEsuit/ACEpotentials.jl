@@ -77,7 +77,7 @@ function _get_data(sys::AbstractSystem, key)
     if haskey(sys, key)
         return sys[key]
     elseif hasatomkey(sys, key)
-        return sys[:, atom_data]
+        return sys[:, key]
     else
         error("Couldn't find $key in System")
     end

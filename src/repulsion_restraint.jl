@@ -1,5 +1,8 @@
 # ---------------- Implementation of the repulsion restraint 
 
+import ACEpotentials: ACEPotential 
+import ACEpotentials.Models: ACEModel 
+
 function _rep_dimer_data_atomsbase(
                   model::ACEPotential{<: ACEModel};
                   weight=0.01, 
