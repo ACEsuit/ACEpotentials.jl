@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basic Workflow · ACEpotentials.jl</title><meta name="title" content="Basic Workflow · ACEpotentials.jl"/><meta property="og:title" content="Basic Workflow · ACEpotentials.jl"/><meta property="twitter:title" content="Basic Workflow · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/basic_julia_workflow/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/basic_julia_workflow/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/basic_julia_workflow/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li class="is-active"><a class="tocitem" href>Basic Workflow</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Basic Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/scripting/">Basic Shell Workflow</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li></ul></li><li><a class="tocitem" href="../../all_exported/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Basic Workflow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basic Workflow</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/basic_julia_workflow.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Basic-Workflow"><a class="docs-heading-anchor" href="#Basic-Workflow">Basic Workflow</a><a id="Basic-Workflow-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Workflow" title="Permalink"></a></h1><p>This short tutorial introduces the minimal workflow for people working purely in Julia. There are (or are in development) separate tutorials on using <code>ACEpotentials</code> via shell scripts or via Python, and tutorials on more advanced usage.</p><p>Start by importing <code>ACEpotentials</code> (and possibly other required libraries)</p><pre><code class="language-julia hljs">using ACEpotentials</code></pre><p>We need a dataset <code>TiAl_tutorial.xyz</code> for this tutorial. Normally we would get the path to a datset and then use <code>read_extxyz</code> to load in the training set.</p><pre><code class="language-julia hljs"># (don&#39;t execute this block)
+data_file = &quot;path/to/TiAl_tutorial.xyz&quot;
+data = read_extxyz(data_file)</code></pre><p>For convenience we provide this dataset as a <a href="https://docs.julialang.org/en/v1/stdlib/Artifacts/">Julia artifact</a> and make it accessible via <code>ACEpotentials.example_dataset</code>. We keep only a small subset of the structures for training and testing to keep the regression problem small.</p><pre><code class="language-julia hljs">data, _, meta = ACEpotentials.example_dataset(&quot;TiAl_tutorial&quot;)
+train_data = data[1:5:end];
+test_data = data[2:10:end];</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: TiAl_tutorial
+<span class="sgr31"><span class="sgr1">     Failure</span></span> artifact: TiAl_tutorial
+<span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: TiAl_tutorial</code></pre><p>The next step is to generate a model. Here we generate a linear ACE model using the <code>ACE1compat</code> interface, which generates models that are essentially equivalent to those provided by the discontinued <code>ACE1.jl</code> package.</p><ul><li><code>order = 3</code> : We take 3-correlation, i.e. a 4-body potential,</li><li><code>totaldegree = 6</code> : a very low polynomial degree just for testing</li><li><code>rcut = 5.5</code> : this is a typical cutoff radius for metals</li></ul><p>These three are the most important approximation parameters to explore when trying to improve the fit-accuracy. There are many other parameters to explore, which are documented in <code>?acemodel</code>. Even further model refinements are possible by studying the internals of <code>ACE1.jl</code> and <code>ACE1x.jl</code>. We also specify a reference potential that will be added to the learned 2-body and many-body potential components. Here we use a one-body potential i.e. a reference atom energy for each individual species. Usage of a one-body reference potential generally results in very slightly reduced fit accuracy but significantly improved 2-body potentials with a realistic dimer shape and improved robustness in predictions.</p><pre><code class="language-julia hljs">hyperparams = (elements = [:Ti, :Al],
+					order = 3,
+					totaldegree = 6,
+					rcut = 5.5,
+					Eref = [:Ti =&gt; -1586.0195, :Al =&gt; -105.5954])
+model = ace1_model(; hyperparams...)
+@show length_basis(model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">length_basis(model) = 270</code></pre><p>The next line specifies the regression weights: in the least squares loss different observations are given different weights,</p><p class="math-container">\[  \sum_{R} \Big( w_{E,R}^2 | E(R) - y_R^E |^2
+           + w_{F,R}^2 | {\rm forces}(R) - y_R^F |^2
+           + w_{V,R}^2 | {\rm virial}(R) - y_R^V |^2 \Big),\]</p><p>and this is specificed via the following dictionary. The keys correspond to the <code>config_type</code> of the training structures.</p><pre><code class="language-julia hljs">weights = Dict(
+        &quot;FLD_TiAl&quot; =&gt; Dict(&quot;E&quot; =&gt; 60.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ),
+        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ));</code></pre><p>To estimate the parameters we still need to choose a solver for the least squares system. In this tutorial we use a Bayesian linear regression, which is the recommended default at the moment. Many other solvers are available, and can be explored by looking at the documentation of <a href="https://github.com/ACEsuit/ACEfit.jl"><code>ACEfit.jl</code></a>.</p><pre><code class="language-julia hljs">solver = ACEfit.BLR()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ACEfit.BLR(Dict{Any, Any}())</code></pre><p>ACEpotentials provides a heuristic smoothness prior which assigns to each basis function <code>Bi</code> a scaling parameter <code>si</code> that estimates how &quot;rough&quot; that basis function is. The following line generates a regularizer (prior) with <code>si^q</code> on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential.</p><pre><code class="language-julia hljs">P = algebraic_smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">270×270 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
+ 1.0    ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅        ⋅        ⋅        ⋅ 
+  ⋅   16.0    ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅   81.0     ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅   256.0     ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅   625.0      ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅   1296.0  …      ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+ ⋮                                 ⋮    ⋱                            
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅      6561.0       ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅   10000.0       ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅   14641.0       ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅   20736.0</code></pre><p>We are now ready to estimate the parameters. We take a subset of the training data to speed up the tutorial. The prior is passed to the <code>acefit!</code> function via the <code>prior</code> keyword argument.</p><pre><code class="language-julia hljs">result = acefit!(train_data, model; solver=solver, prior = P, weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌────────────┬──────────┬───────┬────┬──────┬─────┐
+│<span class="sgr1">       Type </span>│<span class="sgr1"> #Configs </span>│<span class="sgr1"> #Envs </span>│<span class="sgr1"> #E </span>│<span class="sgr1">   #F </span>│<span class="sgr1">  #V </span>│
+├────────────┼──────────┼───────┼────┼──────┼─────┤
+│   FLD_TiAl │       63 │   126 │ 63 │  378 │ 378 │
+│ TiAl_T5000 │        3 │   310 │  3 │  930 │  18 │
+├────────────┼──────────┼───────┼────┼──────┼─────┤
+│      total │       66 │   436 │ 66 │ 1308 │ 396 │
+│    missing │        0 │     0 │  0 │    0 │   0 │
+└────────────┴──────────┴───────┴────┴──────┴─────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (1770, 270).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
+<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:07:36</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:02:40</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:01:46</span><span class="sgr32">Progress:  18%|███████▌                                 |  ETA: 0:01:19</span><span class="sgr32">Progress:  23%|█████████▍                               |  ETA: 0:01:02</span><span class="sgr32">Progress:  27%|███████████▏                             |  ETA: 0:00:51</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:42</span><span class="sgr32">Progress:  36%|██████████████▉                          |  ETA: 0:00:36</span><span class="sgr32">Progress:  41%|████████████████▊                        |  ETA: 0:00:31</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:26</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:23</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:20</span><span class="sgr32">Progress:  59%|████████████████████████▎                |  ETA: 0:00:17</span><span class="sgr32">Progress:  64%|██████████████████████████▏              |  ETA: 0:00:14</span><span class="sgr32">Progress:  68%|████████████████████████████             |  ETA: 0:00:12</span><span class="sgr32">Progress:  73%|█████████████████████████████▉           |  ETA: 0:00:10</span><span class="sgr32">Progress:  77%|███████████████████████████████▋         |  ETA: 0:00:08</span><span class="sgr32">Progress:  82%|█████████████████████████████████▌       |  ETA: 0:00:06</span><span class="sgr32">Progress:  86%|███████████████████████████████████▍     |  ETA: 0:00:05</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:03</span><span class="sgr32">Progress:  95%|███████████████████████████████████████▏ |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:30</span>
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
+<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:00:04</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:00</span>
+Iter     Function value   Gradient norm
+     0     4.531070e+03     2.176975e+03
+ * time: 0.016384124755859375
+     1     4.511962e+03     3.381033e+02
+ * time: 0.9996070861816406
+     2     3.126360e+03     4.498989e+02
+ * time: 1.0124890804290771
+     3     3.075386e+03     3.787742e+02
+ * time: 1.0209720134735107
+     4     3.042578e+03     3.110060e+02
+ * time: 1.0252671241760254
+     5     2.996447e+03     1.577183e+02
+ * time: 1.0294921398162842
+     6     2.956635e+03     1.426538e+02
+ * time: 1.0336649417877197
+     7     2.904828e+03     5.021431e+02
+ * time: 1.0399689674377441
+     8     2.633319e+03     3.264234e+03
+ * time: 1.0482640266418457
+     9     2.132198e+03     9.266791e+02
+ * time: 1.0544459819793701
+    10     1.305131e+03     2.650596e+01
+ * time: 1.068727970123291
+    11     1.300301e+03     1.728341e+02
+ * time: 1.0768520832061768
+    12     1.136213e+03     1.788406e+03
+ * time: 1.0829510688781738
+    13     9.266028e+02     1.724264e+03
+ * time: 1.0890710353851318
+    14     8.683957e+02     8.369458e+02
+ * time: 1.0952191352844238
+    15     8.542065e+02     1.202458e+01
+ * time: 1.0993199348449707
+    16     8.460816e+02     6.359850e+02
+ * time: 1.105349063873291
+    17     8.383414e+02     2.348007e+02
+ * time: 1.1114470958709717
+    18     8.375127e+02     1.452398e+01
+ * time: 1.117527961730957
+    19     8.374630e+02     3.587759e+00
+ * time: 1.1236381530761719
+    20     8.374628e+02     8.462346e-02
+ * time: 1.1277010440826416
+    21     8.374628e+02     1.975340e-04
+ * time: 1.1338300704956055
+    22     8.374628e+02     4.682667e-05
+ * time: 1.1399681568145752
+    23     8.374628e+02     9.691217e-06
+ * time: 1.1459641456604004
+    24     8.374628e+02     2.150332e-05
+ * time: 1.149994134902954
+    25     8.374628e+02     5.243516e-06
+ * time: 1.1541240215301514
+ * Status: success (objective increased between iterations)
+
+ * Candidate solution
+    Final objective value:     8.374628e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x&#39;|               = 9.30e-09 ≤ 1.0e-08
+    |x - x&#39;|/|x&#39;|          = 7.09e-11 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|         = 3.15e-06 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|/|f(x&#39;)| = 3.76e-09 ≰ 0.0e+00
+    |g(x)|                 = 5.24e-06 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   1  (vs limit Inf)
+    Iterations:    25
+    f(x) calls:    96
+    ∇f(x) calls:   96</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
+err_train = ACEpotentials.linear_errors(train_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Training Error Table
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌────────────┬─────────┬──────────┬─────────┐
+│<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├────────────┼─────────┼──────────┼─────────┤
+│   FLD_TiAl │   3.613 │    0.043 │  59.871 │
+│ TiAl_T5000 │  10.251 │    0.300 │  26.326 │
+├────────────┼─────────┼──────────┼─────────┤
+│        set │   4.152 │    0.254 │  58.763 │
+└────────────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌────────────┬─────────┬──────────┬─────────┐
+│<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├────────────┼─────────┼──────────┼─────────┤
+│   FLD_TiAl │   2.555 │    0.029 │  38.602 │
+│ TiAl_T5000 │   9.725 │    0.232 │  21.096 │
+├────────────┼─────────┼──────────┼─────────┤
+│        set │   2.881 │    0.173 │  37.806 │
+└────────────┴─────────┴──────────┴─────────┘</code></pre><p>We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions.</p><pre><code class="language-julia hljs">@info(&quot;Test Error Table&quot;)
+err_test = ACEpotentials.linear_errors(test_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Test Error Table
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌────────────┬─────────┬──────────┬─────────┐
+│<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├────────────┼─────────┼──────────┼─────────┤
+│   FLD_TiAl │   7.540 │    0.049 │  66.310 │
+│ TiAl_T5000 │   9.388 │    0.402 │  93.993 │
+├────────────┼─────────┼──────────┼─────────┤
+│        set │   7.603 │    0.274 │  67.316 │
+└────────────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌────────────┬─────────┬──────────┬─────────┐
+│<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├────────────┼─────────┼──────────┼─────────┤
+│   FLD_TiAl │   4.455 │    0.035 │  41.051 │
+│ TiAl_T5000 │   9.388 │    0.313 │  83.319 │
+├────────────┼─────────┼──────────┼─────────┤
+│        set │   4.605 │    0.162 │  42.332 │
+└────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can simply save the hyperparameters and the parameters. At the moment this must be done manually but a more complete and convenient interface for this will be provided, also adding various sanity checks.</p><pre><code class="language-julia hljs">using JSON
+open(&quot;TiAl_model.json&quot;, &quot;w&quot;) do f
+	 JSON.print(f, Dict(&quot;hyperparams&quot; =&gt; hyperparams, &quot;params&quot; =&gt; model.ps))
+end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Saturday 14 September 2024 20:31">Saturday 14 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
