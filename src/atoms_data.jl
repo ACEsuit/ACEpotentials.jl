@@ -33,6 +33,9 @@ function _getfuzzy(coll, key)
 end
 
 _issimilarkey(k1, k2) = lowercase(String(k1)) == lowercase(String(k2))
+_issimilarkey(k1::Nothing, k2) = false 
+_issimilarkey(k1, k2::Nothing) = false
+_issimilarkey(k1::Nothing, k2::Nothing) = false
 
 function _find_similar_key(coll, key) 
     for k in keys(coll) 
@@ -43,13 +46,13 @@ function _find_similar_key(coll, key)
     return nothing 
 end
 
-function _find_similar_key(sys::ExtXYZ.Atoms, key) 
-    for k in keys(sys.system_data)
+function _find_similar_key(sys::AbstractSystem, key) 
+    for k in keys(sys)
         if _issimilarkey(k, key)
             return k 
         end
     end
-    for k in keys(sys.atom_data)
+    for k in atomkeys(sys)
         if _issimilarkey(k, key)
             return k 
         end
@@ -57,24 +60,24 @@ function _find_similar_key(sys::ExtXYZ.Atoms, key)
     return nothing 
 end
 
-function _get_data_fuzzy(sys::ExtXYZ.Atoms, key)
+function _get_data_fuzzy(sys::AbstractSystem, key)
     k = _find_similar_key(sys, key) 
     if k == nothing 
         error("Couldn't find $key or similar in collection with keys $(keys(sys))")
     end 
-    if haskey(sys.system_data, k)
-        return sys.system_data[k]
+    if haskey(sys, k)
+        return sys[k]
     end
-    return sys.atom_data[k]    
+    return sys[:, k]
 end
 
 _has_similar_key(coll, key) = (_find_similar_key(coll, key) != nothing)
 
-function _get_data(sys::ExtXYZ.Atoms, key)
-    if haskey(sys.system_data, key)
-        return sys.system_data[key]
-    elseif haskey(sys.atom_data, key)
-        return sys.atom_data[key]
+function _get_data(sys::AbstractSystem, key)
+    if haskey(sys, key)
+        return sys[key]
+    elseif hasatomkey(sys, key)
+        return sys[:, atom_data]
     else
         error("Couldn't find $key in System")
     end

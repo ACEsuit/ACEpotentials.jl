@@ -110,7 +110,15 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
    end 
 
    if repulsion_restraint 
-      error("Repulsion restraint is currently not implemented")
+      restraint_data = _rep_dimer_data_atomsbase(
+               model; 
+               weight = restraint_weight,
+               energy_key = Symbol(energy_key),
+               kwargs...
+            )
+      append!(data, restraint_data)
+      # return nothing 
+      # error("Repulsion restraint is currently not implemented")
       # if eltype(data) == AtomsData
       #    append!(data, _rep_dimer_data(model; weight = restraint_weight))
       # else
