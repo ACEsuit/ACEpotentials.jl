@@ -34,8 +34,7 @@ At, yt, Wt = ACEpotentials.assemble(train_data, model)
 Av, yv, Wv = ACEpotentials.assemble(val_data, model)
 
 @info("Compute ASP Path")
-solver = ACEfit.ASP(; P = P, select = :final, tsvd = true, 
-                     actMax = 1000, traceFlag=true )
+solver = ACEfit.ASP(; P = P, select = :final, tsvd = true, actMax = 1000 )
 asp_result = ACEfit.solve(solver, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)
 
 ## 
@@ -51,7 +50,7 @@ I100 = findfirst(nnzs .>= 100)
 
 model_1000 = deepcopy(model)
 set_parameters!(model_1000, path[I1000].solution)
-pot_1000 = fast_evaluator(model_1000; aa_static = true)
+pot_1000 = fast_evaluator(model_1000; aa_static = false)
 model_300 = deepcopy(model)
 set_parameters!(model_300, path[I300].solution)
 pot_300 = fast_evaluator(model_300; aa_static = true)
