@@ -15,19 +15,18 @@ include("ace1_compat.jl")
 # Fitting
 include("atoms_data.jl")
 include("fit_model.jl")
+include("repulsion_restraint.jl")
 
 # Data 
 include("example_data.jl")
 
 # Misc 
-# TODO: all of this just needs to be moved from JuLIP to AtomsBase
 include("analysis/dataset_analysis.jl")
 include("analysis/potential_analysis.jl")
 include("descriptor.jl")
 
 
 # TODO: to be completely rewritten
-# include("io.jl")
 # include("export.jl")
 
 # Experimental 
