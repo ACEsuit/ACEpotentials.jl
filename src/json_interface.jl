@@ -2,6 +2,8 @@ import ArgParse
 using NamedTupleTools
 import .ACE1compat
 using ACEfit
+using TOML
+using Pkg
 using Optimisers: destructure
 
 # === nt utilities ===
@@ -110,13 +112,16 @@ save model constructor, model parameters, and other information to a JSON file.
             the model cannot be reconstructed unless the original script is available
 * `errors` : the fitting / test errors computed during the fitting 
 * `verbose` : print information about the saving process     
+* `save_project` : save Project.toml and Manifest.toml for reproducibility
 """
 function save_model(model, filename; 
                     model_spec = nothing, 
                     errors = nothing, 
                     verbose = true, 
+                    save_project = true,
                     meta = Dict(), )
 
+   # --- 1. model spec, parameters and analysis ---
    D = Dict("model_parameters" => destructure(model.ps)[1], 
             "meta" => meta)
 
@@ -131,9 +136,23 @@ function save_model(model, filename;
    if !isnothing(errors)
       D["errors"] = errors
    end
+   ##
+
+   # --- 2. environment for the fit ----
+   if save_project
+      @info("saving project")
+      project_path, manifest_path = find_project_manifest()
+      D["project"] = TOML.parsefile(project_path)
+      if manifest_path === nothing
+         verbose && @info("Manifest not found, saving project file only")
+      else
+         D["manifest"] = TOML.parsefile(manifest_path)
+      end
+   end
+   ## 
 
    open(filename, "w") do io
-       write(io, JSON.json(D, 3))
+      write(io, JSON.json(D, 3))
    end
 
    if verbose
@@ -141,6 +160,17 @@ function save_model(model, filename;
    end
 end
 
+function find_project_manifest()
+   project_info = Pkg.project()
+   project_path = project_info.path
+   project_dir = joinpath(splitpath(project_path)[1:end-1]...)
+   manifest_path = joinpath(project_dir, "Manifest.toml")
+   if ispath(manifest_path)
+      return project_path, manifest_path
+   else
+      return project_path, nothing 
+   end
+end
 
 function load_model(filename) 
    D = JSON.parsefile(filename)

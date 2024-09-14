@@ -4,6 +4,7 @@
 
 using ACEpotentials
 using ACEpotentials: JSON, ExtXYZ
+using TOML
 using ACEpotentials.ArgParse: ArgParseSettings, @add_arg_table!, parse_args
 
 parser = ArgParseSettings(description="Fit an ACE potential from parameters file")
@@ -93,6 +94,7 @@ end
 ACEpotentials.save_model(model, joinpath(res_path, args_dict["output"]["model"]),
                          model_spec = args_dict, 
                          errors = err,
+                         save_project = args_dict["output"]["save_project"],
                          meta = D)
 
 # To load the model, active the same Julia environment, then run 
