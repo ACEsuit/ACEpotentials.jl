@@ -119,4 +119,22 @@ using AtomsBuilder
 sys = rattle!(bulk(:Si, cubic=true) * 2, 0.1)
 X = site_descriptors(sys, model)
 X234 = site_descriptors(sys, model; domain = [2,3,4])
-X234 == X[2:4]
+println_slim( @test X234 == X[2:4] )
+
+
+##
+# rerun fit with repulsion restraint 
+
+@info("Run a fit with repulsion restraint")
+
+acefit!(data, model;
+        data_keys...,
+        weights = weights,
+        solver = ACEfit.BLR(), 
+        repulsion_restraint = true)
+
+r = 0.001 + 0.01 * rand()
+zSi = atomic_number(ChemicalSpecies(:Si))
+Bpair = model.model.pairbasis(r, zSi, zSi, NamedTuple(), NamedTuple())
+V2 = sum(model.ps.Wpair[:, 1] .* Bpair)
+println_slim(@test V2 > 10_000)
