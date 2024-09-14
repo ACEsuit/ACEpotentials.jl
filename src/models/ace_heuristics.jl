@@ -100,10 +100,51 @@ function ace_learnable_Rnlrzz(;
 end 
 
 
+function _make_Vref_E0s(rbasis, E0s::Nothing)
+   NZ = _get_nz(rbasis)
+   return _make_Vref_E0s(rbasis, [ _i2z(rbasis, i) => 0.0 for i = 1:NZ ] )
+end
+
+_convert_E0s(E0s::Union{Dict, NamedTuple}) = E0s 
+_convert_E0s(E0s::Union{AbstractVector, Tuple}) = Dict(E0s...)
+_convert_E0s(E0s) = error("E0s must be nothing, a NamedTuple, Dict or list of pairs")
+
+# E0s can be anything with (key, value) pairs 
+function _make_Vref_E0s(rbasis, E0s)   
+   NZ = _get_nz(rbasis)
+   V0 = OneBody(_convert_E0s(E0s))
+   if length(V0.E0) != NZ 
+      error("E0s must have the right number of elements")
+   end
+
+   return V0 
+end
+
+
+function _make_Vref(elements, E0s, ZBL)
+   if !isnothing(E0s) 
+      E0s = _convert_E0s(E0s) 
+      if (sort(elements) != sort(keys(E0s))) 
+         error("E0s keys must be the same as the list of elements")
+      end
+   end 
+
+   Vref = _make_Vref_E0s(rbasis, E0s),   
+
+
+   if E0s == nothing
+      return _make_Vref_E0s(elements, E0s)
+   else
+      return ZBLPotential(elements, E0s)
+   end
+end
+
+
 
 function ace_model(; elements = nothing, 
                      order = nothing, 
                      Ytype = :solid,  
+                     ZBL = false, 
                      E0s = nothing,
                      rin0cuts = :auto,
                      # radial basis 
@@ -170,11 +211,12 @@ function ace_model(; elements = nothing,
       end
    end
 
-
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, E0s)
+   Vref = _make_Vref(elements, E0s, ZBL)
+
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, Vref)
    model.meta["init_WB"] = String(init_WB)
    model.meta["init_Wpair"] = String(init_Wpair)
 
