@@ -41,27 +41,23 @@ asp_result = ACEfit.solve(solver, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)
 
 @info("Pick solutions for 100, 300, 1000 parameters, compute errors")
 
-@show length(asp_result["path"])
-path = asp_result["path"]
-nnzs = [ nnz(p.solution) for p in path ]
-I1000 = length(nnzs) 
-I300 = findfirst(nnzs .>= 300)
-I100 = findfirst(nnzs .>= 100)
+# select models from the model path 
+model_1000 = set_parameters!( deepcopy(model), 
+                  ACEfit.asp_select(asp_result, :final)[1])
+model_300  = set_parameters!( deepcopy(model), 
+                  ACEfit.asp_select(asp_result, (:bysize, 300))[1])
+model_100  = set_parameters!( deepcopy(model), 
+                  ACEfit.asp_select(asp_result, (:bysize, 100))[1])
 
-model_1000 = deepcopy(model)
-set_parameters!(model_1000, path[I1000].solution)
-pot_1000 = fast_evaluator(model_1000; aa_static = false)
-model_300 = deepcopy(model)
-set_parameters!(model_300, path[I300].solution)
+# generate sparsified, faster evaluators 
+pot_1000 = fast_evaluator(model_1000; aa_static = true)
 pot_300 = fast_evaluator(model_300; aa_static = true)
-model_100 = deepcopy(model)
-set_parameters!(model_100, path[I100].solution)
 pot_100 = fast_evaluator(model_100; aa_static = true)
 
+@info("Evaluate errors on the test set") 
 err_100 = ACEpotentials.linear_errors(test_data,  pot_100)
 err_300 = ACEpotentials.linear_errors(test_data,  pot_300)
 err_1000 = ACEpotentials.linear_errors(test_data, pot_1000)
-
 
 ##
 
