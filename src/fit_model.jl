@@ -110,7 +110,15 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
    end 
 
    if repulsion_restraint 
-      error("Repulsion restraint is currently not implemented")
+      restraint_data = _rep_dimer_data_atomsbase(
+               model; 
+               weight = restraint_weight,
+               energy_key = Symbol(energy_key),
+               kwargs...
+            )
+      append!(data, restraint_data)
+      # return nothing 
+      # error("Repulsion restraint is currently not implemented")
       # if eltype(data) == AtomsData
       #    append!(data, _rep_dimer_data(model; weight = restraint_weight))
       # else
@@ -190,11 +198,11 @@ function linear_errors(raw_data::AbstractArray{<: AbstractSystem}, model;
                        virial_key = "virial", 
                        weights = default_weights(), 
                        verbose = true,
-                       return_efv = false
+                       return_efv = false, 
                        )
    data = [ AtomsData(at; energy_key = energy_key, force_key=force_key, 
                           virial_key = virial_key, weights = weights, 
-                          v_ref = _get_Vref(model)) 
+                          v_ref = nothing)
             for at in raw_data ]
    return linear_errors(data, model; verbose=verbose, return_efv = return_efv)
 end

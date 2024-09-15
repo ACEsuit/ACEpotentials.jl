@@ -1,5 +1,6 @@
 import Random
 import ACEpotentials: DefaultHypers
+import EmpiricalPotentials 
 
 
 # -------------------------------------------------------
@@ -101,9 +102,45 @@ end
 
 
 
+_convert_E0s(E0s::Union{Dict, NamedTuple}) = E0s 
+_convert_E0s(E0s::Union{AbstractVector, Tuple}) = Dict(E0s...)
+_convert_E0s(E0s) = error("E0s must be nothing, a NamedTuple, Dict or list of pairs")
+
+# E0s can be anything with (key, value) pairs 
+_make_Vref_E0s(elements, E0s) = OneBody(_convert_E0s(E0s))
+
+function _make_Vref_E0s(elements, E0s::Nothing)
+   NZ = length(elements)
+   zz = _convert_zlist(elements)
+   return _make_Vref_E0s(elements, [ z => 0.0 for z in zz ] )
+end
+
+
+function _make_Vref(elements, E0s, ZBL, rcut = nothing)
+
+   if !(isnothing(E0s)) 
+      E0s = _convert_E0s(E0s) 
+      if (sort([elements...]) != sort(collect(keys(E0s)))) 
+         error("E0s keys must be the same as the list of elements")
+      end
+   end 
+
+   Vref_E0s = _make_Vref_E0s(elements, E0s)
+
+   if ZBL 
+      Vref_zbl = EmpiricalPotentials.ZBL(rcut*u"Å")
+      return SitePotentialStack((Vref_E0s, Vref_zbl))
+   else
+      return Vref_E0s
+   end
+end
+
+
+
 function ace_model(; elements = nothing, 
                      order = nothing, 
                      Ytype = :solid,  
+                     ZBL = false, 
                      E0s = nothing,
                      rin0cuts = :auto,
                      # radial basis 
@@ -170,11 +207,13 @@ function ace_model(; elements = nothing,
       end
    end
 
-
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, E0s)
+   rcut = maximum([ x.rcut for x in rin0cuts ])
+   Vref = _make_Vref(elements, E0s, ZBL, rcut)
+
+   model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, Vref)
    model.meta["init_WB"] = String(init_WB)
    model.meta["init_Wpair"] = String(init_Wpair)
 

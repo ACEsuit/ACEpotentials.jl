@@ -21,6 +21,7 @@ function length_basis end
 include("elements.jl")
 
 include("onebody.jl")
+include("stacked_pot.jl")
 
 include("radial_envelopes.jl")
 
@@ -36,12 +37,15 @@ include("ace_heuristics.jl")
 include("ace.jl")
 
 include("calculators.jl")
+include("committee.jl")
 
 include("smoothness_priors.jl")
 
 include("utils.jl")
 
 include("fasteval.jl")
+
+
 
 
 end 

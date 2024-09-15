@@ -15,19 +15,18 @@ include("ace1_compat.jl")
 # Fitting
 include("atoms_data.jl")
 include("fit_model.jl")
+include("repulsion_restraint.jl")
 
 # Data 
 include("example_data.jl")
 
 # Misc 
-# TODO: all of this just needs to be moved from JuLIP to AtomsBase
 include("analysis/dataset_analysis.jl")
 include("analysis/potential_analysis.jl")
 include("descriptor.jl")
 
 
 # TODO: to be completely rewritten
-# include("io.jl")
 # include("export.jl")
 
 # Experimental 
@@ -41,7 +40,10 @@ import ACEpotentials.ACE1compat: ace1_model
 import ACEpotentials.Models: algebraic_smoothness_prior, 
                              exp_smoothness_prior, 
                              gaussian_smoothness_prior, 
-                             set_parameters!
+                             set_parameters!, 
+                             fast_evaluator, 
+                             @committee, 
+                             set_committee!
 import JSON 
 
 export ace1_model,
@@ -49,11 +51,12 @@ export ace1_model,
        algebraic_smoothness_prior, 
        exp_smoothness_prior, 
        gaussian_smoothness_prior, 
-         set_parameters!
-
+       set_parameters!, 
+       fast_evaluator, 
+         @committee,
+         set_committee!
 
 include("json_interface.jl")
-
 
 
 end

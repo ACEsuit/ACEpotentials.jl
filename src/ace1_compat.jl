@@ -37,6 +37,7 @@ const _kw_defaults = Dict(:elements => nothing,
                           :pair_envelope => (:r, 2),
                           #
                           :Eref => missing,
+                          :ZBL => false, 
                           #
                           :variable_cutoffs => false,
                           )
@@ -300,8 +301,12 @@ function _pair_basis(kwargs)
       # here we use a similar convention, just need to convert to ace1-style 
       envelope = kwargs[:pair_envelope]
       if envelope isa Tuple && envelope[1] == :r 
+         if kwargs[:ZBL] 
+            @warn("""It is not recommended to combine the ZBL reference potential 
+                     with a repulsive pair basis. Use `pair_envelope = (:x, 0, q)` instead.""")
+         end
          envelope = (:r_ace1, envelope[2])
-      end 
+      end
       
       pair_basis = ace_learnable_Rnlrzz(; spec = pair_spec, 
                                     maxq = maxq,  
@@ -321,6 +326,11 @@ end
 
 
 function ace1_model(; kwargs...)
+
+   # change the default for the envelope if ZBL is used 
+   if haskey(kwargs, :ZBL) && kwargs[:ZBL] && !haskey(kwargs, :envelope)
+      kwargs = (; pair_envelope = (:x, 0, 2), kwargs...)
+   end
 
    model_spec = Dict{Symbol, Any}(:model_name => "ACE1", kwargs...)
 
@@ -372,9 +382,11 @@ function ace1_model(; kwargs...)
       E0s = Dict([ key => val * u"eV" for (key, val) in Eref]...) 
    end
 
+
    model = Models.ace_model(; elements=elements, 
                        order = cor_order, 
                        Ytype = :spherical, 
+                       ZBL = kwargs[:ZBL],
                        E0s = E0s, 
                        rbasis = rbasis, 
                        pair_basis = pairbasis, 

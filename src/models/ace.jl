@@ -92,35 +92,16 @@ function _make_idx_AA_spec(AA_spec, A_spec)
    return AA_spec_idx
 end 
 
-function _make_Vref_E0s(rbasis, E0s::Nothing)
-   NZ = _get_nz(rbasis)
-   return _make_Vref_E0s(rbasis, [ _i2z(rbasis, i) => 0.0 for i = 1:NZ ] )
-end
-
-# E0s can be anything with (key, value) pairs 
-function _make_Vref_E0s(rbasis, E0s)
-   _convert_E0s(E0s::Union{Dict, NamedTuple}) = E0s 
-   _convert_E0s(E0s::Union{AbstractVector, Tuple}) = Dict(E0s...)
-   _convert_E0s(E0s) = error("E0s must be nothing, a NamedTuple, Dict or list of pairs")
-   
-   NZ = _get_nz(rbasis)
-   V0 = OneBody(_convert_E0s(E0s))
-   if length(V0.E0) != NZ 
-      error("E0s must have the right number of elements")
-   end
-
-   return V0 
-end
-
 
 function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector, 
+                             Vref, 
                              level = TotalDegree(), 
                              pair_basis = nothing, 
-                             E0s = nothing, 
-                             Vref = _make_Vref_E0s(rbasis, E0s), )
+                             ) 
 
-   # storing E0s with unit
-   model_meta = Dict{String, Any}("E0s" => deepcopy(E0s))
+   # # storing E0s with unit
+   # model_meta = Dict{String, Any}("E0s" => deepcopy(E0s))
+   model_meta = Dict{String, Any}()
 
    # generate the coupling coefficients 
    cgen = EquivariantModels.Rot3DCoeffs_real(0)
@@ -170,8 +151,8 @@ end
 #       since it is implicitly already encoded in AA_spec. We need a 
 #       function `auto_level` that generates level automagically from AA_spec.
 function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level, 
-                   pair_basis, E0s = nothing)
-   return _generate_ace_model(rbasis, Ytype, AA_spec, level, pair_basis, E0s)
+                   pair_basis, Vref)
+   return _generate_ace_model(rbasis, Ytype, AA_spec, Vref, level, pair_basis)
 end 
 
 # NOTE : a nicer convenience constructor is also provided in `ace_heuristics.jl`
@@ -320,9 +301,8 @@ function evaluate(model::ACEModel,
       val += dot(Apair, (@view ps.Wpair[:, i_z0]))
    end
    # ------------------- 
-   #  TODO - Vref : assume it is a OneBody 
-   @assert model.Vref isa OneBody
-   val += model.Vref.E0[Z0]
+   #  Vref
+   val += eval_site(model.Vref, Rs, Zs, Z0)
    # ------------------- 
 
    end # @no_escape
