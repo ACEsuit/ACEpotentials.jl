@@ -324,15 +324,18 @@ function _pair_basis(kwargs)
    error("Cannot determine the pair basis from the arguments provided.")
 end
 
+import ACEpotentials
 
 function ace1_model(; kwargs...)
 
    # change the default for the envelope if ZBL is used 
    if haskey(kwargs, :ZBL) && kwargs[:ZBL] && !haskey(kwargs, :envelope)
-      kwargs = (; pair_envelope = (:x, 0, 2), kwargs...)
+      kwargs = (; :pair_envelope => (:x, 0, 2), kwargs...)
    end
 
-   model_spec = Dict{Symbol, Any}(:model_name => "ACE1", kwargs...)
+   model_spec = Dict{Symbol, Any}(pairs(kwargs)...)
+   model_spec[:Eref] = ACEpotentials.Models._convert_E0s(kwargs[:Eref])
+   model_spec[:model_name] = "ACE1"
 
    kwargs = _clean_args(kwargs)
 

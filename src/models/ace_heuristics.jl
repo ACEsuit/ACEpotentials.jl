@@ -120,8 +120,11 @@ function _make_Vref(elements, E0s, ZBL, rcut = nothing)
 
    if !(isnothing(E0s)) 
       E0s = _convert_E0s(E0s) 
-      if (sort([elements...]) != sort(collect(keys(E0s)))) 
-         error("E0s keys must be the same as the list of elements")
+      if string.((sort([elements...]))) != string.(sort(collect(keys(E0s))))
+         @error("E0s keys must be the same as the list of elements")
+         display(E0s) 
+         display(elements)
+         error("")
       end
    end 
 

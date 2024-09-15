@@ -94,23 +94,27 @@ err_blr = ACEpotentials.linear_errors(data, model; data_keys..., weights=weights
 
 test_rmse(err_blr["rmse"], rmse_blr)
 
+##
+
+@info("try to save and load the potential")
+tmpf = tempname() * ".json"
+ACEpotentials.save_model(model, tmpf)
+m2, meta = ACEpotentials.load_model(tmpf)
+println_slim(@test m2.ps == model.ps)
 
 ##
 
-@warn("Removed Commitee Test Until the new kernels support committee potentials")
-# @testset "BLR With Committee" begin
-#     rmse_blr = Dict(
-#          "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-#          "set"           => Dict("V"=>0.0619346, "E"=>0.00238807, "F"=>0.121907),
-#          "dia"           => Dict("V"=>0.0333255, "E"=>0.00130242, "F"=>0.0255582),
-#          "liq"           => Dict("V"=>0.0345897, "E"=>0.000397724, "F"=>0.157461),
-#          "bt"            => Dict("V"=>0.0822944, "E"=>0.00322198, "F"=>0.062758),)
-#     acefit!(model, data;
-#             data_keys...,
-#             weights = weights,
-#             solver = ACEfit.BLR(factorization = :svd, committee_size = 10))
-#     #test_rmse(results["errors"]["rmse"], rmse_blr, 1e-5)
-# end
+info("Fit a potential with committee")
+
+co_size = 10 
+solver = ACEfit.BLR(factorization = :svd, committee_size = co_size)
+
+acefit!(data, model;
+        data_keys...,
+        weights = weights,
+        solver = solver)
+
+println_slim(@test length(model.co_ps) == co_size)
 
 
 ##
@@ -164,5 +168,5 @@ dimer = periodic_system(
              ( SA[ r+1, 0.0, 0.0 ]u"Å", SA[0.0,1.0,0.0]u"Å", SA[0.0,0.0,1.0]u"Å" ), 
              periodicity = (false, false, false) )
 @show potential_energy(dimer, model)
-println_slim(@test potential_energy(dimer, model) > 1e3u"eV")
+println_slim(@test potential_energy(dimer, model) > 1e4u"eV")
 
