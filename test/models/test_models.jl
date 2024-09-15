@@ -6,3 +6,4 @@
 @testset "Pair Basis" begin; include("test_pair_basis.jl"); end
 @testset "ACE Model" begin; include("test_ace.jl"); end 
 @testset "ACE Calculator" begin; include("test_calculator.jl"); end
+@testset "Committees" begin; include("test_committee.jl"); end
