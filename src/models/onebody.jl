@@ -43,8 +43,8 @@ energy_unit(V::OneBody) = V.energy_unit
 length_unit(V::OneBody) = V.length_unit
 
 cutoff_radius(::OneBody{T}) where {T} = 
-      sqrt(eps(T))
-
+      sqrt(eps(T)) * u"Å"
+      
 eval_site(V::OneBody, Rs, Zs, zi::Integer) = 
       V.E0[zi]
 

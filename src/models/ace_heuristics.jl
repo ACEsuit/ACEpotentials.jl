@@ -120,7 +120,7 @@ function _make_Vref(elements, E0s, ZBL, rcut = nothing)
 
    if !(isnothing(E0s)) 
       E0s = _convert_E0s(E0s) 
-      if (sort(elements) != sort(collect(keys(E0s)))) 
+      if (sort([elements...]) != sort(collect(keys(E0s)))) 
          error("E0s keys must be the same as the list of elements")
       end
    end 
@@ -128,7 +128,7 @@ function _make_Vref(elements, E0s, ZBL, rcut = nothing)
    Vref_E0s = _make_Vref_E0s(elements, E0s)
 
    if ZBL 
-      Vref_zbl = EmpiricalPotentials.ZBL(rcut)
+      Vref_zbl = EmpiricalPotentials.ZBL(rcut*u"Å")
       return SitePotentialStack((Vref_E0s, Vref_zbl))
    else
       return Vref_E0s

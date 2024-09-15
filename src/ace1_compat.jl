@@ -329,7 +329,7 @@ function ace1_model(; kwargs...)
 
    # change the default for the envelope if ZBL is used 
    if haskey(kwargs, :ZBL) && kwargs[:ZBL] && !haskey(kwargs, :envelope)
-      kwargs = (; envelope = (:x, 0, 2), kwargs...)
+      kwargs = (; pair_envelope = (:x, 0, 2), kwargs...)
    end
 
    kwargs = _clean_args(kwargs)

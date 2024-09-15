@@ -61,7 +61,7 @@ for ybasis in [:spherical, :solid]
    @info("Test Rotation-Invariance of the Model")
 
    for ntest = 1:50 
-      local st1, Nat, Rs, Zs, Z0, val 
+      local st1, Nat, Rs, Zs, Z0, val, Rs1, Zs1 
 
       Nat = rand(8:16)
       Rs, Zs, Z0 = M.rand_atenv(model, Nat)

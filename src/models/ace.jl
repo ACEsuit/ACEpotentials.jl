@@ -152,7 +152,7 @@ end
 #       function `auto_level` that generates level automagically from AA_spec.
 function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level, 
                    pair_basis, Vref)
-   return _generate_ace_model(rbasis, Ytype, AA_spec, Vref, level, pair_basis, E0s)
+   return _generate_ace_model(rbasis, Ytype, AA_spec, Vref, level, pair_basis)
 end 
 
 # NOTE : a nicer convenience constructor is also provided in `ace_heuristics.jl`
@@ -301,9 +301,8 @@ function evaluate(model::ACEModel,
       val += dot(Apair, (@view ps.Wpair[:, i_z0]))
    end
    # ------------------- 
-   #  TODO - Vref : assume it is a OneBody 
-   @assert model.Vref isa OneBody
-   val += model.Vref.E0[Z0]
+   #  Vref
+   val += eval_site(model.Vref, Rs, Zs, Z0)
    # ------------------- 
 
    end # @no_escape

@@ -4,7 +4,8 @@
 
 using ACEpotentials
 using ACEbase.Testing: println_slim
-using ExtXYZ, AtomsBase
+using ExtXYZ, AtomsBase, Unitful, StaticArrays, AtomsCalculators
+using AtomsCalculators: potential_energy
 using Distributed
 using LazyArtifacts
 using Test
@@ -138,3 +139,26 @@ zSi = atomic_number(ChemicalSpecies(:Si))
 Bpair = model.model.pairbasis(r, zSi, zSi, NamedTuple(), NamedTuple())
 V2 = sum(model.ps.Wpair[:, 1] .* Bpair)
 println_slim(@test V2 > 10_000)
+
+
+##
+# rerun a fit with ZBL reference 
+
+@info("Run a fit with ZBL reference potential")
+
+model = ACE1compat.ace1_model(; ZBL = true, params...) 
+
+acefit!(data, model;
+        data_keys...,
+        weights = weights,
+        solver = ACEfit.BLR())
+
+r = 0.001 + 0.01 * rand()
+zSi = atomic_number(ChemicalSpecies(:Si))
+dimer = periodic_system(
+            [Atom(ChemicalSpecies(:Si), SA[0.0,0.0,0.0]u"Å",  ),  
+             Atom(ChemicalSpecies(:Si), SA[  r,0.0,0.0]u"Å",  )], 
+             ( SA[ r+1, 0.0, 0.0 ]u"Å", SA[0.0,1.0,0.0]u"Å", SA[0.0,0.0,1.0]u"Å" ), 
+             periodicity = (false, false, false) )
+@show potential_energy(dimer, model)
+# unclear how this can be deeply negative. 
