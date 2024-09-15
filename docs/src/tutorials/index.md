@@ -7,36 +7,3 @@
 * [Basic Dataset Analysis](../literate_tutorials/dataset_analysis.md) : basic techniques to visualize training datasets and correlate such observations to the choice of geometric priors
 * [Descriptors](../literate_tutorials/descriptor.md) : `ACEpotentials` can be used as descriptors of atomic environments or structures, which is described here. 
 
-
-```@raw html
-<!-- ### Using `ACEpotentials` Potentials in External Software
-* [ACE descriptors](../literate_tutorials/descriptor.md)
-
-
-* [LAMMPS](lammps.md)
-* [Python with `ase`](python_ase.md)
-* [`Molly.jl`](molly.md) -->
-
-<!-- ### Structure analysis with ACE1 descriptors
-
-
-### Committee Potentials
-
-* [Committee Potentials](../literate_tutorials/committee.md)
-
-### Experimental Features
-
-* [Experimental Features](../literate_tutorials/experimental.md) -->
-```
-
-```@raw html 
-<!---
-### JSON Interface and Command line (OUTDATED)
-
-ACE potentials can be fitted from the command line using a dictionary stored in a `.json` or `.yaml` file to specify the parameters:
-
-* [TiAl Potential (ACEpotentials)](../literate_tutorials/ACEpotentials_TiAl.md)
-* [TiAl Potential (command line JSON)](../outdated/first_example_json.md)
-
--->
-```

@@ -178,3 +178,18 @@ function load_model(filename)
    set_parameters!(model, D["model_parameters"])
    return model, D
 end
+
+
+
+"""
+      copy_tutorial(dest)
+
+Copies the `ACEpotential-Tutorial.ipynb` notebook file to `dest`.
+"""
+function copy_tutorial(dest)
+   path = joinpath(@__DIR__(), "..", "examples", "Tutorial")
+   orig = joinpath(path, "ACEpotentials-Tutorial.ipynb")
+   dest = joinpath(dest, "ACEpotentials-Tutorial.ipynb")
+   run(`cp $orig $dest`)
+   return nothing
+end

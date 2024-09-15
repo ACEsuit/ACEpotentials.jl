@@ -71,12 +71,6 @@ makedocs(;
                 "literate_tutorials/dataset_analysis.md",
                 "tutorials/scripting.md", 
                 "literate_tutorials/descriptor.md",
-                # "tutorials/lammps.md",
-                # "tutorials/python_ase.md",
-                # "tutorials/molly.md",
-                # "literate_tutorials/committee.md",
-                # "tutorials/AtomsBase_interface.md",
-                # "literate_tutorials/experimental.md",
             ],
         "Additional Topics" => Any[
             "gettingstarted/parallel-fitting.md",

@@ -65,6 +65,19 @@ Depending on your usage you may also need to add other packages, e.g. `AtomsBase
 When returning to a project, there are several methods for reactivating it. One is to simply `activate .` in the package manager, as above. Alternatively set the `JULIA_PROJECT` environment variable to the directory with `Project.toml` before starting julia, or call julia as `julia --project=<dir>`. Special syntax like `JULIA_PROJECT=@.` or `julia --project=@.` searches the current directory and its parents for a `Project.toml` file.
 
 
+### Setting up the tutorial 
+
+As in the instructions described above, install Julia, then create a new folder, start new julia project and in that project add `ACEpotentials` and `IJulia`, then copy the tutorial to the local folder:
+```
+julia -e 'using Pkg; Pkg.add("ACEpotentials"); Pkg.add("IJulia")'
+julia -e 'using ACEpotentials; ACEpotentials.copy_tutorial(@__DIR__())'
+```
+Start Jupyter, e.g. via 
+``` 
+jupyter notebook 
+``` 
+Open the tutorial notebook. If a Julia kernel can be selected make sure it is 1.10 or higher. The follow the instructions in the notebook. 
+
 ### Setting up the Python ASE calculator
 
 !!! warning 
