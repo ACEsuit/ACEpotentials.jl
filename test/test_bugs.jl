@@ -35,3 +35,16 @@ maxdiff = maximum(abs(E_per_at[i] - E_per_at[j]) for i = 1:10, j = 1:10 )
 @test ustrip(u"eV", maxdiff) < 1e-9
 
 @info(" ============================================================")
+@info(" ============== Testing for no Eref bug ====================")
+
+# there was never an issue filed for this, but it was an annoying issue 
+# that came up twice by making changes in the model construction heuristics
+
+params1 = (elements = [:Si], rcut = 5.5, order = 3, totaldegree = 12)
+params2 = (; :Eref => [:Si => 0.0], pairs(params1)...)
+model1 = ace1_model(; params1...) 
+model2 = ace1_model(; params2...) 
+sys = bulk(:Si, cubic=true) * 2
+println_slim(@test potential_energy(sys, model1) == potential_energy(sys, model2) == 0.0u"eV")
+
+@info(" ============================================================")

@@ -334,7 +334,9 @@ function ace1_model(; kwargs...)
    end
 
    model_spec = Dict{Symbol, Any}(pairs(kwargs)...)
-   model_spec[:Eref] = ACEpotentials.Models._convert_E0s(kwargs[:Eref])
+   if haskey(model_spec, :Eref)
+      model_spec[:Eref] = ACEpotentials.Models._convert_E0s(kwargs[:Eref])
+   end
    model_spec[:model_name] = "ACE1"
 
    kwargs = _clean_args(kwargs)

@@ -104,7 +104,7 @@ println_slim(@test m2.ps == model.ps)
 
 ##
 
-info("Fit a potential with committee")
+@info("Fit a potential with committee")
 
 co_size = 10 
 solver = ACEfit.BLR(factorization = :svd, committee_size = co_size)
@@ -116,6 +116,19 @@ acefit!(data, model;
 
 println_slim(@test length(model.co_ps) == co_size)
 
+E, co_E = @committee potential_energy(data[3], model)
+E
+co_E 
+
+using LinearAlgebra
+M = ACEpotentials.Models
+efv = M.energy_forces_virial_basis(data[3], model)
+e = M.potential_energy_basis(data[3], model)
+println_slim(@test all(efv.energy .≈ e))
+e1, co_e1 = @committee potential_energy(data[3], model)
+e2, co_e2 = M.co_potential_energy_2(data[3], model)
+println_slim(@test e1 ≈ e2)
+println_slim(@test all(co_e1 .≈ co_e2))
 
 ##
 # Add a descriptor test 
