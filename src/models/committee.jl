@@ -30,12 +30,15 @@ function co_length(model::ACEPotential)
 end
 
 function committee(f, sys::AbstractSystem, model::ACEPotential)
-   E = f(sys, model)
+   if f == potential_energy
+      return co_potential_energy(sys, model)
+   end
+   F = f(sys, model)
    ps0 = model.ps
-   co_E = [ (model.ps = model.co_ps[i]; f(sys, model)) 
+   co_F = [ (model.ps = model.co_ps[i]; f(sys, model)) 
             for i = 1:length(model.co_ps) ]
    model.ps = ps0            
-   return E, co_E
+   return F, co_F
 end
 
 macro committee(ex)
@@ -43,4 +46,23 @@ macro committee(ex)
    quote
       committee($(esc_args...))
    end
+end
+
+function co_potential_energy(sys::AbstractSystem, model::ACEPotential)
+   basis_E = potential_energy_basis(sys, model)
+   eref = potential_energy(sys, model.model.Vref) * u"eV"
+   E = dot(basis_E, destructure(model.ps)[1]) + eref
+   co_E = [ dot(basis_E, destructure(model.co_ps[i])[1]) + eref 
+            for i = 1:length(model.co_ps) ]
+   return E, co_E
+end
+
+function co_potential_energy_2(sys::AbstractSystem, model::ACEPotential)
+   f = potential_energy 
+   F = f(sys, model)
+   ps0 = model.ps
+   co_F = [ (model.ps = model.co_ps[i]; f(sys, model)) 
+            for i = 1:length(model.co_ps) ]
+   model.ps = ps0            
+   return F, co_F
 end

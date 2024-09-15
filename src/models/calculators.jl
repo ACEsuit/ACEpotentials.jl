@@ -301,3 +301,23 @@ function energy_forces_virial_basis(
          
    return (energy = E, forces = F, virial = V)
 end
+
+
+function potential_energy_basis(at, calc::ACEPotential{<: ACEModel}, 
+                                ps = calc.ps, st = calc.st; 
+                                domain = 1:length(at), 
+                                nlist    = PairList(at, cutoff_radius(calc)), 
+                                kwargs...)
+   N_basis = length_basis(calc)
+   _e0 = AtomsCalculators.zero_energy(at, calc)
+   T = typeof(ustrip(_e0))
+   E = fill(zero(T) * energy_unit(calc), N_basis)
+
+   for i in domain
+      Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, i) 
+      v = evaluate_basis(calc.model, Rs, Zs, z0, ps, st)
+      E += v * energy_unit(calc)
+   end
+
+   return E 
+end

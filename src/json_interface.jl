@@ -42,7 +42,7 @@ function make_model(model_dict::Dict)
       model_nt = _sanitize_dict(model_dict)
       return ACE1compat.ace1_model(; model_nt...)
    else
-      error("Unknown model: $(fitting_params["model"]["model_name"]). This function only supports 'ACE1'.")
+      error("Unknown model: $(model_dict["model"]["model_name"]). This function only supports 'ACE1'.")
    end
 end
 
@@ -125,12 +125,12 @@ function save_model(model, filename;
    D = Dict("model_parameters" => destructure(model.ps)[1], 
             "meta" => meta)
 
-   if isnothing(model_spec) 
-      if verbose
-         @warn("Only model parameters are saved but no information to reconstruct the model.")
-      end
-   else 
+   if !isnothing(model_spec) 
       D["model_spec"] = model_spec
+   elseif haskey(model.model.meta, "model_spec")
+      D["model_spec"] = model.model.meta["model_spec"]
+   elseif verbose
+      @warn("Only model parameters are saved but no information to reconstruct the model.")
    end
 
    if !isnothing(errors)
@@ -177,4 +177,19 @@ function load_model(filename)
    model = make_model(D["model_spec"])
    set_parameters!(model, D["model_parameters"])
    return model, D
+end
+
+
+
+"""
+      copy_tutorial(dest)
+
+Copies the `ACEpotential-Tutorial.ipynb` notebook file to `dest`.
+"""
+function copy_tutorial(dest)
+   path = joinpath(@__DIR__(), "..", "examples", "Tutorial")
+   orig = joinpath(path, "ACEpotentials-Tutorial.ipynb")
+   dest = joinpath(dest, "ACEpotentials-Tutorial.ipynb")
+   run(`cp $orig $dest`)
+   return nothing
 end

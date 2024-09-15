@@ -11,6 +11,7 @@ import AtomsCalculatorsUtilities.SitePotentials: SitePotential,
 import AtomsBase: atomic_number, AbstractSystem, ChemicalSpecies
 
 _atomic_number(s) = atomic_number(s)
+_atomic_number(s::String) = _atomic_number(Symbol(s))
 _atomic_number(s::Symbol) = atomic_number(ChemicalSpecies(s))
 _atomic_number(z::Integer) = z 
 _atomic_number(s::ChemicalSpecies) = atomic_number(s)
