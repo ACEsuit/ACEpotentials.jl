@@ -7,7 +7,7 @@ import AtomsCalculatorsUtilities.SitePotentials: SitePotential,
                      energy_unit, length_unit 
 
 
-struct SitePotentialStack <: SitePotential
+struct SitePotentialStack{TP} <: SitePotential
    pots::TP 
 end
 
@@ -28,6 +28,7 @@ function eval_site(pot::SitePotentialStack, Rs, Zs, z0)
 end
 
 function eval_grad_site(pot::SitePotentialStack, Rs, Zs, z0)
-   return sum( eval_grad_site(p, Rs, Zs, z0) for p in pot.pots )
+   return eval_site(pot, Rs, Zs, z0),
+            sum( eval_grad_site(p, Rs, Zs, z0)[2] for p in pot.pots )
 end
 

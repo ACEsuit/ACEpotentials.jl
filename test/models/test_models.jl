@@ -1,4 +1,5 @@
 
+@testset "Vref" begin; include("test_Vref.jl"); end
 @testset "Radial Envelopes" begin; include("test_radial_envelopes.jl"); end
 @testset "Radial Transforms" begin; include("test_radial_transforms.jl"); end
 @testset "Rnlrzz Basis" begin; include("test_Rnl.jl"); end

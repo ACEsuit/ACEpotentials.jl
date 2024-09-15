@@ -1,5 +1,6 @@
 import Random
 import ACEpotentials: DefaultHypers
+import EmpiricalPotentials 
 
 
 # -------------------------------------------------------
@@ -100,42 +101,37 @@ function ace_learnable_Rnlrzz(;
 end 
 
 
-function _make_Vref_E0s(rbasis, E0s::Nothing)
-   NZ = _get_nz(rbasis)
-   return _make_Vref_E0s(rbasis, [ _i2z(rbasis, i) => 0.0 for i = 1:NZ ] )
-end
 
 _convert_E0s(E0s::Union{Dict, NamedTuple}) = E0s 
 _convert_E0s(E0s::Union{AbstractVector, Tuple}) = Dict(E0s...)
 _convert_E0s(E0s) = error("E0s must be nothing, a NamedTuple, Dict or list of pairs")
 
 # E0s can be anything with (key, value) pairs 
-function _make_Vref_E0s(rbasis, E0s)   
-   NZ = _get_nz(rbasis)
-   V0 = OneBody(_convert_E0s(E0s))
-   if length(V0.E0) != NZ 
-      error("E0s must have the right number of elements")
-   end
+_make_Vref_E0s(elements, E0s) = OneBody(_convert_E0s(E0s))
 
-   return V0 
+function _make_Vref_E0s(elements, E0s::Nothing)
+   NZ = length(elements)
+   zz = _convert_zlist(elements)
+   return _make_Vref_E0s(elements, [ z => 0.0 for z in zz ] )
 end
 
 
-function _make_Vref(elements, E0s, ZBL)
-   if !isnothing(E0s) 
+function _make_Vref(elements, E0s, ZBL, rcut = nothing)
+
+   if !(isnothing(E0s)) 
       E0s = _convert_E0s(E0s) 
-      if (sort(elements) != sort(keys(E0s))) 
+      if (sort(elements) != sort(collect(keys(E0s)))) 
          error("E0s keys must be the same as the list of elements")
       end
    end 
 
-   Vref = _make_Vref_E0s(rbasis, E0s),   
+   Vref_E0s = _make_Vref_E0s(elements, E0s)
 
-
-   if E0s == nothing
-      return _make_Vref_E0s(elements, E0s)
+   if ZBL 
+      Vref_zbl = EmpiricalPotentials.ZBL(rcut)
+      return SitePotentialStack((Vref_E0s, Vref_zbl))
    else
-      return ZBLPotential(elements, E0s)
+      return Vref_E0s
    end
 end
 
@@ -214,7 +210,8 @@ function ace_model(; elements = nothing,
    AA_spec = sparse_AA_spec(; order = order, r_spec = rbasis.spec, 
                               level = level, max_level = max_level)
 
-   Vref = _make_Vref(elements, E0s, ZBL)
+   rcut = maximum([ x.rcut for x in rin0cuts ])
+   Vref = _make_Vref(elements, E0s, ZBL, rcut)
 
    model = ace_model(rbasis, Ytype, AA_spec, level, pair_basis, Vref)
    model.meta["init_WB"] = String(init_WB)
