@@ -37,12 +37,15 @@ include("ace_heuristics.jl")
 include("ace.jl")
 
 include("calculators.jl")
+include("committee.jl")
 
 include("smoothness_priors.jl")
 
 include("utils.jl")
 
 include("fasteval.jl")
+
+
 
 
 end 
