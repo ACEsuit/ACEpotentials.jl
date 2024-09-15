@@ -20,8 +20,8 @@ zbl = ZBL(rcut)
 V0 = M.OneBody(E0s)
 
 Vref1 = M._make_Vref(elements, E0s, false)
-Vref2 = M._make_Vref(elements, nothing, true, rcut)
-Vref3 = M._make_Vref(elements, E0s, true, rcut)
+Vref2 = M._make_Vref(elements, nothing, true, ustrip(rcut))
+Vref3 = M._make_Vref(elements, E0s, true, ustrip(rcut))
 
 zC = atomic_number(ChemicalSpecies(:C))
 zO = atomic_number(ChemicalSpecies(:O))

@@ -145,15 +145,18 @@ println_slim(@test V2 > 10_000)
 # rerun a fit with ZBL reference 
 
 @info("Run a fit with ZBL reference potential")
+@warn("   The tests here seem a bit weak, the ZBL implementation may be buggy.")
 
-model = ACE1compat.ace1_model(; ZBL = true, params...) 
+model = ACE1compat.ace1_model(; ZBL = true, pair_transform = (:agnesi, 1, 2),
+                                params...) 
 
 acefit!(data, model;
         data_keys...,
         weights = weights,
+        repulsion_restraint = true,
         solver = ACEfit.BLR())
 
-r = 0.001 + 0.01 * rand()
+r = 0.000001 + 0.000001 * rand()
 zSi = atomic_number(ChemicalSpecies(:Si))
 dimer = periodic_system(
             [Atom(ChemicalSpecies(:Si), SA[0.0,0.0,0.0]u"Å",  ),  
@@ -161,4 +164,5 @@ dimer = periodic_system(
              ( SA[ r+1, 0.0, 0.0 ]u"Å", SA[0.0,1.0,0.0]u"Å", SA[0.0,0.0,1.0]u"Å" ), 
              periodicity = (false, false, false) )
 @show potential_energy(dimer, model)
-# unclear how this can be deeply negative. 
+println_slim(@test potential_energy(dimer, model) > 1e3u"eV")
+
