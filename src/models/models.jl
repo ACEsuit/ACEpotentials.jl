@@ -21,6 +21,7 @@ function length_basis end
 include("elements.jl")
 
 include("onebody.jl")
+include("stacked_pot.jl")
 
 include("radial_envelopes.jl")
 
