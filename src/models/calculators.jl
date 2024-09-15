@@ -22,7 +22,10 @@ mutable struct ACEPotential{MOD} <: SitePotential
    model::MOD
    ps
    st 
+   co_ps
 end
+
+ACEPotential(model, ps, st) = ACEPotential(model, ps, st, nothing)
 
 function ACEPotential(model) 
    ps = initialparameters(Random.GLOBAL_RNG, model) 
@@ -128,10 +131,6 @@ function energy_forces_virial(
    init_f() = AtomsCalculators.zero_forces(at, V)
    init_v() = AtomsCalculators.zero_virial(at, V)
 
-   # TODO: each task needs its own state if that is where  
-   #       the temporary arrays will be stored? 
-   #       but if we use bumper then there is no issue
-   
    E_F_V = Folds.sum(collect(chunks(domain, ntasks)), 
                      executor;
                      init = [init_e(), init_f(), init_v()],
@@ -249,6 +248,8 @@ function rrule(::typeof(energy_forces_virial),
                                     nlist = nlist, 
                                     kwargs...), NoTangent() )
 end
+
+
 
 
 # --------------------------------------------------------

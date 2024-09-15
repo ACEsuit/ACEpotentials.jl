@@ -41,7 +41,9 @@ import ACEpotentials.Models: algebraic_smoothness_prior,
                              exp_smoothness_prior, 
                              gaussian_smoothness_prior, 
                              set_parameters!, 
-                             fast_evaluator
+                             fast_evaluator, 
+                             @committee, 
+                             set_committee!
 import JSON 
 
 export ace1_model,
@@ -50,7 +52,9 @@ export ace1_model,
        exp_smoothness_prior, 
        gaussian_smoothness_prior, 
        set_parameters!, 
-       fast_evaluator
+       fast_evaluator, 
+         @committee,
+         set_committee!
 
 include("json_interface.jl")
 
