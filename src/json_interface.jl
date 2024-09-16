@@ -79,17 +79,17 @@ end
 
 
 """
-      copy_runfit(dest)
+      copy_runfit(dest = pwd())
 
 Copies the `runfit.jl` script and an example model parameter file to `dest`.
 If called from the destination directory, use 
 ```julia
-ACEpotentials.copy_runfit(@__DIR__())
+ACEpotentials.copy_runfit()
 ```
 This is intended to setup a local project directory with the necessary 
 scripts to run a fitting job.
 """
-function copy_runfit(dest)
+function copy_runfit(dest = pwc())
    script_path = joinpath(@__DIR__(), "..", "scripts")
    runfit_orig = joinpath(script_path, "runfit.jl")
    exjson_orig = joinpath(script_path, "example_params.json")
@@ -184,12 +184,19 @@ end
 """
       copy_tutorial(dest)
 
-Copies the `ACEpotential-Tutorial.ipynb` notebook file to `dest`.
+Converts the `ACEpotential-Tutorial.jl` literate notebook to a jupyter notebook
+and copies it to the folder `dest`.
 """
-function copy_tutorial(dest)
+function copy_tutorial(dest = pwd())
    path = joinpath(@__DIR__(), "..", "examples", "Tutorial")
-   orig = joinpath(path, "ACEpotentials-Tutorial.ipynb")
-   dest = joinpath(dest, "ACEpotentials-Tutorial.ipynb")
-   run(`cp $orig $dest`)
+   orig = joinpath(path, "ACEpotentials-Tutorial.jl")
+   dest_jl = joinpath(dest, "ACEpotentials-Tutorial.jl")
+   cp(orig, dest_jl) 
+   julia_cmd = Base.julia_cmd()
+   run(`$julia_cmd --project=. -e 'using Pkg; Pkg.add(["IJulia", "Literate"])'`)
+   jl_script = "using Literate; Literate.notebook(\"$dest_jl\", \"$dest\"; config = Dict(\"execute\" => false))"
+   run(`$julia_cmd --project=. -e $jl_script`)
+   rm(dest_jl)
    return nothing
 end
+
