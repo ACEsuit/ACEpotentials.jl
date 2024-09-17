@@ -61,7 +61,7 @@ for (prior_name, P) in priors
     set_parameters!(_modl, P \ c̃)
 
     ## compute errors and store them for later use (don't print them here)
-    errs = linear_errors(rawdata, model; verbose=false, datakeys...)
+    errs = compute_errors(rawdata, model; verbose=false, datakeys...)
     rmse[prior_name] = errs["rmse"]["set"]["F"]
     pots[prior_name] = _modl
     println(" force=rmse = ", rmse[prior_name])

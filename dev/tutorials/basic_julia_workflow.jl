@@ -67,12 +67,12 @@ result = acefit!(train_data, model; solver=solver, prior = P, weights=weights);
 # We can display an error table as follows:
 
 @info("Training Error Table")
-err_train = ACEpotentials.linear_errors(train_data, model; weights=weights);
+err_train = ACEpotentials.compute_errors(train_data, model; weights=weights);
 
 # We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions. 
 
 @info("Test Error Table")
-err_test = ACEpotentials.linear_errors(test_data, model; weights=weights);
+err_test = ACEpotentials.compute_errors(test_data, model; weights=weights);
 
 # If we want to save the fitted potentials to disk to later use we can simply save the hyperparameters and the parameters. At the moment this must be done manually but a more complete and convenient interface for this will be provided, also adding various sanity checks. 
 
