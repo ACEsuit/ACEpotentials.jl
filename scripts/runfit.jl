@@ -68,7 +68,7 @@ OD = args_dict["output"]
 if OD["error_table"] || OD["scatter"]
     @info("evaluating errors")
     # training errors
-    err_train, train_evf = ACEpotentials.linear_errors(train, model; data_keys..., weights=weights, return_efv = true)
+    err_train, train_evf = ACEpotentials.compute_errors(train, model; data_keys..., weights=weights, return_efv = true)
     err = Dict("train" => err_train)
     if OD["scatter"]
         D["train_evf"] = train_evf
@@ -77,7 +77,7 @@ if OD["error_table"] || OD["scatter"]
     # test errors (if a test dataset exists)
     if haskey(args_dict["data"], "test_file")
         test = ExtXYZ.load(args_dict["data"]["test_file"])
-        err_test, test_evf = ACEpotentials.linear_errors(test, model; data_keys..., weights=weights, return_efv = true)
+        err_test, test_evf = ACEpotentials.compute_errors(test, model; data_keys..., weights=weights, return_efv = true)
         err["test"] = err_test
         if OD["scatter"]
             D["test_evf"] = test_evf

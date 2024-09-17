@@ -33,8 +33,8 @@ for sym in syms
    acefit!(train, model_lge; solver=solver); GC.gc() 
 
    # compute and store errors for later visualisation
-   err_sm  = ACEpotentials.linear_errors(test, model_sm)
-   err_lge = ACEpotentials.linear_errors(test, model_lge)
+   err_sm  = ACEpotentials.compute_errors(test, model_sm)
+   err_lge = ACEpotentials.compute_errors(test, model_lge)
    err["sm" ]["E"][sym] =  err_sm["mae"]["set"]["E"] * 1000
    err["sm" ]["F"][sym] =  err_sm["mae"]["set"]["F"]
    err["lge"]["E"][sym] = err_lge["mae"]["set"]["E"] * 1000

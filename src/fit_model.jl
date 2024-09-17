@@ -5,7 +5,7 @@ import ACEpotentials.Models: ACEPotential
 
 import ACEfit: assemble
 
-export acefit!, assemble, linear_errors
+export acefit!, assemble, compute_errors
 
 
 # ---------------- some utilities and defaults 
@@ -185,8 +185,7 @@ end
 
 
 
-
-function linear_errors(raw_data::AbstractArray{<: AbstractSystem}, model; 
+function compute_errors(raw_data::AbstractArray{<: AbstractSystem}, model; 
                        energy_key = "energy", 
                        force_key = "force", 
                        virial_key = "virial", 
@@ -198,7 +197,7 @@ function linear_errors(raw_data::AbstractArray{<: AbstractSystem}, model;
                           virial_key = virial_key, weights = weights, 
                           v_ref = nothing)
             for at in raw_data ]
-   return linear_errors(data, model; verbose=verbose, return_efv = return_efv)
+   return compute_errors(data, model; verbose=verbose, return_efv = return_efv)
 end
 
 

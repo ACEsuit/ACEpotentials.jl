@@ -247,10 +247,10 @@ acefit!(Si_tiny_dataset, model;
         solver=solver, data_keys...);
 
 @info("Training Errors")
-linear_errors(Si_tiny_dataset, model; data_keys...);
+compute_errors(Si_tiny_dataset, model; data_keys...);
 
 @info("Test Error")
-linear_errors(Si_dataset, model; data_keys...);
+compute_errors(Si_dataset, model; data_keys...);
 
 #   Export to LAMMPS is currently not supported. Earlier versions of
 #   `ACEpotentials` supported this via
@@ -425,7 +425,7 @@ model = ace1_model(elements = [:Ti, :Al],
 #   and it is fit in the same manner.
 
 acefit!(tial_data[1:5:end], model);
-linear_errors(tial_data[1:5:end], model);
+compute_errors(tial_data[1:5:end], model);
 
 #   ## Part 6: Recreate data from the ACEpotentials.jl paper
 # 
@@ -466,7 +466,7 @@ for element in elements
     ## train the model 
     acefit!(train, model, solver = ACEfit.BLR(; factorization = :svd))
     ## compute and store errors
-    err  = linear_errors(test,  model)
+    err  = compute_errors(test,  model)
     errors["E"][element] = err["mae"]["set"]["E"] * 1000
     errors["F"][element] = err["mae"]["set"]["F"]
 end

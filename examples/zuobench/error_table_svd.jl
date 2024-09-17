@@ -35,8 +35,8 @@ for sym in syms
    acefit!(train, model_lge; solver=solver); GC.gc() 
 
    # compute and store errors for later visualisation
-   err_sm  = ACEpotentials.linear_errors(test, model_sm)
-   err_lge = ACEpotentials.linear_errors(test, model_lge)
+   err_sm  = ACEpotentials.compute_errors(test, model_sm)
+   err_lge = ACEpotentials.compute_errors(test, model_lge)
    err["sm_blr" ]["E"][sym] =  err_sm["mae"]["set"]["E"] * 1000
    err["sm_blr" ]["F"][sym] =  err_sm["mae"]["set"]["F"]
    err["lge_blr"]["E"][sym] = err_lge["mae"]["set"]["E"] * 1000
@@ -50,8 +50,8 @@ for sym in syms
    solver = ACEfit.TruncatedSVD()   # truncation will be determined from validation set 
    acefit!(train1, model_sm;  validation_set = val1, solver=solver); GC.gc()
    acefit!(train1, model_lge; validation_set = val1, solver=solver); GC.gc() 
-   err_sm  = ACEpotentials.linear_errors(test, model_sm)
-   err_lge = ACEpotentials.linear_errors(test, model_lge)
+   err_sm  = ACEpotentials.compute_errors(test, model_sm)
+   err_lge = ACEpotentials.compute_errors(test, model_lge)
    err["sm_svd" ]["E"][sym] =  err_sm["mae"]["set"]["E"] * 1000
    err["sm_svd" ]["F"][sym] =  err_sm["mae"]["set"]["F"]
    err["lge_svd"]["E"][sym] = err_lge["mae"]["set"]["E"] * 1000

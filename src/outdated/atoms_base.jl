@@ -9,8 +9,8 @@ _has_forces(data; force_key=:force, kwargs...)   = hasatomkey(data, Symbol(force
 _has_virial(data; virial_key=:virial, kwargs...) = haskey(data, Symbol(virial_key))
 
 
-function linear_errors(data, model::ACE1x.ACE1Model; kwargs...)
-    return linear_errors(data, ACEmd.ACEpotential(model.potential.components); kwargs...)
+function compute_errors(data, model::ACE1x.ACE1Model; kwargs...)
+    return compute_errors(data, ACEmd.ACEpotential(model.potential.components); kwargs...)
 end
 
 
@@ -19,7 +19,7 @@ function ACEmd.ACEpotential(model::ACE1x.ACE1Model; kwargs...)
 end
 
 
-function linear_errors(
+function compute_errors(
     data, 
     model::ACEmd.ACEpotential; 
     group_key="config_type", 

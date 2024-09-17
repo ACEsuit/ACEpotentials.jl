@@ -76,10 +76,10 @@ test = [ACEpotentials.AtomsData(t; weights=weights, v_ref=Vref, datakeys...) for
 
 @info("Test Error Tables")
 @info("First Potential: ")
-ACEpotentials.linear_errors(test, pot_1);
+ACEpotentials.compute_errors(test, pot_1);
 
 @info("Second Potential: ")
-ACEpotentials.linear_errors(test, pot_2);
+ACEpotentials.compute_errors(test, pot_2);
 
 # If we want to save the fitted potentials to disk to later use we can use one of the following commands: the first saves the potential as an `ACE1.jl` compatible potential, while the second line exports it to a format that can be ready by the `pacemaker` code to be used within LAMMPS. This functionality is currently disabled.
 # 

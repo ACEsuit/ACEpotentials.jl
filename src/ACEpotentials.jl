@@ -46,6 +46,8 @@ import ACEpotentials.Models: algebraic_smoothness_prior,
                              set_committee!
 import JSON 
 
+@deprecate linear_errors compute_errors 
+
 export ace1_model,
        length_basis, 
        algebraic_smoothness_prior, 
@@ -54,7 +56,10 @@ export ace1_model,
        set_parameters!, 
        fast_evaluator, 
          @committee,
-         set_committee!
+         set_committee!, 
+         compute_errors, 
+         linear_errors
+
 
 include("json_interface.jl")
 

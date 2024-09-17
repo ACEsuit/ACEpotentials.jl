@@ -23,6 +23,6 @@ using Test
     P = smoothness_prior(model; p = 4) 
 
     acefit!(model, data_train; solver=solver, weights=weights, prior = P, repulsion_restraint=true);
-    ce, err = ACEpotentials.linear_errors(data, model; weights=weights);
+    ce, err = ACEpotentials.compute_errors(data, model; weights=weights);
     @test err["mae"]["F"] < 0.6
 end
