@@ -51,7 +51,7 @@ acefit!(model, train; solver=solver, data_keys...);
 # To see the training errors we can use 
 
 @info("Training Errors")
-ACEpotentials.linear_errors(train, model; data_keys...);
+ACEpotentials.compute_errors(train, model; data_keys...);
 
 # ### Step 4: Run some tests 
 #
@@ -59,7 +59,7 @@ ACEpotentials.linear_errors(train, model; data_keys...);
 
 @info("Test Errors")
 test =  [gen_dat() for _=1:20]
-ACEpotentials.linear_errors(test, model; data_keys...);
+ACEpotentials.compute_errors(test, model; data_keys...);
 
 # If we wanted to perform such a test ``manually'' it might look like this: 
 

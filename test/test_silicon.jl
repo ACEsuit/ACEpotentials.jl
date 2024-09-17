@@ -55,7 +55,7 @@ acefit!(data, model;
        weights = weights,
        solver=ACEfit.QR())
 
-err = ACEpotentials.linear_errors(data, model; data_keys..., weights=weights)
+err = ACEpotentials.compute_errors(data, model; data_keys..., weights=weights)
 
 test_rmse(err["rmse"], rmse_qr)
 
@@ -72,7 +72,7 @@ acefit!(data, model;
 
 rmprocs(workers())
 
-err_dist = ACEpotentials.linear_errors(data, model; data_keys..., weights=weights)
+err_dist = ACEpotentials.compute_errors(data, model; data_keys..., weights=weights)
 test_rmse(err_dist["rmse"], rmse_qr)
 
 ##
@@ -90,7 +90,7 @@ acefit!(data, model;
         weights = weights,
         solver = ACEfit.BLR())        
 
-err_blr = ACEpotentials.linear_errors(data, model; data_keys..., weights=weights)
+err_blr = ACEpotentials.compute_errors(data, model; data_keys..., weights=weights)
 
 test_rmse(err_blr["rmse"], rmse_blr)
 

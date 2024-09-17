@@ -55,9 +55,9 @@ pot_300 = fast_evaluator(model_300; aa_static = true)
 pot_100 = fast_evaluator(model_100; aa_static = true)
 
 @info("Evaluate errors on the test set") 
-err_100 = ACEpotentials.linear_errors(test_data,  pot_100)
-err_300 = ACEpotentials.linear_errors(test_data,  pot_300)
-err_1000 = ACEpotentials.linear_errors(test_data, pot_1000)
+err_100 = ACEpotentials.compute_errors(test_data,  pot_100)
+err_300 = ACEpotentials.compute_errors(test_data,  pot_300)
+err_1000 = ACEpotentials.compute_errors(test_data, pot_1000)
 
 ##
 

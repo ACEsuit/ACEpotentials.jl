@@ -25,12 +25,12 @@ Pkg.add(["LaTeXStrings", "MultivariateStats", "Plots", "PrettyTables",
          "Suppressor", "ExtXYZ", "Unitful", "Distributed", "AtomsCalculators", 
          ])
 
-## ACEpotentials installation 
-using Pkg
-Pkg.activate(".")
+## ACEpotentials installation:  
+## If ACEpotentials has not been installed yet, uncomment the following lines
+## using Pkg; Pkg.activate(".")
 ## Add the ACE registry, which stores the ACEpotential package information 
-Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-Pkg.add("ACEpotentials")
+## Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
+## Pkg.add("ACEpotentials")
 
 #   We can check the status of the installed packages.
 
@@ -247,10 +247,10 @@ acefit!(Si_tiny_dataset, model;
         solver=solver, data_keys...);
 
 @info("Training Errors")
-linear_errors(Si_tiny_dataset, model; data_keys...);
+compute_errors(Si_tiny_dataset, model; data_keys...);
 
 @info("Test Error")
-linear_errors(Si_dataset, model; data_keys...);
+compute_errors(Si_dataset, model; data_keys...);
 
 #   Export to LAMMPS is currently not supported. Earlier versions of
 #   `ACEpotentials` supported this via
@@ -376,6 +376,7 @@ assess_model(new_model, new_dataset)
 #   structures in total.
 
 for i in 1:4
+    global new_dataset, new_model # declare these are global variables 
     @show i
     new_dataset, new_model = augment(new_dataset, new_model; num=5);
 end
@@ -424,7 +425,7 @@ model = ace1_model(elements = [:Ti, :Al],
 #   and it is fit in the same manner.
 
 acefit!(tial_data[1:5:end], model);
-linear_errors(tial_data[1:5:end], model);
+compute_errors(tial_data[1:5:end], model);
 
 #   ## Part 6: Recreate data from the ACEpotentials.jl paper
 # 
@@ -455,6 +456,7 @@ totaldegree = [ 20, 16, 12 ]  # small model: ~ 300  basis functions
 errors = Dict("E" => Dict(), "F" => Dict())
 
 for element in elements 
+    local model  # treat `model` as a variable local to the scope of `for`
     ## load the dataset
     @info("---------- loading $(element) dataset ----------")
     train, test, _ = ACEpotentials.example_dataset("Zuo20_$element")
@@ -464,7 +466,7 @@ for element in elements
     ## train the model 
     acefit!(train, model, solver = ACEfit.BLR(; factorization = :svd))
     ## compute and store errors
-    err  = linear_errors(test,  model)
+    err  = compute_errors(test,  model)
     errors["E"][element] = err["mae"]["set"]["E"] * 1000
     errors["F"][element] = err["mae"]["set"]["F"]
 end

@@ -237,7 +237,7 @@ function group_type(d::AtomsData; group_key="config_type")
 end
 
 
-function linear_errors(data::AbstractArray{AtomsData}, model; 
+function compute_errors(data::AbstractArray{AtomsData}, model; 
                        group_key="config_type", verbose=true,
                        return_efv = false
                        )

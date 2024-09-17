@@ -60,7 +60,7 @@ P = smoothness_prior(model; p = 4)
 acefit!(model, data_train; solver=solver, weights=weights, prior = P);
 
 @info("Training Error Table")
-ACEpotentials.linear_errors(data_train, model; weights=weights);
+ACEpotentials.compute_errors(data_train, model; weights=weights);
 ```
 
 ### Training data in AtomsBase structures
