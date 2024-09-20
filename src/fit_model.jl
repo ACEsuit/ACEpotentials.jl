@@ -14,8 +14,6 @@ export acefit!, assemble, compute_errors
 
 _get_Vref(model::ACEPotential) = model.model.Vref 
 
-__set_params!(model::ACEPotential, coeffs) = ACEpotentials.Models.set_parameters!(model, coeffs)
-
 default_weights() = Dict("default"=>Dict("E"=>30.0, "F"=>1.0, "V"=>1.0))
 
 function _make_prior(model::ACEpotentials.Models.ACEPotential, smoothness, P)
@@ -163,7 +161,7 @@ function acefit!(raw_data::AbstractArray{<: AbstractSystem}, model;
    coeffs = P \ result["C"]   
 
    # dispatch setting of parameters 
-   __set_params!(model, coeffs)
+   ACEpotentials.Models.set_linear_parameters!(model, coeffs)
 
    if haskey(result, "committee")
       co_coeffs = result["committee"]
