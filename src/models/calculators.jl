@@ -54,6 +54,17 @@ function set_parameters!(V::ACEPotential, θ::AbstractVector)
    return set_parameters!(V, ps)
 end
 
+function set_linear_parameters!(V::ACEPotential{<: ACEModel}, θ::AbstractVector)
+   ps = V.ps
+   ps1 = (WB = ps.WB, Wpair = ps.Wpair,) 
+   ps1_vec, _restruct = destructure(ps1)
+   ps2 = _restruct(θ)
+   ps3 = deepcopy(ps) 
+   ps3.WB[:] = ps2.WB
+   ps3.Wpair[:] = ps2.Wpair
+   return set_parameters!(V, ps3)
+end
+
 # --------------------------------------------------------------- 
 #   AtomsCalculatorsUtilities / SitePotential based implementation 
 #
