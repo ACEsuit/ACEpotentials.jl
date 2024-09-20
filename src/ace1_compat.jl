@@ -155,9 +155,19 @@ function _get_all_rcut(kwargs; _rcut = kwargs[:rcut])
 end
 
 
-function _rin0cuts_rcut(zlist, cutoffs::Dict)
+function _rin0cuts_rcut(zlist, cutoffs::Dict, kwargs = nothing)
+   function _get_r0(zi, zj) 
+      if kwargs == nothing 
+         return DefaultHypers.bond_len(zi, zj)
+      elseif kwargs[:r0] == :bondlen
+         return DefaultHypers.bond_len(zi, zj)
+      elseif kwargs[:r0] isa Number
+         return kwargs[:r0]
+      end 
+      error("Cannot determine r0($zi, $zj) from the arguments provided.")
+   end 
    function rin0cut(zi, zj) 
-      r0 = DefaultHypers.bond_len(zi, zj)
+      r0 = _get_r0(zi, zj)
       rin, rcut = cutoffs[zi, zj]
       return (rin = rin, r0 = r0, rcut = rcut)
    end
@@ -166,18 +176,23 @@ function _rin0cuts_rcut(zlist, cutoffs::Dict)
 end
 
 
-function _ace1_rin0cuts(kwargs; rcutkey = :rcut) 
+function _ace1_rin0cuts(kwargs; rcutkey = :rcut, rinkey = :rin) 
    elements = _get_elements(kwargs) 
    rcut = _get_all_rcut(kwargs; _rcut = kwargs[rcutkey])
-   if rcut isa Number 
-      cutoffs = Dict([ (s1, s2) => (0.0, rcut) for s1 in elements, s2 in elements]...)
+   if kwargs[:rin] isa Number 
+      rin = kwargs[:rin] 
    else
-      cutoffs = Dict([ (s1, s2) => (0.0, rcut[(s1, s2)]) for s1 in elements, s2 in elements]...)
+      error("Cannot read rin; please provide a number of file an issue if a more general mechanism is needed.")
+   end
+   if rcut isa Number 
+      cutoffs = Dict([ (s1, s2) => (rin, rcut) for s1 in elements, s2 in elements]...)
+   else
+      cutoffs = Dict([ (s1, s2) => (rin, rcut[(s1, s2)]) for s1 in elements, s2 in elements]...)
    end
    # rcut = maximum(values(rcut))  # multitransform wants a single cutoff.
 
    # construct the rin0cut structures 
-   rin0cuts = _rin0cuts_rcut(elements, cutoffs)
+   rin0cuts = _rin0cuts_rcut(elements, cutoffs, kwargs)
 end
 
 
