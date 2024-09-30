@@ -24,7 +24,15 @@ function _sanitize_arg(arg)
 end
 
 function _sanitize_dict(dict)
-   return Dict(Symbol(key) => _sanitize_arg(dict[key]) for key in keys(dict))
+   d = Dict()
+   for key in keys(dict)
+      if key == "totaldegree"
+         d[Symbol(key)] = Int64.(dict[key])
+      else
+         d[Symbol(key)] = _sanitize_arg(dict[key])
+      end
+   end
+   return d
 end
 
 ##
