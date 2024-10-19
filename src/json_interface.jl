@@ -182,21 +182,25 @@ end
 
 
 """
-      copy_tutorial(dest)
+      copy_tutorial(dest = pwd())
 
-Converts the `ACEpotential-Tutorial.jl` literate notebook to a jupyter notebook
-and copies it to the folder `dest`.
+Converts the `ACEpotential-Tutorial.jl` and `ACE+AtomsBase.jl` literate 
+notebooks to jupyter notebooks and copies them to the folder `dest`.
 """
 function copy_tutorial(dest = pwd())
-   path = joinpath(@__DIR__(), "..", "examples", "Tutorial")
-   orig = joinpath(path, "ACEpotentials-Tutorial.jl")
-   dest_jl = joinpath(dest, "ACEpotentials-Tutorial.jl")
-   cp(orig, dest_jl) 
+   # install IJulia and Literate
    julia_cmd = Base.julia_cmd()
-   run(`$julia_cmd --project=. -e 'using Pkg; Pkg.add(["IJulia", "Literate"])'`)
-   jl_script = "using Literate; Literate.notebook(\"$dest_jl\", \"$dest\"; config = Dict(\"execute\" => false))"
-   run(`$julia_cmd --project=. -e $jl_script`)
-   rm(dest_jl)
+   run(`$julia_cmd --project=$dest -e 'using Pkg; Pkg.add(["IJulia", "Literate"])'`)
+   # copy the tutorial files and convert them to jupyter notebooks
+   path = joinpath(@__DIR__(), "..", "examples", "Tutorial")
+   for tutfile in ["ACEpotentials-Tutorial.jl", "ACE+AtomsBase.jl" ]
+      orig = joinpath(path, tutfile)
+      dest_jl = joinpath(dest, tutfile)
+      cp(orig, dest_jl) 
+      jl_script = "using Literate; Literate.notebook(\"$dest_jl\", \"$dest\"; config = Dict(\"execute\" => false))"
+      run(`$julia_cmd --project=$dest -e $jl_script`)
+      rm(dest_jl)
+   end
    return nothing
 end
 

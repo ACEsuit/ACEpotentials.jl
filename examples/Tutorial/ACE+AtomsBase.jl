@@ -55,7 +55,7 @@ train, test, _ = ACEpotentials.example_dataset("Zuo20_$sym")
 solver = ACEfit.BLR(; factorization = :svd)
 acefit!(train, model;  solver=solver); GC.gc()
 ## quickly check test errors => 0.5 meV/atom and 0.014 eV/A are ok
-ACEpotentials.compute_errors(test, model)
+ACEpotentials.compute_errors(test, model);
 
 # ## Geometry Optimization with GeomOpt 
 # 
@@ -74,7 +74,7 @@ function _flexiblesystem(sys)
    particles = [ AtomsBase.Atom(species(sys, i), position(sys, i)) 
                  for i = 1:length(sys) ] 
    return FlexibleSystem(particles, c3ll)
-end 
+end; 
 
 # We generate a cubic Cu unit cell, but our potential might not have the same 
 # equilibrium bond distance as the default in AtomsBuilder, so we optimize 
@@ -87,23 +87,25 @@ ucell, _ = GeomOpt.minimise(ucell, model; variablecell=true)
 # defect formation energy. 
 
 Eperat = potential_energy(ucell, model) / length(ucell)
+@show Eperat; 
 
 # Now that we have an equilibrated unit cell we enlarge it, and then delete 
 # an atom to generate a vacancy defect. 
 
 sys = _flexiblesystem(ucell) * (2,2,2)
 deleteat!(sys, 1)
+sys 
 
 # Now we do another geometry optimization to get the equilibrium geometry. 
 
 vacancy_equil, result = GeomOpt.minimise(sys, model; variablecell = false)
-@show result.g_residual
+@show result.g_residual;
                        
 # We get an estimate of the formation energy. Note this is likely a poor 
 # estimate since we didn't train the model on vacancy configurations. 
 
 E_def = potential_energy(vacancy_equil, model) - length(sys) * Eperat
-@show E_def
+@show E_def;
 
 # ## Molecular Dynamics with Molly
 # 
@@ -120,12 +122,14 @@ sys_md = Molly.System(
    general_inters = (model,),
    velocities = Molly.random_velocities(sys_md, temp),
    loggers=(temp=Molly.TemperatureLogger(100),) )
-   # energy = Molly.PotentialEnergyLogger(100),), )
-   # can't add an energy logger because Molly internal energies are per mol
+## energy = Molly.PotentialEnergyLogger(100),), )
+## can't add an energy logger because Molly internal energies are per mol
 simulator = Molly.VelocityVerlet(
    dt = 1.0u"fs",
    coupling = Molly.AndersenThermostat(temp, 1.0u"ps"), )
-traj = Molly.simulate!(sys_md, simulator, 1000)
 
-## the temperature seems to fluctuate a bit too much, but at least it looks stable?
-@show sys_md.loggers.temp.history
+Molly.simulate!(sys_md, simulator, 1000)
+
+## the temperature seems to fluctuate a bit, but at least it looks stable?
+@info("Temperature history:", sys_md.loggers.temp.history)
+
