@@ -12,18 +12,16 @@
 using Pkg
 ## Uncomment the next line if installing Julia for the first time
 ## Pkg.Registry.add("General")  
-Pkg.activate(".")
+## Pkg.Registry.add
 Pkg.add(["ExtXYZ", "Unitful", "Distributed", "AtomsCalculators",
-         "ACEpotentials", "Molly", "AtomsCalculatorsUtilities", 
-         "AtomsBuilder"
+         "Molly", "AtomsCalculatorsUtilities", "AtomsBuilder", 
          ])
 
 ## ACEpotentials installation:  
 ## If ACEpotentials has not been installed yet, uncomment the following lines
-## using Pkg; Pkg.activate(".")
 ## Add the ACE registry, which stores the ACEpotential package information 
-## Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-## Pkg.add("ACEpotentials")
+Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
+Pkg.add(["GeomOpt", "ACEpotentials",])
 
 #   We can check the status of the installed packages.
 
@@ -59,8 +57,11 @@ acefit!(train, model;  solver=solver); GC.gc()
 ## quickly check test errors => 0.5 meV/atom and 0.014 eV/A are ok
 ACEpotentials.compute_errors(test, model)
 
-# ## A Simple Geometry Optimization Task 
+# ## Geometry Optimization with GeomOpt 
 # 
+# ( Note: we should use GeometryOptimization.jl, but this is not yet updated to 
+#   AtomsBase.jl version 0.4. )
+#
 # First import some stuff + a little hack to make GeomOpt play nice with 
 # the latest AtomsBase. This is a shortcoming of DecoratedParticles.jl 
 # and requires some updates to fully implement the AtomsBase interface. 
@@ -79,7 +80,7 @@ end
 # equilibrium bond distance as the default in AtomsBuilder, so we optimize 
 # the unit cell. 
 
-ucell = bulk(:Cu, cubic=true)
+ucell = bulk(sym, cubic=true)
 ucell, _ = GeomOpt.minimise(ucell, model; variablecell=true)
 
 # We keep the energy of the equilibrated unit cell to later compute the 
@@ -104,3 +105,27 @@ vacancy_equil, result = GeomOpt.minimise(sys, model; variablecell = false)
 E_def = potential_energy(vacancy_equil, model) - length(sys) * Eperat
 @show E_def
 
+# ## Molecular Dynamics with Molly
+# 
+# First import some stuff + a little hack to make GeomOpt play nice with 
+# the latest AtomsBase. This is a shortcoming of DecoratedParticles.jl 
+# and requires some updates to fully implement the AtomsBase interface. 
+
+import Molly 
+sys = rattle!(bulk(sym, cubic=true) * (2,2,2), 0.03)
+sys_md = Molly.System(sys; force_units=u"eV/Å", energy_units=u"eV")
+temp = 298.0u"K"
+sys_md = Molly.System(
+   sys_md;
+   general_inters = (model,),
+   velocities = Molly.random_velocities(sys_md, temp),
+   loggers=(temp=Molly.TemperatureLogger(100),) )
+   # energy = Molly.PotentialEnergyLogger(100),), )
+   # can't add an energy logger because Molly internal energies are per mol
+simulator = Molly.VelocityVerlet(
+   dt = 1.0u"fs",
+   coupling = Molly.AndersenThermostat(temp, 1.0u"ps"), )
+traj = Molly.simulate!(sys_md, simulator, 1000)
+
+## the temperature seems to fluctuate a bit too much, but at least it looks stable?
+@show sys_md.loggers.temp.history
