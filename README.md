@@ -12,3 +12,21 @@
 - Version 0.7.x is reserved
 - Version 0.8.x and onwards provides a new and much more flexible implementation, and integrates with the [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl) ecosystem. Most but not all features from 0.6.x have been ported to this re-implementation. Usability should be the same or improved for most end-users. For developers this provides a much more flexible framework for experimentation. [[docs-v0.8]](https://acesuit.github.io/ACEpotentials.jl/dev/)
 
+
+## Quick Start 
+
+- Install Julia 1.10 
+- Create new folder a.g. `acetutorial`; Open a shell
+- Create a new project in `acetutorial` and install `ACEpotentials.jl`
+```
+julia --project=. 
+] 
+registry add https://github.com/ACEsuit/ACEregistry
+add ACEpotentials
+```
+- Install the Julia tutorials (this installs two Jupyter notebook tutorials)
+```julia-repl
+using ACEpotentials
+ACEpotentials.copy_tutorial()
+```
+- Work through the tutorials.
