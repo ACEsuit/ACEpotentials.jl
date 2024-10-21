@@ -132,15 +132,15 @@ sys_md = Molly.System(
    sys_md;
    general_inters = (model,),
    velocities = Molly.random_velocities(sys_md, temp),
-   loggers=(temp=Molly.TemperatureLogger(100),) )
-## energy = Molly.PotentialEnergyLogger(100),), )
-## can't add an energy logger because Molly internal energies are per mol
+   loggers=(temp = Molly.TemperatureLogger(100),
+          energy = Molly.PotentialEnergyLogger(typeof(1.0u"eV"), 100),), )
 simulator = Molly.VelocityVerlet(
    dt = 1.0u"fs",
    coupling = Molly.AndersenThermostat(temp, 1.0u"ps"), )
 
 Molly.simulate!(sys_md, simulator, 1000)
 
-## the temperature seems to fluctuate a bit, but at least it looks stable?
+## looks like a reasonably stable simulation. 
 @info("Temperature history:", sys_md.loggers.temp.history)
+@info("Energy history:", sys_md.loggers.energy.history)
 
