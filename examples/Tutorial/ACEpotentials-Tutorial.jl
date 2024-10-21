@@ -303,8 +303,8 @@ using AtomsCalculators: potential_energy
 
 function assess_model(model, train_dataset)
 
-    plot([-164,-158], [-164,-158]; lc=:black, label="")
-    
+    plot([-164,-157], [-164,-157]; lc=:black, label="")
+
     model_energies = []
     model_std = []
     for atoms in Si_dataset
@@ -320,8 +320,8 @@ function assess_model(model, train_dataset)
                      @sprintf("RMSE (MAE) For Entire Dataset:  %.0f (%.0f) meV/atom", 1000*rmse, 1000*mae),
              titlefontsize = 8,
              yerror = model_std,
-             xlabel="Energy [eV/atom]", xlims=(-164,-158),
-             ylabel="Model Energy [eV/atom]", ylims=(-164,-158),
+             xlabel="Energy [eV/atom]", xlims=(-164,-157),
+             ylabel="Model Energy [eV/atom]", ylims=(-164,-157),
              aspect_ratio = :equal, color=1)
 
     model_energies = [ustrip(potential_energy(atoms, model)/length(atoms)) for atoms in train_dataset]
@@ -407,7 +407,7 @@ r_cut = 6.0
 rdf = ACEpotentials.get_rdf(tial_data, r_cut * u"Å")
 plt_TiTi = histogram(rdf[(:Ti, :Ti)], bins=100, xlabel = "", c = 1,  
          ylabel = "RDF - TiTi", label = "", yticks = [], xlims = (0, r_cut) )
-plt_TiAl = histogram(rdf[(:Ti, :Ti)], bins=100, xlabel = "", c = 2, 
+plt_TiAl = histogram(rdf[(:Ti, :Al)], bins=100, xlabel = "", c = 2, 
          ylabel = "RDF - TiAl", label = "", yticks = [], xlims = (0, r_cut) )
 plt_AlAl = histogram(rdf[(:Al, :Al)], bins=100, xlabel = L"r [\AA]", c = 3, 
          ylabel = "RDF - AlAl", label = "", yticks = [], xlims = (0, r_cut), )
