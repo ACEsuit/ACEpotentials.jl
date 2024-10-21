@@ -136,7 +136,7 @@ sys_md = Molly.System(
           energy = Molly.PotentialEnergyLogger(typeof(1.0u"eV"), 100),), )
 simulator = Molly.VelocityVerlet(
    dt = 1.0u"fs",
-   coupling = Molly.AndersenThermostat(temp, 1.0u"ps"), )
+   coupling = Molly.AndersenThermostat(temp, 3.0u"fs"), )
 
 Molly.simulate!(sys_md, simulator, 1000)
 
