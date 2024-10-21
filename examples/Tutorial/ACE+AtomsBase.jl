@@ -15,6 +15,7 @@ using Pkg
 ## Pkg.Registry.add
 Pkg.add(["ExtXYZ", "Unitful", "Distributed", "AtomsCalculators",
          "Molly", "AtomsCalculatorsUtilities", "AtomsBuilder", 
+         "AtomsBase", "LinearAlgebra", 
          ])
 
 ## ACEpotentials installation:  
@@ -108,11 +109,20 @@ vacancy_equil, result = GeomOpt.minimise(sys, model; variablecell = false)
 E_def = potential_energy(vacancy_equil, model) - length(sys) * Eperat
 @show E_def;
 
+# One of the most useful Julia packages is ForwardDiff. This is used in 
+# AtomsCalculatorsUtilities to implement hessians. ACEpotentials.jl only 
+# has to ensure that its site energies allow Dual numbers as inputs. 
+
+using AtomsCalculatorsUtilities.SitePotentials: hessian
+using LinearAlgebra: Symmetric, eigvals 
+
+H = ustrip.( hessian(vacancy_equil, model) )
+Λ = eigvals(Symmetric(H))
+S_vib = sum(λ -> λ > 1e-10 ? log(λ) : 0, Λ)
+
+
 # ## Molecular Dynamics with Molly
 # 
-# First import some stuff + a little hack to make GeomOpt play nice with 
-# the latest AtomsBase. This is a shortcoming of DecoratedParticles.jl 
-# and requires some updates to fully implement the AtomsBase interface. 
 
 import Molly 
 sys = rattle!(bulk(sym, cubic=true) * (2,2,2), 0.03)
