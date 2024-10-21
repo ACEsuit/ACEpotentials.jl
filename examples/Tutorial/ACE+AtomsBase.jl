@@ -21,7 +21,8 @@ Pkg.add(["ExtXYZ", "Unitful", "Distributed", "AtomsCalculators",
 ## If ACEpotentials has not been installed yet, uncomment the following lines
 ## Add the ACE registry, which stores the ACEpotential package information 
 Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-Pkg.add(["GeomOpt", "ACEpotentials",])
+Pkg.add(["GeomOpt", ]) 
+## Pkg.add(["ACEpotentials",])
 
 #   We can check the status of the installed packages.
 
