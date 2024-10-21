@@ -83,6 +83,14 @@ function eval_grad_site(V::ACEPotential{<: ACEModel}, Rs, Zs, z0)
    return v, dv
 end
 
+# link into hessian evaluation provided by AtomsCalculatorsUtilities
+
+AtomsCalculatorsUtilities.SitePotentials.hessian_site(model::ACEPotential{<: ACEModel}, args...) = 
+      AtomsCalculatorsUtilities.SitePotentials.ad_hessian_site(model, args...)
+
+AtomsCalculatorsUtilities.SitePotentials.block_hessian_site(model::ACEPotential{<: ACEModel}, args...) = 
+      AtomsCalculatorsUtilities.SitePotentials.ad_block_hessian_site(model, args...)
+
 
 # --------------------------------------------------------------- 
 #   manual implementation allowing parameters  
