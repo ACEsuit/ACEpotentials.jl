@@ -8,7 +8,7 @@ appath = abspath(joinpath(@__DIR__(), "..", ".."))
 setuptutorial = """
    begin 
       using Pkg; 
-      Pkg.develop(; path = \"$appath\"); 
+      Pkg.develop(; path = $(repr(appath))); 
       using ACEpotentials; 
       ACEpotentials.copy_tutorial();
    end

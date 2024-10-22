@@ -11,10 +11,10 @@ run(`cp $datafile $(tmpproj*"/")`);
 prep_proj = """
    begin 
       using Pkg; 
-      Pkg.activate(\"$tmpproj\"); 
-      Pkg.develop(; path = \"$ap_dir\"); 
+      Pkg.activate($(repr(tmpproj))); 
+      Pkg.develop(; path = $(repr(ap_dir))); 
       using ACEpotentials; 
-      ACEpotentials.copy_runfit(\"$tmpproj\"); 
+      ACEpotentials.copy_runfit($(repr(tmpproj))); 
    end
 """
 run(`$julia_cmd -e $prep_proj`)

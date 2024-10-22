@@ -197,7 +197,7 @@ function copy_tutorial(dest = pwd())
       orig = joinpath(path, tutfile)
       dest_jl = joinpath(dest, tutfile)
       cp(orig, dest_jl) 
-      jl_script = "using Literate; Literate.notebook(\"$dest_jl\", \"$dest\"; config = Dict(\"execute\" => false))"
+      jl_script = "using Literate; Literate.notebook($(repr(dest_jl)), $(repr(dest)); config = Dict(\"execute\" => false))"
       run(`$julia_cmd --project=$dest -e $jl_script`)
       rm(dest_jl)
    end
