@@ -150,10 +150,10 @@ function energy_forces_virial(
    init_f() = AtomsCalculators.zero_forces(at, V)
    init_v() = AtomsCalculators.zero_virial(at, V)
 
-   E_F_V = Folds.sum(collect(chunks(domain, ntasks)), 
+   E_F_V = Folds.sum(collect(index_chunks(domain; n = ntasks)), 
                      executor;
                      init = [init_e(), init_f(), init_v()],
-                     ) do (sub_domain, _)
+                     ) do sub_domain
 
       energy = init_e()
       forces = init_f()
@@ -196,10 +196,10 @@ function pullback_EFV(Δefv,
    #        assumes that the loss is dimensionless and that the 
    #        gradient w.r.t. parameters therefore must also be dimensionless 
 
-   g_vec = Folds.sum(collect(chunks(domain, ntasks)), 
+   g_vec = Folds.sum(collect(index_chunks(domain; n = ntasks)), 
                      executor;
                      init = zeros(TP, length(ps_vec)),
-                     ) do (sub_domain, _)
+                     ) do sub_domain
 
       g_loc = zeros(TP, length(ps_vec))
       for i in sub_domain                     
