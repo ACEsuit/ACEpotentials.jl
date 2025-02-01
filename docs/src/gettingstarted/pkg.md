@@ -23,22 +23,22 @@ The package manager provides functionality to organize reproducable Julia projec
 
 If you are a user rather than developer it should almost never be required for you to check out a package (or, `dev` it in the package manager). When developers make changes to - say - `ACEpotentials.jl` they will always immediately tag another version and then you can adjust your version bounds in your project to update as well as enforce which version to use. However a developer would frequently do this, and occasionally it might be required when iterating between a user and developer for testing. There are multiple ways to achieve this; the following is our recommended procedure: 
 
-Suppose for example that a development branch `co/dev` of `ACE1.jl` is needed in a project `project`. Then one should perform the following steps: 
-* Make sure `ACE1` has been added to `project/Project.toml` 
-* In a separate folder, `/path/to/` , clone `ACE1.jl`
+Suppose for example that a development branch `co/dev` of `ACEpotentials.jl` is needed in a project `project`. Then one should perform the following steps: 
+* Make sure `ACEpotentials` has been added to `project/Project.toml` 
+* In a separate folder, `/path/to/` , clone `ACEpotentials.jl`
 ```
 cd /path/to
-git clone git@github.com:ACEsuit/ACE1.jl.git
+git clone git@github.com:ACEsuit/ACEpotentials.jl.git
 git checkout co/dev
 ```
-so that the repo will now live in `/path/to/ACE1.jl`
+so that the repo will now live in `/path/to/ACEpotentials.jl`
 * Go to and activate `project`, then in a Julia REPL switch to the package manager `]` and execute
 ```
-dev /path/to/ACE1.jl
+dev /path/to/ACEpotentials.jl
 ```
-This will replace the `ACE1` package in the Manifest with the version that lives in `/path/to/ACE1.jl` 
+This will replace the `ACEpotentials` package in the Manifest with the version that lives in `/path/to/ACEpotentials.jl` 
 
-Later on, when you want to go back to the standad Pkg versin control you can simply `free ACE1`.
+Later on, when you want to go back to the standad Pkg versin control you can simply `free ACEpotentials`.
 
 #### Further Notes 
 

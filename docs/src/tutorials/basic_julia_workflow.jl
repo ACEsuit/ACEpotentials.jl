@@ -12,8 +12,9 @@ using ACEpotentials
 # We need a dataset `TiAl_tutorial.xyz` for this tutorial. Normally we would get the path to a datset and then use `read_extxyz` to load in the training set. 
 # ```julia
 # # (don't execute this block)
+# using ExtXYZ
 # data_file = "path/to/TiAl_tutorial.xyz"
-# data = read_extxyz(data_file)
+# data = ExtXYZ.load(data_file)
 # ```
 # For convenience we provide this dataset as a [Julia artifact](https://docs.julialang.org/en/v1/stdlib/Artifacts/) and make it accessible via `ACEpotentials.example_dataset`. We keep only a small subset of the structures for training and testing to keep the regression problem small.
 

@@ -3,7 +3,7 @@
 !!! warning 
     Saving and loading potentials is currently only supported for the 
     a workflow that uses JSON / dictionaries to specify models. For anything 
-    "too creative" the user is responsible for ensuring reproducability. 
+    more "creative" the user is responsible for ensuring reproducability. 
 
 ### General Principles 
 
