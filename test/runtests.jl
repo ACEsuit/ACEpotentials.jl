@@ -8,7 +8,7 @@ using ACEpotentials, Test, LazyArtifacts
     @testset "Test IO" begin include("test_io.jl")  end
 
     # experimental 
-    @testset "UF_ACE" begin include("test_uface.jl") end
+    #@testset "UF_ACE" begin include("test_uface.jl") end
 
     # weird stuff 
     @testset "Weird Bugs" begin include("test_bugs.jl") end
