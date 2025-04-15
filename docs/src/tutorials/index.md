@@ -29,10 +29,6 @@ The next two tutorials show some additional techniques to better understand how 
 
 * [Committee Potentials](../literate_tutorials/committee.md)
 
-### Experimental Features
-
-* [Experimental Features](../literate_tutorials/experimental.md)
-
 
 ```@raw html 
 <!---
