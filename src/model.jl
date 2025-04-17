@@ -234,9 +234,9 @@ function _rep_dimer_data_atomsbase(
 
       a1 = Atom(zz[1].z, zeros(3)u"Å")
       a2 = Atom(zz[2].z, [_rin, 0, 0]u"Å")
-      cell = [ [_rin+1, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]u"Å"
-      boundary_conditions = [DirichletZero(), DirichletZero(), DirichletZero()]
-      data = FlexibleSystem([a1, a2], cell, boundary_conditions)
+      cell = ( [_rin+1, 0.0, 0.0]u"Å", [0.0, 1.0, 0.0]u"Å", [0.0, 0.0, 1.0]u"Å")
+      box = PeriodicCell(cell_vectors = cell, periodicity = false)
+      data = FlexibleSystem([a1, a2], box)
       
       # add weight to the structure
       kwargs =[
