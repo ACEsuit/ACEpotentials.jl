@@ -8,9 +8,8 @@
 
 # We start by importing `ACEpotentials` (and possibly other required libraries)
 
-using Distributed, Random, SparseArrays 
-addprocs(10, exeflags="--project=$(Base.active_project())")
-@everywhere using ACEpotentials, PrettyTables
+using Random, SparseArrays 
+using ACEpotentials, PrettyTables
 using ACEpotentials.Models: fast_evaluator
 
 ##
@@ -18,14 +17,14 @@ sym = :Si
 
 # Since the sparse solvers pick out the most relevant features for us, we typically start 
 # with a model with a large basis.
-# Here we use the `ace1_model` function to create a model with a total degree of 20 and polynomial order of 3.
 
-model = ace1_model(elements = [sym,], order = 3, totaldegree = 23)
+model = ace1_model(elements = [sym,], order = 3, totaldegree = 10)
 P = algebraic_smoothness_prior(model; p = 4)
 
 # Next, we load a dataset. We split the dataset into training, validation, and test sets.
 _train_data, test_data, _ = ACEpotentials.example_dataset("Zuo20_$sym")
 shuffle!(_train_data); 
+_train_data = _train_data[1:100]  # Limit the dataset size for this tutorial
 isplit = floor(Int, 0.8 * length(_train_data))
 train_data = _train_data[1:isplit] 
 val_data = _train_data[isplit+1:end]
@@ -47,13 +46,13 @@ Av, yv, Wv = ACEpotentials.assemble(val_data, model)
 
 # The `actMax` keyword controls the maximum number of active parameters in the solution. 
 
-solver_asp = ACEfit.ASP(; P = P, select = :final, tsvd = true, actMax = 1300,  loglevel = 1)
+solver_asp = ACEfit.ASP(; P = P, select = :final, tsvd = true, actMax = 100,  loglevel = 1)
 asp_result = ACEfit.solve(solver_asp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)
 
 
 # We can also compute the OMP path, which is a greedy algorithm that selects the most relevant features iteratively.
 
-solver_omp = ACEfit.OMP(; P = P, select = :final, tsvd = false, actMax = 1300, loglevel = 1)
+solver_omp = ACEfit.OMP(; P = P, select = :final, tsvd = false, actMax = 100, loglevel = 1)
 omp_result = ACEfit.solve(solver_omp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)
 
 
@@ -63,53 +62,53 @@ omp_result = ACEfit.solve(solver_omp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)
 
 asp_final = set_parameters!( deepcopy(model), 
                   ACEfit.asp_select(asp_result, :final)[1])
-asp_size_500  = set_parameters!( deepcopy(model), 
-                  ACEfit.asp_select(asp_result, (:bysize, 500))[1])
+asp_size_50  = set_parameters!( deepcopy(model), 
+                  ACEfit.asp_select(asp_result, (:bysize, 50))[1])
 asp_error13  = set_parameters!( deepcopy(model), 
                   ACEfit.asp_select(asp_result, (:byerror, 1.3))[1])
 
 pot_final = fast_evaluator(asp_final; aa_static = false)  
-pot_500 = fast_evaluator(asp_size_500; aa_static = true)
+pot_50 = fast_evaluator(asp_size_50; aa_static = true)
 pot_13 = fast_evaluator(asp_error13; aa_static = true)
 
 err_13 = ACEpotentials.compute_errors(test_data,  pot_13)
-err_500 = ACEpotentials.compute_errors(test_data,  pot_500)
+err_50 = ACEpotentials.compute_errors(test_data,  pot_50)
 err_fin = ACEpotentials.compute_errors(test_data, pot_final)
 
 header = ["", "Energy MAE (meV)", "Force MAE (eV/Å)"]
 
-e_force_table = [
+e_force_table_asp = [
     "ASP(1.3)"  round(err_13["mae"]["set"]["E"] * 1000, digits=3)  round(err_13["mae"]["set"]["F"], digits=3)
-    "ASP(500)"  round(err_500["mae"]["set"]["E"] * 1000, digits=3)  round(err_500["mae"]["set"]["F"], digits=3)
-    "ASP(1300)" round(err_fin["mae"]["set"]["E"] * 1000, digits=3) round(err_fin["mae"]["set"]["F"], digits=3)
+    "ASP(50)"  round(err_50["mae"]["set"]["E"] * 1000, digits=3)  round(err_50["mae"]["set"]["F"], digits=3)
+    "ASP(100)" round(err_fin["mae"]["set"]["E"] * 1000, digits=3) round(err_fin["mae"]["set"]["F"], digits=3)
 ]
 
-pretty_table(e_force_table; header = header)
+pretty_table(e_force_table_asp; header = header)
 
 
 # Similarly, we can compute the errors for the OMP models.
 
 omp_final = set_parameters!( deepcopy(model), 
                   ACEfit.asp_select(omp_result, :final)[1])
-omp_500  = set_parameters!( deepcopy(model), 
-                  ACEfit.asp_select(omp_result, (:bysize, 500))[1])
+omp_50  = set_parameters!( deepcopy(model), 
+                  ACEfit.asp_select(omp_result, (:bysize, 50))[1])
 omp_13  = set_parameters!( deepcopy(model), 
                   ACEfit.asp_select(omp_result, (:byerror, 1.3))[1])
 
 pot_fin = fast_evaluator(omp_final; aa_static = false) 
-pot_500 = fast_evaluator(omp_500; aa_static = true)
+pot_50 = fast_evaluator(omp_50; aa_static = true)
 pot_13 = fast_evaluator(omp_13; aa_static = true)
 
 err_13 = ACEpotentials.compute_errors(test_data,  pot_13)
-err_500 = ACEpotentials.compute_errors(test_data,  pot_500)
+err_50 = ACEpotentials.compute_errors(test_data,  pot_50)
 err_fin = ACEpotentials.compute_errors(test_data, pot_fin)
 
 
-e_force_table = [
+e_force_table_omp = [
     "OMP(1.3)"  round(err_13["mae"]["set"]["E"] * 1000, digits=3)  round(err_13["mae"]["set"]["F"], digits=3)
-    "OMP(500)"  round(err_500["mae"]["set"]["E"] * 1000, digits=3)  round(err_500["mae"]["set"]["F"], digits=3)
-    "OMP(1300)" round(err_fin["mae"]["set"]["E"] * 1000, digits=3) round(err_fin["mae"]["set"]["F"], digits=3)
+    "OMP(50)"  round(err_50["mae"]["set"]["E"] * 1000, digits=3)  round(err_50["mae"]["set"]["F"], digits=3)
+    "OMP(100)" round(err_fin["mae"]["set"]["E"] * 1000, digits=3) round(err_fin["mae"]["set"]["F"], digits=3)
 ]
 
-pretty_table(e_force_table; header = header)
+pretty_table(e_force_table_omp; header = header)
 
