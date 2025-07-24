@@ -7,22 +7,18 @@
 # see [ActiveSetPursuit.jl](https://github.com/MPF-Optimization-Laboratory/ActiveSetPursuit.jl)
 
 # We start by importing `ACEpotentials` (and possibly other required libraries)
-
-using Random, SparseArrays 
-using ACEpotentials, PrettyTables
+using ACEpotentials
+using Random
 using ACEpotentials.Models: fast_evaluator
-
-##
-sym = :Si
 
 # Since the sparse solvers pick out the most relevant features for us, we typically start 
 # with a model with a large basis.
 
-model = ace1_model(elements = [sym,], order = 3, totaldegree = 10)
+model = ace1_model(elements = [:Si], order = 3, totaldegree = 10)
 P = algebraic_smoothness_prior(model; p = 4)
 
 # Next, we load a dataset. We split the dataset into training, validation, and test sets.
-_train_data, test_data, _ = ACEpotentials.example_dataset("Zuo20_$sym")
+_train_data, test_data, _ = ACEpotentials.example_dataset("Zuo20_Si")
 shuffle!(_train_data); 
 _train_data = _train_data[1:100]  # Limit the dataset size for this tutorial
 isplit = floor(Int, 0.8 * length(_train_data))
@@ -75,16 +71,6 @@ err_13 = ACEpotentials.compute_errors(test_data,  pot_13)
 err_50 = ACEpotentials.compute_errors(test_data,  pot_50)
 err_fin = ACEpotentials.compute_errors(test_data, pot_final)
 
-header = ["", "Energy MAE (meV)", "Force MAE (eV/Å)"]
-
-e_force_table_asp = [
-    "ASP(1.3)"  round(err_13["mae"]["set"]["E"] * 1000, digits=3)  round(err_13["mae"]["set"]["F"], digits=3)
-    "ASP(50)"  round(err_50["mae"]["set"]["E"] * 1000, digits=3)  round(err_50["mae"]["set"]["F"], digits=3)
-    "ASP(100)" round(err_fin["mae"]["set"]["E"] * 1000, digits=3) round(err_fin["mae"]["set"]["F"], digits=3)
-]
-
-pretty_table(e_force_table_asp; header = header)
-
 
 # Similarly, we can compute the errors for the OMP models.
 
@@ -102,13 +88,4 @@ pot_13 = fast_evaluator(omp_13; aa_static = true)
 err_13 = ACEpotentials.compute_errors(test_data,  pot_13)
 err_50 = ACEpotentials.compute_errors(test_data,  pot_50)
 err_fin = ACEpotentials.compute_errors(test_data, pot_fin)
-
-
-e_force_table_omp = [
-    "OMP(1.3)"  round(err_13["mae"]["set"]["E"] * 1000, digits=3)  round(err_13["mae"]["set"]["F"], digits=3)
-    "OMP(50)"  round(err_50["mae"]["set"]["E"] * 1000, digits=3)  round(err_50["mae"]["set"]["F"], digits=3)
-    "OMP(100)" round(err_fin["mae"]["set"]["E"] * 1000, digits=3) round(err_fin["mae"]["set"]["F"], digits=3)
-]
-
-pretty_table(e_force_table_omp; header = header)
 
