@@ -1,87 +1,202 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basic Workflow · ACEpotentials.jl</title><meta name="title" content="Basic Workflow · ACEpotentials.jl"/><meta property="og:title" content="Basic Workflow · ACEpotentials.jl"/><meta property="twitter:title" content="Basic Workflow · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/asp/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/asp/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/asp/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../basic_julia_workflow/">Basic Workflow</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Basic Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/scripting/">Basic Shell Workflow</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li class="is-active"><a class="tocitem" href>Basic Workflow</a></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li></ul></li><li><a class="tocitem" href="../../all_exported/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Basic Workflow</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basic Workflow</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/asp.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Basic-Workflow"><a class="docs-heading-anchor" href="#Basic-Workflow">Basic Workflow</a><a id="Basic-Workflow-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Workflow" title="Permalink"></a></h1><p>This short tutorial introduces the use of the Lasso Homotopy (ASP) and Orthogonal Matching Pursuit (OMP) solvers. These are sparse solvers that compute the entire regularization path, providing insight into how the support evolves as the regularization parameter changes. For more details on the algorithms and their implementation, see <a href="https://github.com/MPF-Optimization-Laboratory/ActiveSetPursuit.jl">ActiveSetPursuit.jl</a></p><p>We start by importing <code>ACEpotentials</code> (and possibly other required libraries)</p><pre><code class="language-julia hljs">using ACEpotentials
-using Random
-using ACEpotentials.Models: fast_evaluator</code></pre><p>Since the sparse solvers pick out the most relevant features for us, we typically start with a model with a large basis.</p><pre><code class="language-julia hljs">model = ace1_model(elements = [:Si], order = 3, totaldegree = 10)
-P = algebraic_smoothness_prior(model; p = 4)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">120×120 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
- 1.0    ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅       ⋅       ⋅        ⋅ 
-  ⋅   16.0    ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅   81.0     ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅   256.0     ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅   625.0      ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅   1296.0  …      ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
- ⋮                                 ⋮    ⋱                          
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅       ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅      2401.0      ⋅       ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅   4096.0      ⋅        ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅   6561.0       ⋅ 
-  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅       ⋅       ⋅   10000.0</code></pre><p>Next, we load a dataset. We split the dataset into training, validation, and test sets.</p><pre><code class="language-julia hljs">_train_data, test_data, _ = ACEpotentials.example_dataset(&quot;Zuo20_Si&quot;)
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Sparse Solvers · ACEpotentials.jl</title><meta name="title" content="Sparse Solvers · ACEpotentials.jl"/><meta property="og:title" content="Sparse Solvers · ACEpotentials.jl"/><meta property="twitter:title" content="Sparse Solvers · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/asp/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/asp/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/asp/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../basic_julia_workflow/">Basic Workflow</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Basic Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/scripting/">Basic Shell Workflow</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li class="is-active"><a class="tocitem" href>Sparse Solvers</a></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li></ul></li><li><a class="tocitem" href="../../all_exported/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Sparse Solvers</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Sparse Solvers</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/docs/src/tutorials/asp.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Sparse-Solvers"><a class="docs-heading-anchor" href="#Sparse-Solvers">Sparse Solvers</a><a id="Sparse-Solvers-1"></a><a class="docs-heading-anchor-permalink" href="#Sparse-Solvers" title="Permalink"></a></h1><p>This short tutorial introduces the use of the Lasso Homotopy (ASP) and Orthogonal Matching Pursuit (OMP) solvers. These are sparse solvers that compute the entire regularization path, providing insight into how the support evolves as the regularization parameter changes. For more details on the algorithms and their implementation, see <a href="https://github.com/MPF-Optimization-Laboratory/ActiveSetPursuit.jl">ActiveSetPursuit.jl</a></p><p>We start by importing <code>ACEpotentials</code> (and possibly other required libraries)</p><pre><code class="language-julia hljs">using ACEpotentials
+using Random, Plots
+using ACEpotentials.Models: fast_evaluator
+using SparseArrays
+using Plots</code></pre><p>Since sparse solvers automatically select the most relevant features, we usually begin with a model that has a large basis. Here, for demonstration purposes, we use a relatively small model.</p><pre><code class="language-julia hljs">model = ace1_model(elements = [:Si], order = 3, totaldegree = 12)
+P = algebraic_smoothness_prior(model; p = 4)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">223×223 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
+ 1.0    ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅        ⋅        ⋅        ⋅ 
+  ⋅   16.0    ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅   81.0     ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅   256.0     ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅   625.0      ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅   1296.0  …      ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+ ⋮                                 ⋮    ⋱              ⋮             
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅      6561.0       ⋅        ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅   10000.0       ⋅        ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅   14641.0       ⋅ 
+  ⋅     ⋅     ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅   20736.0</code></pre><p>Next, we load a dataset. We split the dataset into training, validation, and test sets. The training set is used to compute the solution path, the validation set is used to select the best solution, and the test set is used to evaluate the final model.</p><pre><code class="language-julia hljs">_train_data, test_data, _ = ACEpotentials.example_dataset(&quot;Zuo20_Si&quot;)
 shuffle!(_train_data);
 _train_data = _train_data[1:100]  # Limit the dataset size for this tutorial
 isplit = floor(Int, 0.8 * length(_train_data))
 train_data = _train_data[1:isplit]
 val_data = _train_data[isplit+1:end]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">20-element Vector{ExtXYZ.Atoms{@NamedTuple{species::Vector{AtomsBase.ChemicalSpecies}, force::Vector{Vector{Float64}}, atomic_number::Vector{Int64}, position::Vector{Vector{Unitful.Quantity{Float64, 𝐋, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}, mass::Vector{Unitful.Quantity{Float64, 𝐌, Unitful.FreeUnits{(u,), 𝐌, nothing}}}, momenta::Vector{Vector{Float64}}, atomic_symbol::Vector{Symbol}, velocity::Vector{Vector{Unitful.Quantity{Float64, 𝐋 𝐓^-1, Unitful.FreeUnits{(u^-1/2, eV^1/2), 𝐋 𝐓^-1, nothing}}}}, masses::Vector{Float64}}, @NamedTuple{energy::Float64, periodicity::Tuple{Bool, Bool, Bool}, bounding_box::Vector{Vector{Unitful.Quantity{Float64, 𝐋, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}}}}:
- Atoms(Si₁₆, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₃₆, pbc = TTT)
+ Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)</code></pre><p>We can now assemble the linear system for the training and validation sets.</p><pre><code class="language-julia hljs">At, yt, Wt = ACEpotentials.assemble(train_data, model)
-Av, yv, Wv = ACEpotentials.assemble(val_data, model)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">([60.23914281908064 58.869533612513564 … -39.91721393044413 9.731474262300267; 0.042908756108106946 -0.32015535157917074 … 0.04331052749766311 -0.7130086155189664; … ; -1.5890067039947553e-15 -4.163336342344337e-15 … -1.6455586893115992e-14 7.89993070959838e-15; -2.942091015256665e-15 4.191091917959966e-15 … 9.2148511043888e-15 -3.4416913763379853e-15], [-82.01038341, 0.00059317, 0.0, -0.00517817, 0.00312251, 0.0, -0.00585762, -0.00375824, 0.0, -0.00957032  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.0, 0.0], [7.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0  …  1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])</code></pre><p>We can now compute sparse solution paths using the <code>ASP</code> and <code>OMP</code> solvers. These solvers support customizable selection criteria for choosing a solution along the path.</p><p>The <code>select</code> keyword controls which solution is returned:</p><ul><li><code>:final</code> selects the final iterate on the path.</li><li><code>(:bysize, n)</code> selects the solution with exactly <code>n</code> active parameters.</li><li><code>(:byerror, ε)</code> selects the smallest solution whose validation error is within a factor <code>ε</code> of the minimum validation error.</li></ul><p>The <code>tsvd</code> keyword controls whether the solution is post-processed using truncated SVD. This is often beneficial for <code>ASP</code>, as ℓ1-regularization can shrink coefficients toward zero too aggressively.</p><p>The <code>actMax</code> keyword controls the maximum number of active parameters in the solution.</p><pre><code class="language-julia hljs">solver_asp = ACEfit.ASP(; P = P, select = :final, tsvd = true, actMax = 100,  loglevel = 1)
-asp_result = ACEfit.solve(solver_asp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, AbstractVector} with 2 entries:
-  &quot;C&quot;    =&gt; sparsevec([1, 2, 3, 5, 10, 11, 12, 13, 15, 16  …  103, 104, 105, 10…
-  &quot;path&quot; =&gt; @NamedTuple{solution::SparseVector{Float64, Int64}, λ::Float64, σ::…</code></pre><p>We can also compute the OMP path, which is a greedy algorithm that selects the most relevant features iteratively.</p><pre><code class="language-julia hljs">solver_omp = ACEfit.OMP(; P = P, select = :final, tsvd = false, actMax = 100, loglevel = 1)
-omp_result = ACEfit.solve(solver_omp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, AbstractVector} with 2 entries:
-  &quot;C&quot;    =&gt; sparsevec([1, 2, 5, 11, 12, 13, 14, 15, 16, 18  …  103, 104, 105, 1…
-  &quot;path&quot; =&gt; @NamedTuple{solution::SparseVector{Float64, Int64}, λ::Float64, σ::…</code></pre><p>To demonstrate the use of the sparse solvers, we will generate models with different numbers of active parameters. We can select the final model, a model with 500 active parameters, and a model with a validation error within 1.3 times the minimum validation error. We can use the <code>ACEfit.asp_select</code> function to select the desired models from the result.</p><pre><code class="language-julia hljs">asp_final = set_parameters!( deepcopy(model),
-                  ACEfit.asp_select(asp_result, :final)[1])
+ Atoms(Si₆₃, pbc = TTT)
+ Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)
+ Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₁₂, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)</code></pre><p>We can now assemble the linear system for the training and validation sets.</p><pre><code class="language-julia hljs">At, yt, Wt = ACEpotentials.assemble(train_data, model);
+Av, yv, Wv = ACEpotentials.assemble(val_data, model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (14453, 223).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
+<span class="sgr32">Progress:   2%|█                                        |  ETA: 0:10:06</span><span class="sgr32">Progress:   6%|██▌                                      |  ETA: 0:04:21</span><span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:02:50</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:02:07</span><span class="sgr32">Progress:  26%|██████████▊                              |  ETA: 0:01:10</span><span class="sgr32">Progress:  30%|████████████▎                            |  ETA: 0:01:02</span><span class="sgr32">Progress:  34%|█████████████▉                           |  ETA: 0:00:55</span><span class="sgr32">Progress:  46%|███████████████████                      |  ETA: 0:00:38</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:34</span><span class="sgr32">Progress:  54%|██████████████████████                   |  ETA: 0:00:31</span><span class="sgr32">Progress:  58%|███████████████████████▋                 |  ETA: 0:00:28</span><span class="sgr32">Progress:  68%|███████████████████████████▋             |  ETA: 0:00:20</span><span class="sgr32">Progress:  80%|████████████████████████████████▊        |  ETA: 0:00:12</span><span class="sgr32">Progress:  84%|██████████████████████████████████▍      |  ETA: 0:00:09</span><span class="sgr32">Progress:  88%|███████████████████████████████████▉     |  ETA: 0:00:07</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▍   |  ETA: 0:00:05</span><span class="sgr32">Progress:  95%|███████████████████████████████████████  |  ETA: 0:00:03</span><span class="sgr32">Progress:  99%|████████████████████████████████████████▌|  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:53</span>
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
+<span class="sgr32">Progress:   2%|█                                        |  ETA: 0:00:07</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:00</span>
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (3683, 223).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
+<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:10</span><span class="sgr32">Progress:  25%|██████████▎                              |  ETA: 0:00:08</span><span class="sgr32">Progress:  40%|████████████████▍                        |  ETA: 0:00:06</span><span class="sgr32">Progress:  55%|██████████████████████▌                  |  ETA: 0:00:05</span><span class="sgr32">Progress:  70%|████████████████████████████▊            |  ETA: 0:00:03</span><span class="sgr32">Progress:  85%|██████████████████████████████████▉      |  ETA: 0:00:02</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:10</span>
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.</code></pre><p>We can now compute sparse solution paths using the <code>ASP</code> and <code>OMP</code> solvers. These solvers support customizable selection criteria for choosing a solution along the path.</p><p>The <code>select</code> keyword controls which solution is returned:</p><ul><li><code>:final</code> selects the final iterate on the path.</li><li><code>(:bysize, n)</code> selects the solution with exactly <code>n</code> active parameters.</li><li><code>(:byerror, ε)</code> selects the smallest solution whose validation error is within a factor <code>ε</code> of the minimum validation error.</li></ul><p>The <code>tsvd</code> keyword controls whether the solution is post-processed using truncated SVD. This is often beneficial for <code>ASP</code>, as ℓ1-regularization can shrink coefficients toward zero too aggressively.</p><p>The <code>actMax</code> keyword controls the maximum number of active parameters in the solution.</p><pre><code class="language-julia hljs">solver_asp = ACEfit.ASP(; P = P, select = :final, tsvd = true, actMax = 100,  loglevel = 0);
+asp_result = ACEfit.solve(solver_asp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv);</code></pre><p>We can also compute the OMP path, which is a greedy algorithm that selects the most relevant features iteratively.</p><pre><code class="language-julia hljs">solver_omp = ACEfit.OMP(; P = P, select = :final, tsvd = false, actMax = 100, loglevel = 0);
+omp_result = ACEfit.solve(solver_omp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv);</code></pre><p>To demonstrate the use of the sparse solvers, we will generate models with different numbers of active parameters. We can select the final model, a model with 500 active parameters, and a model with a validation error within 1.3 times the minimum validation error. We can use the <code>ACEfit.asp_select</code> function to select the desired models from the result.</p><pre><code class="language-julia hljs">asp_final = set_parameters!( deepcopy(model),
+                  ACEfit.asp_select(asp_result, :final)[1]);
 asp_size_50  = set_parameters!( deepcopy(model),
-                  ACEfit.asp_select(asp_result, (:bysize, 50))[1])
+                  ACEfit.asp_select(asp_result, (:bysize, 50))[1]);
 asp_error13  = set_parameters!( deepcopy(model),
-                  ACEfit.asp_select(asp_result, (:byerror, 1.3))[1])
+                  ACEfit.asp_select(asp_result, (:byerror, 1.3))[1]);
 
-pot_final = fast_evaluator(asp_final; aa_static = false)
-pot_50 = fast_evaluator(asp_size_50; aa_static = true)
-pot_13 = fast_evaluator(asp_error13; aa_static = true)
+pot_final = fast_evaluator(asp_final; aa_static = false);
+pot_50 = fast_evaluator(asp_size_50; aa_static = true);
+pot_13 = fast_evaluator(asp_error13; aa_static = true);
 
-err_13 = ACEpotentials.compute_errors(test_data,  pot_13)
-err_50 = ACEpotentials.compute_errors(test_data,  pot_50)
-err_fin = ACEpotentials.compute_errors(test_data, pot_final)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Dict{String, Any}} with 2 entries:
-  &quot;rmse&quot; =&gt; Dict(&quot;set&quot;=&gt;Dict(&quot;V&quot;=&gt;0.0, &quot;E&quot;=&gt;0.00932931, &quot;F&quot;=&gt;0.203183), &quot;nil&quot;=&gt;…
-  &quot;mae&quot;  =&gt; Dict(&quot;set&quot;=&gt;Dict(&quot;V&quot;=&gt;0.0, &quot;E&quot;=&gt;0.00533287, &quot;F&quot;=&gt;0.133858), &quot;nil&quot;=&gt;…</code></pre><p>Similarly, we can compute the errors for the OMP models.</p><pre><code class="language-julia hljs">omp_final = set_parameters!( deepcopy(model),
-                  ACEfit.asp_select(omp_result, :final)[1])
+err_13 = ACEpotentials.compute_errors(test_data,  pot_13);
+err_50 = ACEpotentials.compute_errors(test_data,  pot_50);
+err_fin = ACEpotentials.compute_errors(test_data, pot_final);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   4.969 │    0.184 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   4.969 │    0.184 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   3.119 │    0.119 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   3.119 │    0.119 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   7.714 │    0.188 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   7.714 │    0.188 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   4.974 │    0.122 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   4.974 │    0.122 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   6.547 │    0.156 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   6.547 │    0.156 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   4.415 │    0.103 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   4.415 │    0.103 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘</code></pre><p>Similarly, we can compute the errors for the OMP models.</p><pre><code class="language-julia hljs">omp_final = set_parameters!( deepcopy(model),
+                  ACEfit.asp_select(omp_result, :final)[1]);
 omp_50  = set_parameters!( deepcopy(model),
-                  ACEfit.asp_select(omp_result, (:bysize, 50))[1])
+                  ACEfit.asp_select(omp_result, (:bysize, 50))[1]);
 omp_13  = set_parameters!( deepcopy(model),
-                  ACEfit.asp_select(omp_result, (:byerror, 1.3))[1])
+                  ACEfit.asp_select(omp_result, (:byerror, 1.3))[1]);
 
-pot_fin = fast_evaluator(omp_final; aa_static = false)
-pot_50 = fast_evaluator(omp_50; aa_static = true)
-pot_13 = fast_evaluator(omp_13; aa_static = true)
+pot_fin = fast_evaluator(omp_final; aa_static = false);
+pot_50 = fast_evaluator(omp_50; aa_static = true);
+pot_13 = fast_evaluator(omp_13; aa_static = true);
 
-err_13 = ACEpotentials.compute_errors(test_data,  pot_13)
-err_50 = ACEpotentials.compute_errors(test_data,  pot_50)
-err_fin = ACEpotentials.compute_errors(test_data, pot_fin)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Dict{String, Any}} with 2 entries:
-  &quot;rmse&quot; =&gt; Dict(&quot;set&quot;=&gt;Dict(&quot;V&quot;=&gt;0.0, &quot;E&quot;=&gt;0.00769006, &quot;F&quot;=&gt;0.188049), &quot;nil&quot;=&gt;…
-  &quot;mae&quot;  =&gt; Dict(&quot;set&quot;=&gt;Dict(&quot;V&quot;=&gt;0.0, &quot;E&quot;=&gt;0.00502045, &quot;F&quot;=&gt;0.124904), &quot;nil&quot;=&gt;…</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../gettingstarted/parallel-fitting/">Parallel Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Thursday 24 July 2025 15:54">Thursday 24 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+err_13 = ACEpotentials.compute_errors(test_data,  pot_13);
+err_50 = ACEpotentials.compute_errors(test_data,  pot_50);
+err_fin = ACEpotentials.compute_errors(test_data, pot_fin);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   6.708 │    0.188 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   6.708 │    0.188 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   4.660 │    0.122 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   4.660 │    0.122 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   6.306 │    0.188 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   6.306 │    0.188 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   4.637 │    0.120 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   4.637 │    0.120 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   6.312 │    0.158 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   6.312 │    0.158 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
+┌──────┬─────────┬──────────┬─────────┐
+│<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
+├──────┼─────────┼──────────┼─────────┤
+│  nil │   3.779 │    0.104 │   0.000 │
+├──────┼─────────┼──────────┼─────────┤
+│  set │   3.779 │    0.104 │   0.000 │
+└──────┴─────────┴──────────┴─────────┘</code></pre><p>Finally, we can visualize the results along the solution path. We plot the validation error as a function of the number of active parameters for both ASP and OMP.</p><pre><code class="language-julia hljs">path_asp = asp_result[&quot;path&quot;];
+path_omp = omp_result[&quot;path&quot;];
+
+nz_counts_asp = [nnz(p.solution) for p in path_asp];
+nz_counts_omp = [nnz(p.solution) for p in path_omp];
+
+rmses_asp = [p.rmse for p in path_asp];
+rmses_omp = [p.rmse for p in path_omp];
+
+plot(nz_counts_asp, rmses_asp;
+     xlabel = &quot;# Nonzero Coefficients&quot;,
+     ylabel = &quot;RMSE&quot;,
+     title = &quot;RMSE vs Sparsity Level&quot;,
+     marker = :o,
+     grid = true, yscale = :log10, label = &quot;ASP&quot;)
+plot!(nz_counts_omp, rmses_omp; marker = :o, label = &quot;OMP&quot;)</code></pre><img src="07cc83f4.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../gettingstarted/parallel-fitting/">Parallel Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Monday 11 August 2025 17:41">Monday 11 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
