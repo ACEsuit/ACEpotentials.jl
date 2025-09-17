@@ -12,6 +12,9 @@
 - Version 0.7.x is reserved
 - Version 0.8.x and onwards provides a new and much more flexible implementation, and integrates with the [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl) ecosystem. Most but not all features from 0.6.x have been ported to this re-implementation. Usability should be the same or improved for most end-users. For developers this provides a much more flexible framework for experimentation. [[docs-v0.8]](https://acesuit.github.io/ACEpotentials.jl/dev/)
 
+## Contributing
+
+Contributions are very welcome. Until clear guidelines and practices are established, we recommend to open an issue where the bugfix or enhancement can be discussed, before starting a pull request. We will do our best to respond in a timely manner.
 
 ## Quick Start 
 
