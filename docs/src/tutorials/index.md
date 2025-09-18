@@ -6,4 +6,6 @@
 * [Smoothness Priors](../literate_tutorials/smoothness_priors.md) : brief introduction to smoothness priors
 * [Basic Dataset Analysis](../literate_tutorials/dataset_analysis.md) : basic techniques to visualize training datasets and correlate such observations to the choice of geometric priors
 * [Descriptors](../literate_tutorials/descriptor.md) : `ACEpotentials` can be used as descriptors of atomic environments or structures, which is described here. 
+* [Sparse Solvers](../literate_tutorials/asp.md) : basic tutorial on using the `ASP` and `OMP` solvers.
+
 

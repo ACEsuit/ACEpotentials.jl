@@ -28,7 +28,8 @@ Literate.markdown(_tutorial_src * "/dataset_analysis.jl",
 Literate.markdown(_tutorial_src * "/descriptor.jl",
                   _tutorial_out; documenter = true)
 
-
+Literate.markdown(_tutorial_src * "/asp.jl", 
+                  _tutorial_out; documenter = true)
 # Literate.markdown(_tutorial_src * "/first_example_model.jl", 
 #                   _tutorial_out; documenter = true)
 
@@ -71,6 +72,7 @@ makedocs(;
                 "literate_tutorials/dataset_analysis.md",
                 "tutorials/scripting.md", 
                 "literate_tutorials/descriptor.md",
+                "literate_tutorials/asp.md",
             ],
         "Additional Topics" => Any[
             "gettingstarted/parallel-fitting.md",
