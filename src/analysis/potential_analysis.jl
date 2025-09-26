@@ -181,7 +181,7 @@ function decohesion_curve(at0, pot;
    E0 = potential_energy(at0, pot) / length(at0)
 
    atref = at0 * ntuple(i -> (i == dim ? mult : 1), 3) # (mult, 1, 1) if dim == 1
-   Cref = deepcopy(bounding_box(atref)) 
+   Cref = deepcopy(cell_vectors(atref)) 
    Xref = deepcopy(position(atref, :))
 
    if aa == :auto 
@@ -194,7 +194,7 @@ function decohesion_curve(at0, pot;
 
    function decoh_energy(_a_)
       C = [ deepcopy(Cref)... ]; C[dim] *= (1+_a_)
-      at = AbstractSystem(atref; bounding_box = tuple(C...))
+      at = AbstractSystem(atref; cell_vectors = tuple(C...))
       return potential_energy(at, pot) - length(at) * E0
    end
 
