@@ -19,7 +19,7 @@ Contributions are very welcome. Until clear guidelines and practices are establi
 
 ## Quick Start 
 
-- Install Julia 1.10 
+- Install Julia 1.11
 - Create new folder a.g. `acetutorial`; Open a shell
 - Create a new project in `acetutorial` and install `ACEpotentials.jl`
 ```
@@ -34,3 +34,4 @@ using ACEpotentials
 ACEpotentials.copy_tutorial()
 ```
 - Work through the tutorials.
+
