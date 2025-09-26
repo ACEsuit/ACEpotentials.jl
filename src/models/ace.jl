@@ -104,8 +104,7 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    model_meta = Dict{String, Any}()
 
    # generate the coupling coefficients 
-   cgen = EquivariantModels.Rot3DCoeffs_real(0)
-   AA2BB_map = EquivariantModels._rpi_A2B_matrix(cgen, AA_spec)
+   AA2BB_map = EquivariantModels._rpi_A2B_matrix(0, AA_spec; basis = real)
 
    # find which AA basis functions are actually used and discard the rest 
    keep_AA_idx = findall(sum(abs, AA2BB_map; dims = 1)[:] .> 0)
