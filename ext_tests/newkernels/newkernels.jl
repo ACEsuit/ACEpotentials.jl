@@ -75,7 +75,7 @@ function rand_AlTi(nrep, rattle)
    particles = map( enumerate(at) ) do (i, atom)
       (rand() < 0.5) ? AtomsBase.Atom(22, position(atom)) : atom
    end
-   return FlexibleSystem(particles, bounding_box(at), boundary_conditions(at))      
+   return FlexibleSystem(particles, cell_vectors(at), boundary_conditions(at))      
 end
 
 
