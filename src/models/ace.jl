@@ -107,7 +107,7 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    AA2BB_map = EquivariantModels._rpi_A2B_matrix(0, AA_spec; basis = real)
 
    # find which AA basis functions are actually used and discard the rest 
-   keep_AA_idx = findall(sum(abs, AA2BB_map; dims = 1)[:] .> 0)
+   keep_AA_idx = findall(sum(abs, AA2BB_map; dims = 1)[:] .> 1e-12)
    AA_spec = AA_spec[keep_AA_idx]
    AA2BB_map = AA2BB_map[:, keep_AA_idx]
 
