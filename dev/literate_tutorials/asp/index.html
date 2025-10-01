@@ -30,37 +30,37 @@ _train_data = _train_data[1:100]  # Limit the dataset size for this tutorial
 isplit = floor(Int, 0.8 * length(_train_data))
 train_data = _train_data[1:isplit]
 val_data = _train_data[isplit+1:end]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">20-element Vector{ExtXYZ.Atoms{@NamedTuple{species::Vector{AtomsBase.ChemicalSpecies}, force::Vector{Vector{Float64}}, atomic_number::Vector{Int64}, position::Vector{Vector{Unitful.Quantity{Float64, 𝐋, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}, mass::Vector{Unitful.Quantity{Float64, 𝐌, Unitful.FreeUnits{(u,), 𝐌, nothing}}}, momenta::Vector{Vector{Float64}}, atomic_symbol::Vector{Symbol}, velocity::Vector{Vector{Unitful.Quantity{Float64, 𝐋 𝐓^-1, Unitful.FreeUnits{(u^-1/2, eV^1/2), 𝐋 𝐓^-1, nothing}}}}, masses::Vector{Float64}}, @NamedTuple{energy::Float64, periodicity::Tuple{Bool, Bool, Bool}, bounding_box::Vector{Vector{Unitful.Quantity{Float64, 𝐋, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}}}}:
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
- Atoms(Si₃₆, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₂₄, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₃, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₆₄, pbc = TTT)
+ Atoms(Si₁₈, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₄, pbc = TTT)
  Atoms(Si₆₃, pbc = TTT)
- Atoms(Si₆₄, pbc = TTT)</code></pre><p>We can now assemble the linear system for the training and validation sets.</p><pre><code class="language-julia hljs">At, yt, Wt = ACEpotentials.assemble(train_data, model);
+ Atoms(Si₆₃, pbc = TTT)</code></pre><p>We can now assemble the linear system for the training and validation sets.</p><pre><code class="language-julia hljs">At, yt, Wt = ACEpotentials.assemble(train_data, model);
 Av, yv, Wv = ACEpotentials.assemble(val_data, model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (14702, 223).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (14999, 223).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:   2%|█                                        |  ETA: 0:10:47</span><span class="sgr32">Progress:   6%|██▌                                      |  ETA: 0:04:40</span><span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:03:03</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:02:18</span><span class="sgr32">Progress:  18%|███████▏                                 |  ETA: 0:01:51</span><span class="sgr32">Progress:  21%|████████▊                                |  ETA: 0:01:33</span><span class="sgr32">Progress:  25%|██████████▎                              |  ETA: 0:01:20</span><span class="sgr32">Progress:  38%|███████████████▍                         |  ETA: 0:00:53</span><span class="sgr32">Progress:  41%|████████████████▉                        |  ETA: 0:00:48</span><span class="sgr32">Progress:  54%|██████████████████████                   |  ETA: 0:00:34</span><span class="sgr32">Progress:  66%|███████████████████████████▏             |  ETA: 0:00:23</span><span class="sgr32">Progress:  70%|████████████████████████████▊            |  ETA: 0:00:20</span><span class="sgr32">Progress:  74%|██████████████████████████████▎          |  ETA: 0:00:17</span><span class="sgr32">Progress:  78%|███████████████████████████████▊         |  ETA: 0:00:14</span><span class="sgr32">Progress:  90%|████████████████████████████████████▉    |  ETA: 0:00:06</span><span class="sgr32">Progress:  94%|██████████████████████████████████████▌  |  ETA: 0:00:04</span><span class="sgr32">Progress:  98%|████████████████████████████████████████ |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:57</span>
+<span class="sgr32">Progress:   2%|█                                        |  ETA: 0:09:59</span><span class="sgr32">Progress:   8%|███▏                                     |  ETA: 0:03:38</span><span class="sgr32">Progress:  16%|██████▋                                  |  ETA: 0:01:47</span><span class="sgr32">Progress:  25%|██████████▎                              |  ETA: 0:01:12</span><span class="sgr32">Progress:  29%|███████████▊                             |  ETA: 0:01:03</span><span class="sgr32">Progress:  32%|█████████████▍                           |  ETA: 0:00:56</span><span class="sgr32">Progress:  36%|██████████████▉                          |  ETA: 0:00:50</span><span class="sgr32">Progress:  40%|████████████████▍                        |  ETA: 0:00:44</span><span class="sgr32">Progress:  52%|█████████████████████▌                   |  ETA: 0:00:31</span><span class="sgr32">Progress:  65%|██████████████████████████▋              |  ETA: 0:00:21</span><span class="sgr32">Progress:  69%|████████████████████████████▎            |  ETA: 0:00:18</span><span class="sgr32">Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:10</span><span class="sgr32">Progress:  86%|███████████████████████████████████▍     |  ETA: 0:00:07</span><span class="sgr32">Progress:  99%|████████████████████████████████████████▌|  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:51</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
-<span class="sgr32">Progress:   2%|█                                        |  ETA: 0:00:07</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:00</span>
+<span class="sgr32">Progress:   2%|█                                        |  ETA: 0:00:06</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:00</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (3767, 223).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (3578, 223).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:11</span><span class="sgr32">Progress:  25%|██████████▎                              |  ETA: 0:00:08</span><span class="sgr32">Progress:  75%|██████████████████████████████▊          |  ETA: 0:00:03</span><span class="sgr32">Progress:  90%|████████████████████████████████████▉    |  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:10</span>
+<span class="sgr32">Progress:  10%|████▏                                    |  ETA: 0:00:10</span><span class="sgr32">Progress:  60%|████████████████████████▋                |  ETA: 0:00:04</span><span class="sgr32">Progress:  75%|██████████████████████████████▊          |  ETA: 0:00:02</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:09</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.</code></pre><p>We can now compute sparse solution paths using the <code>ASP</code> and <code>OMP</code> solvers. These solvers support customizable selection criteria for choosing a solution along the path.</p><p>The <code>select</code> keyword controls which solution is returned:</p><ul><li><code>:final</code> selects the final iterate on the path.</li><li><code>(:bysize, n)</code> selects the solution with exactly <code>n</code> active parameters.</li><li><code>(:byerror, ε)</code> selects the smallest solution whose validation error is within a factor <code>ε</code> of the minimum validation error.</li></ul><p>The <code>tsvd</code> keyword controls whether the solution is post-processed using truncated SVD. This is often beneficial for <code>ASP</code>, as ℓ1-regularization can shrink coefficients toward zero too aggressively.</p><p>The <code>actMax</code> keyword controls the maximum number of active parameters in the solution.</p><pre><code class="language-julia hljs">solver_asp = ACEfit.ASP(; P = P, select = :final, tsvd = true, actMax = 100,  loglevel = 0);
 asp_result = ACEfit.solve(solver_asp, Wt .* At, Wt .* yt, Wv .* Av, Wv .* yv);</code></pre><p>We can also compute the OMP path, which is a greedy algorithm that selects the most relevant features iteratively.</p><pre><code class="language-julia hljs">solver_omp = ACEfit.OMP(; P = P, select = :final, tsvd = false, actMax = 100, loglevel = 0);
@@ -81,49 +81,49 @@ err_fin = ACEpotentials.compute_errors(test_data, pot_final);</code></pre><pre c
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   5.264 │    0.167 │   0.000 │
+│  nil │   8.568 │    0.162 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   5.264 │    0.167 │   0.000 │
+│  set │   8.568 │    0.162 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   3.448 │    0.111 │   0.000 │
+│  nil │   5.228 │    0.109 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   3.448 │    0.111 │   0.000 │
+│  set │   5.228 │    0.109 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   8.333 │    0.198 │   0.000 │
+│  nil │   6.927 │    0.186 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   8.333 │    0.198 │   0.000 │
+│  set │   6.927 │    0.186 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   5.554 │    0.127 │   0.000 │
+│  nil │   4.587 │    0.120 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   5.554 │    0.127 │   0.000 │
+│  set │   4.587 │    0.120 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   4.707 │    0.154 │   0.000 │
+│  nil │  10.372 │    0.146 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   4.707 │    0.154 │   0.000 │
+│  set │  10.372 │    0.146 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   3.533 │    0.102 │   0.000 │
+│  nil │   5.847 │    0.099 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   3.533 │    0.102 │   0.000 │
+│  set │   5.847 │    0.099 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘</code></pre><p>Similarly, we can compute the errors for the OMP models.</p><pre><code class="language-julia hljs">omp_final = set_parameters!( deepcopy(model),
                   ACEfit.asp_select(omp_result, :final)[1]);
 omp_50  = set_parameters!( deepcopy(model),
@@ -141,49 +141,49 @@ err_fin = ACEpotentials.compute_errors(test_data, pot_fin);</code></pre><pre cla
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   4.089 │    0.174 │   0.000 │
+│  nil │  10.304 │    0.169 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   4.089 │    0.174 │   0.000 │
+│  set │  10.304 │    0.169 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   2.984 │    0.114 │   0.000 │
+│  nil │   5.642 │    0.111 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   2.984 │    0.114 │   0.000 │
+│  set │   5.642 │    0.111 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   7.677 │    0.195 │   0.000 │
+│  nil │  12.320 │    0.179 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   7.677 │    0.195 │   0.000 │
+│  set │  12.320 │    0.179 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   5.464 │    0.124 │   0.000 │
+│  nil │   6.533 │    0.116 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   5.464 │    0.124 │   0.000 │
+│  set │   6.533 │    0.116 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   3.849 │    0.151 │   0.000 │
+│  nil │   9.570 │    0.146 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   3.849 │    0.151 │   0.000 │
+│  set │   9.570 │    0.146 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌──────┬─────────┬──────────┬─────────┐
 │<span class="sgr1"> Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├──────┼─────────┼──────────┼─────────┤
-│  nil │   2.617 │    0.101 │   0.000 │
+│  nil │   5.635 │    0.098 │   0.000 │
 ├──────┼─────────┼──────────┼─────────┤
-│  set │   2.617 │    0.101 │   0.000 │
+│  set │   5.635 │    0.098 │   0.000 │
 └──────┴─────────┴──────────┴─────────┘</code></pre><p>Finally, we can visualize the results along the solution path. We plot the validation error as a function of the number of active parameters for both ASP and OMP.</p><pre><code class="language-julia hljs">path_asp = asp_result[&quot;path&quot;];
 path_omp = omp_result[&quot;path&quot;];
 
@@ -199,4 +199,4 @@ plot(nz_counts_asp, rmses_asp;
      title = &quot;RMSE vs Sparsity Level&quot;,
      marker = :o,
      grid = true, yscale = :log10, label = &quot;ASP&quot;)
-plot!(nz_counts_omp, rmses_omp; marker = :o, label = &quot;OMP&quot;)</code></pre><img src="7a3bcc5b.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../gettingstarted/parallel-fitting/">Parallel Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 26 September 2025 17:47">Friday 26 September 2025</span>. Using Julia version 1.11.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot!(nz_counts_omp, rmses_omp; marker = :o, label = &quot;OMP&quot;)</code></pre><img src="b66d56b4.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../descriptor/">« ACE Descriptors</a><a class="docs-footer-nextpage" href="../../gettingstarted/parallel-fitting/">Parallel Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Wednesday 1 October 2025 19:39">Wednesday 1 October 2025</span>. Using Julia version 1.11.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
