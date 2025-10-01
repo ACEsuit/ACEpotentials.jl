@@ -12,6 +12,7 @@
 - Version 0.6.x uses `ACE1.jl` as a backend. It is mature and suitable for linear models with few species. This is not longer actively developed, but critical bugfixes can still be provided.  [[docs-v0.6]](https://acesuit.github.io/ACEpotentials.jl/v0.6/)
 - Version 0.7.x is reserved
 - Version 0.8.x and onwards provides a new and much more flexible implementation, and integrates with the [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl) ecosystem. Most but not all features from 0.6.x have been ported to this re-implementation. Usability should be the same or improved for most end-users. For developers this provides a much more flexible framework for experimentation. [[docs-v0.8]](https://acesuit.github.io/ACEpotentials.jl/dev/)
+- Version 0.9 onwards is technically compatible with Julia 1.10, but some unit tests show unexplained increases in fit accuracy, hence we highly recommend to use it only with Julia 1.11.
 
 ## Contributing
 
@@ -19,7 +20,7 @@ Contributions are very welcome. Until clear guidelines and practices are establi
 
 ## Quick Start 
 
-- Install Julia 1.11
+- Install Julia 1.11 
 - Create new folder a.g. `acetutorial`; Open a shell
 - Create a new project in `acetutorial` and install `ACEpotentials.jl`
 ```
