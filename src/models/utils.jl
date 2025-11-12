@@ -1,4 +1,64 @@
-import EquivariantModels
+import Polynomials4ML
+
+# -------------------------------------------------------------------------
+# Helper functions for RPE filter (migrated from EquivariantModels.jl)
+# These replace EquivariantModels.RPE_filter_real which is no longer needed
+# after migration to EquivariantTensors.jl
+
+"""
+Helper function to check if any signed combination of mm satisfies |sum| <= L.
+Adapted from EquivariantModels.jl for migration to EquivariantTensors.jl.
+"""
+function _mm_filter(mm::AbstractVector, L::Integer)
+   N = length(mm)
+   # Check all 2^N possible sign combinations
+   for i in 0:(2^N - 1)
+      σ = digits(i, base=2, pad=N)
+      # Apply signs: convert 0->-1, 1->+1, but handle m=0 specially
+      mm_signed = [((2*σ[j]-1) * (mm[j] != 0) + (mm[j] == 0)) * mm[j] for j = 1:N]
+      if abs(sum(mm_signed)) <= L
+         return true
+      end
+   end
+   return false
+end
+
+"""
+    _rpe_filter_real(L::Integer)
+
+Filter for real spherical harmonics basis with equivariance level L.
+Replacement for EquivariantModels.RPE_filter_real.
+
+Checks:
+1. m-quantum number compatibility (via lazy signed m-set)
+2. Parity condition: sum(l) + L must be even
+3. Special case: for L=0 with single element, l must be 0
+"""
+function _rpe_filter_real(L::Integer)
+   return bb -> begin
+      # Empty basis is always admissible
+      if length(bb) == 0
+         return true
+      end
+
+      # Extract l and m quantum numbers
+      ll = [b.l for b in bb]
+      mm = [b.m for b in bb]
+
+      # Check m-filter: any signed combination must satisfy |sum| <= L
+      mm_admissible = _mm_filter(mm, L)
+
+      # Parity check: sum(l) + L must be even
+      parity_ok = iseven(sum(ll) + L)
+
+      # Special case: for L=0 with single element, l must be 0
+      special_case = (length(bb) == 1 && L == 0) ? (bb[1].l == 0) : true
+
+      return mm_admissible && parity_ok && special_case
+   end
+end
+
+# -------------------------------------------------------------------------
 
 function _inv_list(l)
    d = Dict()
@@ -60,13 +120,13 @@ function sparse_AA_spec(; order = nothing,
    # generate the AA basis spec from the A basis spec
    tup2b = vv -> [ A_spec[v] for v in vv[vv .> 0]  ]
    admissible = bb -> (length(bb) == 0) || (level(bb) <= max_levels[length(bb)])
-   filter_ = EquivariantModels.RPE_filter_real(0)
+   filter_ = _rpe_filter_real(0)
 
-   AA_spec = EquivariantModels.gensparse(; 
-                        NU = order, tup2b = tup2b, filter = filter_, 
+   AA_spec = Polynomials4ML.Utils.gensparse(;
+                        NU = order, tup2b = tup2b, filter = filter_,
                         admissible = admissible,
-                        minvv = fill(0, order), 
-                        maxvv = fill(length(A_spec), order), 
+                        minvv = fill(0, order),
+                        maxvv = fill(length(A_spec), order),
                         ordered = true)
 
    AA_spec = [ vv[vv .> 0] for vv in AA_spec if !(isempty(vv[vv .> 0])) ]

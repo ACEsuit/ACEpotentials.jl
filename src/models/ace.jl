@@ -7,7 +7,7 @@ using LinearAlgebra: norm, dot
 using Polynomials4ML: real_sphericalharmonics, real_solidharmonics
 
 import RepLieGroups
-import EquivariantModels
+import EquivariantTensors
 
 
 # ------------------------------------------------------------
@@ -103,8 +103,13 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    # model_meta = Dict{String, Any}("E0s" => deepcopy(E0s))
    model_meta = Dict{String, Any}()
 
-   # generate the coupling coefficients 
-   AA2BB_map = EquivariantModels._rpi_A2B_matrix(0, AA_spec; basis = real)
+   # generate the coupling coefficients
+   # Migrated from EquivariantModels._rpi_A2B_matrix to EquivariantTensors.symmetrisation_matrix
+   # Note: symmetrisation_matrix returns (matrix, pruned_spec), we only need the matrix
+   AA2BB_map, _ = EquivariantTensors.symmetrisation_matrix(0, AA_spec;
+                                                            prune = true,
+                                                            PI = true,
+                                                            basis = real)
 
    # find which AA basis functions are actually used and discard the rest 
    keep_AA_idx = findall(sum(abs, AA2BB_map; dims = 1)[:] .> 1e-12)
