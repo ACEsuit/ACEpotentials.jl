@@ -75,7 +75,8 @@ NamedTupleTools = "0.13, 0.14"
 SpheriCart = "0.2"
 
 [extras]
+ACEbase = "14bae519-eb20-449c-8949-9c58ed33163e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["ACEbase", "Test"]
