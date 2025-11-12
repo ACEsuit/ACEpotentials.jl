@@ -47,9 +47,9 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    wB = model.ps.WB
    wAA = A2Bmap' * wB[:, iz]
    
-   # construct reduced A basis and AA basis 
+   # construct reduced A basis and AA basis
    Inz = findall(!iszero, wAA)
-   aa_spec_new = aabasis.meta["AA_spec"][Inz]
+   aa_spec_new = model.model.tensor.meta["AA_spec"][Inz]
    a_spec_new = unique(reduce(vcat, aa_spec_new))
    
    # take human-readable specs and convert into layer-readable specs 
@@ -59,17 +59,17 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    r_spec = rbasis.spec
    y_spec = _make_Y_spec(maxl)
    A_spec_idx = _make_idx_A_spec(a_spec_new, r_spec, y_spec)
-   a_basis = Polynomials4ML.PooledSparseProduct(A_spec_idx)
-   AA_spec_idx = _make_idx_AA_spec(aa_spec_new, a_spec_new) 
-   aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
+   a_basis = EquivariantTensors.PooledSparseProduct(A_spec_idx)
+   AA_spec_idx = _make_idx_AA_spec(aa_spec_new, a_spec_new)
+   aa_basis = EquivariantTensors.SparseSymmProd(AA_spec_idx)
    
-   if aa_static 
+   if aa_static
       # generate a static evaluator
       aadot = generate_AA_dot(AA_spec_idx, wAA[Inz])
-   else 
+   else
       # generate a standard evaluator
-      wAA_rec = zeros(length(aa_basis))
-      wAA_rec[aa_basis.projection] = wAA[Inz]
+      # Note: SparseSymmProd no longer needs projection; weights map directly
+      wAA_rec = wAA[Inz]
       aadot = AADot(wAA_rec, aa_basis)
    end 
    

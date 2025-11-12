@@ -13,7 +13,7 @@ import EquivariantTensors
 # ------------------------------------------------------------
 #    ACE MODEL SPECIFICATION 
 
-mutable struct ACEModel{NZ, TRAD, TY, TTEN, TPAIR, TVREF} <: AbstractExplicitContainerLayer{(:rbasis,)}
+mutable struct ACEModel{NZ, TRAD, TY, TTEN, TPAIR, TVREF} <: AbstractLuxContainerLayer{(:rbasis,)}
    _i2z::NTuple{NZ, Int}
    # --------------
    # embeddings of the particles 
@@ -105,16 +105,21 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
 
    # generate the coupling coefficients
    # Migrated from EquivariantModels._rpi_A2B_matrix to EquivariantTensors.symmetrisation_matrix
-   # Note: symmetrisation_matrix returns (matrix, pruned_spec), we only need the matrix
-   AA2BB_map, _ = EquivariantTensors.symmetrisation_matrix(0, AA_spec;
-                                                            prune = true,
-                                                            PI = true,
-                                                            basis = real)
+   # Note: EquivariantTensors expects mb_spec as Vector{Vector{(n, l)}} without m field
+   # Convert AA_spec from (n,l,m) format to (n,l) format by removing m and deduplicating
+   mb_spec = [unique([(n=b.n, l=b.l) for b in bb]) for bb in AA_spec]
 
-   # find which AA basis functions are actually used and discard the rest 
-   keep_AA_idx = findall(sum(abs, AA2BB_map; dims = 1)[:] .> 1e-12)
-   AA_spec = AA_spec[keep_AA_idx]
-   AA2BB_map = AA2BB_map[:, keep_AA_idx]
+   # symmetrisation_matrix returns (matrix, pruned_AA_spec_with_m)
+   # The returned AA_spec_pruned has m values filled in by coupling_coeffs
+   # and is already pruned (since prune=true)
+   AA2BB_map, AA_spec_pruned = EquivariantTensors.symmetrisation_matrix(0, mb_spec;
+                                                                          prune = true,
+                                                                          PI = true,
+                                                                          basis = real)
+
+   # Use the pruned AA_spec returned by symmetrisation_matrix
+   # (no additional pruning needed since prune=true already handled it)
+   AA_spec = AA_spec_pruned
 
    # generate the corresponding A basis spec
    A_spec = _make_A_spec(AA_spec, level)
@@ -132,19 +137,18 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    # get the idx version of A_spec 
    A_spec_idx = _make_idx_A_spec(A_spec, r_spec, y_spec)
 
-   # from this we can now generate the A basis layer                   
-   a_basis = Polynomials4ML.PooledSparseProduct(A_spec_idx)
-   a_basis.meta["A_spec"] = A_spec  #(also store the human-readable spec)
+   # from this we can now generate the A basis layer
+   a_basis = EquivariantTensors.PooledSparseProduct(A_spec_idx)
 
    # get the idx version of AA_spec
-   AA_spec_idx = _make_idx_AA_spec(AA_spec, A_spec) 
+   AA_spec_idx = _make_idx_AA_spec(AA_spec, A_spec)
 
    # from this we can now generate the AA basis layer
-   aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
-   aa_basis.meta["AA_spec"] = AA_spec  # (also store the human-readable spec)
+   aa_basis = EquivariantTensors.SparseSymmProd(AA_spec_idx)
 
-   tensor = SparseEquivTensor(a_basis, aa_basis, AA2BB_map, 
-                              Dict{String, Any}())
+   # Store metadata in SparseEquivTensor instead of individual basis objects
+   tensor_meta = Dict{String, Any}("A_spec" => A_spec, "AA_spec" => AA_spec)
+   tensor = SparseEquivTensor(a_basis, aa_basis, AA2BB_map, tensor_meta)
 
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
                    tensor, pair_basis, Vref, 
@@ -652,72 +656,28 @@ end
 # ---------------------------------------------------------
 #  experimental pushforwards 
 
-function evaluate_basis_ed(model::ACEModel, 
-                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+function evaluate_basis_ed(model::ACEModel,
+                            Rs::AbstractVector{SVector{3, T}}, Zs, Z0,
                             ps, st) where {T}
 
-   TB = T
-   ∂TB = SVector{3, T}
-   B = zeros(TB, length_basis(model))
-   ∂B = zeros(∂TB, length_basis(model), length(Rs))
+   # TEMPORARY: Disabled during EquivariantTensors v0.3 migration
+   # This function uses custom _pfwd pushforward implementations that need
+   # rewriting for the new SparseSymmProd API.
+   #
+   # Impact: Force and virial calculations will fail
+   # Workaround: Use energy-only predictions or implement Option 1 or 2 from MIGRATION_STATUS.md
+   #
+   # See MIGRATION_STATUS.md for details and solution options.
 
-   if length(Rs) == 0
-      return B, ∂B
-   end
-   
-   @no_escape begin 
-   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
+   error("""
+   evaluate_basis_ed is temporarily disabled during EquivariantTensors v0.3 migration.
 
-   # get the radii 
-   rs, ∇rs = @withalloc radii_ed!(Rs)
+   This function requires custom pushforward (_pfwd) implementations that need
+   rewriting for the new SparseSymmProd API.
 
-   # evaluate the radial basis
-   Rnl, dRnl = @withalloc evaluate_ed_batched!(model.rbasis, rs, Z0, Zs, 
-                                               ps.rbasis, st.rbasis)
+   Impact: Cannot compute forces or virials
+   Available: Energy-only predictions still work
 
-   # evaluate the Y basis
-   Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
-
-   # compute vectorial dRnl 
-   ∂Ylm = dYlm 
-   ∂Rnl = @alloc(eltype(dYlm), size(dRnl)...)
-   for nl = 1:size(dRnl, 2)
-      # @inbounds begin 
-      # @simd ivdep 
-         for j = 1:size(dRnl, 1)
-            ∂Rnl[j, nl] = dRnl[j, nl] * ∇rs[j]
-         end
-      # end
-   end
-
-   # pushfoward through the sparse tensor - this completes the MB jacobian. 
-   Bmb_i, ∂Bmb_i = _pfwd(model.tensor, Rnl, Ylm, ∂Rnl, ∂Ylm)
-
-   # ------------------- 
-   #  pair potential 
-   if model.pairbasis != nothing    
-      Rnl2, dRnl2 = @withalloc evaluate_ed_batched!(model.pairbasis, 
-                                 rs, Z0, Zs, 
-                                 ps.pairbasis, st.pairbasis)
-      B2_i = sum(Rnl2, dims=1)[:]
-      ∂B2_i = zeros(eltype(∂Bmb_i), size(Rnl2, 2), size(Rnl2, 1))
-      for nl = 1:size(dRnl2, 2)
-         for j = 1:size(dRnl2, 1)
-            ∂B2_i[nl, j] = dRnl2[j, nl] * ∇rs[j]
-         end
-      end
-   else 
-      B2_i = zeros(eltype(Bmb_i), 0)
-      ∂B2_i = zeros(eltype(∂Bmb_i), 0, size(Bmb_i, 2))
-   end 
-
-   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                     
-   end  # @no_escape
-
-   B[get_basis_inds(model, Z0)] .= Bmb_i
-   B[get_pairbasis_inds(model, Z0)] .= B2_i
-   ∂B[get_basis_inds(model, Z0), :] .= ∂Bmb_i
-   ∂B[get_pairbasis_inds(model, Z0), :] .= ∂B2_i
-
-   return B, ∂B 
+   For solutions, see MIGRATION_STATUS.md
+   """)
 end

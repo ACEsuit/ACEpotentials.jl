@@ -22,13 +22,11 @@ function evaluate!(B, _AA, tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T}
    # evaluate the AA basis
    # _AA = zeros(TA, length(tensor.aabasis))     # use Bumper here
    P4ML.evaluate!(_AA, tensor.aabasis, A)
-   # project to the actual AA basis 
-   proj = tensor.aabasis.projection
-   AA = _AA[proj]     # use Bumper here, or view; needs experimentation. 
 
    # evaluate the coupling coefficients
-   # B = tensor.A2Bmap * AA
-   mul!(B, tensor.A2Bmap, AA)   
+   # B = tensor.A2Bmap * _AA
+   # Note: SparseSymmProd no longer needs projection; it evaluates directly to correct size
+   mul!(B, tensor.A2Bmap, _AA)   
 
    return B, (_AA = _AA, )
 end
@@ -54,20 +52,16 @@ function pullback!(∂Rnl, ∂Ylm,
                    ∂B, tensor::SparseEquivTensor, Rnl, Ylm, 
                    intermediates)
    _AA = intermediates._AA
-   proj = tensor.aabasis.projection
    T_∂AA = promote_type(eltype(∂B), eltype(tensor.A2Bmap))
    T_∂A = promote_type(T_∂AA, eltype(_AA))
 
-   @no_escape begin 
+   @no_escape begin
    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                           
+
    # ∂Ei / ∂AA = ∂Ei / ∂B * ∂B / ∂AA = (WB[i_z0]) * A2Bmap
-   # ∂AA = tensor.A2Bmap' * ∂B   
-   ∂AA = @alloc(T_∂AA, size(tensor.A2Bmap, 2))
-   mul!(∂AA, tensor.A2Bmap', ∂B)
-   _∂AA = @alloc(T_∂AA, length(_AA))
-   fill!(_∂AA, zero(T_∂AA))
-   _∂AA[proj] = ∂AA
+   # Note: SparseSymmProd no longer needs projection; gradient maps directly
+   _∂AA = @alloc(T_∂AA, size(tensor.A2Bmap, 2))
+   mul!(_∂AA, tensor.A2Bmap', ∂B)
 
    # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
    ∂A = @alloc(T_∂A, length(tensor.abasis))
@@ -111,7 +105,7 @@ Get the specification of the BBbasis as a list (`Vector`) of vectors of `@NamedT
 function get_nnll_spec(tensor::SparseEquivTensor{T}) where {T}
    _nl(bb) = [(n = b.n, l = b.l) for b in bb]
    # assume the new ACE model NEVER has the z channel
-   spec = tensor.aabasis.meta["AA_spec"]
+   spec = tensor.meta["AA_spec"]
    nBB = size(tensor.A2Bmap, 1)
    nnll_list = Vector{NT_NL_SPEC}[]
    for i in 1:nBB
@@ -133,19 +127,15 @@ function _pfwd(tensor::SparseEquivTensor{T}, Rnl, Ylm, ∂Rnl, ∂Ylm) where {T}
    A, ∂A = _pfwd(tensor.abasis, (Rnl, Ylm), (∂Rnl, ∂Ylm))
    _AA, _∂AA = _pfwd(tensor.aabasis, A, ∂A)
 
-   # project to the actual AA basis 
-   proj = tensor.aabasis.projection
-   AA = _AA[proj]  
-   ∂AA = _∂AA[proj, :]
-
    # evaluate the coupling coefficients
-   B = tensor.A2Bmap * AA 
-   ∂B = tensor.A2Bmap * ∂AA 
+   # Note: SparseSymmProd no longer needs projection; use _AA and _∂AA directly
+   B = tensor.A2Bmap * _AA
+   ∂B = tensor.A2Bmap * _∂AA
    return B, ∂B 
 end
 
 
-function _pfwd(abasis::Polynomials4ML.PooledSparseProduct{2}, RY, ∂RY) 
+function _pfwd(abasis::EquivariantTensors.PooledSparseProduct{2}, RY, ∂RY) 
    R, Y = RY 
    TA = typeof(R[1] * Y[1])
    ∂R, ∂Y = ∂RY
@@ -173,7 +163,7 @@ function _pfwd(abasis::Polynomials4ML.PooledSparseProduct{2}, RY, ∂RY)
 end 
 
 
-function _pfwd(aabasis::Polynomials4ML.SparseSymmProdDAG, A, ∂A)
+function _pfwd(aabasis::EquivariantTensors.SparseSymmProd, A, ∂A)
    n∂ = size(∂A, 1)
    num1 = aabasis.num1 
    nodes = aabasis.nodes 

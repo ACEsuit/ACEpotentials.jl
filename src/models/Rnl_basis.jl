@@ -1,6 +1,6 @@
 
-import LuxCore: AbstractExplicitLayer, 
-                initialparameters, 
+import LuxCore: AbstractLuxLayer,
+                initialparameters,
                 initialstates
 using StaticArrays: SMatrix, SVector
 using Random: AbstractRNG
@@ -27,7 +27,7 @@ const SPL_OF_SVEC{DIM, T} =
       }
 
 
-mutable struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitLayer
+mutable struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractLuxLayer
    _i2z::NTuple{NZ, Int}
    polys::TPOLY
    transforms::SMatrix{NZ, NZ, TT}
@@ -41,7 +41,7 @@ mutable struct LearnableRnlrzzBasis{NZ, TPOLY, TT, TENV, T} <: AbstractExplicitL
 end
 
 
-mutable struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractExplicitLayer
+mutable struct SplineRnlrzzBasis{NZ, TT, TENV, LEN, T} <: AbstractLuxLayer
    _i2z::NTuple{NZ, Int}
    transforms::SMatrix{NZ, NZ, TT}
    envelopes::SMatrix{NZ, NZ, TENV}
