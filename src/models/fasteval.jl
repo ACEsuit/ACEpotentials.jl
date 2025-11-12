@@ -240,14 +240,15 @@ function (aadot::AADot)(A)
 end
 
 function eval_and_grad!(∇φ_A, aadot::AADot, A)
-   @no_escape begin 
+   @no_escape begin
       AA = @alloc(eltype(A), length(aadot.aabasis))
       P4ML.evaluate!(AA, aadot.aabasis, A)
       φ = dot(aadot.cc, AA)
-      P4ML.unsafe_pullback!(∇φ_A, aadot.cc, aadot.aabasis, AA)
-      nothing 
+      # Note: pullback! takes A (input) not AA (output) in new API
+      P4ML.pullback!(∇φ_A, aadot.cc, aadot.aabasis, A)
+      nothing
    end
-   
+
    return φ
 end
 

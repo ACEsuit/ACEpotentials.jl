@@ -502,8 +502,8 @@ function grad_params(model::ACEModel,
 end
 
 
-using Optimisers: destructure 
-using ForwardDiff: Dual, value, extract_derivative
+using Optimisers: destructure
+using ForwardDiff: Dual, value, extract_derivative, jacobian
 
 function pullback_2_mixed(Δ, Δd, model::ACEModel, 
             Rs::AbstractVector{SVector{3, T}}, Zs, Z0, ps, st) where {T}
@@ -660,24 +660,30 @@ function evaluate_basis_ed(model::ACEModel,
                             Rs::AbstractVector{SVector{3, T}}, Zs, Z0,
                             ps, st) where {T}
 
-   # TEMPORARY: Disabled during EquivariantTensors v0.3 migration
-   # This function uses custom _pfwd pushforward implementations that need
-   # rewriting for the new SparseSymmProd API.
+   # Implementation using ForwardDiff automatic differentiation
+   # This is simpler and more robust than custom pushforwards or Zygote
+   # ForwardDiff is ideal for this case: few inputs (positions), many outputs (basis functions)
    #
-   # Impact: Force and virial calculations will fail
-   # Workaround: Use energy-only predictions or implement Option 1 or 2 from MIGRATION_STATUS.md
-   #
-   # See MIGRATION_STATUS.md for details and solution options.
+   # Based on evaluate_basis_ed_old, adapted for EquivariantTensors v0.3 compatibility
 
-   error("""
-   evaluate_basis_ed is temporarily disabled during EquivariantTensors v0.3 migration.
+   if length(Rs) == 0
+      B = zeros(T, length_basis(model))
+      dB = zeros(SVector{3, T}, (length_basis(model), 0))
+      return B, dB
+   end
 
-   This function requires custom pushforward (_pfwd) implementations that need
-   rewriting for the new SparseSymmProd API.
+   # Forward pass: evaluate basis
+   B = evaluate_basis(model, Rs, Zs, Z0, ps, st)
 
-   Impact: Cannot compute forces or virials
-   Available: Energy-only predictions still work
+   # Use ForwardDiff to compute Jacobian of evaluate_basis w.r.t. positions
+   # Convert SVector{3} positions to flat vector for ForwardDiff
+   dB_vec = ForwardDiff.jacobian(
+               _Rs -> evaluate_basis(model, __svecs(_Rs), Zs, Z0, ps, st),
+               __vec(Rs))
 
-   For solutions, see MIGRATION_STATUS.md
-   """)
+   # Reshape Jacobian back to (basis × atoms, 3) format
+   dB1 = __svecs(collect(dB_vec')[:])
+   dB = collect(permutedims(reshape(dB1, length(Rs), length(B)), (2, 1)))
+
+   return B, dB
 end

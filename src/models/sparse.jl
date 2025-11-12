@@ -26,9 +26,9 @@ function evaluate!(B, _AA, tensor::SparseEquivTensor{T}, Rnl, Ylm) where {T}
    # evaluate the coupling coefficients
    # B = tensor.A2Bmap * _AA
    # Note: SparseSymmProd no longer needs projection; it evaluates directly to correct size
-   mul!(B, tensor.A2Bmap, _AA)   
+   mul!(B, tensor.A2Bmap, _AA)
 
-   return B, (_AA = _AA, )
+   return B, (_AA = _AA, _A = A)
 end
 
 function whatalloc(::typeof(evaluate!), tensor::SparseEquivTensor, Rnl, Ylm)
@@ -48,10 +48,11 @@ end
 # ---------
 
 
-function pullback!(∂Rnl, ∂Ylm, 
-                   ∂B, tensor::SparseEquivTensor, Rnl, Ylm, 
+function pullback!(∂Rnl, ∂Ylm,
+                   ∂B, tensor::SparseEquivTensor, Rnl, Ylm,
                    intermediates)
    _AA = intermediates._AA
+   _A = intermediates._A
    T_∂AA = promote_type(eltype(∂B), eltype(tensor.A2Bmap))
    T_∂A = promote_type(T_∂AA, eltype(_AA))
 
@@ -64,8 +65,9 @@ function pullback!(∂Rnl, ∂Ylm,
    mul!(_∂AA, tensor.A2Bmap', ∂B)
 
    # ∂Ei / ∂A = ∂Ei / ∂AA * ∂AA / ∂A = pullback(aabasis, ∂AA)
+   # Note: pullback! takes A (input) not AA (output) in new API
    ∂A = @alloc(T_∂A, length(tensor.abasis))
-   P4ML.unsafe_pullback!(∂A, _∂AA, tensor.aabasis, _AA)
+   P4ML.pullback!(∂A, _∂AA, tensor.aabasis, _A)
    
    # ∂Ei / ∂Rnl, ∂Ei / ∂Ylm = pullback(abasis, ∂A)
    P4ML.pullback!((∂Rnl, ∂Ylm), ∂A, tensor.abasis, (Rnl, Ylm))
