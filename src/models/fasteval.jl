@@ -77,8 +77,8 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
       # generate a standard evaluator
       # Note: SparseSymmProd no longer needs projection; weights map directly
       wAA_rec = wAA[Inz]
-      # Convert to Vector if needed (handles SparseVector case)
-      wAA_vec = wAA_rec isa AbstractVector ? Vector(wAA_rec) : wAA_rec
+      # Force conversion from SparseVector to Vector (AADot requires Vector{T})
+      wAA_vec = collect(wAA_rec)
       aadot = AADot(wAA_vec, aa_basis)
    end 
    
