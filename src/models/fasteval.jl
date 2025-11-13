@@ -50,8 +50,14 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    
    # construct reduced A basis and AA basis
    Inz = findall(!iszero, wAA)
-   aa_spec_new = model.model.tensor.meta["AA_spec"][Inz]
-   a_spec_new = unique(reduce(vcat, aa_spec_new))
+   # Get the full A spec using the upstream API function
+   a_spec_full = get_nnll_spec(model.model.tensor)
+   # Get AA spec from aabasis.specs (SparseSymmProd stores spec as tuple of vectors)
+   # We need to flatten it since it's structured by correlation order
+   aa_spec_full = reduce(vcat, model.model.tensor.aabasis.specs)
+   aa_spec_new = aa_spec_full[Inz]
+   # Map integer indices to actual A specs
+   a_spec_new = unique(reduce(vcat, [a_spec_full[i] for bb in aa_spec_new for i in bb]))
    
    # take human-readable specs and convert into layer-readable specs 
    # TODO: here we could try to make the y and r bases smaller 
