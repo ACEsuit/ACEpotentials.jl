@@ -29,7 +29,7 @@ jobs:
           - '1.12'
           # - 'nightly'
         python-version:
-          - '3.8'
+          - '3.11'
         os:
           - ubuntu-latest
         arch:
@@ -145,8 +145,8 @@ jobs:
           Pkg.pkg"registry add https://github.com/ACEsuit/ACEregistry"
         shell: bash -c "julia --color=yes {0}"
       - uses: actions/setup-python@v2
-        with: 
-          python-version: ${{ matrix.python-version }}
+        with:
+          python-version: '3.11'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:
