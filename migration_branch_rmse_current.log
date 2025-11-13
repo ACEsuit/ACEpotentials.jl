@@ -1,0 +1,46 @@
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:09:21Progress:  11%|████▋                                    |  ETA: 0:03:11Progress:  17%|███████                                  |  ETA: 0:02:06Progress:  36%|██████████████▊                          |  ETA: 0:00:53Progress:  55%|██████████████████████▍                  |  ETA: 0:00:28Progress:  60%|████████████████████████▊                |  ETA: 0:00:23Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:10Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:07Progress: 100%|█████████████████████████████████████████| Time: 0:00:45
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:05Progress: 100%|█████████████████████████████████████████| Time: 0:00:00
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.970 │    0.026 │  66.743 │
+│           liq │   1.070 │    0.249 │  46.858 │
+│            bt │   4.274 │    0.082 │ 111.659 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.581 │    0.191 │  90.665 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   1.786 │    0.019 │  42.805 │
+│           liq │   0.828 │    0.199 │  39.116 │
+│            bt │   3.413 │    0.060 │  84.369 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   2.484 │    0.128 │  62.646 │
+└───────────────┴─────────┴──────────┴─────────┘
+Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.06674345172723019 <= 0.027
+
+ERROR: LoadError: There was an error during testing
+in expression starting at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
