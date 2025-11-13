@@ -1,0 +1,1724 @@
+     Testing ACEpotentials
+      Status `/tmp/jl_Ae2tiN/Project.toml`
+  [14bae519] ACEbase v0.4.5
+  [3b96b61c] ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+  [a963bdd2] AtomsBase v0.5.2
+  [f5cc8831] AtomsBuilder v0.2.2
+  [a3e0e189] AtomsCalculators v0.2.3
+  [9855a07e] AtomsCalculatorsUtilities v0.1.8
+  [38527215] EmpiricalPotentials v0.2.4
+  [352459e4] ExtXYZ v0.2.2
+⌅ [f6369f11] ForwardDiff v0.10.39
+⌅ [a98d9a8b] Interpolations v0.15.1
+⌅ [682c06a0] JSON v0.21.4
+  [b2108857] Lux v1.25.0
+  [bb33d45b] LuxCore v1.4.2
+  [3bd65402] Optimisers v0.4.6
+  [03c4bcba] Polynomials4ML v0.5.3
+  [90137ffa] StaticArrays v1.9.15
+  [10745b16] Statistics v1.11.1
+  [1986cc42] Unitful v1.25.1
+  [e88e6eb3] Zygote v0.7.10
+  [8ba89e20] Distributed v1.11.0
+  [4af54fe1] LazyArtifacts v1.11.0
+  [37e2e46d] LinearAlgebra v1.11.0
+  [44cfe95a] Pkg v1.11.0
+  [9a3f8284] Random v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [8dfed614] Test v1.11.0
+      Status `/tmp/jl_Ae2tiN/Manifest.toml`
+  [14bae519] ACEbase v0.4.5
+  [ad31a8ef] ACEfit v0.2.6
+  [3b96b61c] ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+  [47edcb42] ADTypes v1.18.0
+  [621f4979] AbstractFFTs v1.5.0
+  [7d9f7c33] Accessors v0.1.42
+  [d86c1dc8] ActiveSetPursuit v0.0.4
+  [79e6a3ab] Adapt v4.4.0
+  [66dad0bd] AliasTables v1.1.3
+  [dce04be8] ArgCheck v2.5.0
+  [c7e460c6] ArgParse v1.2.0
+  [4fba245c] ArrayInterface v7.22.0
+  [a9b6321e] Atomix v1.1.2
+  [a963bdd2] AtomsBase v0.5.2
+  [f5cc8831] AtomsBuilder v0.2.2
+  [a3e0e189] AtomsCalculators v0.2.3
+  [9855a07e] AtomsCalculatorsUtilities v0.1.8
+  [13072b0f] AxisAlgorithms v1.1.0
+  [198e06fe] BangBang v0.4.6
+  [9718e550] Baselet v0.1.1
+  [6e4b80f9] BenchmarkTools v1.6.3
+  [62783981] BitTwiddlingConvenienceFunctions v0.1.6
+  [8ce10254] Bumper v0.7.1
+  [2a0fbf3d] CPUSummary v0.2.7
+  [49dc2e85] Calculus v0.5.2
+  [082447d4] ChainRules v1.72.6
+  [d360d2e6] ChainRulesCore v1.26.0
+  [ae650224] ChunkSplitters v3.1.2
+  [fb6a15b2] CloseOpenIntervals v0.1.13
+  [6309b1aa] CodecInflate64 v0.1.3
+  [944b1d66] CodecZlib v0.7.8
+  [861a8166] Combinatorics v1.0.3
+  [38540f10] CommonSolve v0.2.4
+  [bbf7d656] CommonSubexpressions v0.3.1
+  [f70d9fcc] CommonWorldInvalidations v1.0.0
+  [34da2185] Compat v4.18.1
+  [a33af91c] CompositionsBase v0.1.2
+  [2569d6c7] ConcreteStructs v0.2.3
+  [187b0558] ConstructionBase v1.6.0
+  [adafc99b] CpuId v0.3.1
+  [a8cc5b0e] Crayons v4.1.1
+  [9a962f9c] DataAPI v1.16.0
+  [a93c6f00] DataFrames v1.8.1
+  [864edb3b] DataStructures v0.19.3
+  [e2d170a0] DataValueInterfaces v1.0.0
+  [244e2a9f] DefineSingletons v0.1.2
+  [163ba53b] DiffResults v1.1.0
+  [b552c78f] DiffRules v1.15.1
+  [a0c0ee7d] DifferentiationInterface v0.7.11
+  [8d63f2c5] DispatchDoctor v0.4.26
+  [ffbed154] DocStringExtensions v0.9.5
+  [7c1d4256] DynamicPolynomials v0.6.4
+  [38527215] EmpiricalPotentials v0.2.4
+  [4e289a0a] EnumX v1.0.5
+  [f151be2c] EnzymeCore v0.8.16
+  [5e107534] EquivariantTensors v0.3.0
+  [e2ba6199] ExprTools v0.1.10
+  [21656369] ExpressionExplorer v1.1.3
+  [352459e4] ExtXYZ v0.2.2
+  [e189563c] ExternalDocstrings v0.1.1
+  [7a1cc6ca] FFTW v1.10.0
+  [9aa1b823] FastClosures v0.3.2
+  [1a297f60] FillArrays v1.15.0
+  [6a86dc24] FiniteDiff v2.29.0
+  [41a02a25] Folds v0.2.10
+⌅ [f6369f11] ForwardDiff v0.10.39
+  [d9f16b24] Functors v0.5.2
+  [46192b85] GPUArraysCore v0.2.0
+  [f0d1745a] HalfIntegers v1.6.0
+  [076d061b] HashArrayMappedTries v0.2.0
+  [3e5b6fbb] HostCPUFeatures v0.1.17
+  [50ceba7f] HyperDualNumbers v4.0.10
+  [7869d1d1] IRTools v0.4.15
+  [615f187c] IfElse v0.1.1
+  [22cec73e] InitialValues v0.3.1
+  [842dd82b] InlineStrings v1.4.5
+  [0c81fc1b] InputBuffers v1.1.1
+⌅ [a98d9a8b] Interpolations v0.15.1
+  [3587e190] InverseFunctions v0.1.17
+  [41ab1584] InvertedIndices v1.3.1
+  [92d709cd] IrrationalConstants v0.2.6
+  [42fd0dbc] IterativeSolvers v0.9.4
+  [82899510] IteratorInterfaceExtensions v1.0.0
+  [692b3bcd] JLLWrappers v1.7.1
+⌅ [682c06a0] JSON v0.21.4
+  [63c18a36] KernelAbstractions v0.9.39
+  [b964fa9f] LaTeXStrings v1.4.0
+  [10f19ff3] LayoutPointers v0.1.17
+  [0e77f7df] LazilyInitializedFields v1.3.0
+  [d3d80556] LineSearches v7.4.0
+  [5c8ed15e] LinearOperators v2.11.0
+  [89398ba2] LocalRegistry v0.5.7
+  [2ab3a3ac] LogExpFunctions v0.3.29
+  [bdcacae8] LoopVectorization v0.12.173
+  [898213cb] LowRankApprox v0.5.5
+  [e65ccdef] LowRankMatrices v1.0.2
+  [b2108857] Lux v1.25.0
+  [bb33d45b] LuxCore v1.4.2
+  [82251201] LuxLib v1.13.0
+  [7e8f7934] MLDataDevices v1.15.0
+  [1914dd2f] MacroTools v0.5.16
+  [d125e4d3] ManualMemory v0.1.8
+  [128add7d] MicroCollections v0.2.0
+  [e1d29d7a] Missings v1.2.0
+  [102ac46a] MultivariatePolynomials v0.5.13
+  [d8a4904e] MutableArithmetics v1.6.7
+  [d41bc354] NLSolversBase v7.10.0
+  [872c559c] NNlib v0.9.31
+  [77ba4419] NaNMath v1.1.3
+  [d9ec5142] NamedTupleTools v0.14.3
+  [2fcf5ba9] NeighbourLists v0.5.10
+  [4d1e1d77] Nullables v1.0.0
+  [6fd5a793] Octavian v0.3.29
+  [6fe1bfb0] OffsetArrays v1.17.0
+  [429524aa] Optim v1.13.2
+  [3bd65402] Optimisers v0.4.6
+  [bac558e1] OrderedCollections v1.8.1
+  [2dcacdae] ParallelDataTransfer v0.5.1
+  [d96e819e] Parameters v0.12.3
+  [69de0a69] Parsers v2.8.3
+  [793d2195] PartialWaveFunctions v0.2.0
+  [7b2266bf] PeriodicTable v1.2.1
+  [1d0040c9] PolyesterWeave v0.2.2
+  [03c4bcba] Polynomials4ML v0.5.3
+  [2dfb63ee] PooledArrays v1.4.3
+  [85a6dd25] PositiveFactorizations v0.2.4
+⌅ [aea7be01] PrecompileTools v1.2.1
+  [21216c6a] Preferences v1.5.0
+⌅ [08abe8d2] PrettyTables v2.4.0
+  [92933f4c] ProgressMeter v1.11.0
+  [43287f4e] PtrArrays v1.3.0
+  [29d2ae51] QRupdate v1.0.1
+  [1fd47b50] QuadGK v2.11.2
+  [94ee1d12] Quaternions v0.7.6
+  [c84ed2f1] Ratios v0.4.5
+  [a3311ec8] ReactantCore v0.1.16
+  [c1ae055f] RealDot v0.1.0
+  [3cdcf5f2] RecipesBase v1.3.4
+  [189a3867] Reexport v1.2.2
+  [42d2dcc6] Referenceables v0.1.3
+  [2792f1a3] RegistryInstances v0.1.0
+  [d1eb7eb1] RegistryTools v2.4.0
+  [f07d36f2] RepLieGroups v0.1.1
+  [ae029012] Requires v1.3.1
+  [f2b01f46] Roots v2.2.10
+  [6038ab10] Rotations v1.7.1
+  [94e857df] SIMDTypes v0.1.0
+  [476501e8] SLEEFPirates v0.6.43
+  [431bcebd] SciMLPublic v1.0.0
+  [7e506255] ScopedValues v1.5.0
+  [91c51154] SentinelArrays v1.4.8
+  [efcf1570] Setfield v1.1.2
+  [a2af1166] SortingAlgorithms v1.2.2
+  [dc90abb0] SparseInverseSubset v0.1.2
+  [276daf66] SpecialFunctions v2.6.1
+  [5caf2b29] SpheriCart v0.2.3
+  [171d559e] SplittablesBase v0.1.15
+  [aedffcd0] Static v1.3.1
+  [0d7ed370] StaticArrayInterface v1.8.0
+  [90137ffa] StaticArrays v1.9.15
+  [1e83bf80] StaticArraysCore v1.4.4
+  [62e018b1] StaticPolynomials v1.3.7
+  [10745b16] Statistics v1.11.1
+  [82ae8749] StatsAPI v1.7.1
+  [2913bbd2] StatsBase v0.34.8
+  [d1fa6d79] StrideArrays v0.1.29
+  [7792a7ef] StrideArraysCore v0.5.8
+  [69024149] StringEncodings v0.3.7
+  [892a3eda] StringManipulation v0.4.1
+⌅ [09ab397b] StructArrays v0.6.21
+  [3783bdb8] TableTraits v1.0.1
+  [bd369af6] Tables v1.12.1
+  [ed4db957] TaskLocalValues v0.1.3
+  [b718987f] TextWrap v1.0.2
+  [24d252fe] ThreadedScans v0.1.0
+  [8290d209] ThreadingUtilities v0.5.5
+  [a759f4b9] TimerOutputs v0.5.29
+  [3bb67fe8] TranscodingStreams v0.11.3
+  [28d57a85] Transducers v0.4.85
+  [3a884ed6] UnPack v1.0.2
+  [1986cc42] Unitful v1.25.1
+  [a7773ee8] UnitfulAtomic v1.0.0
+  [c4a57d5a] UnsafeArrays v1.0.8
+  [013be700] UnsafeAtomics v0.3.0
+  [3d5dd08c] VectorizationBase v0.21.72
+  [33b4df10] VectorizedRNG v0.2.25
+  [3b853605] VectorizedStatistics v0.5.11
+  [d49dbf32] WeightInitializers v1.2.2
+  [87c4ff3e] WignerD v0.1.4
+  [fb1aa66a] WithAlloc v0.1.1
+  [efce3f68] WoodburyMatrices v1.0.0
+  [ddb6d928] YAML v0.4.16
+  [49080126] ZipArchives v2.6.0
+  [e88e6eb3] Zygote v0.7.10
+  [700de1a5] ZygoteRules v0.2.7
+  [f5851436] FFTW_jll v3.3.11+0
+  [1d5cc7b8] IntelOpenMP_jll v2025.2.0+0
+  [94ce4f54] Libiconv_jll v1.18.0+0
+  [856f044c] MKL_jll v2025.2.0+0
+  [efe28fd5] OpenSpecFun_jll v0.5.6+0
+  [6ecdc6fc] extxyz_jll v0.1.3+0
+  [cdc7adba] libcleri_jll v0.12.1+3
+  [1317d2d5] oneTBB_jll v2022.0.0+1
+  [0dad84c5] ArgTools v1.1.2
+  [56f22d72] Artifacts v1.11.0
+  [2a0f44e3] Base64 v1.11.0
+  [ade2ca70] Dates v1.11.0
+  [8ba89e20] Distributed v1.11.0
+  [f43a241f] Downloads v1.6.0
+  [7b1f6079] FileWatching v1.11.0
+  [9fa8497b] Future v1.11.0
+  [b77e0a4c] InteractiveUtils v1.11.0
+  [4af54fe1] LazyArtifacts v1.11.0
+  [b27032c2] LibCURL v0.6.4
+  [76f85450] LibGit2 v1.11.0
+  [8f399da3] Libdl v1.11.0
+  [37e2e46d] LinearAlgebra v1.11.0
+  [56ddb016] Logging v1.11.0
+  [d6f4376e] Markdown v1.11.0
+  [a63ad114] Mmap v1.11.0
+  [ca575930] NetworkOptions v1.2.0
+  [44cfe95a] Pkg v1.11.0
+  [de0858da] Printf v1.11.0
+  [9abbd945] Profile v1.11.0
+  [9a3f8284] Random v1.11.0
+  [ea8e919c] SHA v0.7.0
+  [9e88b42a] Serialization v1.11.0
+  [1a1011a3] SharedArrays v1.11.0
+  [6462fe0b] Sockets v1.11.0
+  [2f01184e] SparseArrays v1.11.0
+  [4607b0f0] SuiteSparse
+  [fa267f1f] TOML v1.0.3
+  [a4e569a6] Tar v1.10.0
+  [8dfed614] Test v1.11.0
+  [cf7118a7] UUIDs v1.11.0
+  [4ec0a83e] Unicode v1.11.0
+  [e66e0078] CompilerSupportLibraries_jll v1.1.1+0
+  [deac9b47] LibCURL_jll v8.6.0+0
+  [e37daf67] LibGit2_jll v1.7.2+0
+  [29816b5a] LibSSH2_jll v1.11.0+1
+  [c8ffd9c3] MbedTLS_jll v2.28.6+0
+  [14a3606d] MozillaCACerts_jll v2023.12.12
+  [4536629a] OpenBLAS_jll v0.3.27+1
+  [05823500] OpenLibm_jll v0.8.5+0
+  [efcefdf7] PCRE2_jll v10.42.0+1
+  [bea87d4a] SuiteSparse_jll v7.7.0+0
+  [83775a58] Zlib_jll v1.2.13+1
+  [8e850b90] libblastrampoline_jll v5.11.0+0
+  [8e850ede] nghttp2_jll v1.59.0+0
+  [3f19e933] p7zip_jll v17.4.0+2
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading.
+Precompiling project for configuration --code-coverage=none --color=auto --check-bounds=yes --warn-overwrite=yes --depwarn=yes --inline=yes --startup-file=no --track-allocation=none...
+    437.8 ms  ✓ ConcreteStructs
+    400.8 ms  ✓ IteratorInterfaceExtensions
+    470.4 ms  ✓ LaTeXStrings
+    473.3 ms  ✓ ExprTools
+    528.6 ms  ✓ LowRankMatrices
+    505.3 ms  ✓ StatsAPI
+    558.5 ms  ✓ QRupdate
+    581.7 ms  ✓ PositiveFactorizations
+    687.0 ms  ✓ AbstractFFTs
+    872.0 ms  ✓ ExpressionExplorer
+    886.8 ms  ✓ Calculus
+    420.2 ms  ✓ UnPack
+    944.9 ms  ✓ PartialWaveFunctions
+    604.0 ms  ✓ UnsafeArrays
+    565.6 ms  ✓ NamedTupleTools
+   1020.5 ms  ✓ ADTypes
+    589.0 ms  ✓ HalfIntegers
+    421.8 ms  ✓ CommonSolve
+   1223.5 ms  ✓ Combinatorics
+    584.8 ms  ✓ InverseFunctions
+    662.3 ms  ✓ Statistics
+   1275.8 ms  ✓ InitialValues
+    479.8 ms  ✓ ManualMemory
+    397.2 ms  ✓ DataValueInterfaces
+    666.3 ms  ✓ ArgCheck
+    463.0 ms  ✓ ExternalDocstrings
+    451.2 ms  ✓ EnumX
+    441.8 ms  ✓ Reexport
+    565.2 ms  ✓ TextWrap
+    490.0 ms  ✓ RealDot
+    440.9 ms  ✓ SIMDTypes
+   1277.9 ms  ✓ OffsetArrays
+    619.6 ms  ✓ Requires
+    741.1 ms  ✓ OrderedCollections
+   1210.1 ms  ✓ FillArrays
+    426.5 ms  ✓ PtrArrays
+    509.2 ms  ✓ CompositionsBase
+    429.3 ms  ✓ DefineSingletons
+    500.1 ms  ✓ InputBuffers
+    505.0 ms  ✓ HashArrayMappedTries
+    802.1 ms  ✓ DocStringExtensions
+    473.1 ms  ✓ TaskLocalValues
+    468.3 ms  ✓ InvertedIndices
+    840.5 ms  ✓ InlineStrings
+    539.9 ms  ✓ LazilyInitializedFields
+    640.2 ms  ✓ NaNMath
+   2358.6 ms  ✓ UnsafeAtomics
+    681.9 ms  ✓ ParallelDataTransfer
+    792.0 ms  ✓ TranscodingStreams
+    485.4 ms  ✓ CommonWorldInvalidations
+    547.8 ms  ✓ IfElse
+    433.7 ms  ✓ FastClosures
+    497.4 ms  ✓ DataAPI
+    658.4 ms  ✓ ConstructionBase
+    525.4 ms  ✓ Nullables
+    574.8 ms  ✓ ChunkSplitters
+    556.8 ms  ✓ StaticArraysCore
+    622.7 ms  ✓ SciMLPublic
+   1015.5 ms  ✓ EnzymeCore
+   1463.5 ms  ✓ IrrationalConstants
+    798.4 ms  ✓ SuiteSparse
+    468.1 ms  ✓ TableTraits
+    846.2 ms  ✓ WoodburyMatrices
+   1058.7 ms  ✓ ProgressMeter
+    710.7 ms  ✓ Compat
+   1169.3 ms  ✓ CpuId
+   1649.1 ms  ✓ Crayons
+   1099.3 ms  ✓ Preferences
+   1508.1 ms  ✓ Baselet
+   3213.7 ms  ✓ MacroTools
+    869.9 ms  ✓ Bumper
+    704.8 ms  ✓ InverseFunctions → InverseFunctionsDatesExt
+    853.0 ms  ✓ InverseFunctions → InverseFunctionsTestExt
+    922.0 ms  ✓ Statistics → SparseArraysExt
+    745.6 ms  ✓ Quaternions
+    643.3 ms  ✓ Ratios
+   2250.9 ms  ✓ SentinelArrays
+    766.8 ms  ✓ Adapt
+   1508.0 ms  ✓ DifferentiationInterface
+   1176.1 ms  ✓ ThreadedScans
+   1189.7 ms  ✓ ThreadingUtilities
+   1170.1 ms  ✓ ArgParse
+   2003.7 ms  ✓ AbstractFFTs → AbstractFFTsTestExt
+    759.9 ms  ✓ Parameters
+    704.7 ms  ✓ FillArrays → FillArraysStatisticsExt
+    645.0 ms  ✓ LowRankMatrices → LowRankMatricesFillArraysExt
+   2485.7 ms  ✓ RegistryTools
+    527.9 ms  ✓ ScopedValues
+    645.2 ms  ✓ CompositionsBase → CompositionsBaseInverseFunctionsExt
+    786.0 ms  ✓ AliasTables
+    709.8 ms  ✓ PooledArrays
+    807.5 ms  ✓ Atomix
+   1140.9 ms  ✓ FillArrays → FillArraysSparseArraysExt
+    827.3 ms  ✓ CodecZlib
+    756.8 ms  ✓ Missings
+   2942.4 ms  ✓ TimerOutputs
+    499.5 ms  ✓ ADTypes → ADTypesEnzymeCoreExt
+    575.3 ms  ✓ DiffResults
+    679.4 ms  ✓ ConstructionBase → ConstructionBaseLinearAlgebraExt
+    676.6 ms  ✓ ADTypes → ADTypesConstructionBaseExt
+   1226.9 ms  ✓ CodecInflate64
+    523.5 ms  ✓ Compat → CompatLinearAlgebraExt
+    810.1 ms  ✓ LogExpFunctions
+    771.1 ms  ✓ SparseInverseSubset
+    680.8 ms  ✓ JLLWrappers
+   2411.5 ms  ✓ DataStructures
+    837.9 ms  ✓ AxisAlgorithms
+    741.8 ms  ✓ PrecompileTools
+    615.2 ms  ✓ WithAlloc
+    845.1 ms  ✓ CommonSubexpressions
+   1192.4 ms  ✓ Tables
+    533.5 ms  ✓ Referenceables
+    791.3 ms  ✓ OffsetArrays → OffsetArraysAdaptExt
+   2405.7 ms  ✓ RegistryInstances
+   1323.5 ms  ✓ ReactantCore
+   1036.7 ms  ✓ Adapt → AdaptSparseArraysExt
+    843.7 ms  ✓ GPUArraysCore
+    749.0 ms  ✓ EnzymeCore → AdaptExt
+    973.6 ms  ✓ ArrayInterface
+    839.3 ms  ✓ DifferentiationInterface → DifferentiationInterfaceSparseArraysExt
+    601.9 ms  ✓ LogExpFunctions → LogExpFunctionsInverseFunctionsExt
+   2059.1 ms  ✓ DispatchDoctor
+    796.4 ms  ✓ Functors
+    710.2 ms  ✓ OpenSpecFun_jll
+    833.4 ms  ✓ libcleri_jll
+    820.1 ms  ✓ FFTW_jll
+   2408.8 ms  ✓ IRTools
+   1042.5 ms  ✓ Libiconv_jll
+   1695.6 ms  ✓ Setfield
+    663.3 ms  ✓ SortingAlgorithms
+   1936.4 ms  ✓ LinearOperators
+   1599.1 ms  ✓ IntelOpenMP_jll
+   2204.9 ms  ✓ ChainRulesCore
+    509.4 ms  ✓ DifferentiationInterface → DifferentiationInterfaceGPUArraysCoreExt
+   1223.0 ms  ✓ QuadGK
+   1016.2 ms  ✓ StructArrays
+   2212.8 ms  ✓ oneTBB_jll
+    707.8 ms  ✓ ArrayInterface → ArrayInterfaceSparseArraysExt
+    489.8 ms  ✓ ArrayInterface → ArrayInterfaceGPUArraysCoreExt
+    637.8 ms  ✓ ArrayInterface → ArrayInterfaceStaticArraysCoreExt
+   1517.1 ms  ✓ Static
+   3071.0 ms  ✓ Accessors
+    717.8 ms  ✓ DispatchDoctor → DispatchDoctorEnzymeCoreExt
+   2256.6 ms  ✓ RecipesBase
+   1983.6 ms  ✓ LocalRegistry
+    943.6 ms  ✓ extxyz_jll
+   2576.4 ms  ✓ StringManipulation
+    965.4 ms  ✓ StringEncodings
+   1333.0 ms  ✓ MLDataDevices
+   8421.4 ms  ✓ MutableArithmetics
+    541.0 ms  ✓ ADTypes → ADTypesChainRulesCoreExt
+   1107.4 ms  ✓ ChainRulesCore → ChainRulesCoreSparseArraysExt
+   1440.6 ms  ✓ SplittablesBase
+    761.8 ms  ✓ AbstractFFTs → AbstractFFTsChainRulesCoreExt
+   2166.7 ms  ✓ LuxCore
+    607.8 ms  ✓ DifferentiationInterface → DifferentiationInterfaceChainRulesCoreExt
+   1126.9 ms  ✓ ZygoteRules
+    619.8 ms  ✓ ArrayInterface → ArrayInterfaceChainRulesCoreExt
+    529.4 ms  ✓ StructArrays → StructArraysAdaptExt
+    593.3 ms  ✓ StructArrays → StructArraysLinearAlgebraExt
+    788.4 ms  ✓ StructArrays → StructArraysSparseArraysExt
+   1009.7 ms  ✓ DispatchDoctor → DispatchDoctorChainRulesCoreExt
+   1029.1 ms  ✓ LinearOperators → LinearOperatorsChainRulesCoreExt
+    534.3 ms  ✓ BitTwiddlingConvenienceFunctions
+   1863.0 ms  ✓ Optimisers
+    945.1 ms  ✓ FiniteDiff
+    636.6 ms  ✓ Accessors → StructArraysExt
+   2945.5 ms  ✓ StatsBase
+   2096.3 ms  ✓ LogExpFunctions → LogExpFunctionsChainRulesCoreExt
+    768.5 ms  ✓ Accessors → TestExt
+    979.5 ms  ✓ Accessors → LinearAlgebraExt
+   1430.7 ms  ✓ CPUSummary
+   3729.3 ms  ✓ SpecialFunctions
+   2093.8 ms  ✓ MKL_jll
+    757.7 ms  ✓ MLDataDevices → MLDataDevicesChainRulesCoreExt
+    719.6 ms  ✓ MLDataDevices → MLDataDevicesFillArraysExt
+   1866.9 ms  ✓ StaticArrayInterface
+    682.7 ms  ✓ LuxCore → LuxCoreChainRulesCoreExt
+   1110.3 ms  ✓ MLDataDevices → MLDataDevicesSparseArraysExt
+    579.7 ms  ✓ LuxCore → LuxCoreSetfieldExt
+    762.8 ms  ✓ LuxCore → LuxCoreEnzymeCoreExt
+    845.2 ms  ✓ LuxCore → LuxCoreFunctorsExt
+    853.0 ms  ✓ LuxCore → LuxCoreMLDataDevicesExt
+    824.0 ms  ✓ WignerD
+    614.5 ms  ✓ Optimisers → OptimisersEnzymeCoreExt
+   2313.4 ms  ✓ YAML
+   2421.2 ms  ✓ IterativeSolvers
+    647.8 ms  ✓ DifferentiationInterface → DifferentiationInterfaceFiniteDiffExt
+    737.3 ms  ✓ Optimisers → OptimisersAdaptExt
+    874.8 ms  ✓ FiniteDiff → FiniteDiffSparseArraysExt
+   1392.2 ms  ✓ HostCPUFeatures
+    803.4 ms  ✓ PolyesterWeave
+   2472.6 ms  ✓ MultivariatePolynomials
+    811.9 ms  ✓ DiffRules
+   1411.5 ms  ✓ BangBang
+    768.3 ms  ✓ CloseOpenIntervals
+    942.2 ms  ✓ StaticArrayInterface → StaticArrayInterfaceOffsetArraysExt
+   1090.0 ms  ✓ LayoutPointers
+   2386.1 ms  ✓ HyperDualNumbers
+   1048.3 ms  ✓ BangBang → BangBangChainRulesCoreExt
+   1001.8 ms  ✓ BangBang → BangBangStructArraysExt
+   3382.9 ms  ✓ SpecialFunctions → SpecialFunctionsChainRulesCoreExt
+  10216.3 ms  ✓ StaticArrays
+   1147.2 ms  ✓ BangBang → BangBangTablesExt
+   2809.4 ms  ✓ DynamicPolynomials
+   1210.8 ms  ✓ MicroCollections
+  10525.7 ms  ✓ ZipArchives
+    761.4 ms  ✓ StaticArrays → StaticArraysStatisticsExt
+   3400.3 ms  ✓ MultivariatePolynomials → MultivariatePolynomialsChainRulesCoreExt
+    942.8 ms  ✓ StaticArrays → StaticArraysChainRulesCoreExt
+   1267.2 ms  ✓ StrideArraysCore
+   1077.9 ms  ✓ ConstructionBase → ConstructionBaseStaticArraysExt
+   4872.3 ms  ✓ WeightInitializers
+    763.2 ms  ✓ DifferentiationInterface → DifferentiationInterfaceStaticArraysExt
+   1096.2 ms  ✓ Adapt → AdaptStaticArraysExt
+    755.4 ms  ✓ FiniteDiff → FiniteDiffStaticArraysExt
+   5950.4 ms  ✓ Roots
+   1267.9 ms  ✓ StructArrays → StructArraysStaticArraysExt
+   1277.8 ms  ✓ Accessors → StaticArraysExt
+   1188.0 ms  ✓ RepLieGroups
+    952.4 ms  ✓ StaticArrayInterface → StaticArrayInterfaceStaticArraysExt
+   1067.1 ms  ✓ BangBang → BangBangStaticArraysExt
+   2674.6 ms  ✓ Rotations
+    687.8 ms  ✓ Roots → RootsChainRulesCoreExt
+   7640.9 ms  ✓ ChainRules
+   1243.3 ms  ✓ WeightInitializers → WeightInitializersChainRulesCoreExt
+   5866.5 ms  ✓ ForwardDiff
+   2495.2 ms  ✓ StaticPolynomials
+   1869.6 ms  ✓ Rotations → RotationsRecipesBaseExt
+   2272.7 ms  ✓ ArrayInterface → ArrayInterfaceChainRulesExt
+   2343.3 ms  ✓ MLDataDevices → MLDataDevicesChainRulesExt
+   1996.3 ms  ✓ DifferentiationInterface → DifferentiationInterfaceForwardDiffExt
+   1968.7 ms  ✓ Roots → RootsForwardDiffExt
+   2024.3 ms  ✓ ForwardDiff → ForwardDiffStaticArraysExt
+   9643.2 ms  ✓ FFTW
+   4275.0 ms  ✓ Interpolations
+  16680.3 ms  ✓ Parsers
+   4758.3 ms  ✓ Transducers
+    574.6 ms  ✓ InlineStrings → ParsersExt
+   1409.6 ms  ✓ NLSolversBase
+    820.2 ms  ✓ Transducers → TransducersAdaptExt
+    834.6 ms  ✓ Transducers → TransducersReferenceablesExt
+   6311.7 ms  ✓ KernelAbstractions
+   2394.4 ms  ✓ JSON
+   3321.0 ms  ✓ LowRankApprox
+   1245.7 ms  ✓ KernelAbstractions → EnzymeExt
+   1310.6 ms  ✓ KernelAbstractions → LinearAlgebraExt
+   1612.2 ms  ✓ StructArrays → StructArraysGPUArraysCoreExt
+  25979.7 ms  ✓ Unitful
+   1689.9 ms  ✓ KernelAbstractions → SparseArraysExt
+  11093.2 ms  ✓ VectorizationBase
+   3323.2 ms  ✓ LineSearches
+    816.4 ms  ✓ Unitful → ConstructionBaseUnitfulExt
+    885.5 ms  ✓ Unitful → PrintfExt
+   1028.4 ms  ✓ Accessors → UnitfulExt
+   2300.1 ms  ✓ BenchmarkTools
+   1067.1 ms  ✓ Unitful → InverseFunctionsUnitfulExt
+   1048.9 ms  ✓ Roots → RootsUnitfulExt
+   1088.1 ms  ✓ Unitful → ForwardDiffExt
+   2519.3 ms  ✓ ACEbase
+   1460.7 ms  ✓ Interpolations → InterpolationsUnitfulExt
+   1489.0 ms  ✓ SLEEFPirates
+   4716.9 ms  ✓ Folds
+   1304.6 ms  ✓ VectorizedRNG
+   2440.6 ms  ✓ UnitfulAtomic
+   2615.8 ms  ✓ SpheriCart
+   2870.1 ms  ✓ PeriodicTable
+    791.1 ms  ✓ VectorizedRNG → VectorizedRNGStaticArraysExt
+   3569.0 ms  ✓ Optim
+   6397.6 ms  ✓ NNlib
+   3289.8 ms  ✓ AtomsBase
+   1222.9 ms  ✓ NNlib → NNlibFFTWExt
+   1531.7 ms  ✓ NNlib → NNlibSpecialFunctionsExt
+   1561.9 ms  ✓ NNlib → NNlibEnzymeCoreExt
+   1541.4 ms  ✓ NNlib → NNlibForwardDiffExt
+  24132.0 ms  ✓ PrettyTables
+   4382.9 ms  ✓ Polynomials4ML
+   1626.9 ms  ✓ NeighbourLists
+   2358.2 ms  ✓ ExtXYZ
+   2418.0 ms  ✓ AtomsCalculators
+   2752.3 ms  ✓ AtomsBuilder
+   5883.5 ms  ✓ LuxLib
+   4113.7 ms  ✓ AtomsCalculatorsUtilities
+   2661.8 ms  ✓ EmpiricalPotentials
+   2887.3 ms  ✓ LuxLib → LuxLibSLEEFPiratesExt
+  28899.2 ms  ✓ LoopVectorization
+   1634.9 ms  ✓ LoopVectorization → SpecialFunctionsExt
+   1761.9 ms  ✓ LoopVectorization → ForwardDiffExt
+   2136.9 ms  ✓ LoopVectorization → ForwardDiffNNlibExt
+   2999.8 ms  ✓ Octavian
+  40730.2 ms  ✓ Zygote
+   1973.0 ms  ✓ Octavian → ForwardDiffExt
+   2038.6 ms  ✓ Octavian → HyperDualNumbersExt
+   2206.0 ms  ✓ LuxLib → LuxLibOctavianExt
+   1755.0 ms  ✓ DifferentiationInterface → DifferentiationInterfaceZygoteExt
+   1860.3 ms  ✓ MLDataDevices → MLDataDevicesZygoteExt
+  12258.6 ms  ✓ VectorizedStatistics
+   1833.3 ms  ✓ StrideArrays
+  34154.4 ms  ✓ Lux
+   2996.4 ms  ✓ Lux → LuxZygoteExt
+   6819.2 ms  ✓ EquivariantTensors
+  49645.2 ms  ✓ DataFrames
+   3179.3 ms  ✓ EquivariantTensors → NeighbourListsExt
+   1661.0 ms  ✓ Transducers → TransducersDataFramesExt
+   1986.6 ms  ✓ ActiveSetPursuit
+   2062.7 ms  ✓ BangBang → BangBangDataFramesExt
+   2883.6 ms  ✓ ACEfit
+  13527.4 ms  ✓ ACEpotentials
+  308 dependencies successfully precompiled in 106 seconds. 37 already precompiled.
+  1 dependency precompiled but a different version is currently loaded. Restart julia to access the new version. Otherwise, loading dependents of this package may trigger further precompilation to work with the unexpected version.
+  2 dependencies had output during precompilation:
+┌ LoopVectorization → ForwardDiffNNlibExt
+│  WARNING: method definition for relu at /home/eng/essswb/.julia/packages/LoopVectorization/GKxH5/ext/ForwardDiffNNlibExt.jl:5 declares type variable S but does not use it.
+│  WARNING: method definition for leakyrelu at /home/eng/essswb/.julia/packages/LoopVectorization/GKxH5/ext/ForwardDiffNNlibExt.jl:22 declares type variable S but does not use it.
+└  
+┌ ACEfit
+│  WARNING: using LinearAlgebra.QR in module ACEfit conflicts with an existing identifier.
+└  
+     Testing Running tests...
+++++++
+++++++++++++++++++++++++++++++++++++
+[ Info: Testing agnesi transforms
+Test Passed
+Test Passed
+Test Passed
+[ Info: Test derivatives of LearnableRnlrzzBasis
+++++++++++++++++++++
+[ Info: LearnableRnlrzz : Consistency of single and batched evaluation
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Testing SplineRnlrzzBasis consistency via splinify
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives of SplineRnlrzzBasis
+++++++++++++++++++++
+[ Info: SplineRnlrzz : Consistency of single and batched evaluation
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives of Spline Rnl Basis for Pairpot
+++++++++++++++++++++
+[ Info: Test ybasis of the Model is used correctly
+++++++++++++++++++++++++++++++
+[ Info: === Testing ybasis = spherical === 
+[ Info: Test Rotation-Invariance of the Model
+++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives w.r.t. positions
+Test Passed
+++++++++++++++++++++
+[ Info: Test derivatives w.r.t. parameters
+Test Passed
+++++++++++++++++++++
+[ Info: Test second mixed derivatives reverse-over-reverse
+++++++++++++++++++++
+[ Info: Test basis implementation
++++++++++++++++
+[ Info: Test the full mixed jacobian
++++++
+[ Info: check splinification
++++++
+[ Info: After splinification check correctness of evaluate_basis_ed again
+++++++++++
+[ Info: === Testing ybasis = solid === 
+[ Info: Test Rotation-Invariance of the Model
+++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives w.r.t. positions
+Test Passed
+++++++++++++++++++++
+[ Info: Test derivatives w.r.t. parameters
+Test Passed
+++++++++++++++++++++
+[ Info: Test second mixed derivatives reverse-over-reverse
+++++++++++++++++++++
+[ Info: Test basis implementation
++++++++++++++++
+[ Info: Test the full mixed jacobian
++++++
+[ Info: check splinification
++++++
+[ Info: After splinification check correctness of evaluate_basis_ed again
+++++++++++
+[ Info: Testing correctness of E0s
+++++++++++++++++++++++++++++++++++++++++
+[ Info: Testing correctness of potential energy
+++++++++++++++++++++++++++++++++++++++++
+[ Info: Testing correctness of forces 
+[ Info:    .... TODO TEST VIRIALS ..... 
+[ Info:  consistency local vs EmpiricalPotentials implementation
+++++++[ Info: test consistency of forces with energy
+[ Info:  TODO: write virial test!
+++++++++++
+[ Info: check splinification of calculator
+++++++++++
+[ Info: Test splinified calculator basis usage
+++++++++++++++++++++++++++++++
+[ Info: Testing Zygote-AD through a loss function
+[ Info: (wE, wV, wF) = (1.0 eV^-1, 0.0 eV^-1, 0.0 Å eV^-1)
+Test Passed
+[ Info: (wE, wV, wF) = (0.0 eV^-1, 1.0 eV^-1, 0.0 Å eV^-1)
+Test Passed
+[ Info: (wE, wV, wF) = (0.0 eV^-1, 0.0 eV^-1, 1.0 Å eV^-1)
+Test Passed
+[ Info: (wE, wV, wF) = (1.0 eV^-1, 0.1 eV^-1, 0.1 Å eV^-1)
+Test Passed
+  Activating project at `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+(E - mean(co_E)) / length(sys) = 0.008209561787015707 eV
+cov(co_E / length(sys)) = 0.00047030694770303343 eV^2
+maximum(norm.(F - F̄)) = 0.006382801455867263 eV Å^-1
+cov([ustrip.(f[1]) for f = co_F]) = [2.1232329937654388e-7 -3.4588003224332735e-7 -4.78039111712197e-8; -3.4588003224332735e-7 1.2682771031392538e-6 1.4978618402101057e-7; -4.78039111712197e-8 1.4978618402101057e-7 2.912243421848152e-8]
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:09:56Progress:  11%|████▋                                    |  ETA: 0:03:28Progress:  17%|███████                                  |  ETA: 0:02:18Progress:  23%|█████████▎                               |  ETA: 0:01:42Progress:  28%|███████████▋                             |  ETA: 0:01:20Progress:  34%|█████████████▉                           |  ETA: 0:01:05Progress:  40%|████████████████▎                        |  ETA: 0:00:53Progress:  45%|██████████████████▋                      |  ETA: 0:00:44Progress:  51%|████████████████████▉                    |  ETA: 0:00:37Progress:  57%|███████████████████████▎                 |  ETA: 0:00:31Progress:  62%|█████████████████████████▌               |  ETA: 0:00:26Progress:  68%|███████████████████████████▉             |  ETA: 0:00:21Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:16Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:09Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:03Progress: 100%|█████████████████████████████████████████| Time: 0:00:54
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:06Progress: 100%|█████████████████████████████████████████| Time: 0:00:00
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.970 │    0.026 │  66.743 │
+│           liq │   1.070 │    0.249 │  46.858 │
+│            bt │   4.274 │    0.082 │ 111.659 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.581 │    0.191 │  90.665 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   1.786 │    0.019 │  42.805 │
+│           liq │   0.828 │    0.199 │  39.116 │
+│            bt │   3.413 │    0.060 │  84.369 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   2.484 │    0.128 │  62.646 │
+└───────────────┴─────────┴──────────┴─────────┘
+      From worker 4:	Precompiling ACEpotentials...
+      From worker 2:	Precompiling ACEpotentials...
+      From worker 3:	Precompiling ACEpotentials...
+      From worker 3:	    ACEpotentials Being precompiled by another process (pid: 932731, pidfile: /home/eng/essswb/.julia/compiled/v1.11/ACEpotentials/tMeYm_nlQuo.ji.pidfile)
+      From worker 2:	    ACEpotentials Being precompiled by another process (pid: 932731, pidfile: /home/eng/essswb/.julia/compiled/v1.11/ACEpotentials/tMeYm_nlQuo.ji.pidfile)
+      From worker 4:	  12901.9 ms  ✓ ACEpotentials
+      From worker 4:	  1 dependency successfully precompiled in 15 seconds. 344 already precompiled.
+      From worker 3:	  20404.3 ms  ✓ ACEpotentials
+      From worker 3:	  1 dependency successfully precompiled in 23 seconds. 344 already precompiled.
+      From worker 2:	  30409.3 ms  ✓ ACEpotentials
+      From worker 2:	  1 dependency successfully precompiled in 33 seconds. 344 already precompiled.
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  4.
+Progress:   4%|█▌                                       |  ETA: 0:11:21Progress:   6%|██▍                                      |  ETA: 0:07:31Progress:   8%|███▏                                     |  ETA: 0:05:36Progress:   9%|███▉                                     |  ETA: 0:04:27Progress:  11%|████▋                                    |  ETA: 0:03:40Progress:  13%|█████▍                                   |  ETA: 0:03:07Progress:  15%|██████▎                                  |  ETA: 0:02:42Progress:  17%|███████                                  |  ETA: 0:02:23Progress:  19%|███████▊                                 |  ETA: 0:02:07Progress:  21%|████████▌                                |  ETA: 0:01:54Progress:  23%|█████████▎                               |  ETA: 0:01:43Progress:  25%|██████████                               |  ETA: 0:01:34Progress:  26%|██████████▉                              |  ETA: 0:01:26Progress:  28%|███████████▋                             |  ETA: 0:01:19Progress:  30%|████████████▍                            |  ETA: 0:01:13Progress:  32%|█████████████▏                           |  ETA: 0:01:08Progress:  34%|█████████████▉                           |  ETA: 0:01:03Progress:  36%|██████████████▊                          |  ETA: 0:00:59Progress:  40%|████████████████▎                        |  ETA: 0:00:50Progress:  42%|█████████████████                        |  ETA: 0:00:47Progress:  43%|█████████████████▊                       |  ETA: 0:00:44Progress:  47%|███████████████████▍                     |  ETA: 0:00:38Progress:  51%|████████████████████▉                    |  ETA: 0:00:33Progress:  53%|█████████████████████▋                   |  ETA: 0:00:31Progress:  60%|████████████████████████▊                |  ETA: 0:00:23Progress:  62%|█████████████████████████▌               |  ETA: 0:00:21Progress:  64%|██████████████████████████▎              |  ETA: 0:00:20Progress:  83%|██████████████████████████████████       |  ETA: 0:00:07Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:06Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:04Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:38
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:08Progress:   8%|███▏                                     |  ETA: 0:00:07Progress: 100%|█████████████████████████████████████████| Time: 0:00:00
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.970 │    0.026 │  66.743 │
+│           liq │   1.070 │    0.249 │  46.858 │
+│            bt │   4.274 │    0.082 │ 111.659 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.581 │    0.191 │  90.665 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   1.786 │    0.019 │  42.805 │
+│           liq │   0.828 │    0.199 │  39.116 │
+│            bt │   3.413 │    0.060 │  84.369 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   2.484 │    0.128 │  62.646 │
+└───────────────┴─────────┴──────────┴─────────┘
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:00:56Progress:   9%|███▉                                     |  ETA: 0:00:37Progress:  15%|██████▎                                  |  ETA: 0:00:31Progress:  21%|████████▌                                |  ETA: 0:00:28Progress:  26%|██████████▉                              |  ETA: 0:00:25Progress:  32%|█████████████▏                           |  ETA: 0:00:22Progress:  38%|███████████████▌                         |  ETA: 0:00:20Progress:  43%|█████████████████▊                       |  ETA: 0:00:18Progress:  49%|████████████████████▏                    |  ETA: 0:00:16Progress:  68%|███████████████████████████▉             |  ETA: 0:00:10Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:04Progress: 100%|█████████████████████████████████████████| Time: 0:00:31
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.186222e+03     8.272026e+02
+ * time: 0.05095696449279785
+     1     5.502152e+02     3.974097e+02
+ * time: 1.8638908863067627
+     2     5.423783e+02     4.019412e+02
+ * time: 1.8675429821014404
+     3     2.278997e+02     1.193107e+03
+ * time: 1.8762328624725342
+     4     1.601568e+02     1.038974e+03
+ * time: 1.8814828395843506
+     5     7.342404e+01     5.002954e+02
+ * time: 1.8868370056152344
+     6     3.146487e+01     4.038536e+02
+ * time: 1.8904259204864502
+     7    -2.865640e+01     1.586760e+03
+ * time: 1.895763874053955
+     8    -6.686725e+01     1.152623e+03
+ * time: 1.9012658596038818
+     9    -9.108758e+01     3.213374e+02
+ * time: 1.9066970348358154
+    10    -9.864872e+01     4.956960e+02
+ * time: 1.9103150367736816
+    11    -1.127681e+02     4.658191e+02
+ * time: 1.9172019958496094
+    12    -1.145580e+02     1.440979e+01
+ * time: 1.9225468635559082
+    13    -1.145598e+02     1.145348e+00
+ * time: 1.927825927734375
+    14    -1.145601e+02     1.414885e-02
+ * time: 1.9329769611358643
+    15    -1.145601e+02     1.248345e-05
+ * time: 1.9365599155426025
+    16    -1.145601e+02     2.104773e-06
+ * time: 1.9401309490203857
+    17    -1.145601e+02     2.058471e-06
+ * time: 1.94364595413208
+    18    -1.145601e+02     1.262928e-06
+ * time: 1.9472179412841797
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     -1.145601e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 1.22e-09 ≤ 1.0e-08
+    |x - x'|/|x'|          = 4.62e-11 ≰ 0.0e+00
+    |f(x) - f(x')|         = 1.69e-08 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 1.48e-10 ≰ 0.0e+00
+    |g(x)|                 = 1.26e-06 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   2  (vs limit Inf)
+    Iterations:    18
+    f(x) calls:    71
+    ∇f(x) calls:   71
+
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   3.688 │    0.040 │  67.000 │
+│           liq │   0.842 │    0.290 │  51.704 │
+│            bt │   5.261 │    0.087 │ 127.341 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   4.416 │    0.221 │ 100.285 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.251 │    0.030 │  44.897 │
+│           liq │   0.834 │    0.235 │  46.259 │
+│            bt │   4.525 │    0.062 │  95.552 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.228 │    0.151 │  69.303 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: try to save and load the potential
+[ Info: saving project
+[ Info: Results saved to file: /tmp/jl_56TcPe5GDe.json
+Test Passed
+[ Info: Fit a potential with committee
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:00:52Progress:  23%|█████████▎                               |  ETA: 0:00:26Progress:  28%|███████████▋                             |  ETA: 0:00:24Progress:  34%|█████████████▉                           |  ETA: 0:00:22Progress:  40%|████████████████▎                        |  ETA: 0:00:20Progress:  45%|██████████████████▋                      |  ETA: 0:00:18Progress:  51%|████████████████████▉                    |  ETA: 0:00:16Progress:  57%|███████████████████████▎                 |  ETA: 0:00:14Progress:  62%|█████████████████████████▌               |  ETA: 0:00:12Progress:  68%|███████████████████████████▉             |  ETA: 0:00:10Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:08Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:04Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:02Progress: 100%|█████████████████████████████████████████| Time: 0:00:31
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+[ Info: Entering bayesian_linear_regression_svd
+┌ Info: Computing SVD of (1052, 149) matrix
+│   BLAS.get_num_threads() = 1
+│   BLAS.get_config() =
+│    LinearAlgebra.BLAS.LBTConfig
+│    Libraries: 
+└    └ [ILP64] libopenblas64_.so
+[ Info: SVD completed after 0.0003952588 minutes
+[ Info: Beginning to maximize marginal likelihood
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.186222e+03     8.272026e+02
+ * time: 3.719329833984375e-5
+     1     5.502152e+02     3.974097e+02
+ * time: 0.0004940032958984375
+     2     5.423783e+02     4.019412e+02
+ * time: 0.0005671977996826172
+     3     2.278997e+02     1.193107e+03
+ * time: 0.00067901611328125
+     4     1.601568e+02     1.038974e+03
+ * time: 0.0007531642913818359
+     5     7.342404e+01     5.002953e+02
+ * time: 0.0008261203765869141
+     6     3.146486e+01     4.038537e+02
+ * time: 0.0008831024169921875
+     7    -2.865641e+01     1.586761e+03
+ * time: 0.0009551048278808594
+     8    -6.686726e+01     1.152623e+03
+ * time: 0.0010280609130859375
+     9    -9.108758e+01     3.213371e+02
+ * time: 0.0011010169982910156
+    10    -9.864872e+01     4.956963e+02
+ * time: 0.001157999038696289
+    11    -1.127681e+02     4.658186e+02
+ * time: 0.0012459754943847656
+    12    -1.145580e+02     1.440971e+01
+ * time: 0.0013179779052734375
+    13    -1.145598e+02     1.144942e+00
+ * time: 0.0013911724090576172
+    14    -1.145601e+02     1.413056e-02
+ * time: 0.001463174819946289
+    15    -1.145601e+02     1.076662e-05
+ * time: 0.0015211105346679688
+    16    -1.145601e+02     5.525628e-11
+ * time: 0.0015790462493896484
+    17    -1.145601e+02     8.197108e-16
+ * time: 0.0016520023345947266
+┌ Info: Optimization complete
+│   Results =
+│     * Status: success
+│    
+│     * Candidate solution
+│        Final objective value:     -1.145601e+02
+│    
+│     * Found with
+│        Algorithm:     L-BFGS
+│    
+│     * Convergence measures
+│        |x - x'|               = 5.93e-13 ≤ 1.0e-08
+│        |x - x'|/|x'|          = 2.25e-14 ≰ 0.0e+00
+│        |f(x) - f(x')|         = 0.00e+00 ≤ 0.0e+00
+│        |f(x) - f(x')|/|f(x')| = 0.00e+00 ≤ 0.0e+00
+│        |g(x)|                 = 8.20e-16 ≰ 0.0e+00
+│    
+│     * Work counters
+│        Seconds run:   0  (vs limit Inf)
+│        Iterations:    17
+│        f(x) calls:    70
+│        ∇f(x) calls:   70
+└    
+Test Passed
+Test Passed
+Test Passed
+Test Passed
+Test Passed
+[ Info: Run a fit with repulsion restraint
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1053, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:00:55Progress:  22%|█████████▏                               |  ETA: 0:00:27Progress:  28%|███████████▍                             |  ETA: 0:00:25Progress:  33%|█████████████▋                           |  ETA: 0:00:23Progress:  39%|████████████████                         |  ETA: 0:00:20Progress:  44%|██████████████████▎                      |  ETA: 0:00:18Progress:  50%|████████████████████▌                    |  ETA: 0:00:16Progress:  56%|██████████████████████▊                  |  ETA: 0:00:15Progress:  61%|█████████████████████████                |  ETA: 0:00:13Progress:  67%|███████████████████████████▍             |  ETA: 0:00:11Progress:  72%|█████████████████████████████▋           |  ETA: 0:00:09Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:03Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:37
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.220757e+03     7.823315e+02
+ * time: 1.6927719116210938e-5
+     1     6.802026e+02     3.980335e+02
+ * time: 0.04021096229553223
+     2     6.659722e+02     1.116991e+03
+ * time: 0.04549598693847656
+     3     1.326517e+02     5.920458e+02
+ * time: 0.05265307426452637
+     4     1.134564e+02     5.713446e+01
+ * time: 0.05626511573791504
+     5     7.896517e+01     1.082665e+03
+ * time: 0.06203794479370117
+     6    -7.928133e+01     1.670792e+03
+ * time: 0.06918811798095703
+     7    -9.304858e+01     2.248394e+02
+ * time: 0.07279109954833984
+     8    -9.485632e+01     1.942004e+02
+ * time: 0.0784769058227539
+     9    -9.825839e+01     2.006512e+02
+ * time: 0.08558106422424316
+    10    -9.866951e+01     2.420751e+01
+ * time: 0.09099102020263672
+    11    -9.868857e+01     1.870408e+00
+ * time: 0.09625005722045898
+    12    -9.868860e+01     1.338540e-02
+ * time: 0.10167908668518066
+    13    -9.868860e+01     8.174195e-07
+ * time: 0.10531997680664062
+    14    -9.868860e+01     2.906796e-06
+ * time: 0.11593294143676758
+    15    -9.868860e+01     1.563195e-06
+ * time: 0.12163591384887695
+    16    -9.868860e+01     1.266095e-06
+ * time: 0.1252899169921875
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     -9.868860e+01
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 4.59e-09 ≤ 1.0e-08
+    |x - x'|/|x'|          = 1.56e-10 ≰ 0.0e+00
+    |f(x) - f(x')|         = 6.17e-08 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 6.25e-10 ≰ 0.0e+00
+    |g(x)|                 = 1.27e-06 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   0  (vs limit Inf)
+    Iterations:    16
+    f(x) calls:    71
+    ∇f(x) calls:   71
+
+Test Passed
+[ Info: Run a fit with ZBL reference potential
+┌ Warning:    The tests here seem a bit weak, the ZBL implementation may be buggy.
+└ @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:176
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1053, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:06:36Progress:   9%|███▊                                     |  ETA: 0:02:49Progress:  28%|███████████▍                             |  ETA: 0:01:00Progress:  33%|█████████████▋                           |  ETA: 0:00:50Progress:  39%|████████████████                         |  ETA: 0:00:42Progress:  57%|███████████████████████▌                 |  ETA: 0:00:24Progress:  63%|█████████████████████████▉               |  ETA: 0:00:20Progress:  78%|███████████████████████████████▉         |  ETA: 0:00:11Progress:  83%|██████████████████████████████████▏      |  ETA: 0:00:08Progress: 100%|█████████████████████████████████████████| Time: 0:00:52
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.252541e+03     7.217664e+02
+ * time: 1.7881393432617188e-5
+     1     9.129628e+02     5.287508e+02
+ * time: 0.03682303428649902
+     2     7.876354e+02     7.664057e+02
+ * time: 0.04044485092163086
+     3     7.596077e+02     6.563405e+02
+ * time: 0.045799970626831055
+     4     7.368156e+02     5.116733e+02
+ * time: 0.04939389228820801
+     5     7.101060e+02     1.870598e+02
+ * time: 0.052993059158325195
+     6     6.900429e+02     4.168769e+02
+ * time: 0.056591033935546875
+     7     5.448090e+02     9.584602e+02
+ * time: 0.0637369155883789
+     8     5.013523e+02     3.942955e+02
+ * time: 0.06734395027160645
+     9     4.464122e+02     3.800877e+02
+ * time: 0.07270288467407227
+    10     4.212601e+02     3.570556e+02
+ * time: 0.07804393768310547
+    11     4.158391e+02     6.173520e+00
+ * time: 0.08340287208557129
+    12     4.149339e+02     1.130639e+02
+ * time: 0.08895492553710938
+    13     4.145977e+02     9.628110e+00
+ * time: 0.09431290626525879
+    14     4.145893e+02     1.300754e+00
+ * time: 0.09976983070373535
+    15     4.145893e+02     1.370716e-02
+ * time: 0.10526895523071289
+    16     4.145893e+02     8.884009e-06
+ * time: 0.1106410026550293
+    17     4.145893e+02     1.887966e-06
+ * time: 0.11601090431213379
+    18     4.145893e+02     8.960519e-07
+ * time: 0.1213688850402832
+    19     4.145893e+02     5.503038e-07
+ * time: 0.12497091293334961
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     4.145893e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 2.78e-10 ≤ 1.0e-08
+    |x - x'|/|x'|          = 1.61e-11 ≰ 0.0e+00
+    |f(x) - f(x')|         = 1.02e-07 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 2.47e-10 ≰ 0.0e+00
+    |g(x)|                 = 5.50e-07 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   0  (vs limit Inf)
+    Iterations:    19
+    f(x) calls:    71
+    ∇f(x) calls:   71
+
+potential_energy(dimer, model) = 1.3826501545714797e6 eV
+Test Passed
+[ Info: Checking recompute_weights
+[ Info: Assembling full weight vector.
+[ Info: Assembling full weight vector.
+Test Passed
+[ Info: Assembling full weight vector.
+Test Passed
+  Activating new project at `/tmp/jl_HS5KNYpUPI`
+   Resolving package versions...
+    Updating `/tmp/jl_HS5KNYpUPI/Project.toml`
+  [3b96b61c] + ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+    Updating `/tmp/jl_HS5KNYpUPI/Manifest.toml`
+  [14bae519] + ACEbase v0.4.5
+  [ad31a8ef] + ACEfit v0.2.6
+  [3b96b61c] + ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+  [47edcb42] + ADTypes v1.18.0
+  [621f4979] + AbstractFFTs v1.5.0
+  [7d9f7c33] + Accessors v0.1.42
+  [d86c1dc8] + ActiveSetPursuit v0.0.4
+  [79e6a3ab] + Adapt v4.4.0
+  [66dad0bd] + AliasTables v1.1.3
+  [dce04be8] + ArgCheck v2.5.0
+  [c7e460c6] + ArgParse v1.2.0
+  [4fba245c] + ArrayInterface v7.22.0
+  [a9b6321e] + Atomix v1.1.2
+  [a963bdd2] + AtomsBase v0.5.2
+  [f5cc8831] + AtomsBuilder v0.2.2
+  [a3e0e189] + AtomsCalculators v0.2.3
+  [9855a07e] + AtomsCalculatorsUtilities v0.1.8
+  [13072b0f] + AxisAlgorithms v1.1.0
+  [198e06fe] + BangBang v0.4.6
+  [9718e550] + Baselet v0.1.1
+  [6e4b80f9] + BenchmarkTools v1.6.3
+  [62783981] + BitTwiddlingConvenienceFunctions v0.1.6
+  [8ce10254] + Bumper v0.7.1
+  [2a0fbf3d] + CPUSummary v0.2.7
+  [49dc2e85] + Calculus v0.5.2
+  [082447d4] + ChainRules v1.72.6
+  [d360d2e6] + ChainRulesCore v1.26.0
+  [ae650224] + ChunkSplitters v3.1.2
+  [fb6a15b2] + CloseOpenIntervals v0.1.13
+  [6309b1aa] + CodecInflate64 v0.1.3
+  [944b1d66] + CodecZlib v0.7.8
+  [861a8166] + Combinatorics v1.0.3
+  [38540f10] + CommonSolve v0.2.4
+  [bbf7d656] + CommonSubexpressions v0.3.1
+  [f70d9fcc] + CommonWorldInvalidations v1.0.0
+  [34da2185] + Compat v4.18.1
+  [a33af91c] + CompositionsBase v0.1.2
+  [2569d6c7] + ConcreteStructs v0.2.3
+  [187b0558] + ConstructionBase v1.6.0
+  [adafc99b] + CpuId v0.3.1
+  [a8cc5b0e] + Crayons v4.1.1
+  [9a962f9c] + DataAPI v1.16.0
+  [a93c6f00] + DataFrames v1.8.1
+  [864edb3b] + DataStructures v0.19.3
+  [e2d170a0] + DataValueInterfaces v1.0.0
+  [244e2a9f] + DefineSingletons v0.1.2
+  [163ba53b] + DiffResults v1.1.0
+  [b552c78f] + DiffRules v1.15.1
+  [a0c0ee7d] + DifferentiationInterface v0.7.11
+  [8d63f2c5] + DispatchDoctor v0.4.26
+  [ffbed154] + DocStringExtensions v0.9.5
+  [7c1d4256] + DynamicPolynomials v0.6.4
+  [38527215] + EmpiricalPotentials v0.2.4
+  [4e289a0a] + EnumX v1.0.5
+  [f151be2c] + EnzymeCore v0.8.16
+  [5e107534] + EquivariantTensors v0.3.0
+  [e2ba6199] + ExprTools v0.1.10
+  [21656369] + ExpressionExplorer v1.1.3
+  [352459e4] + ExtXYZ v0.2.2
+  [e189563c] + ExternalDocstrings v0.1.1
+  [7a1cc6ca] + FFTW v1.10.0
+  [9aa1b823] + FastClosures v0.3.2
+  [1a297f60] + FillArrays v1.15.0
+  [6a86dc24] + FiniteDiff v2.29.0
+  [41a02a25] + Folds v0.2.10
+⌅ [f6369f11] + ForwardDiff v0.10.39
+  [d9f16b24] + Functors v0.5.2
+  [46192b85] + GPUArraysCore v0.2.0
+  [f0d1745a] + HalfIntegers v1.6.0
+  [076d061b] + HashArrayMappedTries v0.2.0
+  [3e5b6fbb] + HostCPUFeatures v0.1.17
+  [50ceba7f] + HyperDualNumbers v4.0.10
+  [7869d1d1] + IRTools v0.4.15
+  [615f187c] + IfElse v0.1.1
+  [22cec73e] + InitialValues v0.3.1
+  [842dd82b] + InlineStrings v1.4.5
+  [0c81fc1b] + InputBuffers v1.1.1
+⌅ [a98d9a8b] + Interpolations v0.15.1
+  [3587e190] + InverseFunctions v0.1.17
+  [41ab1584] + InvertedIndices v1.3.1
+  [92d709cd] + IrrationalConstants v0.2.6
+  [42fd0dbc] + IterativeSolvers v0.9.4
+  [82899510] + IteratorInterfaceExtensions v1.0.0
+  [692b3bcd] + JLLWrappers v1.7.1
+⌅ [682c06a0] + JSON v0.21.4
+  [63c18a36] + KernelAbstractions v0.9.39
+  [b964fa9f] + LaTeXStrings v1.4.0
+  [10f19ff3] + LayoutPointers v0.1.17
+  [0e77f7df] + LazilyInitializedFields v1.3.0
+  [d3d80556] + LineSearches v7.4.0
+  [5c8ed15e] + LinearOperators v2.11.0
+  [89398ba2] + LocalRegistry v0.5.7
+  [2ab3a3ac] + LogExpFunctions v0.3.29
+  [bdcacae8] + LoopVectorization v0.12.173
+  [898213cb] + LowRankApprox v0.5.5
+  [e65ccdef] + LowRankMatrices v1.0.2
+  [b2108857] + Lux v1.25.0
+  [bb33d45b] + LuxCore v1.4.2
+  [82251201] + LuxLib v1.13.0
+  [7e8f7934] + MLDataDevices v1.15.0
+  [1914dd2f] + MacroTools v0.5.16
+  [d125e4d3] + ManualMemory v0.1.8
+  [128add7d] + MicroCollections v0.2.0
+  [e1d29d7a] + Missings v1.2.0
+  [102ac46a] + MultivariatePolynomials v0.5.13
+  [d8a4904e] + MutableArithmetics v1.6.7
+  [d41bc354] + NLSolversBase v7.10.0
+  [872c559c] + NNlib v0.9.31
+  [77ba4419] + NaNMath v1.1.3
+  [d9ec5142] + NamedTupleTools v0.14.3
+  [2fcf5ba9] + NeighbourLists v0.5.10
+  [4d1e1d77] + Nullables v1.0.0
+  [6fd5a793] + Octavian v0.3.29
+  [6fe1bfb0] + OffsetArrays v1.17.0
+  [429524aa] + Optim v1.13.2
+  [3bd65402] + Optimisers v0.4.6
+  [bac558e1] + OrderedCollections v1.8.1
+  [2dcacdae] + ParallelDataTransfer v0.5.1
+  [d96e819e] + Parameters v0.12.3
+  [69de0a69] + Parsers v2.8.3
+  [793d2195] + PartialWaveFunctions v0.2.0
+  [7b2266bf] + PeriodicTable v1.2.1
+  [1d0040c9] + PolyesterWeave v0.2.2
+  [03c4bcba] + Polynomials4ML v0.5.3
+  [2dfb63ee] + PooledArrays v1.4.3
+  [85a6dd25] + PositiveFactorizations v0.2.4
+⌅ [aea7be01] + PrecompileTools v1.2.1
+  [21216c6a] + Preferences v1.5.0
+⌅ [08abe8d2] + PrettyTables v2.4.0
+  [92933f4c] + ProgressMeter v1.11.0
+  [43287f4e] + PtrArrays v1.3.0
+  [29d2ae51] + QRupdate v1.0.1
+  [1fd47b50] + QuadGK v2.11.2
+  [94ee1d12] + Quaternions v0.7.6
+  [c84ed2f1] + Ratios v0.4.5
+  [a3311ec8] + ReactantCore v0.1.16
+  [c1ae055f] + RealDot v0.1.0
+  [3cdcf5f2] + RecipesBase v1.3.4
+  [189a3867] + Reexport v1.2.2
+  [42d2dcc6] + Referenceables v0.1.3
+  [2792f1a3] + RegistryInstances v0.1.0
+  [d1eb7eb1] + RegistryTools v2.4.0
+  [f07d36f2] + RepLieGroups v0.1.1
+  [ae029012] + Requires v1.3.1
+  [f2b01f46] + Roots v2.2.10
+  [6038ab10] + Rotations v1.7.1
+  [94e857df] + SIMDTypes v0.1.0
+  [476501e8] + SLEEFPirates v0.6.43
+  [431bcebd] + SciMLPublic v1.0.0
+  [7e506255] + ScopedValues v1.5.0
+  [91c51154] + SentinelArrays v1.4.8
+  [efcf1570] + Setfield v1.1.2
+  [a2af1166] + SortingAlgorithms v1.2.2
+  [dc90abb0] + SparseInverseSubset v0.1.2
+  [276daf66] + SpecialFunctions v2.6.1
+  [5caf2b29] + SpheriCart v0.2.3
+  [171d559e] + SplittablesBase v0.1.15
+  [aedffcd0] + Static v1.3.1
+  [0d7ed370] + StaticArrayInterface v1.8.0
+  [90137ffa] + StaticArrays v1.9.15
+  [1e83bf80] + StaticArraysCore v1.4.4
+  [62e018b1] + StaticPolynomials v1.3.7
+  [10745b16] + Statistics v1.11.1
+  [82ae8749] + StatsAPI v1.7.1
+  [2913bbd2] + StatsBase v0.34.8
+  [d1fa6d79] + StrideArrays v0.1.29
+  [7792a7ef] + StrideArraysCore v0.5.8
+  [69024149] + StringEncodings v0.3.7
+  [892a3eda] + StringManipulation v0.4.1
+⌅ [09ab397b] + StructArrays v0.6.21
+  [3783bdb8] + TableTraits v1.0.1
+  [bd369af6] + Tables v1.12.1
+  [ed4db957] + TaskLocalValues v0.1.3
+  [b718987f] + TextWrap v1.0.2
+  [24d252fe] + ThreadedScans v0.1.0
+  [8290d209] + ThreadingUtilities v0.5.5
+  [a759f4b9] + TimerOutputs v0.5.29
+  [3bb67fe8] + TranscodingStreams v0.11.3
+  [28d57a85] + Transducers v0.4.85
+  [3a884ed6] + UnPack v1.0.2
+  [1986cc42] + Unitful v1.25.1
+  [a7773ee8] + UnitfulAtomic v1.0.0
+  [c4a57d5a] + UnsafeArrays v1.0.8
+  [013be700] + UnsafeAtomics v0.3.0
+  [3d5dd08c] + VectorizationBase v0.21.72
+  [33b4df10] + VectorizedRNG v0.2.25
+  [3b853605] + VectorizedStatistics v0.5.11
+  [d49dbf32] + WeightInitializers v1.2.2
+  [87c4ff3e] + WignerD v0.1.4
+  [fb1aa66a] + WithAlloc v0.1.1
+  [efce3f68] + WoodburyMatrices v1.0.0
+  [ddb6d928] + YAML v0.4.16
+  [49080126] + ZipArchives v2.6.0
+  [e88e6eb3] + Zygote v0.7.10
+  [700de1a5] + ZygoteRules v0.2.7
+  [f5851436] + FFTW_jll v3.3.11+0
+  [1d5cc7b8] + IntelOpenMP_jll v2025.2.0+0
+  [94ce4f54] + Libiconv_jll v1.18.0+0
+  [856f044c] + MKL_jll v2025.2.0+0
+  [efe28fd5] + OpenSpecFun_jll v0.5.6+0
+  [6ecdc6fc] + extxyz_jll v0.1.3+0
+  [cdc7adba] + libcleri_jll v0.12.1+3
+  [1317d2d5] + oneTBB_jll v2022.0.0+1
+  [0dad84c5] + ArgTools v1.1.2
+  [56f22d72] + Artifacts v1.11.0
+  [2a0f44e3] + Base64 v1.11.0
+  [ade2ca70] + Dates v1.11.0
+  [8ba89e20] + Distributed v1.11.0
+  [f43a241f] + Downloads v1.6.0
+  [7b1f6079] + FileWatching v1.11.0
+  [9fa8497b] + Future v1.11.0
+  [b77e0a4c] + InteractiveUtils v1.11.0
+  [4af54fe1] + LazyArtifacts v1.11.0
+  [b27032c2] + LibCURL v0.6.4
+  [76f85450] + LibGit2 v1.11.0
+  [8f399da3] + Libdl v1.11.0
+  [37e2e46d] + LinearAlgebra v1.11.0
+  [56ddb016] + Logging v1.11.0
+  [d6f4376e] + Markdown v1.11.0
+  [a63ad114] + Mmap v1.11.0
+  [ca575930] + NetworkOptions v1.2.0
+  [44cfe95a] + Pkg v1.11.0
+  [de0858da] + Printf v1.11.0
+  [9abbd945] + Profile v1.11.0
+  [9a3f8284] + Random v1.11.0
+  [ea8e919c] + SHA v0.7.0
+  [9e88b42a] + Serialization v1.11.0
+  [1a1011a3] + SharedArrays v1.11.0
+  [6462fe0b] + Sockets v1.11.0
+  [2f01184e] + SparseArrays v1.11.0
+  [4607b0f0] + SuiteSparse
+  [fa267f1f] + TOML v1.0.3
+  [a4e569a6] + Tar v1.10.0
+  [8dfed614] + Test v1.11.0
+  [cf7118a7] + UUIDs v1.11.0
+  [4ec0a83e] + Unicode v1.11.0
+  [e66e0078] + CompilerSupportLibraries_jll v1.1.1+0
+  [deac9b47] + LibCURL_jll v8.6.0+0
+  [e37daf67] + LibGit2_jll v1.7.2+0
+  [29816b5a] + LibSSH2_jll v1.11.0+1
+  [c8ffd9c3] + MbedTLS_jll v2.28.6+0
+  [14a3606d] + MozillaCACerts_jll v2023.12.12
+  [4536629a] + OpenBLAS_jll v0.3.27+1
+  [05823500] + OpenLibm_jll v0.8.5+0
+  [efcefdf7] + PCRE2_jll v10.42.0+1
+  [bea87d4a] + SuiteSparse_jll v7.7.0+0
+  [83775a58] + Zlib_jll v1.2.13+1
+  [8e850b90] + libblastrampoline_jll v5.11.0+0
+  [8e850ede] + nghttp2_jll v1.59.0+0
+  [3f19e933] + p7zip_jll v17.4.0+2
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading. To see why use `status --outdated -m`
+/tmp/jl_HS5KNYpUPI
+[ Info: Load parameter file
+[ Info: result_folder not specified, create result folder at example_paramsresults
+[ Info: result storing at example_params_results
+[ Info: Construct ACEmodel of type ACE1
+[ Info: Load datasets
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 77).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:10:44[KProgress:  13%|█████▍                                   |  ETA: 0:03:05[KProgress:  19%|███████▊                                 |  ETA: 0:02:06[KProgress:  25%|██████████                               |  ETA: 0:01:34[KProgress:  38%|███████████████▌                         |  ETA: 0:00:55[KProgress:  57%|███████████████████████▎                 |  ETA: 0:00:29[KProgress:  62%|█████████████████████████▌               |  ETA: 0:00:24[KProgress:  68%|███████████████████████████▉             |  ETA: 0:00:19[KProgress:  87%|███████████████████████████████████▋     |  ETA: 0:00:07[KProgress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:04[KProgress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:48[K
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:05[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:00[K
+[ Info: Entering bayesian_linear_regression_svd
+┌ Info: Computing SVD of (1052, 77) matrix
+│   BLAS.get_num_threads() = 1
+│   BLAS.get_config() =
+│    LinearAlgebra.BLAS.LBTConfig
+│    Libraries: 
+└    └ [ILP64] libopenblas64_.so
+[ Info: SVD completed after 0.00011666323333333333 minutes
+[ Info: Beginning to maximize marginal likelihood
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.270836e+05     1.464454e+05
+ * time: 0.051595211029052734
+     1     1.351083e+04     7.081152e-03
+ * time: 1.8654911518096924
+     2     1.331870e+04     8.510528e-03
+ * time: 1.8657441139221191
+     3     1.101250e+04     7.883015e-02
+ * time: 1.8658411502838135
+     4     9.295982e+03     4.225325e-01
+ * time: 1.8659520149230957
+     5     7.742354e+03     1.981476e+00
+ * time: 1.866023063659668
+     6     7.431386e+03     2.707360e+00
+ * time: 1.8661060333251953
+     7     6.005797e+03     1.140956e+01
+ * time: 1.8661770820617676
+     8     4.621384e+03     4.494632e+01
+ * time: 1.866260051727295
+     9     3.766840e+03     1.442472e+01
+ * time: 1.8663952350616455
+    10     3.765117e+03     1.728801e+00
+ * time: 1.866466999053955
+    11     3.765095e+03     4.560609e-02
+ * time: 1.86651611328125
+    12     3.745174e+03     4.251180e+01
+ * time: 1.8666431903839111
+    13     3.543149e+03     1.415653e+02
+ * time: 1.8668291568756104
+    14     3.512353e+03     1.437998e+02
+ * time: 1.8669860363006592
+    15     3.469330e+03     8.189233e+00
+ * time: 1.8670680522918701
+    16     3.439732e+03     1.033025e+01
+ * time: 1.867164134979248
+    17     3.439627e+03     9.937373e+00
+ * time: 1.8672161102294922
+    18     3.438944e+03     8.691374e-02
+ * time: 1.8672630786895752
+    19     3.438943e+03     7.585922e-03
+ * time: 1.8673121929168701
+    20     3.438943e+03     1.964426e-06
+ * time: 1.8673720359802246
+    21     3.438943e+03     1.208082e-09
+ * time: 1.8674201965332031
+    22     3.438943e+03     3.865369e-14
+ * time: 1.8674681186676025
+┌ Info: Optimization complete
+│   Results =
+│     * Status: success
+│    
+│     * Candidate solution
+│        Final objective value:     3.438943e+03
+│    
+│     * Found with
+│        Algorithm:     L-BFGS
+│    
+│     * Convergence measures
+│        |x - x'|               = 7.35e-10 ≤ 1.0e-08
+│        |x - x'|/|x'|          = 2.49e-12 ≰ 0.0e+00
+│        |f(x) - f(x')|         = 0.00e+00 ≤ 0.0e+00
+│        |f(x) - f(x')|/|f(x')| = 0.00e+00 ≤ 0.0e+00
+│        |g(x)|                 = 3.87e-14 ≰ 0.0e+00
+│    
+│     * Work counters
+│        Seconds run:   2  (vs limit Inf)
+│        Iterations:    22
+│        f(x) calls:    116
+│        ∇f(x) calls:   116
+└    
+[ Info: evaluating errors
+[ Info: RMSE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     46.830 │    0.827 │  637.354 │
+│           liq │     48.204 │    1.995 │  519.752 │
+│            bt │    664.928 │    1.544 │ 2683.508 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │  21782.640 │    1.702 │ 1915.153 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: MAE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     40.725 │    0.605 │  418.385 │
+│           liq │     41.427 │    1.568 │  396.962 │
+│            bt │    613.296 │    1.119 │ 1832.393 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │   3301.478 │    1.253 │ 1097.373 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: RMSE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     46.830 │    0.827 │  637.354 │
+│           liq │     48.204 │    1.995 │  519.752 │
+│            bt │    664.928 │    1.544 │ 2683.508 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │  21782.640 │    1.702 │ 1915.153 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: MAE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     40.725 │    0.605 │  418.385 │
+│           liq │     41.427 │    1.568 │  396.962 │
+│            bt │    613.296 │    1.119 │ 1832.393 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │   3301.478 │    1.253 │ 1097.373 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: saving project
+[ Info: Results saved to file: example_params_results/results.json
+[ Info: Load the results
+[ Info: Rebuild and check Project and Manifest file 
+[ Info: Clean up temporary project
+[ Info: Check that runfit gives the same results as a julia script
+[ Info: TODO: 
+[ Info: saving project
+[ Info: Results saved to file: /tmp/jl_hSnkn6Vy1a.json
+++++++++++[ Info:  ============== Testing for ACEpotentials #208 ================
+[ Info:  On Julia 1.9 some energy computations were inconsistent. 
+maxdiff = 4.058620106661692e-11 eV
+[ Info:  ============================================================
+[ Info:  ============== Testing for no Eref bug ====================
+Test Passed
+[ Info:  ============================================================
+[ Info: -------- Test Fast ACE evaluator ----------
+[ Info: construct a Si model and fit parameters using BLR
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 77).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:06:03Progress:   9%|███▉                                     |  ETA: 0:02:36Progress:  15%|██████▎                                  |  ETA: 0:01:42Progress:  34%|█████████████▉                           |  ETA: 0:00:47Progress:  40%|████████████████▎                        |  ETA: 0:00:40Progress:  45%|██████████████████▋                      |  ETA: 0:00:34Progress:  64%|██████████████████████████▎              |  ETA: 0:00:19Progress:  83%|██████████████████████████████████       |  ETA: 0:00:08Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:05Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:03Progress: 100%|█████████████████████████████████████████| Time: 0:00:46
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.209180e+03     7.720422e+02
+ * time: 1.5974044799804688e-5
+     1     8.382859e+02     6.648796e+02
+ * time: 0.009007930755615234
+     2     6.882793e+02     7.065878e+02
+ * time: 0.010854959487915039
+     3     6.606170e+02     4.832753e+02
+ * time: 0.012634038925170898
+     4     6.277215e+02     1.830573e+02
+ * time: 0.0135650634765625
+     5     5.839982e+02     5.991600e+02
+ * time: 0.014887094497680664
+     6     4.714607e+02     1.122485e+03
+ * time: 0.016236066818237305
+     7     3.261299e+02     1.218954e+03
+ * time: 0.01759791374206543
+     8     2.611349e+02     6.972809e+02
+ * time: 0.018922090530395508
+     9     2.456653e+02     2.999278e+02
+ * time: 0.019875049591064453
+    10     2.361210e+02     3.552215e+02
+ * time: 0.020802021026611328
+    11     1.907413e+02     4.543144e+02
+ * time: 0.022643089294433594
+    12     1.865624e+02     9.233708e+00
+ * time: 0.02404499053955078
+    13     1.861117e+02     8.661633e+01
+ * time: 0.02582693099975586
+    14     1.859887e+02     3.609431e+00
+ * time: 0.027179956436157227
+    15     1.859873e+02     3.136682e-01
+ * time: 0.028512001037597656
+    16     1.859873e+02     7.772844e-04
+ * time: 0.029840946197509766
+    17     1.859873e+02     7.550380e-07
+ * time: 0.031176090240478516
+    18     1.859873e+02     3.903623e-07
+ * time: 0.032510995864868164
+    19     1.859873e+02     7.527826e-08
+ * time: 0.035568952560424805
+    20     1.859873e+02     1.639262e-06
+ * time: 0.03777289390563965
+    21     1.859873e+02     1.536158e-06
+ * time: 0.03867793083190918
+    22     1.859873e+02     2.313628e-07
+ * time: 0.03958892822265625
+    23     1.859873e+02     9.736867e-07
+ * time: 0.04098105430603027
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     1.859873e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 8.81e-12 ≤ 1.0e-08
+    |x - x'|/|x'|          = 2.57e-13 ≰ 0.0e+00
+    |f(x) - f(x')|         = 5.68e-09 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 3.06e-11 ≰ 0.0e+00
+    |g(x)|                 = 9.74e-07 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   0  (vs limit Inf)
+    Iterations:    23
+    f(x) calls:    93
+    ∇f(x) calls:   93
+
+Fast Evaluator: Error During Test at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:20
+  Got exception outside of a @test
+  LoadError: KeyError: key "AA_spec" not found
+  Stacktrace:
+    [1] getindex
+      @ ./dict.jl:477 [inlined]
+    [2] FastACEInner(model::ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 37, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{4, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 10, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}, iz::Int64; aa_static::Bool)
+      @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:53
+    [3] (::ACEpotentials.Models.var"#187#188"{ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 37, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{4, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 10, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}})(iz::Int64)
+      @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:105
+    [4] ntuple
+      @ ./ntuple.jl:19 [inlined]
+    [5] fast_evaluator(model::ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 37, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{4, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 10, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}; aa_static::Symbol)
+      @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:105
+    [6] fast_evaluator(model::ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 37, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{4, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 10, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}})
+      @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:98
+    [7] top-level scope
+      @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_fast.jl:37
+    [8] include(fname::String)
+      @ Main ./sysimg.jl:38
+    [9] macro expansion
+      @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:20 [inlined]
+   [10] macro expansion
+      @ ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Test/src/Test.jl:1709 [inlined]
+   [11] macro expansion
+      @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:20 [inlined]
+   [12] macro expansion
+      @ ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Test/src/Test.jl:1709 [inlined]
+   [13] top-level scope
+      @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+   [14] include(fname::String)
+      @ Main ./sysimg.jl:38
+   [15] top-level scope
+      @ none:6
+  in expression starting at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_fast.jl:37
+Test Summary:                   | Pass  Error  Total      Time
+ACEpotentials.jl                |  843      1    844  15m04.6s
+  Models                        |  779           779   5m36.3s
+  Test silicon                  |   50            50   5m46.5s
+  Test recomputation of weights |    2             2      0.5s
+  Test JSON interface           |                  0   2m39.3s
+  Test IO                       |   10            10      5.8s
+  Weird bugs                    |    2             2      6.3s
+  Fast Evaluator                |           1      1     49.8s
+ERROR: LoadError: Some tests did not pass: 843 passed, 0 failed, 1 errored, 0 broken.
+in expression starting at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:3
+ERROR: Package ACEpotentials errored during testing
+Stacktrace:
+ [1] pkgerror(msg::String)
+   @ Pkg.Types ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/Types.jl:68
+ [2] test(ctx::Pkg.Types.Context, pkgs::Vector{Pkg.Types.PackageSpec}; coverage::Bool, julia_args::Cmd, test_args::Cmd, test_fn::Nothing, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool)
+   @ Pkg.Operations ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/Operations.jl:2128
+ [3] test
+   @ ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/Operations.jl:2011 [inlined]
+ [4] test(ctx::Pkg.Types.Context, pkgs::Vector{Pkg.Types.PackageSpec}; coverage::Bool, test_fn::Nothing, julia_args::Cmd, test_args::Cmd, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool, kwargs::@Kwargs{io::IOContext{IO}})
+   @ Pkg.API ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/API.jl:481
+ [5] test(pkgs::Vector{Pkg.Types.PackageSpec}; io::IOContext{IO}, kwargs::@Kwargs{})
+   @ Pkg.API ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/API.jl:159
+ [6] test(pkgs::Vector{Pkg.Types.PackageSpec})
+   @ Pkg.API ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/API.jl:148
+ [7] test(; name::Nothing, uuid::Nothing, version::Nothing, url::Nothing, rev::Nothing, path::Nothing, mode::Pkg.Types.PackageMode, subdir::Nothing, kwargs::@Kwargs{})
+   @ Pkg.API ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/API.jl:174
+ [8] test()
+   @ Pkg.API ~/.julia/juliaup/julia-1.11.7+0.x64.linux.gnu/share/julia/stdlib/v1.11/Pkg/src/API.jl:165
+ [9] top-level scope
+   @ none:1

@@ -1,0 +1,158 @@
+Precompiling Documenter...
+    483.5 ms  ✓ IOCapture
+    531.1 ms  ✓ ANSIColoredPrinters
+    683.2 ms  ✓ AbstractTrees
+    655.0 ms  ✓ Git_LFS_jll
+    679.0 ms  ✓ Expat_jll
+    715.3 ms  ✓ OpenSSL_jll
+    813.0 ms  ✓ MarkdownAST
+    723.3 ms  ✓ Git_jll
+    784.4 ms  ✓ OpenSSH_jll
+    555.9 ms  ✓ Git
+  22662.0 ms  ✓ Documenter
+  11 dependencies successfully precompiled in 25 seconds. 42 already precompiled.
+Precompiling Literate...
+   1223.7 ms  ✓ Literate
+  1 dependency successfully precompiled in 1 seconds. 17 already precompiled.
+[ Info: generating markdown page from `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/tutorials/basic_julia_workflow.jl`
+[ Info: writing result to `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/literate_tutorials/basic_julia_workflow.md`
+[ Info: generating markdown page from `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/tutorials/smoothness_priors.jl`
+[ Info: writing result to `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/literate_tutorials/smoothness_priors.md`
+[ Info: generating markdown page from `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/tutorials/dataset_analysis.jl`
+[ Info: writing result to `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/literate_tutorials/dataset_analysis.md`
+[ Info: generating markdown page from `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/tutorials/descriptor.jl`
+[ Info: writing result to `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/literate_tutorials/descriptor.md`
+[ Info: generating markdown page from `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/tutorials/asp.jl`
+[ Info: writing result to `~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/src/literate_tutorials/asp.md`
+[ Info: SetupBuildDirectory: setting up build directory.
+[ Info: Doctest: running doctests.
+[ Info: ExpandTemplates: expanding markdown templates.
+┌ Error: failed to run `@example` block in src/literate_tutorials/asp.md:82-98
+│ ```@example asp
+│ asp_final = set_parameters!( deepcopy(model),
+│                   ACEfit.asp_select(asp_result, :final)[1]);
+│ asp_size_50  = set_parameters!( deepcopy(model),
+│                   ACEfit.asp_select(asp_result, (:bysize, 50))[1]);
+│ asp_error13  = set_parameters!( deepcopy(model),
+│                   ACEfit.asp_select(asp_result, (:byerror, 1.3))[1]);
+│ 
+│ pot_final = fast_evaluator(asp_final; aa_static = false);
+│ pot_50 = fast_evaluator(asp_size_50; aa_static = true);
+│ pot_13 = fast_evaluator(asp_error13; aa_static = true);
+│ 
+│ err_13 = ACEpotentials.compute_errors(test_data,  pot_13);
+│ err_50 = ACEpotentials.compute_errors(test_data,  pot_50);
+│ err_fin = ACEpotentials.compute_errors(test_data, pot_final);
+│ nothing #hide
+│ ```
+│   exception =
+│    KeyError: key "AA_spec" not found
+│    Stacktrace:
+│      [1] getindex
+│        @ ./dict.jl:477 [inlined]
+│      [2] FastACEInner(model::ACEpotentials.Models.ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 52, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{6, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 12, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}, iz::Int64; aa_static::Bool)
+│        @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:53
+│      [3] (::ACEpotentials.Models.var"#187#188"{ACEpotentials.Models.ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 52, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{6, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 12, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}})(iz::Int64)
+│        @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:105
+│      [4] ntuple
+│        @ ./ntuple.jl:19 [inlined]
+│      [5] fast_evaluator(model::ACEpotentials.Models.ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 52, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{6, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 12, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}; aa_static::Bool)
+│        @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:105
+│      [6] top-level scope
+│        @ asp.md:88
+│      [7] eval
+│        @ ./boot.jl:430 [inlined]
+│      [8] #59
+│        @ ~/.julia/packages/Documenter/HdXI4/src/expander_pipeline.jl:856 [inlined]
+│      [9] cd(f::Documenter.var"#59#61"{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [10] (::Documenter.var"#58#60"{Documenter.Page, Module, Expr})()
+│        @ Documenter ~/.julia/packages/Documenter/HdXI4/src/expander_pipeline.jl:855
+│     [11] (::IOCapture.var"#5#9"{DataType, Documenter.var"#58#60"{Documenter.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [12] with_logstate(f::IOCapture.var"#5#9"{DataType, Documenter.var"#58#60"{Documenter.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint}, logstate::Base.CoreLogging.LogState)
+│        @ Base.CoreLogging ./logging/logging.jl:524
+│     [13] with_logger(f::Function, logger::Base.CoreLogging.ConsoleLogger)
+│        @ Base.CoreLogging ./logging/logging.jl:635
+│     [14] capture(f::Documenter.var"#58#60"{Documenter.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [15] runner(::Type{Documenter.Expanders.ExampleBlocks}, node::MarkdownAST.Node{Nothing}, page::Documenter.Page, doc::Documenter.Document)
+│        @ Documenter ~/.julia/packages/Documenter/HdXI4/src/expander_pipeline.jl:854
+└ @ Documenter ~/.julia/packages/Documenter/HdXI4/src/utilities/utilities.jl:47
+┌ Error: failed to run `@example` block in src/literate_tutorials/asp.md:102-118
+│ ```@example asp
+│ omp_final = set_parameters!( deepcopy(model),
+│                   ACEfit.asp_select(omp_result, :final)[1]);
+│ omp_50  = set_parameters!( deepcopy(model),
+│                   ACEfit.asp_select(omp_result, (:bysize, 50))[1]);
+│ omp_13  = set_parameters!( deepcopy(model),
+│                   ACEfit.asp_select(omp_result, (:byerror, 1.3))[1]);
+│ 
+│ pot_fin = fast_evaluator(omp_final; aa_static = false);
+│ pot_50 = fast_evaluator(omp_50; aa_static = true);
+│ pot_13 = fast_evaluator(omp_13; aa_static = true);
+│ 
+│ err_13 = ACEpotentials.compute_errors(test_data,  pot_13);
+│ err_50 = ACEpotentials.compute_errors(test_data,  pot_50);
+│ err_fin = ACEpotentials.compute_errors(test_data, pot_fin);
+│ nothing #hide
+│ ```
+│   exception =
+│    KeyError: key "AA_spec" not found
+│    Stacktrace:
+│      [1] getindex
+│        @ ./dict.jl:477 [inlined]
+│      [2] FastACEInner(model::ACEpotentials.Models.ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 52, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{6, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 12, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}, iz::Int64; aa_static::Bool)
+│        @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:53
+│      [3] (::ACEpotentials.Models.var"#187#188"{ACEpotentials.Models.ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 52, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{6, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 12, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}})(iz::Int64)
+│        @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:105
+│      [4] ntuple
+│        @ ./ntuple.jl:19 [inlined]
+│      [5] fast_evaluator(model::ACEpotentials.Models.ACEPotential{ACEpotentials.Models.ACEModel{1, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.PolyEnvelope2sX{Float64}, 52, Float64}, Polynomials4ML.RealSCWrapper{SpheriCart.SphericalHarmonics{6, :L2, false, Matrix{Float64}}}, EquivariantTensors.SparseACEbasis{1, EquivariantTensors.PooledSparseProduct{2}, EquivariantTensors.SparseSymmProd{3, Tuple{Vector{Tuple{Int64}}, Vector{Tuple{Int64, Int64}}, Vector{Tuple{Int64, Int64, Int64}}}}, Tuple{SparseArrays.SparseMatrixCSC{Float64, Int64}}}, ACEpotentials.Models.SplineRnlrzzBasis{1, ACEpotentials.Models.NormalizedTransform{Float64, ACEpotentials.Models.GeneralizedAgnesiTransform{Float64}}, ACEpotentials.Models.ACE1_PolyEnvelope1sR{Float64}, 12, Float64}, ACEpotentials.Models.OneBody{Float64, Unitful.FreeUnits{(), NoDims, nothing}, Unitful.FreeUnits{(Å,), 𝐋, nothing}}}}; aa_static::Bool)
+│        @ ACEpotentials.Models ~/ace-potentials-julia-1.2/ACEpotentials.jl/src/models/fasteval.jl:105
+│      [6] top-level scope
+│        @ asp.md:108
+│      [7] eval
+│        @ ./boot.jl:430 [inlined]
+│      [8] #59
+│        @ ~/.julia/packages/Documenter/HdXI4/src/expander_pipeline.jl:856 [inlined]
+│      [9] cd(f::Documenter.var"#59#61"{Module, Expr}, dir::String)
+│        @ Base.Filesystem ./file.jl:112
+│     [10] (::Documenter.var"#58#60"{Documenter.Page, Module, Expr})()
+│        @ Documenter ~/.julia/packages/Documenter/HdXI4/src/expander_pipeline.jl:855
+│     [11] (::IOCapture.var"#5#9"{DataType, Documenter.var"#58#60"{Documenter.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:170
+│     [12] with_logstate(f::IOCapture.var"#5#9"{DataType, Documenter.var"#58#60"{Documenter.Page, Module, Expr}, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint}, logstate::Base.CoreLogging.LogState)
+│        @ Base.CoreLogging ./logging/logging.jl:524
+│     [13] with_logger(f::Function, logger::Base.CoreLogging.ConsoleLogger)
+│        @ Base.CoreLogging ./logging/logging.jl:635
+│     [14] capture(f::Documenter.var"#58#60"{Documenter.Page, Module, Expr}; rethrow::Type, color::Bool, passthrough::Bool, capture_buffer::IOBuffer, io_context::Vector{Any})
+│        @ IOCapture ~/.julia/packages/IOCapture/Y5rEA/src/IOCapture.jl:167
+│     [15] runner(::Type{Documenter.Expanders.ExampleBlocks}, node::MarkdownAST.Node{Nothing}, page::Documenter.Page, doc::Documenter.Document)
+│        @ Documenter ~/.julia/packages/Documenter/HdXI4/src/expander_pipeline.jl:854
+└ @ Documenter ~/.julia/packages/Documenter/HdXI4/src/utilities/utilities.jl:47
+GKS: cannot open display - headless operation mode active
+[ Info: CrossReferences: building cross-references.
+[ Info: CheckDocument: running document checks.
+[ Info: Populate: populating indices.
+ERROR: LoadError: `makedocs` encountered an error [:example_block] -- terminating build before rendering.
+Stacktrace:
+ [1] error(s::String)
+   @ Base ./error.jl:35
+ [2] runner(::Type{Documenter.Builder.RenderDocument}, doc::Documenter.Document)
+   @ Documenter ~/.julia/packages/Documenter/HdXI4/src/builder_pipeline.jl:259
+ [3] dispatch(::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Document)
+   @ Documenter.Selectors ~/.julia/packages/Documenter/HdXI4/src/utilities/Selectors.jl:170
+ [4] #88
+   @ ~/.julia/packages/Documenter/HdXI4/src/makedocs.jl:280 [inlined]
+ [5] withenv(::Documenter.var"#88#90"{Documenter.Document}, ::Pair{String, Nothing}, ::Vararg{Pair{String, Nothing}})
+   @ Base ./env.jl:265
+ [6] #87
+   @ ~/.julia/packages/Documenter/HdXI4/src/makedocs.jl:279 [inlined]
+ [7] cd(f::Documenter.var"#87#89"{Documenter.Document}, dir::String)
+   @ Base.Filesystem ./file.jl:112
+ [8] makedocs(; debug::Bool, format::Documenter.HTMLWriter.HTML, kwargs::@Kwargs{modules::Vector{Module}, repo::String, sitename::String, pages::Vector{Pair{String, Any}}})
+   @ Documenter ~/.julia/packages/Documenter/HdXI4/src/makedocs.jl:278
+ [9] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/docs/make.jl:52
+in expression starting at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/docs/make.jl:52

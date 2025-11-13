@@ -1,0 +1,2325 @@
+     Testing ACEpotentials
+      Status `/tmp/jl_MxdgVi/Project.toml`
+  [14bae519] ACEbase v0.4.5
+  [3b96b61c] ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+  [a963bdd2] AtomsBase v0.5.2
+  [f5cc8831] AtomsBuilder v0.2.2
+  [a3e0e189] AtomsCalculators v0.2.3
+  [9855a07e] AtomsCalculatorsUtilities v0.1.8
+  [38527215] EmpiricalPotentials v0.2.4
+  [352459e4] ExtXYZ v0.2.2
+⌅ [f6369f11] ForwardDiff v0.10.39
+⌅ [a98d9a8b] Interpolations v0.15.1
+⌅ [682c06a0] JSON v0.21.4
+  [b2108857] Lux v1.25.0
+  [bb33d45b] LuxCore v1.4.2
+  [3bd65402] Optimisers v0.4.6
+  [03c4bcba] Polynomials4ML v0.5.3
+  [90137ffa] StaticArrays v1.9.15
+  [10745b16] Statistics v1.11.1
+  [1986cc42] Unitful v1.25.1
+  [e88e6eb3] Zygote v0.7.10
+  [8ba89e20] Distributed v1.11.0
+  [4af54fe1] LazyArtifacts v1.11.0
+  [37e2e46d] LinearAlgebra v1.12.0
+  [44cfe95a] Pkg v1.12.0
+  [9a3f8284] Random v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [8dfed614] Test v1.11.0
+      Status `/tmp/jl_MxdgVi/Manifest.toml`
+  [14bae519] ACEbase v0.4.5
+  [ad31a8ef] ACEfit v0.2.6
+  [3b96b61c] ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+  [47edcb42] ADTypes v1.18.0
+  [621f4979] AbstractFFTs v1.5.0
+  [7d9f7c33] Accessors v0.1.42
+  [d86c1dc8] ActiveSetPursuit v0.0.4
+  [79e6a3ab] Adapt v4.4.0
+  [66dad0bd] AliasTables v1.1.3
+  [dce04be8] ArgCheck v2.5.0
+  [c7e460c6] ArgParse v1.2.0
+  [4fba245c] ArrayInterface v7.22.0
+  [a9b6321e] Atomix v1.1.2
+  [a963bdd2] AtomsBase v0.5.2
+  [f5cc8831] AtomsBuilder v0.2.2
+  [a3e0e189] AtomsCalculators v0.2.3
+  [9855a07e] AtomsCalculatorsUtilities v0.1.8
+  [13072b0f] AxisAlgorithms v1.1.0
+  [198e06fe] BangBang v0.4.6
+  [9718e550] Baselet v0.1.1
+  [6e4b80f9] BenchmarkTools v1.6.3
+  [62783981] BitTwiddlingConvenienceFunctions v0.1.6
+  [8ce10254] Bumper v0.7.1
+  [2a0fbf3d] CPUSummary v0.2.7
+  [49dc2e85] Calculus v0.5.2
+  [082447d4] ChainRules v1.72.6
+  [d360d2e6] ChainRulesCore v1.26.0
+  [ae650224] ChunkSplitters v3.1.2
+  [fb6a15b2] CloseOpenIntervals v0.1.13
+  [6309b1aa] CodecInflate64 v0.1.3
+  [944b1d66] CodecZlib v0.7.8
+  [861a8166] Combinatorics v1.0.3
+  [38540f10] CommonSolve v0.2.4
+  [bbf7d656] CommonSubexpressions v0.3.1
+  [f70d9fcc] CommonWorldInvalidations v1.0.0
+  [34da2185] Compat v4.18.1
+  [a33af91c] CompositionsBase v0.1.2
+  [2569d6c7] ConcreteStructs v0.2.3
+  [187b0558] ConstructionBase v1.6.0
+  [adafc99b] CpuId v0.3.1
+  [a8cc5b0e] Crayons v4.1.1
+  [9a962f9c] DataAPI v1.16.0
+  [a93c6f00] DataFrames v1.8.1
+  [864edb3b] DataStructures v0.19.3
+  [e2d170a0] DataValueInterfaces v1.0.0
+  [244e2a9f] DefineSingletons v0.1.2
+  [163ba53b] DiffResults v1.1.0
+  [b552c78f] DiffRules v1.15.1
+  [a0c0ee7d] DifferentiationInterface v0.7.11
+  [8d63f2c5] DispatchDoctor v0.4.26
+  [ffbed154] DocStringExtensions v0.9.5
+  [7c1d4256] DynamicPolynomials v0.6.4
+  [38527215] EmpiricalPotentials v0.2.4
+  [4e289a0a] EnumX v1.0.5
+  [f151be2c] EnzymeCore v0.8.16
+  [5e107534] EquivariantTensors v0.3.0
+  [e2ba6199] ExprTools v0.1.10
+  [21656369] ExpressionExplorer v1.1.3
+  [352459e4] ExtXYZ v0.2.2
+  [e189563c] ExternalDocstrings v0.1.1
+  [7a1cc6ca] FFTW v1.10.0
+  [9aa1b823] FastClosures v0.3.2
+  [1a297f60] FillArrays v1.15.0
+  [6a86dc24] FiniteDiff v2.29.0
+  [41a02a25] Folds v0.2.10
+⌅ [f6369f11] ForwardDiff v0.10.39
+  [d9f16b24] Functors v0.5.2
+  [46192b85] GPUArraysCore v0.2.0
+  [f0d1745a] HalfIntegers v1.6.0
+  [076d061b] HashArrayMappedTries v0.2.0
+  [3e5b6fbb] HostCPUFeatures v0.1.17
+  [50ceba7f] HyperDualNumbers v4.0.10
+  [7869d1d1] IRTools v0.4.15
+  [615f187c] IfElse v0.1.1
+  [22cec73e] InitialValues v0.3.1
+  [842dd82b] InlineStrings v1.4.5
+  [0c81fc1b] InputBuffers v1.1.1
+⌅ [a98d9a8b] Interpolations v0.15.1
+  [3587e190] InverseFunctions v0.1.17
+  [41ab1584] InvertedIndices v1.3.1
+  [92d709cd] IrrationalConstants v0.2.6
+  [42fd0dbc] IterativeSolvers v0.9.4
+  [82899510] IteratorInterfaceExtensions v1.0.0
+  [692b3bcd] JLLWrappers v1.7.1
+⌅ [682c06a0] JSON v0.21.4
+  [63c18a36] KernelAbstractions v0.9.39
+  [b964fa9f] LaTeXStrings v1.4.0
+  [10f19ff3] LayoutPointers v0.1.17
+  [0e77f7df] LazilyInitializedFields v1.3.0
+  [d3d80556] LineSearches v7.4.0
+  [5c8ed15e] LinearOperators v2.11.0
+  [89398ba2] LocalRegistry v0.5.7
+  [2ab3a3ac] LogExpFunctions v0.3.29
+  [bdcacae8] LoopVectorization v0.12.173
+  [898213cb] LowRankApprox v0.5.5
+  [e65ccdef] LowRankMatrices v1.0.2
+  [b2108857] Lux v1.25.0
+  [bb33d45b] LuxCore v1.4.2
+  [82251201] LuxLib v1.13.0
+  [7e8f7934] MLDataDevices v1.15.0
+  [1914dd2f] MacroTools v0.5.16
+  [d125e4d3] ManualMemory v0.1.8
+  [128add7d] MicroCollections v0.2.0
+  [e1d29d7a] Missings v1.2.0
+  [102ac46a] MultivariatePolynomials v0.5.13
+  [d8a4904e] MutableArithmetics v1.6.7
+  [d41bc354] NLSolversBase v7.10.0
+  [872c559c] NNlib v0.9.31
+  [77ba4419] NaNMath v1.1.3
+  [d9ec5142] NamedTupleTools v0.14.3
+  [2fcf5ba9] NeighbourLists v0.5.10
+  [4d1e1d77] Nullables v1.0.0
+  [6fd5a793] Octavian v0.3.29
+  [6fe1bfb0] OffsetArrays v1.17.0
+  [429524aa] Optim v1.13.2
+  [3bd65402] Optimisers v0.4.6
+  [bac558e1] OrderedCollections v1.8.1
+  [2dcacdae] ParallelDataTransfer v0.5.1
+  [d96e819e] Parameters v0.12.3
+  [69de0a69] Parsers v2.8.3
+  [793d2195] PartialWaveFunctions v0.2.0
+  [7b2266bf] PeriodicTable v1.2.1
+  [1d0040c9] PolyesterWeave v0.2.2
+  [03c4bcba] Polynomials4ML v0.5.3
+  [2dfb63ee] PooledArrays v1.4.3
+  [85a6dd25] PositiveFactorizations v0.2.4
+  [aea7be01] PrecompileTools v1.3.3
+  [21216c6a] Preferences v1.5.0
+⌅ [08abe8d2] PrettyTables v2.4.0
+  [92933f4c] ProgressMeter v1.11.0
+  [43287f4e] PtrArrays v1.3.0
+  [29d2ae51] QRupdate v1.0.1
+  [1fd47b50] QuadGK v2.11.2
+  [94ee1d12] Quaternions v0.7.6
+  [c84ed2f1] Ratios v0.4.5
+  [a3311ec8] ReactantCore v0.1.16
+  [c1ae055f] RealDot v0.1.0
+  [3cdcf5f2] RecipesBase v1.3.4
+  [189a3867] Reexport v1.2.2
+  [42d2dcc6] Referenceables v0.1.3
+  [2792f1a3] RegistryInstances v0.1.0
+  [d1eb7eb1] RegistryTools v2.4.0
+  [f07d36f2] RepLieGroups v0.1.1
+  [ae029012] Requires v1.3.1
+  [f2b01f46] Roots v2.2.10
+  [6038ab10] Rotations v1.7.1
+  [94e857df] SIMDTypes v0.1.0
+  [476501e8] SLEEFPirates v0.6.43
+  [431bcebd] SciMLPublic v1.0.0
+  [7e506255] ScopedValues v1.5.0
+  [91c51154] SentinelArrays v1.4.8
+  [efcf1570] Setfield v1.1.2
+  [a2af1166] SortingAlgorithms v1.2.2
+  [dc90abb0] SparseInverseSubset v0.1.2
+  [276daf66] SpecialFunctions v2.6.1
+  [5caf2b29] SpheriCart v0.2.3
+  [171d559e] SplittablesBase v0.1.15
+  [aedffcd0] Static v1.3.1
+  [0d7ed370] StaticArrayInterface v1.8.0
+  [90137ffa] StaticArrays v1.9.15
+  [1e83bf80] StaticArraysCore v1.4.4
+  [62e018b1] StaticPolynomials v1.3.7
+  [10745b16] Statistics v1.11.1
+  [82ae8749] StatsAPI v1.7.1
+  [2913bbd2] StatsBase v0.34.8
+  [d1fa6d79] StrideArrays v0.1.29
+  [7792a7ef] StrideArraysCore v0.5.8
+  [69024149] StringEncodings v0.3.7
+  [892a3eda] StringManipulation v0.4.1
+⌅ [09ab397b] StructArrays v0.6.21
+  [3783bdb8] TableTraits v1.0.1
+  [bd369af6] Tables v1.12.1
+  [ed4db957] TaskLocalValues v0.1.3
+  [b718987f] TextWrap v1.0.2
+  [24d252fe] ThreadedScans v0.1.0
+  [8290d209] ThreadingUtilities v0.5.5
+  [a759f4b9] TimerOutputs v0.5.29
+  [3bb67fe8] TranscodingStreams v0.11.3
+  [28d57a85] Transducers v0.4.85
+  [3a884ed6] UnPack v1.0.2
+  [1986cc42] Unitful v1.25.1
+  [a7773ee8] UnitfulAtomic v1.0.0
+  [c4a57d5a] UnsafeArrays v1.0.8
+  [013be700] UnsafeAtomics v0.3.0
+  [3d5dd08c] VectorizationBase v0.21.72
+  [33b4df10] VectorizedRNG v0.2.25
+  [3b853605] VectorizedStatistics v0.5.11
+  [d49dbf32] WeightInitializers v1.2.2
+  [87c4ff3e] WignerD v0.1.4
+  [fb1aa66a] WithAlloc v0.1.1
+  [efce3f68] WoodburyMatrices v1.0.0
+  [ddb6d928] YAML v0.4.16
+  [49080126] ZipArchives v2.6.0
+  [e88e6eb3] Zygote v0.7.10
+  [700de1a5] ZygoteRules v0.2.7
+  [f5851436] FFTW_jll v3.3.11+0
+  [1d5cc7b8] IntelOpenMP_jll v2025.2.0+0
+  [94ce4f54] Libiconv_jll v1.18.0+0
+  [856f044c] MKL_jll v2025.2.0+0
+  [efe28fd5] OpenSpecFun_jll v0.5.6+0
+  [6ecdc6fc] extxyz_jll v0.1.3+0
+  [cdc7adba] libcleri_jll v0.12.1+3
+  [1317d2d5] oneTBB_jll v2022.0.0+1
+  [0dad84c5] ArgTools v1.1.2
+  [56f22d72] Artifacts v1.11.0
+  [2a0f44e3] Base64 v1.11.0
+  [ade2ca70] Dates v1.11.0
+  [8ba89e20] Distributed v1.11.0
+  [f43a241f] Downloads v1.6.0
+  [7b1f6079] FileWatching v1.11.0
+  [9fa8497b] Future v1.11.0
+  [b77e0a4c] InteractiveUtils v1.11.0
+  [ac6e5ff7] JuliaSyntaxHighlighting v1.12.0
+  [4af54fe1] LazyArtifacts v1.11.0
+  [b27032c2] LibCURL v0.6.4
+  [76f85450] LibGit2 v1.11.0
+  [8f399da3] Libdl v1.11.0
+  [37e2e46d] LinearAlgebra v1.12.0
+  [56ddb016] Logging v1.11.0
+  [d6f4376e] Markdown v1.11.0
+  [a63ad114] Mmap v1.11.0
+  [ca575930] NetworkOptions v1.3.0
+  [44cfe95a] Pkg v1.12.0
+  [de0858da] Printf v1.11.0
+  [9abbd945] Profile v1.11.0
+  [9a3f8284] Random v1.11.0
+  [ea8e919c] SHA v0.7.0
+  [9e88b42a] Serialization v1.11.0
+  [1a1011a3] SharedArrays v1.11.0
+  [6462fe0b] Sockets v1.11.0
+  [2f01184e] SparseArrays v1.12.0
+  [f489334b] StyledStrings v1.11.0
+  [4607b0f0] SuiteSparse
+  [fa267f1f] TOML v1.0.3
+  [a4e569a6] Tar v1.10.0
+  [8dfed614] Test v1.11.0
+  [cf7118a7] UUIDs v1.11.0
+  [4ec0a83e] Unicode v1.11.0
+  [e66e0078] CompilerSupportLibraries_jll v1.3.0+1
+  [deac9b47] LibCURL_jll v8.11.1+1
+  [e37daf67] LibGit2_jll v1.9.0+0
+  [29816b5a] LibSSH2_jll v1.11.3+1
+  [14a3606d] MozillaCACerts_jll v2025.5.20
+  [4536629a] OpenBLAS_jll v0.3.29+0
+  [05823500] OpenLibm_jll v0.8.7+0
+  [458c3c95] OpenSSL_jll v3.5.1+0
+  [efcefdf7] PCRE2_jll v10.44.0+1
+  [bea87d4a] SuiteSparse_jll v7.8.3+2
+  [83775a58] Zlib_jll v1.3.1+2
+  [8e850b90] libblastrampoline_jll v5.15.0+0
+  [8e850ede] nghttp2_jll v1.64.0+1
+  [3f19e933] p7zip_jll v17.5.0+2
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading.
+Precompiling for configuration --code-coverage=none --color=auto --check-bounds=yes --warn-overwrite=yes --depwarn=yes --inline=yes --startup-file=no --track-allocation=none
+    568.2 ms  ✓ PrecompileTools
+    978.1 ms  ✓ ExpressionExplorer
+    970.2 ms  ✓ MLDataDevices
+   1633.7 ms  ✓ Optimisers
+    647.8 ms  ✓ MLDataDevices → MLDataDevicesFillArraysExt
+    813.7 ms  ✓ ReactantCore
+    669.9 ms  ✓ LuxCore → LuxCoreMLDataDevicesExt
+    769.1 ms  ✓ MLDataDevices → MLDataDevicesChainRulesCoreExt
+    902.3 ms  ✓ MLDataDevices → MLDataDevicesSparseArraysExt
+   1152.0 ms  ✓ MLDataDevices → MLDataDevicesChainRulesExt
+    582.3 ms  ✓ Optimisers → OptimisersEnzymeCoreExt
+    620.3 ms  ✓ Optimisers → OptimisersAdaptExt
+   2057.6 ms  ✓ RecipesBase
+   2172.7 ms  ✓ StringManipulation
+   3910.1 ms  ✓ Static
+   1970.3 ms  ✓ IterativeSolvers
+    533.5 ms  ✓ BitTwiddlingConvenienceFunctions
+   1458.1 ms  ✓ CPUSummary
+   1008.3 ms  ✓ HostCPUFeatures
+   1037.2 ms  ✓ PolyesterWeave
+   7635.6 ms  ✓ ZipArchives
+   8843.6 ms  ✓ StaticArrays
+    773.3 ms  ✓ Adapt → AdaptStaticArraysExt
+    788.8 ms  ✓ StaticArrays → StaticArraysStatisticsExt
+    789.1 ms  ✓ DifferentiationInterface → DifferentiationInterfaceStaticArraysExt
+    823.0 ms  ✓ StaticArrays → StaticArraysChainRulesCoreExt
+    813.8 ms  ✓ ConstructionBase → ConstructionBaseStaticArraysExt
+    880.5 ms  ✓ Accessors → StaticArraysExt
+    871.4 ms  ✓ FiniteDiff → FiniteDiffStaticArraysExt
+    990.5 ms  ✓ BangBang → BangBangStaticArraysExt
+   1030.5 ms  ✓ StructArrays → StructArraysStaticArraysExt
+   1236.0 ms  ✓ RepLieGroups
+   2394.5 ms  ✓ Rotations
+   2470.5 ms  ✓ StaticPolynomials
+   2170.4 ms  ✓ ForwardDiff → ForwardDiffStaticArraysExt
+    943.4 ms  ✓ Rotations → RotationsRecipesBaseExt
+  12434.4 ms  ✓ Parsers
+   3011.3 ms  ✓ Interpolations
+   3983.0 ms  ✓ AtomsBase
+    625.2 ms  ✓ InlineStrings → ParsersExt
+   1360.0 ms  ✓ Interpolations → InterpolationsUnitfulExt
+   2007.8 ms  ✓ JSON
+   4978.2 ms  ✓ KernelAbstractions
+   1963.9 ms  ✓ NeighbourLists
+   2230.0 ms  ✓ ExtXYZ
+   2433.0 ms  ✓ AtomsCalculators
+    944.8 ms  ✓ KernelAbstractions → LinearAlgebraExt
+   1042.3 ms  ✓ StructArrays → StructArraysGPUArraysCoreExt
+   1062.4 ms  ✓ KernelAbstractions → EnzymeExt
+   1283.3 ms  ✓ KernelAbstractions → SparseArraysExt
+   1634.0 ms  ✓ BenchmarkTools
+   1885.6 ms  ✓ ACEbase
+   2738.8 ms  ✓ AtomsBuilder
+   4331.8 ms  ✓ SpheriCart
+   5435.3 ms  ✓ AtomsCalculatorsUtilities
+   7577.0 ms  ✓ NNlib
+  19561.0 ms  ✓ StaticArrayInterface
+  21318.9 ms  ✓ PrettyTables
+    633.2 ms  ✓ StaticArrayInterface → StaticArrayInterfaceOffsetArraysExt
+    678.8 ms  ✓ CloseOpenIntervals
+    819.1 ms  ✓ LayoutPointers
+    905.9 ms  ✓ StaticArrayInterface → StaticArrayInterfaceStaticArraysExt
+   1146.0 ms  ✓ NNlib → NNlibSpecialFunctionsExt
+   1322.0 ms  ✓ NNlib → NNlibEnzymeCoreExt
+   1215.8 ms  ✓ NNlib → NNlibFFTWExt
+   1131.7 ms  ✓ NNlib → NNlibForwardDiffExt
+   4545.1 ms  ✓ EmpiricalPotentials
+   1103.8 ms  ✓ StrideArraysCore
+   7879.5 ms  ✓ Polynomials4ML
+   6641.9 ms  ✓ LuxLib
+  10482.5 ms  ✓ VectorizationBase
+   2470.9 ms  ✓ SLEEFPirates
+   2750.5 ms  ✓ VectorizedRNG
+   1008.5 ms  ✓ VectorizedRNG → VectorizedRNGStaticArraysExt
+   4113.4 ms  ✓ LuxLib → LuxLibSLEEFPiratesExt
+  44194.1 ms  ✓ Zygote
+   1795.8 ms  ✓ MLDataDevices → MLDataDevicesZygoteExt
+   1826.9 ms  ✓ DifferentiationInterface → DifferentiationInterfaceZygoteExt
+  22133.7 ms  ✓ Lux
+   3089.6 ms  ✓ Lux → LuxZygoteExt
+   8813.2 ms  ✓ EquivariantTensors
+  28810.4 ms  ✓ LoopVectorization
+   4197.0 ms  ✓ EquivariantTensors → NeighbourListsExt
+   1126.9 ms  ✓ LoopVectorization → SpecialFunctionsExt
+   1317.4 ms  ✓ LoopVectorization → ForwardDiffExt
+   1627.7 ms  ✓ LoopVectorization → ForwardDiffNNlibExt
+   2575.9 ms  ✓ Octavian
+   1788.9 ms  ✓ LuxLib → LuxLibOctavianExt
+   1811.6 ms  ✓ Octavian → ForwardDiffExt
+   1930.4 ms  ✓ Octavian → HyperDualNumbersExt
+  10614.1 ms  ✓ VectorizedStatistics
+   2228.4 ms  ✓ StrideArrays
+  56472.2 ms  ✓ DataFrames
+   1669.1 ms  ✓ Transducers → TransducersDataFramesExt
+   2117.4 ms  ✓ BangBang → BangBangDataFramesExt
+   2466.9 ms  ✓ ActiveSetPursuit
+   5319.4 ms  ✓ ACEfit
+  14711.7 ms  ✓ ACEpotentials
+  98 dependencies successfully precompiled in 104 seconds. 249 already precompiled.
+  1 dependency had output during precompilation:
+┌ LoopVectorization → ForwardDiffNNlibExt
+│  WARNING: method definition for relu at /home/eng/essswb/.julia/packages/LoopVectorization/GKxH5/ext/ForwardDiffNNlibExt.jl:5 declares type variable S but does not use it.
+│  WARNING: method definition for leakyrelu at /home/eng/essswb/.julia/packages/LoopVectorization/GKxH5/ext/ForwardDiffNNlibExt.jl:22 declares type variable S but does not use it.
+└  
+     Testing Running tests...
+++++++
+++++++++++++++++++++++++++++++++++++
+[ Info: Testing agnesi transforms
+Test Passed
+Test Passed
+Test Passed
+[ Info: Test derivatives of LearnableRnlrzzBasis
+++++++++++++++++++++
+[ Info: LearnableRnlrzz : Consistency of single and batched evaluation
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Testing SplineRnlrzzBasis consistency via splinify
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives of SplineRnlrzzBasis
+++++++++++++++++++++
+[ Info: SplineRnlrzz : Consistency of single and batched evaluation
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives of Spline Rnl Basis for Pairpot
+++++++++++++++++++++
+[ Info: Test ybasis of the Model is used correctly
+++++++++++++++++++++++++++++++
+[ Info: === Testing ybasis = spherical === 
+[ Info: Test Rotation-Invariance of the Model
+++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives w.r.t. positions
+Test Passed
+++++++++++++++++++++
+[ Info: Test derivatives w.r.t. parameters
+Test Passed
+++++++++++++++++++++
+[ Info: Test second mixed derivatives reverse-over-reverse
+++++++++++++++++++++
+[ Info: Test basis implementation
++++++++++++++++
+[ Info: Test the full mixed jacobian
++++++
+[ Info: check splinification
++++++
+[ Info: After splinification check correctness of evaluate_basis_ed again
+++++++++++
+[ Info: === Testing ybasis = solid === 
+[ Info: Test Rotation-Invariance of the Model
+++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: Test derivatives w.r.t. positions
+Test Passed
+++++++++++++++++++++
+[ Info: Test derivatives w.r.t. parameters
+Test Passed
+++++++++++++++++++++
+[ Info: Test second mixed derivatives reverse-over-reverse
+++++++++++++++++++++
+[ Info: Test basis implementation
++++++++++++++++
+[ Info: Test the full mixed jacobian
++++++
+[ Info: check splinification
++++++
+[ Info: After splinification check correctness of evaluate_basis_ed again
+++++++++++
+[ Info: Testing correctness of E0s
+++++++++++++++++++++++++++++++++++++++++
+[ Info: Testing correctness of potential energy
+++++++++++++++++++++++++++++++++++++++++
+[ Info: Testing correctness of forces 
+[ Info:    .... TODO TEST VIRIALS ..... 
+[ Info:  consistency local vs EmpiricalPotentials implementation
+++++++[ Info: test consistency of forces with energy
+[ Info:  TODO: write virial test!
+++++++++++
+[ Info: check splinification of calculator
+++++++++++
+[ Info: Test splinified calculator basis usage
+++++++++++++++++++++++++++++++
+[ Info: Testing Zygote-AD through a loss function
+[ Info: (wE, wV, wF) = (1.0 eV^-1, 0.0 eV^-1, 0.0 Å eV^-1)
+Test Passed
+[ Info: (wE, wV, wF) = (0.0 eV^-1, 1.0 eV^-1, 0.0 Å eV^-1)
+Test Passed
+[ Info: (wE, wV, wF) = (0.0 eV^-1, 0.0 eV^-1, 1.0 Å eV^-1)
+Test Passed
+[ Info: (wE, wV, wF) = (1.0 eV^-1, 0.1 eV^-1, 0.1 Å eV^-1)
+Test Passed
+  Activating project at `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+(E - mean(co_E)) / length(sys) = 0.010685140182516262 eV
+cov(co_E / length(sys)) = 0.00033249801331071345 eV^2
+maximum(norm.(F - F̄)) = 0.0034642284177349185 eV Å^-1
+cov([ustrip.(f[1]) for f = co_F]) = [3.304982770056157e-8 -6.211056151110628e-9 -2.736952011322789e-8; -6.211056151110628e-9 6.928685503006976e-8 3.8711734771886895e-8; -2.736952011322789e-8 3.8711734771886895e-8 4.71573895162028e-8]
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:09:18Progress:   9%|███▉                                     |  ETA: 0:03:57Progress:  11%|████▋                                    |  ETA: 0:03:19Progress:  13%|█████▍                                   |  ETA: 0:02:52Progress:  15%|██████▎                                  |  ETA: 0:02:32Progress:  17%|███████                                  |  ETA: 0:02:15Progress:  19%|███████▊                                 |  ETA: 0:02:02Progress:  21%|████████▌                                |  ETA: 0:01:51Progress:  23%|█████████▎                               |  ETA: 0:01:42Progress:  25%|██████████                               |  ETA: 0:01:34Progress:  26%|██████████▉                              |  ETA: 0:01:28Progress:  28%|███████████▋                             |  ETA: 0:01:21Progress:  30%|████████████▍                            |  ETA: 0:01:16Progress:  32%|█████████████▏                           |  ETA: 0:01:11Progress:  34%|█████████████▉                           |  ETA: 0:01:07Progress:  36%|██████████████▊                          |  ETA: 0:01:03Progress:  38%|███████████████▌                         |  ETA: 0:00:59Progress:  40%|████████████████▎                        |  ETA: 0:00:56Progress:  42%|█████████████████                        |  ETA: 0:00:53Progress:  43%|█████████████████▊                       |  ETA: 0:00:50Progress:  45%|██████████████████▋                      |  ETA: 0:00:47Progress:  47%|███████████████████▍                     |  ETA: 0:00:44Progress:  49%|████████████████████▏                    |  ETA: 0:00:42Progress:  51%|████████████████████▉                    |  ETA: 0:00:40Progress:  53%|█████████████████████▋                   |  ETA: 0:00:38Progress:  55%|██████████████████████▍                  |  ETA: 0:00:36Progress:  57%|███████████████████████▎                 |  ETA: 0:00:34Progress:  58%|████████████████████████                 |  ETA: 0:00:32Progress:  60%|████████████████████████▊                |  ETA: 0:00:30Progress:  62%|█████████████████████████▌               |  ETA: 0:00:28Progress:  64%|██████████████████████████▎              |  ETA: 0:00:26Progress:  66%|███████████████████████████▏             |  ETA: 0:00:24Progress:  68%|███████████████████████████▉             |  ETA: 0:00:23Progress:  70%|████████████████████████████▋            |  ETA: 0:00:21Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:20Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:18Progress:  75%|███████████████████████████████          |  ETA: 0:00:17Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:15Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:14Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:12Progress:  83%|██████████████████████████████████       |  ETA: 0:00:11Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:10Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:09Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:07Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:06Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:05Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:04Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:01:01
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:05Progress: 100%|█████████████████████████████████████████| Time: 0:00:00
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.970 │    0.026 │  66.743 │
+│           liq │   1.070 │    0.249 │  46.858 │
+│            bt │   4.274 │    0.082 │ 111.659 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.581 │    0.191 │  90.665 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   1.786 │    0.019 │  42.805 │
+│           liq │   0.828 │    0.199 │  39.116 │
+│            bt │   3.413 │    0.060 │  84.369 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   2.484 │    0.128 │  62.646 │
+└───────────────┴─────────┴──────────┴─────────┘
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.06674345169679448 <= 0.027
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0029698492982305293 <= 0.0012
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.025904035713351304 <= 0.024
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.046858373790382324 <= 0.037
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0010699227232859585 <= 0.0006
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.24939756176273212 <= 0.16
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.09066525088248838 <= 0.057
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.003580538717753408 <= 0.0017
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.19073188752254838 <= 0.12
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.11165861154712256 <= 0.08
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.004274033492484298 <= 0.0022
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0819353594977562 <= 0.07
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:60
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  4.
+Progress:   4%|█▌                                       |  ETA: 0:12:14Progress:   6%|██▍                                      |  ETA: 0:08:08Progress:   8%|███▏                                     |  ETA: 0:06:05Progress:   9%|███▉                                     |  ETA: 0:04:50Progress:  11%|████▋                                    |  ETA: 0:04:01Progress:  13%|█████▍                                   |  ETA: 0:03:25Progress:  15%|██████▎                                  |  ETA: 0:02:58Progress:  17%|███████                                  |  ETA: 0:02:37Progress:  19%|███████▊                                 |  ETA: 0:02:21Progress:  21%|████████▌                                |  ETA: 0:02:07Progress:  23%|█████████▎                               |  ETA: 0:01:55Progress:  25%|██████████                               |  ETA: 0:01:45Progress:  26%|██████████▉                              |  ETA: 0:01:37Progress:  30%|████████████▍                            |  ETA: 0:01:21Progress:  32%|█████████████▏                           |  ETA: 0:01:15Progress:  34%|█████████████▉                           |  ETA: 0:01:09Progress:  36%|██████████████▊                          |  ETA: 0:01:04Progress:  38%|███████████████▌                         |  ETA: 0:01:00Progress:  40%|████████████████▎                        |  ETA: 0:00:55Progress:  43%|█████████████████▊                       |  ETA: 0:00:48Progress:  45%|██████████████████▋                      |  ETA: 0:00:45Progress:  49%|████████████████████▏                    |  ETA: 0:00:39Progress:  51%|████████████████████▉                    |  ETA: 0:00:36Progress:  53%|█████████████████████▋                   |  ETA: 0:00:34Progress:  55%|██████████████████████▍                  |  ETA: 0:00:32Progress:  57%|███████████████████████▎                 |  ETA: 0:00:29Progress:  58%|████████████████████████                 |  ETA: 0:00:27Progress:  60%|████████████████████████▊                |  ETA: 0:00:25Progress:  62%|█████████████████████████▌               |  ETA: 0:00:24Progress:  64%|██████████████████████████▎              |  ETA: 0:00:22Progress:  66%|███████████████████████████▏             |  ETA: 0:00:20Progress:  68%|███████████████████████████▉             |  ETA: 0:00:19Progress:  70%|████████████████████████████▋            |  ETA: 0:00:17Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:16Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:14Progress:  75%|███████████████████████████████          |  ETA: 0:00:13Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:12Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:11Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:09Progress:  83%|██████████████████████████████████       |  ETA: 0:00:08Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:07Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:06Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:05Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:04Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:03Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:03Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:42
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:08Progress:  23%|█████████▎                               |  ETA: 0:00:02Progress: 100%|█████████████████████████████████████████| Time: 0:00:00
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.970 │    0.026 │  66.743 │
+│           liq │   1.070 │    0.249 │  46.858 │
+│            bt │   4.274 │    0.082 │ 111.659 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.581 │    0.191 │  90.665 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   1.786 │    0.019 │  42.805 │
+│           liq │   0.828 │    0.199 │  39.116 │
+│            bt │   3.413 │    0.060 │  84.369 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   2.484 │    0.128 │  62.646 │
+└───────────────┴─────────┴──────────┴─────────┘
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.06674345169679448 <= 0.027
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0029698492982305293 <= 0.0012
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.025904035713351304 <= 0.024
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.046858373790382324 <= 0.037
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0010699227232859585 <= 0.0006
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.24939756176273212 <= 0.16
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.09066525088248838 <= 0.057
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.003580538717753408 <= 0.0017
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.19073188752254838 <= 0.12
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.11165861154712256 <= 0.08
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.004274033492484298 <= 0.0022
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0819353594977562 <= 0.07
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:76
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:01:06Progress:   6%|██▍                                      |  ETA: 0:00:56Progress:   8%|███▏                                     |  ETA: 0:00:51Progress:   9%|███▉                                     |  ETA: 0:00:47Progress:  11%|████▋                                    |  ETA: 0:00:45Progress:  13%|█████▍                                   |  ETA: 0:00:43Progress:  15%|██████▎                                  |  ETA: 0:00:41Progress:  17%|███████                                  |  ETA: 0:00:39Progress:  19%|███████▊                                 |  ETA: 0:00:38Progress:  21%|████████▌                                |  ETA: 0:00:37Progress:  23%|█████████▎                               |  ETA: 0:00:36Progress:  25%|██████████                               |  ETA: 0:00:34Progress:  26%|██████████▉                              |  ETA: 0:00:33Progress:  28%|███████████▋                             |  ETA: 0:00:32Progress:  30%|████████████▍                            |  ETA: 0:00:31Progress:  32%|█████████████▏                           |  ETA: 0:00:30Progress:  34%|█████████████▉                           |  ETA: 0:00:29Progress:  36%|██████████████▊                          |  ETA: 0:00:28Progress:  38%|███████████████▌                         |  ETA: 0:00:28Progress:  40%|████████████████▎                        |  ETA: 0:00:27Progress:  42%|█████████████████                        |  ETA: 0:00:26Progress:  43%|█████████████████▊                       |  ETA: 0:00:25Progress:  45%|██████████████████▋                      |  ETA: 0:00:24Progress:  47%|███████████████████▍                     |  ETA: 0:00:23Progress:  49%|████████████████████▏                    |  ETA: 0:00:22Progress:  51%|████████████████████▉                    |  ETA: 0:00:21Progress:  53%|█████████████████████▋                   |  ETA: 0:00:21Progress:  55%|██████████████████████▍                  |  ETA: 0:00:20Progress:  57%|███████████████████████▎                 |  ETA: 0:00:19Progress:  58%|████████████████████████                 |  ETA: 0:00:18Progress:  60%|████████████████████████▊                |  ETA: 0:00:17Progress:  62%|█████████████████████████▌               |  ETA: 0:00:16Progress:  64%|██████████████████████████▎              |  ETA: 0:00:16Progress:  66%|███████████████████████████▏             |  ETA: 0:00:15Progress:  68%|███████████████████████████▉             |  ETA: 0:00:14Progress:  70%|████████████████████████████▋            |  ETA: 0:00:13Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:12Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:11Progress:  75%|███████████████████████████████          |  ETA: 0:00:11Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:10Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:09Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:08Progress:  83%|██████████████████████████████████       |  ETA: 0:00:07Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:06Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:06Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:05Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:04Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:03Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:02Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:42
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.186222e+03     8.272026e+02
+ * time: 0.04862809181213379
+     1     5.502152e+02     3.974097e+02
+ * time: 1.085442066192627
+     2     5.423783e+02     4.019412e+02
+ * time: 1.0888409614562988
+     3     2.278997e+02     1.193107e+03
+ * time: 1.09688401222229
+     4     1.601568e+02     1.038974e+03
+ * time: 1.1019039154052734
+     5     7.342404e+01     5.002953e+02
+ * time: 1.1067800521850586
+     6     3.146486e+01     4.038536e+02
+ * time: 1.1101288795471191
+     7    -2.865641e+01     1.586761e+03
+ * time: 1.1150119304656982
+     8    -6.686725e+01     1.152623e+03
+ * time: 1.1198790073394775
+     9    -9.108758e+01     3.213372e+02
+ * time: 1.1247429847717285
+    10    -9.864872e+01     4.956962e+02
+ * time: 1.1280550956726074
+    11    -1.127681e+02     4.658187e+02
+ * time: 1.1344819068908691
+    12    -1.145580e+02     1.440973e+01
+ * time: 1.139336109161377
+    13    -1.145598e+02     1.145056e+00
+ * time: 1.1442039012908936
+    14    -1.145601e+02     1.413291e-02
+ * time: 1.1494219303131104
+    15    -1.145601e+02     8.692791e-06
+ * time: 1.1530849933624268
+    16    -1.145601e+02     4.897262e-07
+ * time: 1.1581859588623047
+    17    -1.145601e+02     1.035121e-06
+ * time: 1.1614859104156494
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     -1.145601e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 9.41e-09 ≤ 1.0e-08
+    |x - x'|/|x'|          = 3.57e-10 ≰ 0.0e+00
+    |f(x) - f(x')|         = 3.48e-08 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 3.03e-10 ≰ 0.0e+00
+    |g(x)|                 = 1.04e-06 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   1  (vs limit Inf)
+    Iterations:    17
+    f(x) calls:    70
+    ∇f(x) calls:   70
+
+[ Info: RMSE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   3.688 │    0.040 │  67.000 │
+│           liq │   0.842 │    0.290 │  51.704 │
+│            bt │   5.261 │    0.087 │ 127.341 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   4.416 │    0.221 │ 100.285 │
+└───────────────┴─────────┴──────────┴─────────┘
+[ Info: MAE Table
+┌───────────────┬─────────┬──────────┬─────────┐
+│          Type │ E [meV] │ F [eV/A] │ V [meV] │
+├───────────────┼─────────┼──────────┼─────────┤
+│ isolated_atom │   0.000 │    0.000 │   0.000 │
+│           dia │   2.251 │    0.030 │  44.897 │
+│           liq │   0.834 │    0.235 │  46.259 │
+│            bt │   4.525 │    0.062 │  95.552 │
+├───────────────┼─────────┼──────────┼─────────┤
+│           set │   3.228 │    0.151 │  69.303 │
+└───────────────┴─────────┴──────────┴─────────┘
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.06699994270245642 <= 0.0333255
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.003687769274631808 <= 0.0016
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.03956940245300361 <= 0.03
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.051704474259536816 <= 0.035
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0008424400942973468 <= 0.0004
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.29001257903434813 <= 0.19
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.10028469301178765 <= 0.068
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.0044156151607834685 <= 0.0028
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.22138279086871746 <= 0.14
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.12734103950543835 <= 0.09
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.005261046922252428 <= 0.0038
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+Test silicon: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+  Expression: (rmse[config])[obs] <= (expected[config])[obs]
+   Evaluated: 0.08710305539626045 <= 0.073
+
+Stacktrace:
+ [1] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [2] test_rmse(rmse::Dict{String, Any}, expected::Dict{String, Dict{String, Float64}})
+   @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:41
+ [3] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:95
+ [4] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [5] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [7] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+ [8] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [9] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:9 [inlined]
+[ Info: try to save and load the potential
+[ Info: saving project
+[ Info: Results saved to file: /tmp/jl_Pc7sXwlOhY.json
+Test Passed
+[ Info: Fit a potential with committee
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:01:04Progress:   6%|██▍                                      |  ETA: 0:00:55Progress:   8%|███▏                                     |  ETA: 0:00:50Progress:   9%|███▉                                     |  ETA: 0:00:47Progress:  11%|████▋                                    |  ETA: 0:00:45Progress:  13%|█████▍                                   |  ETA: 0:00:43Progress:  15%|██████▎                                  |  ETA: 0:00:41Progress:  17%|███████                                  |  ETA: 0:00:40Progress:  19%|███████▊                                 |  ETA: 0:00:38Progress:  21%|████████▌                                |  ETA: 0:00:37Progress:  23%|█████████▎                               |  ETA: 0:00:36Progress:  25%|██████████                               |  ETA: 0:00:35Progress:  26%|██████████▉                              |  ETA: 0:00:34Progress:  28%|███████████▋                             |  ETA: 0:00:33Progress:  30%|████████████▍                            |  ETA: 0:00:32Progress:  32%|█████████████▏                           |  ETA: 0:00:31Progress:  34%|█████████████▉                           |  ETA: 0:00:30Progress:  36%|██████████████▊                          |  ETA: 0:00:29Progress:  38%|███████████████▌                         |  ETA: 0:00:28Progress:  40%|████████████████▎                        |  ETA: 0:00:27Progress:  42%|█████████████████                        |  ETA: 0:00:26Progress:  43%|█████████████████▊                       |  ETA: 0:00:25Progress:  45%|██████████████████▋                      |  ETA: 0:00:24Progress:  47%|███████████████████▍                     |  ETA: 0:00:23Progress:  49%|████████████████████▏                    |  ETA: 0:00:23Progress:  51%|████████████████████▉                    |  ETA: 0:00:22Progress:  53%|█████████████████████▋                   |  ETA: 0:00:21Progress:  55%|██████████████████████▍                  |  ETA: 0:00:20Progress:  57%|███████████████████████▎                 |  ETA: 0:00:19Progress:  58%|████████████████████████                 |  ETA: 0:00:18Progress:  60%|████████████████████████▊                |  ETA: 0:00:17Progress:  62%|█████████████████████████▌               |  ETA: 0:00:17Progress:  64%|██████████████████████████▎              |  ETA: 0:00:16Progress:  66%|███████████████████████████▏             |  ETA: 0:00:15Progress:  68%|███████████████████████████▉             |  ETA: 0:00:14Progress:  70%|████████████████████████████▋            |  ETA: 0:00:13Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:12Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:12Progress:  75%|███████████████████████████████          |  ETA: 0:00:11Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:10Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:09Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:08Progress:  83%|██████████████████████████████████       |  ETA: 0:00:07Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:07Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:06Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:05Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:04Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:03Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:02Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:43
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+[ Info: Entering bayesian_linear_regression_svd
+┌ Info: Computing SVD of (1052, 149) matrix
+│   BLAS.get_num_threads() = 1
+│   BLAS.get_config() =
+│    LinearAlgebra.BLAS.LBTConfig
+│    Libraries: 
+└    └ [ILP64] libopenblas64_.so
+[ Info: SVD completed after 0.0003568052833333333 minutes
+[ Info: Beginning to maximize marginal likelihood
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.186222e+03     8.272026e+02
+ * time: 2.9087066650390625e-5
+     1     5.502152e+02     3.974097e+02
+ * time: 0.0004220008850097656
+     2     5.423783e+02     4.019412e+02
+ * time: 0.00047516822814941406
+     3     2.278997e+02     1.193107e+03
+ * time: 0.0005660057067871094
+     4     1.601568e+02     1.038974e+03
+ * time: 0.0006270408630371094
+     5     7.342404e+01     5.002953e+02
+ * time: 0.0006871223449707031
+     6     3.146486e+01     4.038537e+02
+ * time: 0.0007331371307373047
+     7    -2.865641e+01     1.586761e+03
+ * time: 0.0007929801940917969
+     8    -6.686726e+01     1.152623e+03
+ * time: 0.0008599758148193359
+     9    -9.108758e+01     3.213371e+02
+ * time: 0.0009210109710693359
+    10    -9.864872e+01     4.956963e+02
+ * time: 0.0009670257568359375
+    11    -1.127681e+02     4.658186e+02
+ * time: 0.0010421276092529297
+    12    -1.145580e+02     1.440971e+01
+ * time: 0.0011019706726074219
+    13    -1.145598e+02     1.144937e+00
+ * time: 0.0011630058288574219
+    14    -1.145601e+02     1.413038e-02
+ * time: 0.0012230873107910156
+    15    -1.145601e+02     1.076680e-05
+ * time: 0.0012710094451904297
+    16    -1.145601e+02     5.525628e-11
+ * time: 0.0013179779052734375
+    17    -1.145601e+02     6.851736e-16
+ * time: 0.0013649463653564453
+┌ Info: Optimization complete
+│   Results =
+│     * Status: success
+│    
+│     * Candidate solution
+│        Final objective value:     -1.145601e+02
+│    
+│     * Found with
+│        Algorithm:     L-BFGS
+│    
+│     * Convergence measures
+│        |x - x'|               = 5.90e-13 ≤ 1.0e-08
+│        |x - x'|/|x'|          = 2.24e-14 ≰ 0.0e+00
+│        |f(x) - f(x')|         = 0.00e+00 ≤ 0.0e+00
+│        |f(x) - f(x')|/|f(x')| = 0.00e+00 ≤ 0.0e+00
+│        |g(x)|                 = 6.85e-16 ≰ 0.0e+00
+│    
+│     * Work counters
+│        Seconds run:   0  (vs limit Inf)
+│        Iterations:    17
+│        f(x) calls:    69
+│        ∇f(x) calls:   69
+└    
+Test Passed
+Test Passed
+Test Passed
+Test Passed
+Test Passed
+[ Info: Run a fit with repulsion restraint
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1053, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:01:01Progress:   6%|██▎                                      |  ETA: 0:00:53Progress:   7%|███                                      |  ETA: 0:00:49Progress:   9%|███▊                                     |  ETA: 0:00:46Progress:  11%|████▌                                    |  ETA: 0:00:44Progress:  13%|█████▍                                   |  ETA: 0:00:43Progress:  15%|██████▏                                  |  ETA: 0:00:41Progress:  17%|██████▉                                  |  ETA: 0:00:40Progress:  19%|███████▋                                 |  ETA: 0:00:39Progress:  20%|████████▍                                |  ETA: 0:00:37Progress:  22%|█████████▏                               |  ETA: 0:00:36Progress:  24%|█████████▉                               |  ETA: 0:00:35Progress:  26%|██████████▋                              |  ETA: 0:00:34Progress:  28%|███████████▍                             |  ETA: 0:00:33Progress:  30%|████████████▏                            |  ETA: 0:00:32Progress:  31%|████████████▉                            |  ETA: 0:00:31Progress:  33%|█████████████▋                           |  ETA: 0:00:30Progress:  35%|██████████████▍                          |  ETA: 0:00:29Progress:  37%|███████████████▏                         |  ETA: 0:00:29Progress:  39%|████████████████                         |  ETA: 0:00:28Progress:  41%|████████████████▊                        |  ETA: 0:00:27Progress:  43%|█████████████████▌                       |  ETA: 0:00:26Progress:  44%|██████████████████▎                      |  ETA: 0:00:25Progress:  46%|███████████████████                      |  ETA: 0:00:24Progress:  48%|███████████████████▊                     |  ETA: 0:00:23Progress:  50%|████████████████████▌                    |  ETA: 0:00:22Progress:  52%|█████████████████████▎                   |  ETA: 0:00:22Progress:  54%|██████████████████████                   |  ETA: 0:00:21Progress:  56%|██████████████████████▊                  |  ETA: 0:00:20Progress:  57%|███████████████████████▌                 |  ETA: 0:00:19Progress:  59%|████████████████████████▎                |  ETA: 0:00:18Progress:  61%|█████████████████████████                |  ETA: 0:00:17Progress:  63%|█████████████████████████▉               |  ETA: 0:00:17Progress:  65%|██████████████████████████▋              |  ETA: 0:00:16Progress:  67%|███████████████████████████▍             |  ETA: 0:00:15Progress:  69%|████████████████████████████▏            |  ETA: 0:00:14Progress:  70%|████████████████████████████▉            |  ETA: 0:00:13Progress:  72%|█████████████████████████████▋           |  ETA: 0:00:12Progress:  74%|██████████████████████████████▍          |  ETA: 0:00:12Progress:  76%|███████████████████████████████▏         |  ETA: 0:00:11Progress:  78%|███████████████████████████████▉         |  ETA: 0:00:10Progress:  80%|████████████████████████████████▋        |  ETA: 0:00:09Progress:  81%|█████████████████████████████████▍       |  ETA: 0:00:08Progress:  83%|██████████████████████████████████▏      |  ETA: 0:00:07Progress:  85%|██████████████████████████████████▉      |  ETA: 0:00:07Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:06Progress:  89%|████████████████████████████████████▌    |  ETA: 0:00:05Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:04Progress:  93%|██████████████████████████████████████   |  ETA: 0:00:03Progress:  94%|██████████████████████████████████████▊  |  ETA: 0:00:02Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:49
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.220757e+03     7.823315e+02
+ * time: 1.5974044799804688e-5
+     1     6.802026e+02     3.980335e+02
+ * time: 0.03664278984069824
+     2     6.659722e+02     1.116991e+03
+ * time: 0.04152178764343262
+     3     1.326517e+02     5.920458e+02
+ * time: 0.04795980453491211
+     4     1.134564e+02     5.713446e+01
+ * time: 0.05127286911010742
+     5     7.896517e+01     1.082665e+03
+ * time: 0.05619978904724121
+     6    -7.928133e+01     1.670792e+03
+ * time: 0.06273484230041504
+     7    -9.304857e+01     2.248393e+02
+ * time: 0.06602787971496582
+     8    -9.485631e+01     1.942009e+02
+ * time: 0.07087588310241699
+     9    -9.825839e+01     2.006498e+02
+ * time: 0.07729482650756836
+    10    -9.866951e+01     2.420807e+01
+ * time: 0.08215594291687012
+    11    -9.868857e+01     1.870452e+00
+ * time: 0.08701086044311523
+    12    -9.868860e+01     1.338255e-02
+ * time: 0.09195280075073242
+    13    -9.868860e+01     3.075165e-06
+ * time: 0.09525179862976074
+    14    -9.868860e+01     1.685423e-06
+ * time: 0.09855985641479492
+    15    -9.868860e+01     1.594452e-06
+ * time: 0.10661697387695312
+    16    -9.868860e+01     1.718732e-06
+ * time: 0.11146283149719238
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     -9.868860e+01
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 7.62e-09 ≤ 1.0e-08
+    |x - x'|/|x'|          = 2.60e-10 ≰ 0.0e+00
+    |f(x) - f(x')|         = 2.49e-07 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 2.52e-09 ≰ 0.0e+00
+    |g(x)|                 = 1.72e-06 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   0  (vs limit Inf)
+    Iterations:    16
+    f(x) calls:    70
+    ∇f(x) calls:   70
+
+Test Passed
+[ Info: Run a fit with ZBL reference potential
+┌ Warning:    The tests here seem a bit weak, the ZBL implementation may be buggy.
+└ @ Main ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_silicon.jl:165
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1053, 149).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:06:23Progress:   6%|██▎                                      |  ETA: 0:04:29Progress:   7%|███                                      |  ETA: 0:03:28Progress:   9%|███▊                                     |  ETA: 0:02:51Progress:  11%|████▌                                    |  ETA: 0:02:26Progress:  13%|█████▍                                   |  ETA: 0:02:08Progress:  15%|██████▏                                  |  ETA: 0:01:55Progress:  17%|██████▉                                  |  ETA: 0:01:44Progress:  19%|███████▋                                 |  ETA: 0:01:35Progress:  20%|████████▍                                |  ETA: 0:01:28Progress:  22%|█████████▏                               |  ETA: 0:01:22Progress:  24%|█████████▉                               |  ETA: 0:01:16Progress:  26%|██████████▋                              |  ETA: 0:01:11Progress:  28%|███████████▍                             |  ETA: 0:01:07Progress:  30%|████████████▏                            |  ETA: 0:01:03Progress:  31%|████████████▉                            |  ETA: 0:01:00Progress:  33%|█████████████▋                           |  ETA: 0:00:57Progress:  35%|██████████████▍                          |  ETA: 0:00:54Progress:  37%|███████████████▏                         |  ETA: 0:00:51Progress:  39%|████████████████                         |  ETA: 0:00:48Progress:  41%|████████████████▊                        |  ETA: 0:00:46Progress:  43%|█████████████████▌                       |  ETA: 0:00:44Progress:  44%|██████████████████▎                      |  ETA: 0:00:42Progress:  46%|███████████████████                      |  ETA: 0:00:40Progress:  48%|███████████████████▊                     |  ETA: 0:00:38Progress:  50%|████████████████████▌                    |  ETA: 0:00:36Progress:  52%|█████████████████████▎                   |  ETA: 0:00:34Progress:  54%|██████████████████████                   |  ETA: 0:00:33Progress:  56%|██████████████████████▊                  |  ETA: 0:00:31Progress:  57%|███████████████████████▌                 |  ETA: 0:00:29Progress:  59%|████████████████████████▎                |  ETA: 0:00:28Progress:  61%|█████████████████████████                |  ETA: 0:00:26Progress:  63%|█████████████████████████▉               |  ETA: 0:00:25Progress:  65%|██████████████████████████▋              |  ETA: 0:00:23Progress:  67%|███████████████████████████▍             |  ETA: 0:00:22Progress:  69%|████████████████████████████▏            |  ETA: 0:00:20Progress:  70%|████████████████████████████▉            |  ETA: 0:00:19Progress:  72%|█████████████████████████████▋           |  ETA: 0:00:18Progress:  74%|██████████████████████████████▍          |  ETA: 0:00:16Progress:  76%|███████████████████████████████▏         |  ETA: 0:00:15Progress:  78%|███████████████████████████████▉         |  ETA: 0:00:14Progress:  80%|████████████████████████████████▋        |  ETA: 0:00:13Progress:  81%|█████████████████████████████████▍       |  ETA: 0:00:11Progress:  83%|██████████████████████████████████▏      |  ETA: 0:00:10Progress:  85%|██████████████████████████████████▉      |  ETA: 0:00:09Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:08Progress:  89%|████████████████████████████████████▌    |  ETA: 0:00:07Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:06Progress:  93%|██████████████████████████████████████   |  ETA: 0:00:04Progress:  94%|██████████████████████████████████████▊  |  ETA: 0:00:03Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:01:04
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.252541e+03     7.217664e+02
+ * time: 1.5020370483398438e-5
+     1     9.129628e+02     5.287508e+02
+ * time: 0.03361916542053223
+     2     7.876354e+02     7.664057e+02
+ * time: 0.03694009780883789
+     3     7.596077e+02     6.563405e+02
+ * time: 0.04185199737548828
+     4     7.368156e+02     5.116733e+02
+ * time: 0.04516410827636719
+     5     7.101060e+02     1.870597e+02
+ * time: 0.04848504066467285
+     6     6.900429e+02     4.168769e+02
+ * time: 0.05181002616882324
+     7     5.448090e+02     9.584603e+02
+ * time: 0.058248043060302734
+     8     5.013523e+02     3.942954e+02
+ * time: 0.061556100845336914
+     9     4.464122e+02     3.800878e+02
+ * time: 0.06651520729064941
+    10     4.212601e+02     3.570557e+02
+ * time: 0.07145810127258301
+    11     4.158391e+02     6.173499e+00
+ * time: 0.07637310028076172
+    12     4.149339e+02     1.130639e+02
+ * time: 0.08127999305725098
+    13     4.145977e+02     9.628124e+00
+ * time: 0.08616399765014648
+    14     4.145893e+02     1.300757e+00
+ * time: 0.09103918075561523
+    15     4.145893e+02     1.370706e-02
+ * time: 0.09593915939331055
+    16     4.145893e+02     7.346152e-06
+ * time: 0.10088419914245605
+    17     4.145893e+02     2.971234e-07
+ * time: 0.10575199127197266
+    18     4.145893e+02     6.322011e-08
+ * time: 0.10918021202087402
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     4.145893e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 2.70e-09 ≤ 1.0e-08
+    |x - x'|/|x'|          = 1.57e-10 ≰ 0.0e+00
+    |f(x) - f(x')|         = 1.08e-07 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 2.62e-10 ≰ 0.0e+00
+    |g(x)|                 = 6.32e-08 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   0  (vs limit Inf)
+    Iterations:    18
+    f(x) calls:    68
+    ∇f(x) calls:   68
+
+potential_energy(dimer, model) = 1.2303912602337594e6 eV
+Test Passed
+[ Info: Checking recompute_weights
+[ Info: Assembling full weight vector.
+[ Info: Assembling full weight vector.
+Test Passed
+[ Info: Assembling full weight vector.
+Test Passed
+  Activating new project at `/tmp/jl_XW3Ox4V8h6`
+   Resolving package versions...
+    Updating `/tmp/jl_XW3Ox4V8h6/Project.toml`
+  [3b96b61c] + ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+    Updating `/tmp/jl_XW3Ox4V8h6/Manifest.toml`
+  [14bae519] + ACEbase v0.4.5
+  [ad31a8ef] + ACEfit v0.2.6
+  [3b96b61c] + ACEpotentials v0.9.1 `~/ace-potentials-julia-1.2/ACEpotentials.jl`
+  [47edcb42] + ADTypes v1.18.0
+  [621f4979] + AbstractFFTs v1.5.0
+  [7d9f7c33] + Accessors v0.1.42
+  [d86c1dc8] + ActiveSetPursuit v0.0.4
+  [79e6a3ab] + Adapt v4.4.0
+  [66dad0bd] + AliasTables v1.1.3
+  [dce04be8] + ArgCheck v2.5.0
+  [c7e460c6] + ArgParse v1.2.0
+  [4fba245c] + ArrayInterface v7.22.0
+  [a9b6321e] + Atomix v1.1.2
+  [a963bdd2] + AtomsBase v0.5.2
+  [f5cc8831] + AtomsBuilder v0.2.2
+  [a3e0e189] + AtomsCalculators v0.2.3
+  [9855a07e] + AtomsCalculatorsUtilities v0.1.8
+  [13072b0f] + AxisAlgorithms v1.1.0
+  [198e06fe] + BangBang v0.4.6
+  [9718e550] + Baselet v0.1.1
+  [6e4b80f9] + BenchmarkTools v1.6.3
+  [62783981] + BitTwiddlingConvenienceFunctions v0.1.6
+  [8ce10254] + Bumper v0.7.1
+  [2a0fbf3d] + CPUSummary v0.2.7
+  [49dc2e85] + Calculus v0.5.2
+  [082447d4] + ChainRules v1.72.6
+  [d360d2e6] + ChainRulesCore v1.26.0
+  [ae650224] + ChunkSplitters v3.1.2
+  [fb6a15b2] + CloseOpenIntervals v0.1.13
+  [6309b1aa] + CodecInflate64 v0.1.3
+  [944b1d66] + CodecZlib v0.7.8
+  [861a8166] + Combinatorics v1.0.3
+  [38540f10] + CommonSolve v0.2.4
+  [bbf7d656] + CommonSubexpressions v0.3.1
+  [f70d9fcc] + CommonWorldInvalidations v1.0.0
+  [34da2185] + Compat v4.18.1
+  [a33af91c] + CompositionsBase v0.1.2
+  [2569d6c7] + ConcreteStructs v0.2.3
+  [187b0558] + ConstructionBase v1.6.0
+  [adafc99b] + CpuId v0.3.1
+  [a8cc5b0e] + Crayons v4.1.1
+  [9a962f9c] + DataAPI v1.16.0
+  [a93c6f00] + DataFrames v1.8.1
+  [864edb3b] + DataStructures v0.19.3
+  [e2d170a0] + DataValueInterfaces v1.0.0
+  [244e2a9f] + DefineSingletons v0.1.2
+  [163ba53b] + DiffResults v1.1.0
+  [b552c78f] + DiffRules v1.15.1
+  [a0c0ee7d] + DifferentiationInterface v0.7.11
+  [8d63f2c5] + DispatchDoctor v0.4.26
+  [ffbed154] + DocStringExtensions v0.9.5
+  [7c1d4256] + DynamicPolynomials v0.6.4
+  [38527215] + EmpiricalPotentials v0.2.4
+  [4e289a0a] + EnumX v1.0.5
+  [f151be2c] + EnzymeCore v0.8.16
+  [5e107534] + EquivariantTensors v0.3.0
+  [e2ba6199] + ExprTools v0.1.10
+  [21656369] + ExpressionExplorer v1.1.3
+  [352459e4] + ExtXYZ v0.2.2
+  [e189563c] + ExternalDocstrings v0.1.1
+  [7a1cc6ca] + FFTW v1.10.0
+  [9aa1b823] + FastClosures v0.3.2
+  [1a297f60] + FillArrays v1.15.0
+  [6a86dc24] + FiniteDiff v2.29.0
+  [41a02a25] + Folds v0.2.10
+⌅ [f6369f11] + ForwardDiff v0.10.39
+  [d9f16b24] + Functors v0.5.2
+  [46192b85] + GPUArraysCore v0.2.0
+  [f0d1745a] + HalfIntegers v1.6.0
+  [076d061b] + HashArrayMappedTries v0.2.0
+  [3e5b6fbb] + HostCPUFeatures v0.1.17
+  [50ceba7f] + HyperDualNumbers v4.0.10
+  [7869d1d1] + IRTools v0.4.15
+  [615f187c] + IfElse v0.1.1
+  [22cec73e] + InitialValues v0.3.1
+  [842dd82b] + InlineStrings v1.4.5
+  [0c81fc1b] + InputBuffers v1.1.1
+⌅ [a98d9a8b] + Interpolations v0.15.1
+  [3587e190] + InverseFunctions v0.1.17
+  [41ab1584] + InvertedIndices v1.3.1
+  [92d709cd] + IrrationalConstants v0.2.6
+  [42fd0dbc] + IterativeSolvers v0.9.4
+  [82899510] + IteratorInterfaceExtensions v1.0.0
+  [692b3bcd] + JLLWrappers v1.7.1
+⌅ [682c06a0] + JSON v0.21.4
+  [63c18a36] + KernelAbstractions v0.9.39
+  [b964fa9f] + LaTeXStrings v1.4.0
+  [10f19ff3] + LayoutPointers v0.1.17
+  [0e77f7df] + LazilyInitializedFields v1.3.0
+  [d3d80556] + LineSearches v7.4.0
+  [5c8ed15e] + LinearOperators v2.11.0
+  [89398ba2] + LocalRegistry v0.5.7
+  [2ab3a3ac] + LogExpFunctions v0.3.29
+  [bdcacae8] + LoopVectorization v0.12.173
+  [898213cb] + LowRankApprox v0.5.5
+  [e65ccdef] + LowRankMatrices v1.0.2
+  [b2108857] + Lux v1.25.0
+  [bb33d45b] + LuxCore v1.4.2
+  [82251201] + LuxLib v1.13.0
+  [7e8f7934] + MLDataDevices v1.15.0
+  [1914dd2f] + MacroTools v0.5.16
+  [d125e4d3] + ManualMemory v0.1.8
+  [128add7d] + MicroCollections v0.2.0
+  [e1d29d7a] + Missings v1.2.0
+  [102ac46a] + MultivariatePolynomials v0.5.13
+  [d8a4904e] + MutableArithmetics v1.6.7
+  [d41bc354] + NLSolversBase v7.10.0
+  [872c559c] + NNlib v0.9.31
+  [77ba4419] + NaNMath v1.1.3
+  [d9ec5142] + NamedTupleTools v0.14.3
+  [2fcf5ba9] + NeighbourLists v0.5.10
+  [4d1e1d77] + Nullables v1.0.0
+  [6fd5a793] + Octavian v0.3.29
+  [6fe1bfb0] + OffsetArrays v1.17.0
+  [429524aa] + Optim v1.13.2
+  [3bd65402] + Optimisers v0.4.6
+  [bac558e1] + OrderedCollections v1.8.1
+  [2dcacdae] + ParallelDataTransfer v0.5.1
+  [d96e819e] + Parameters v0.12.3
+  [69de0a69] + Parsers v2.8.3
+  [793d2195] + PartialWaveFunctions v0.2.0
+  [7b2266bf] + PeriodicTable v1.2.1
+  [1d0040c9] + PolyesterWeave v0.2.2
+  [03c4bcba] + Polynomials4ML v0.5.3
+  [2dfb63ee] + PooledArrays v1.4.3
+  [85a6dd25] + PositiveFactorizations v0.2.4
+  [aea7be01] + PrecompileTools v1.3.3
+  [21216c6a] + Preferences v1.5.0
+⌅ [08abe8d2] + PrettyTables v2.4.0
+  [92933f4c] + ProgressMeter v1.11.0
+  [43287f4e] + PtrArrays v1.3.0
+  [29d2ae51] + QRupdate v1.0.1
+  [1fd47b50] + QuadGK v2.11.2
+  [94ee1d12] + Quaternions v0.7.6
+  [c84ed2f1] + Ratios v0.4.5
+  [a3311ec8] + ReactantCore v0.1.16
+  [c1ae055f] + RealDot v0.1.0
+  [3cdcf5f2] + RecipesBase v1.3.4
+  [189a3867] + Reexport v1.2.2
+  [42d2dcc6] + Referenceables v0.1.3
+  [2792f1a3] + RegistryInstances v0.1.0
+  [d1eb7eb1] + RegistryTools v2.4.0
+  [f07d36f2] + RepLieGroups v0.1.1
+  [ae029012] + Requires v1.3.1
+  [f2b01f46] + Roots v2.2.10
+  [6038ab10] + Rotations v1.7.1
+  [94e857df] + SIMDTypes v0.1.0
+  [476501e8] + SLEEFPirates v0.6.43
+  [431bcebd] + SciMLPublic v1.0.0
+  [7e506255] + ScopedValues v1.5.0
+  [91c51154] + SentinelArrays v1.4.8
+  [efcf1570] + Setfield v1.1.2
+  [a2af1166] + SortingAlgorithms v1.2.2
+  [dc90abb0] + SparseInverseSubset v0.1.2
+  [276daf66] + SpecialFunctions v2.6.1
+  [5caf2b29] + SpheriCart v0.2.3
+  [171d559e] + SplittablesBase v0.1.15
+  [aedffcd0] + Static v1.3.1
+  [0d7ed370] + StaticArrayInterface v1.8.0
+  [90137ffa] + StaticArrays v1.9.15
+  [1e83bf80] + StaticArraysCore v1.4.4
+  [62e018b1] + StaticPolynomials v1.3.7
+  [10745b16] + Statistics v1.11.1
+  [82ae8749] + StatsAPI v1.7.1
+  [2913bbd2] + StatsBase v0.34.8
+  [d1fa6d79] + StrideArrays v0.1.29
+  [7792a7ef] + StrideArraysCore v0.5.8
+  [69024149] + StringEncodings v0.3.7
+  [892a3eda] + StringManipulation v0.4.1
+⌅ [09ab397b] + StructArrays v0.6.21
+  [3783bdb8] + TableTraits v1.0.1
+  [bd369af6] + Tables v1.12.1
+  [ed4db957] + TaskLocalValues v0.1.3
+  [b718987f] + TextWrap v1.0.2
+  [24d252fe] + ThreadedScans v0.1.0
+  [8290d209] + ThreadingUtilities v0.5.5
+  [a759f4b9] + TimerOutputs v0.5.29
+  [3bb67fe8] + TranscodingStreams v0.11.3
+  [28d57a85] + Transducers v0.4.85
+  [3a884ed6] + UnPack v1.0.2
+  [1986cc42] + Unitful v1.25.1
+  [a7773ee8] + UnitfulAtomic v1.0.0
+  [c4a57d5a] + UnsafeArrays v1.0.8
+  [013be700] + UnsafeAtomics v0.3.0
+  [3d5dd08c] + VectorizationBase v0.21.72
+  [33b4df10] + VectorizedRNG v0.2.25
+  [3b853605] + VectorizedStatistics v0.5.11
+  [d49dbf32] + WeightInitializers v1.2.2
+  [87c4ff3e] + WignerD v0.1.4
+  [fb1aa66a] + WithAlloc v0.1.1
+  [efce3f68] + WoodburyMatrices v1.0.0
+  [ddb6d928] + YAML v0.4.16
+  [49080126] + ZipArchives v2.6.0
+  [e88e6eb3] + Zygote v0.7.10
+  [700de1a5] + ZygoteRules v0.2.7
+  [f5851436] + FFTW_jll v3.3.11+0
+  [1d5cc7b8] + IntelOpenMP_jll v2025.2.0+0
+  [94ce4f54] + Libiconv_jll v1.18.0+0
+  [856f044c] + MKL_jll v2025.2.0+0
+  [efe28fd5] + OpenSpecFun_jll v0.5.6+0
+  [6ecdc6fc] + extxyz_jll v0.1.3+0
+  [cdc7adba] + libcleri_jll v0.12.1+3
+  [1317d2d5] + oneTBB_jll v2022.0.0+1
+  [0dad84c5] + ArgTools v1.1.2
+  [56f22d72] + Artifacts v1.11.0
+  [2a0f44e3] + Base64 v1.11.0
+  [ade2ca70] + Dates v1.11.0
+  [8ba89e20] + Distributed v1.11.0
+  [f43a241f] + Downloads v1.6.0
+  [7b1f6079] + FileWatching v1.11.0
+  [9fa8497b] + Future v1.11.0
+  [b77e0a4c] + InteractiveUtils v1.11.0
+  [ac6e5ff7] + JuliaSyntaxHighlighting v1.12.0
+  [4af54fe1] + LazyArtifacts v1.11.0
+  [b27032c2] + LibCURL v0.6.4
+  [76f85450] + LibGit2 v1.11.0
+  [8f399da3] + Libdl v1.11.0
+  [37e2e46d] + LinearAlgebra v1.12.0
+  [56ddb016] + Logging v1.11.0
+  [d6f4376e] + Markdown v1.11.0
+  [a63ad114] + Mmap v1.11.0
+  [ca575930] + NetworkOptions v1.3.0
+  [44cfe95a] + Pkg v1.12.0
+  [de0858da] + Printf v1.11.0
+  [9abbd945] + Profile v1.11.0
+  [9a3f8284] + Random v1.11.0
+  [ea8e919c] + SHA v0.7.0
+  [9e88b42a] + Serialization v1.11.0
+  [1a1011a3] + SharedArrays v1.11.0
+  [6462fe0b] + Sockets v1.11.0
+  [2f01184e] + SparseArrays v1.12.0
+  [f489334b] + StyledStrings v1.11.0
+  [4607b0f0] + SuiteSparse
+  [fa267f1f] + TOML v1.0.3
+  [a4e569a6] + Tar v1.10.0
+  [8dfed614] + Test v1.11.0
+  [cf7118a7] + UUIDs v1.11.0
+  [4ec0a83e] + Unicode v1.11.0
+  [e66e0078] + CompilerSupportLibraries_jll v1.3.0+1
+  [deac9b47] + LibCURL_jll v8.11.1+1
+  [e37daf67] + LibGit2_jll v1.9.0+0
+  [29816b5a] + LibSSH2_jll v1.11.3+1
+  [14a3606d] + MozillaCACerts_jll v2025.5.20
+  [4536629a] + OpenBLAS_jll v0.3.29+0
+  [05823500] + OpenLibm_jll v0.8.7+0
+  [458c3c95] + OpenSSL_jll v3.5.1+0
+  [efcefdf7] + PCRE2_jll v10.44.0+1
+  [bea87d4a] + SuiteSparse_jll v7.8.3+2
+  [83775a58] + Zlib_jll v1.3.1+2
+  [8e850b90] + libblastrampoline_jll v5.15.0+0
+  [8e850ede] + nghttp2_jll v1.64.0+1
+  [3f19e933] + p7zip_jll v17.5.0+2
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading. To see why use `status --outdated -m`
+/tmp/jl_XW3Ox4V8h6
+[ Info: Load parameter file
+[ Info: result_folder not specified, create result folder at example_paramsresults
+[ Info: result storing at example_params_results
+[ Info: Construct ACEmodel of type ACE1
+[ Info: Load datasets
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 77).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:10:19[KProgress:  15%|██████▎                                  |  ETA: 0:02:38[KProgress:  17%|███████                                  |  ETA: 0:02:20[KProgress:  19%|███████▊                                 |  ETA: 0:02:06[KProgress:  21%|████████▌                                |  ETA: 0:01:54[KProgress:  23%|█████████▎                               |  ETA: 0:01:44[KProgress:  25%|██████████                               |  ETA: 0:01:35[KProgress:  26%|██████████▉                              |  ETA: 0:01:28[KProgress:  28%|███████████▋                             |  ETA: 0:01:21[KProgress:  30%|████████████▍                            |  ETA: 0:01:15[KProgress:  32%|█████████████▏                           |  ETA: 0:01:10[KProgress:  34%|█████████████▉                           |  ETA: 0:01:05[KProgress:  36%|██████████████▊                          |  ETA: 0:01:01[KProgress:  38%|███████████████▌                         |  ETA: 0:00:57[KProgress:  40%|████████████████▎                        |  ETA: 0:00:54[KProgress:  42%|█████████████████                        |  ETA: 0:00:51[KProgress:  43%|█████████████████▊                       |  ETA: 0:00:48[KProgress:  45%|██████████████████▋                      |  ETA: 0:00:45[KProgress:  47%|███████████████████▍                     |  ETA: 0:00:42[KProgress:  49%|████████████████████▏                    |  ETA: 0:00:40[KProgress:  51%|████████████████████▉                    |  ETA: 0:00:37[KProgress:  53%|█████████████████████▋                   |  ETA: 0:00:35[KProgress:  55%|██████████████████████▍                  |  ETA: 0:00:33[KProgress:  57%|███████████████████████▎                 |  ETA: 0:00:31[KProgress:  58%|████████████████████████                 |  ETA: 0:00:29[KProgress:  60%|████████████████████████▊                |  ETA: 0:00:27[KProgress:  62%|█████████████████████████▌               |  ETA: 0:00:26[KProgress:  64%|██████████████████████████▎              |  ETA: 0:00:24[KProgress:  66%|███████████████████████████▏             |  ETA: 0:00:22[KProgress:  68%|███████████████████████████▉             |  ETA: 0:00:21[KProgress:  70%|████████████████████████████▋            |  ETA: 0:00:19[KProgress:  72%|█████████████████████████████▍           |  ETA: 0:00:18[KProgress:  74%|██████████████████████████████▏          |  ETA: 0:00:16[KProgress:  75%|███████████████████████████████          |  ETA: 0:00:15[KProgress:  77%|███████████████████████████████▊         |  ETA: 0:00:14[KProgress:  79%|████████████████████████████████▌        |  ETA: 0:00:12[KProgress:  81%|█████████████████████████████████▎       |  ETA: 0:00:11[KProgress:  83%|██████████████████████████████████       |  ETA: 0:00:10[KProgress:  85%|██████████████████████████████████▊      |  ETA: 0:00:09[KProgress:  87%|███████████████████████████████████▋     |  ETA: 0:00:08[KProgress:  89%|████████████████████████████████████▍    |  ETA: 0:00:06[KProgress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:05[KProgress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:04[KProgress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:03[KProgress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02[KProgress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:54[K
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+Progress:   4%|█▌                                       |  ETA: 0:00:05[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:00[K
+[ Info: Entering bayesian_linear_regression_svd
+┌ Info: Computing SVD of (1052, 77) matrix
+│   BLAS.get_num_threads() = 1
+│   BLAS.get_config() =
+│    LinearAlgebra.BLAS.LBTConfig
+│    Libraries: 
+└    └ [ILP64] libopenblas64_.so
+[ Info: SVD completed after 0.0001038106 minutes
+[ Info: Beginning to maximize marginal likelihood
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.270836e+05     1.464454e+05
+ * time: 0.04544401168823242
+     1     1.351083e+04     7.081152e-03
+ * time: 1.062770128250122
+     2     1.331870e+04     8.510528e-03
+ * time: 1.0629990100860596
+     3     1.101250e+04     7.883015e-02
+ * time: 1.063080072402954
+     4     9.295982e+03     4.225325e-01
+ * time: 1.0631790161132812
+     5     7.742354e+03     1.981476e+00
+ * time: 1.063244104385376
+     6     7.431386e+03     2.707360e+00
+ * time: 1.0633180141448975
+     7     6.005797e+03     1.140956e+01
+ * time: 1.0633821487426758
+     8     4.621385e+03     4.494629e+01
+ * time: 1.06345796585083
+     9     3.766840e+03     1.442354e+01
+ * time: 1.0635809898376465
+    10     3.765117e+03     1.728386e+00
+ * time: 1.0636460781097412
+    11     3.765095e+03     4.561565e-02
+ * time: 1.063688039779663
+    12     3.745149e+03     4.250678e+01
+ * time: 1.0638079643249512
+    13     3.557076e+03     1.414541e+02
+ * time: 1.063966989517212
+    14     3.511675e+03     1.497057e+02
+ * time: 1.0641000270843506
+    15     3.475781e+03     1.433713e+01
+ * time: 1.0641541481018066
+    16     3.444206e+03     1.281379e+01
+ * time: 1.0642509460449219
+    17     3.441518e+03     1.124210e+01
+ * time: 1.0643160343170166
+    18     3.440463e+03     1.005733e+01
+ * time: 1.0643579959869385
+    19     3.439263e+03     6.314568e+00
+ * time: 1.064399003982544
+    20     3.438988e+03     1.253172e+00
+ * time: 1.0644519329071045
+    21     3.438943e+03     1.857103e-02
+ * time: 1.06449294090271
+    22     3.438943e+03     1.596022e-04
+ * time: 1.064535140991211
+    23     3.438943e+03     2.737795e-08
+ * time: 1.064587116241455
+    24     3.438943e+03     3.865369e-14
+ * time: 1.0646400451660156
+    25     3.438943e+03     4.056172e-17
+ * time: 1.0646820068359375
+┌ Info: Optimization complete
+│   Results =
+│     * Status: success
+│    
+│     * Candidate solution
+│        Final objective value:     3.438943e+03
+│    
+│     * Found with
+│        Algorithm:     L-BFGS
+│    
+│     * Convergence measures
+│        |x - x'|               = 1.08e-12 ≤ 1.0e-08
+│        |x - x'|/|x'|          = 3.66e-15 ≰ 0.0e+00
+│        |f(x) - f(x')|         = 4.55e-13 ≰ 0.0e+00
+│        |f(x) - f(x')|/|f(x')| = 1.32e-16 ≰ 0.0e+00
+│        |g(x)|                 = 4.06e-17 ≰ 0.0e+00
+│    
+│     * Work counters
+│        Seconds run:   1  (vs limit Inf)
+│        Iterations:    25
+│        f(x) calls:    125
+│        ∇f(x) calls:   125
+└    
+[ Info: evaluating errors
+[ Info: RMSE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     46.830 │    0.827 │  637.354 │
+│           liq │     48.204 │    1.995 │  519.752 │
+│            bt │    664.928 │    1.544 │ 2683.508 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │  21782.640 │    1.702 │ 1915.153 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: MAE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     40.725 │    0.605 │  418.385 │
+│           liq │     41.427 │    1.568 │  396.962 │
+│            bt │    613.296 │    1.119 │ 1832.393 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │   3301.478 │    1.253 │ 1097.373 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: RMSE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     46.830 │    0.827 │  637.354 │
+│           liq │     48.204 │    1.995 │  519.752 │
+│            bt │    664.928 │    1.544 │ 2683.508 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │  21782.640 │    1.702 │ 1915.153 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: MAE Table
+┌───────────────┬────────────┬──────────┬──────────┐
+│          Type │    E [meV] │ F [eV/A] │  V [meV] │
+├───────────────┼────────────┼──────────┼──────────┤
+│ isolated_atom │ 158544.968 │    0.000 │    0.000 │
+│           dia │     40.725 │    0.605 │  418.385 │
+│           liq │     41.427 │    1.568 │  396.962 │
+│            bt │    613.296 │    1.119 │ 1832.393 │
+├───────────────┼────────────┼──────────┼──────────┤
+│           set │   3301.478 │    1.253 │ 1097.373 │
+└───────────────┴────────────┴──────────┴──────────┘
+[ Info: saving project
+[ Info: Results saved to file: example_params_results/results.json
+[ Info: Load the results
+[ Info: Rebuild and check Project and Manifest file 
+[ Info: Clean up temporary project
+[ Info: Check that runfit gives the same results as a julia script
+[ Info: TODO: 
+[ Info: saving project
+[ Info: Results saved to file: /tmp/jl_h65ITEnqTu.json
+++++++++++[ Info:  ============== Testing for ACEpotentials #208 ================
+[ Info:  On Julia 1.9 some energy computations were inconsistent. 
+maxdiff = 28.802137073811423 eV
+Weird bugs: Test Failed at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_bugs.jl:35
+  Expression: ustrip(u"eV", maxdiff) < 1.0e-9
+   Evaluated: 28.802137073811423 < 1.0e-9
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/test_bugs.jl:516
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+ [3] include(mapexpr::Function, mod::Module, _path::String)
+   @ Base ./Base.jl:307
+ [4] top-level scope
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:6
+ [5] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [6] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:17 [inlined]
+ [7] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1776 [inlined]
+ [8] macro expansion
+   @ ~/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:17 [inlined]
+[ Info:  ============================================================
+[ Info:  ============== Testing for no Eref bug ====================
+Test Passed
+[ Info:  ============================================================
+[ Info: -------- Test Fast ACE evaluator ----------
+[ Info: construct a Si model and fit parameters using BLR
+┌───────────────┬──────────┬───────┬────┬─────┬─────┐
+│          Type │ #Configs │ #Envs │ #E │  #F │  #V │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│ isolated_atom │        1 │     1 │  1 │   3 │   0 │
+│           dia │       25 │    50 │ 25 │ 150 │ 150 │
+│            bt │       25 │    50 │ 25 │ 150 │ 150 │
+│           liq │        2 │   128 │  2 │ 384 │  12 │
+├───────────────┼──────────┼───────┼────┼─────┼─────┤
+│         total │       53 │   229 │ 53 │ 687 │ 312 │
+│       missing │        0 │     0 │  0 │   0 │   6 │
+└───────────────┴──────────┴───────┴────┴─────┴─────┘
+[ Info: Assembling linear problem.
+[ Info:   - Creating feature matrix with size (1052, 77).
+[ Info:   - Beginning assembly with processor count:  1.
+Progress:   4%|█▌                                       |  ETA: 0:05:51Progress:   6%|██▍                                      |  ETA: 0:04:08Progress:   8%|███▏                                     |  ETA: 0:03:13Progress:   9%|███▉                                     |  ETA: 0:02:39Progress:  11%|████▋                                    |  ETA: 0:02:17Progress:  13%|█████▍                                   |  ETA: 0:02:00Progress:  15%|██████▎                                  |  ETA: 0:01:48Progress:  17%|███████                                  |  ETA: 0:01:38Progress:  19%|███████▊                                 |  ETA: 0:01:30Progress:  21%|████████▌                                |  ETA: 0:01:23Progress:  23%|█████████▎                               |  ETA: 0:01:17Progress:  25%|██████████                               |  ETA: 0:01:12Progress:  26%|██████████▉                              |  ETA: 0:01:08Progress:  28%|███████████▋                             |  ETA: 0:01:04Progress:  30%|████████████▍                            |  ETA: 0:01:00Progress:  32%|█████████████▏                           |  ETA: 0:00:57Progress:  34%|█████████████▉                           |  ETA: 0:00:54Progress:  36%|██████████████▊                          |  ETA: 0:00:51Progress:  38%|███████████████▌                         |  ETA: 0:00:49Progress:  40%|████████████████▎                        |  ETA: 0:00:46Progress:  42%|█████████████████                        |  ETA: 0:00:44Progress:  43%|█████████████████▊                       |  ETA: 0:00:42Progress:  45%|██████████████████▋                      |  ETA: 0:00:40Progress:  47%|███████████████████▍                     |  ETA: 0:00:38Progress:  49%|████████████████████▏                    |  ETA: 0:00:36Progress:  51%|████████████████████▉                    |  ETA: 0:00:34Progress:  53%|█████████████████████▋                   |  ETA: 0:00:33Progress:  55%|██████████████████████▍                  |  ETA: 0:00:31Progress:  57%|███████████████████████▎                 |  ETA: 0:00:30Progress:  58%|████████████████████████                 |  ETA: 0:00:28Progress:  60%|████████████████████████▊                |  ETA: 0:00:26Progress:  62%|█████████████████████████▌               |  ETA: 0:00:25Progress:  64%|██████████████████████████▎              |  ETA: 0:00:23Progress:  66%|███████████████████████████▏             |  ETA: 0:00:22Progress:  68%|███████████████████████████▉             |  ETA: 0:00:21Progress:  70%|████████████████████████████▋            |  ETA: 0:00:19Progress:  72%|█████████████████████████████▍           |  ETA: 0:00:18Progress:  74%|██████████████████████████████▏          |  ETA: 0:00:17Progress:  75%|███████████████████████████████          |  ETA: 0:00:15Progress:  77%|███████████████████████████████▊         |  ETA: 0:00:14Progress:  79%|████████████████████████████████▌        |  ETA: 0:00:13Progress:  81%|█████████████████████████████████▎       |  ETA: 0:00:12Progress:  83%|██████████████████████████████████       |  ETA: 0:00:10Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:09Progress:  87%|███████████████████████████████████▋     |  ETA: 0:00:08Progress:  89%|████████████████████████████████████▍    |  ETA: 0:00:07Progress:  91%|█████████████████████████████████████▏   |  ETA: 0:00:06Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:04Progress:  94%|██████████████████████████████████████▋  |  ETA: 0:00:03Progress:  96%|███████████████████████████████████████▌ |  ETA: 0:00:02Progress:  98%|████████████████████████████████████████▎|  ETA: 0:00:01Progress: 100%|█████████████████████████████████████████| Time: 0:00:58
+[ Info:   - Assembly completed.
+[ Info: Assembling full weight vector.
+┌ Warning: x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
+└ @ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110
+Iter     Function value   Gradient norm 
+     0     1.209180e+03     7.720422e+02
+ * time: 1.4066696166992188e-5
+     1     8.382859e+02     6.648796e+02
+ * time: 0.008472919464111328
+     2     6.882793e+02     7.065878e+02
+ * time: 0.010354042053222656
+     3     6.606111e+02     4.831970e+02
+ * time: 0.012076139450073242
+     4     6.277176e+02     1.830670e+02
+ * time: 0.012975931167602539
+     5     5.839809e+02     5.991860e+02
+ * time: 0.01429295539855957
+     6     4.713920e+02     1.122424e+03
+ * time: 0.01562809944152832
+     7     3.261848e+02     1.219033e+03
+ * time: 0.016961097717285156
+     8     2.611760e+02     6.975864e+02
+ * time: 0.018296003341674805
+     9     2.456994e+02     3.005098e+02
+ * time: 0.01919698715209961
+    10     2.361407e+02     3.548596e+02
+ * time: 0.020087003707885742
+    11     1.906590e+02     4.505122e+02
+ * time: 0.021798133850097656
+    12     1.865561e+02     1.014247e+01
+ * time: 0.023160934448242188
+    13     1.860983e+02     8.391321e+01
+ * time: 0.024929046630859375
+    14     1.859883e+02     2.390164e+00
+ * time: 0.026278972625732422
+    15     1.859873e+02     1.820423e-01
+ * time: 0.02760791778564453
+    16     1.859873e+02     1.270054e-04
+ * time: 0.028974056243896484
+    17     1.859873e+02     1.195856e-06
+ * time: 0.03029608726501465
+    18     1.859873e+02     5.153262e-07
+ * time: 0.031191110610961914
+ * Status: success
+
+ * Candidate solution
+    Final objective value:     1.859873e+02
+
+ * Found with
+    Algorithm:     L-BFGS
+
+ * Convergence measures
+    |x - x'|               = 7.69e-09 ≤ 1.0e-08
+    |x - x'|/|x'|          = 2.24e-10 ≰ 0.0e+00
+    |f(x) - f(x')|         = 1.20e-08 ≰ 0.0e+00
+    |f(x) - f(x')|/|f(x')| = 6.45e-11 ≰ 0.0e+00
+    |g(x)|                 = 5.15e-07 ≰ 0.0e+00
+
+ * Work counters
+    Seconds run:   0  (vs limit Inf)
+    Iterations:    18
+    f(x) calls:    73
+    ∇f(x) calls:   73
+
+++++++++++++++++++++++++++++++++++++++++
+[ Info: confirm that predictions are identical
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[ Info: construct a TiAl model and set random parameters
+[ Info: convert to UF_ACE format
+[ Info: confirm that predictions are identical on a site
+++++++++++++++++++++++++++++++++++++++++
+[ Info: confirm that predictions are identical on systems
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Test Summary:                   | Pass  Fail  Total      Time
+ACEpotentials.jl                | 1006    37   1043  15m00.3s
+  Models                        |  779          779   4m31.7s
+  Test silicon                  |   14    36     50   6m15.8s
+  Test recomputation of weights |    2            2      0.5s
+  Test JSON interface           |                 0   2m33.0s
+  Test IO                       |   10           10      4.5s
+  Weird bugs                    |    1     1      2      6.7s
+  Fast Evaluator                |  200          200   1m28.0s
+RNG of the outermost testset: Xoshiro(0x07e1f762e11da089, 0xdfee6b94ef66ba2d, 0xc1f48247286401e7, 0xda1fdf7f0e06268b, 0x6852e1fedb70e660)
+ERROR: LoadError: Some tests did not pass: 1006 passed, 37 failed, 0 errored, 0 broken.
+in expression starting at /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/test/runtests.jl:3
+ERROR: Package ACEpotentials errored during testing
+Stacktrace:
+  [1] pkgerror(msg::String)
+    @ Pkg.Types ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Types.jl:68
+  [2] test(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; coverage::Bool, julia_args::Cmd, test_args::Cmd, test_fn::Nothing, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool)
+    @ Pkg.Operations ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Operations.jl:2427
+  [3] test
+    @ ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/Operations.jl:2280 [inlined]
+  [4] test(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; coverage::Bool, test_fn::Nothing, julia_args::Cmd, test_args::Cmd, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool, kwargs::@Kwargs{io::IOContext{IO}})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:484
+  [5] test(pkgs::Vector{PackageSpec}; io::IOContext{IO}, kwargs::@Kwargs{})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:164
+  [6] test(pkgs::Vector{PackageSpec})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:153
+  [7] test(; name::Nothing, uuid::Nothing, version::Nothing, url::Nothing, rev::Nothing, path::Nothing, mode::PackageMode, subdir::Nothing, kwargs::@Kwargs{})
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:179
+  [8] test()
+    @ Pkg.API ~/.julia/juliaup/julia-1.12.1+0.x64.linux.gnu/share/julia/stdlib/v1.12/Pkg/src/API.jl:170
+  [9] top-level scope
+    @ none:1
+ [10] eval(m::Module, e::Any)
+    @ Core ./boot.jl:489
+ [11] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:283
+ [12] _start()
+    @ Base ./client.jl:550
