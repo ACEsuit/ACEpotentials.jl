@@ -52,20 +52,6 @@ function _make_Y_basis(Ytype, lmax)
    error("unknown `Ytype` = $Ytype - I don't know how to generate a spherical basis from this.")
 end
 
-# can we ignore the level function here? 
-function _make_A_spec(AA_spec, level)
-   NT_NLM = NamedTuple{(:n, :l, :m), Tuple{Int, Int, Int}}
-   A_spec = NT_NLM[]
-   for bb in AA_spec 
-      append!(A_spec, bb)
-   end
-   A_spec = unique(A_spec)
-   A_spec_level = [ level(b) for b in A_spec ]
-   p = sortperm(A_spec_level)
-   A_spec = A_spec[p]
-   return A_spec
-end 
-
 # TODO: this should go into sphericart or P4ML 
 function _make_Y_spec(maxl::Integer)
    NT_LM = NamedTuple{(:l, :m), Tuple{Int, Int}}
@@ -103,52 +89,34 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    # model_meta = Dict{String, Any}("E0s" => deepcopy(E0s))
    model_meta = Dict{String, Any}()
 
-   # generate the coupling coefficients
-   # Migrated from EquivariantModels._rpi_A2B_matrix to EquivariantTensors.symmetrisation_matrix
-   # Note: EquivariantTensors expects mb_spec as Vector{Vector{(n, l)}} without m field
-   # Convert AA_spec from (n,l,m) format to (n,l) format by removing m and deduplicating
+   # Use EquivariantTensors high-level API to construct the ACE basis
+   # This replaces manual construction with symmetrisation_matrix + PooledSparseProduct + SparseSymmProd
+
+   # Convert AA_spec from (n,l,m) format to (n,l) format for mb_spec
    mb_spec = [unique([(n=b.n, l=b.l) for b in bb]) for bb in AA_spec]
 
-   # symmetrisation_matrix returns (matrix, pruned_AA_spec_with_m)
-   # The returned AA_spec_pruned has m values filled in by coupling_coeffs
-   # and is already pruned (since prune=true)
-   AA2BB_map, AA_spec_pruned = EquivariantTensors.symmetrisation_matrix(0, mb_spec;
-                                                                          prune = true,
-                                                                          PI = true,
-                                                                          basis = real)
-
-   # Use the pruned AA_spec returned by symmetrisation_matrix
-   # (no additional pruning needed since prune=true already handled it)
-   AA_spec = AA_spec_pruned
-
-   # generate the corresponding A basis spec
-   A_spec = _make_A_spec(AA_spec, level)
-
-   # from the A basis we can generate the Y basis since we now know the 
-   # maximum l value (though we probably already knew that from r_spec)
-   maxl = maximum([ b.l for b in A_spec ])   
+   # Determine maxl from AA_spec to build Y basis
+   maxl = maximum(maximum(b.l for b in bb) for bb in AA_spec)
    ybasis = _make_Y_basis(Ytype, maxl)
-   
-   # now we need to take the human-readable specs and convert them into 
-   # the layer-readable specs 
+
+   # Prepare specs for sparse_equivariant_tensor
    r_spec = rbasis.spec
    y_spec = _make_Y_spec(maxl)
 
-   # get the idx version of A_spec 
-   A_spec_idx = _make_idx_A_spec(A_spec, r_spec, y_spec)
+   # Use high-level API: creates abasis, aabasis, and A2Bmap in one call
+   # Returns SparseACEbasis which is similar to our old SparseEquivTensor
+   # but with better multi-L support (we only use L=0)
+   tensor = EquivariantTensors.sparse_equivariant_tensor(
+      L = 0,  # Invariant (scalar) output only
+      mb_spec = mb_spec,
+      Rnl_spec = r_spec,
+      Ylm_spec = y_spec,
+      basis = real
+   )
 
-   # from this we can now generate the A basis layer
-   a_basis = EquivariantTensors.PooledSparseProduct(A_spec_idx)
-
-   # get the idx version of AA_spec
-   AA_spec_idx = _make_idx_AA_spec(AA_spec, A_spec)
-
-   # from this we can now generate the AA basis layer
-   aa_basis = EquivariantTensors.SparseSymmProd(AA_spec_idx)
-
-   # Store metadata in SparseEquivTensor instead of individual basis objects
-   tensor_meta = Dict{String, Any}("A_spec" => A_spec, "AA_spec" => AA_spec)
-   tensor = SparseEquivTensor(a_basis, aa_basis, AA2BB_map, tensor_meta)
+   # Note: tensor is now a SparseACEbasis instead of SparseEquivTensor
+   # It has: abasis, aabasis, A2Bmaps (tuple for multi-L), meta
+   # For L=0, A2Bmaps is a 1-tuple, so we access A2Bmaps[1] when needed
 
    return ACEModel(rbasis._i2z, rbasis, ybasis, 
                    tensor, pair_basis, Vref, 
@@ -164,8 +132,17 @@ function ace_model(rbasis, Ytype, AA_spec::AbstractVector, level,
 end 
 
 # NOTE : a nicer convenience constructor is also provided in `ace_heuristics.jl`
-#        this is where we should move all defaults, heuristics and other things 
+#        this is where we should move all defaults, heuristics and other things
 #        that make life good.
+
+# ------------------------------------------------------------
+#   Compatibility wrappers for SparseACEbasis
+
+# SparseACEbasis has get_nnll_spec(tensor, idx) but our code expects get_nnll_spec(tensor)
+# For L=0 invariants, we always use idx=1 (first channel)
+function get_nnll_spec(tensor::EquivariantTensors.SparseACEbasis)
+   return EquivariantTensors.get_nnll_spec(tensor, 1)
+end
 
 # ------------------------------------------------------------
 #   Lux stuff 
@@ -293,10 +270,12 @@ function evaluate(model::ACEModel,
    # evaluate the Y basis
    Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
 
-   # equivariant tensor product 
-   B, _ = @withalloc evaluate!(model.tensor, Rnl, Ylm)
+   # equivariant tensor product
+   # Note: SparseACEbasis returns BB as tuple for multi-L, we use [1] for L=0
+   BB = EquivariantTensors.evaluate(model.tensor, Rnl, Ylm, NamedTuple(), NamedTuple())
+   B = BB[1]
 
-   # contract with params 
+   # contract with params
    val = dot(B, (@view ps.WB[:, i_z0]))
 
    
@@ -347,20 +326,25 @@ function evaluate_ed(model::ACEModel,
    # evaluate the Y basis
    Ylm, dYlm = @withalloc P4ML.evaluate_ed!(model.ybasis, Rs)
 
-   # Forward Pass through the tensor 
-   # keep intermediates to be used in backward pass 
-   B, intermediates = @withalloc evaluate!(model.tensor, Rnl, Ylm)
+   # Forward Pass through the tensor
+   # For pullback, we need the intermediate A basis evaluation
+   TA = promote_type(eltype(Rnl), eltype(Ylm))
+   A = zeros(TA, length(model.tensor.abasis))
+   EquivariantTensors.evaluate!(A, model.tensor.abasis, (Rnl, Ylm))
 
-   # contract with params 
+   BB = EquivariantTensors.evaluate(model.tensor, Rnl, Ylm, NamedTuple(), NamedTuple())
+   B = BB[1]
+
+   # contract with params
    # (here we can insert another nonlinearity instead of the simple dot)
    Ei = dot(B, (@view ps.WB[:, i_z0]))
 
-   # Start the backward pass 
+   # Start the backward pass
    # ∂Ei / ∂B = WB[i_z0]
    ∂B = @view ps.WB[:, i_z0]
-   
-   # backward pass through tensor 
-   ∂Rnl, ∂Ylm = @withalloc pullback!(∂B, model.tensor, Rnl, Ylm, intermediates)
+
+   # backward pass through tensor
+   ∂Rnl, ∂Ylm = EquivariantTensors.pullback([∂B], model.tensor, Rnl, Ylm, A)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
@@ -435,12 +419,16 @@ function grad_params(model::ACEModel,
    # dYlm = zeros(SVector{3, T}, length(Rs), length(model.ybasis))
    # SpheriCart.compute_with_gradients!(Ylm, dYlm, model.ybasis, Rs)
 
-   # Forward Pass through the tensor 
-   # keep intermediates to be used in backward pass 
-   # B, intermediates = evaluate(model.tensor, Rnl, Ylm)
-   B, intermediates = @withalloc evaluate!(model.tensor, Rnl, Ylm)
+   # Forward Pass through the tensor
+   # For pullback, we need the intermediate A basis evaluation
+   TA = promote_type(eltype(Rnl), eltype(Ylm))
+   A = zeros(TA, length(model.tensor.abasis))
+   EquivariantTensors.evaluate!(A, model.tensor.abasis, (Rnl, Ylm))
 
-   # contract with params 
+   BB = EquivariantTensors.evaluate(model.tensor, Rnl, Ylm, NamedTuple(), NamedTuple())
+   B = BB[1]
+
+   # contract with params
    # (here we can insert another nonlinearity instead of the simple dot)
    i_z0 = _z2i(model.rbasis, Z0)
    Ei = dot(B, (@view ps.WB[:, i_z0]))
@@ -452,9 +440,8 @@ function grad_params(model::ACEModel,
    ∂WB_i = B 
    ∂B = @view ps.WB[:, i_z0]
 
-   # backward pass through tensor 
-   # ∂Rnl, ∂Ylm = pullback_evaluate(∂B, model.tensor, Rnl, Ylm, intermediates)
-   ∂Rnl, ∂Ylm = @withalloc pullback!(∂B, model.tensor, Rnl, Ylm, intermediates)
+   # backward pass through tensor
+   ∂Rnl, ∂Ylm = EquivariantTensors.pullback([∂B], model.tensor, Rnl, Ylm, A)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
    # the first grad_param is ∂WB, which we already have but it needs to be 
@@ -590,8 +577,10 @@ function evaluate_basis(model::ACEModel,
    # evaluate the Y basis
    Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
 
-   # equivariant tensor product 
-   Bi, _ = @withalloc evaluate!(model.tensor, Rnl, Ylm)
+   # equivariant tensor product
+   # Note: SparseACEbasis returns BB as tuple of vectors (for multi-L), we use [1] for L=0
+   BB = EquivariantTensors.evaluate(model.tensor, Rnl, Ylm, NamedTuple(), NamedTuple())
+   Bi = BB[1]
 
    B = zeros(eltype(Bi), length_basis(model))
    B[get_basis_inds(model, Z0)] .= Bi

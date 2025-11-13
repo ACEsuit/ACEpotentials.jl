@@ -42,8 +42,9 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    ybasis = model.model.ybasis
    abasis = model.model.tensor.abasis
    aabasis = model.model.tensor.aabasis
-   A2Bmap = model.model.tensor.A2Bmap
-   
+   # Note: SparseACEbasis has A2Bmaps as tuple; for L=0 invariants use [1]
+   A2Bmap = model.model.tensor.A2Bmaps[1]
+
    wB = model.ps.WB
    wAA = A2Bmap' * wB[:, iz]
    
