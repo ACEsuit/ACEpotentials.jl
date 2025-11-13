@@ -26,8 +26,9 @@ jobs:
         version:
           # - '1.10'  (dramatic failures => to be understood)
           - '1.11'
+          - '1.12'
           # - 'nightly'
-        python-version: 
+        python-version:
           - '3.8'
         os:
           - ubuntu-latest
