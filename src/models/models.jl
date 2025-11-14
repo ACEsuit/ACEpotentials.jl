@@ -11,9 +11,11 @@ import Zygote
 import Polynomials4ML
 const P4ML = Polynomials4ML
 
-import LuxCore: AbstractExplicitLayer, 
-               AbstractExplicitContainerLayer,
-               initialparameters, 
+import EquivariantTensors
+
+import LuxCore: AbstractLuxLayer,
+               AbstractLuxContainerLayer,
+               initialparameters,
                initialstates      
                
 function length_basis end 
@@ -31,7 +33,7 @@ include("Rnl_basis.jl")
 include("Rnl_learnable.jl")
 include("Rnl_splines.jl")
 
-include("sparse.jl")
+# sparse.jl removed - now using EquivariantTensors.SparseACEbasis directly
 
 include("ace_heuristics.jl") 
 include("ace.jl")

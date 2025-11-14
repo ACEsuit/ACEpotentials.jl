@@ -24,7 +24,6 @@ ACE models are defined in terms of body-ordered invariant features of atomic env
 ### Key Dependencies
 
 * [`Polynomials4ML.jl`](https://github.com/ACEsuit/Polynomials4ML.jl) : basic kernels for embeddings and tensors
-* [`EquivariantModels.jl`](https://github.com/ACEsuit/EquivariantModels.jl) : tools for equivariant model building
 * [`RepLieGroups.jl`](https://github.com/ACEsuit/RepLieGroups.jl) : coupling coefficients for equivariant tensors
 * [`ACEfit.jl`](https://github.com/ACEsuit/ACEfit.jl) : unified interface to various regression algorithms
 * [`AtomsBase.jl`](https://github.com/JuliaMolSim/AtomsBase.jl) : community interface for atomic structures / systems
