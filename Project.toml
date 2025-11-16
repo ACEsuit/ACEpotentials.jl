@@ -79,8 +79,7 @@ Zygote = "0.6, 0.7"
 julia = "1.10, 1.11, 1.12"
 
 [extras]
-ACEbase = "14bae519-eb20-449c-8949-9c58ed33163e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["ACEbase", "Test"]
+test = ["Test"]

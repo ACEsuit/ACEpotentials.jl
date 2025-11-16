@@ -13,7 +13,7 @@
 - Version 0.7.x is reserved
 - Version 0.8.x and onwards provides a new and much more flexible implementation, and integrates with the [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl) ecosystem. Most but not all features from 0.6.x have been ported to this re-implementation. Usability should be the same or improved for most end-users. For developers this provides a much more flexible framework for experimentation. [[docs-v0.8]](https://acesuit.github.io/ACEpotentials.jl/dev/)
 - Version 0.9.0 onwards is technically compatible with Julia 1.10, but some unit tests show unexplained increases in fit accuracy, hence we highly recommend to use it only with Julia 1.11.
-- Version 0.9.1 migrates internally from EquivariantModels to EquivariantTensors v0.3 for improved performance and maintainability. User-facing API remains unchanged - all existing code continues to work. Key improvements: 18% faster model fitting, 36% smaller models (better generalization), and ForwardDiff-based force calculations.
+- Version 0.10 migrates internally to `EquivariantTensors.jl` for improved maintainability, flexibility for model building and different execution backends. User-facing API remains unchanged; existing code should continue to work.
 
 ## Contributing
 
