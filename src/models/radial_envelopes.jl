@@ -4,13 +4,8 @@ abstract type AbstractEnvelope end
 struct PolyEnvelope1sR{T}
    rcut::T
    p::Int 
-   # ------- 
-   meta::Dict{String, Any}
 end 
 
-
-PolyEnvelope1sR(rcut, p) = 
-   PolyEnvelope1sR(rcut, p, Dict{String, Any}())
 
 function evaluate(env::PolyEnvelope1sR, r::T, x::T) where T 
    if r >= env.rcut 
