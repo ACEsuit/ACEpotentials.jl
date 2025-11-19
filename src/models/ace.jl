@@ -93,7 +93,7 @@ function _generate_ace_model(rbasis, Ytype::Symbol, AA_spec::AbstractVector,
    # This replaces manual construction with symmetrisation_matrix + PooledSparseProduct + SparseSymmProd
 
    # Convert AA_spec from (n,l,m) format to (n,l) format for mb_spec
-   mb_spec = [unique([(n=b.n, l=b.l) for b in bb]) for bb in AA_spec]
+   mb_spec = unique([[(n=b.n, l=b.l) for b in bb] for bb in AA_spec])
 
    # Determine maxl from AA_spec to build Y basis
    maxl = maximum(maximum(b.l for b in bb) for bb in AA_spec)
