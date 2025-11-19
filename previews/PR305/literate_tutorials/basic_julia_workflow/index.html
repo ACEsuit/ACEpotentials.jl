@@ -12,11 +12,11 @@ test_data = data[2:10:end];</code></pre><pre class="documenter-example-output"><
 					rcut = 5.5,
 					Eref = [:Ti =&gt; -1586.0195, :Al =&gt; -105.5954])
 model = ace1_model(; hyperparams...)
-@show length_basis(model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">length_basis(model) = 180</code></pre><p>The next line specifies the regression weights: in the least squares loss different observations are given different weights,</p><p class="math-container">\[  \sum_{R} \Big( w_{E,R}^2 | E(R) - y_R^E |^2
+@show length_basis(model);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">length_basis(model) = 270</code></pre><p>The next line specifies the regression weights: in the least squares loss different observations are given different weights,</p><p class="math-container">\[  \sum_{R} \Big( w_{E,R}^2 | E(R) - y_R^E |^2
            + w_{F,R}^2 | {\rm forces}(R) - y_R^F |^2
            + w_{V,R}^2 | {\rm virial}(R) - y_R^V |^2 \Big),\]</p><p>and this is specificed via the following dictionary. The keys correspond to the <code>config_type</code> of the training structures.</p><pre><code class="language-julia hljs">weights = Dict(
         &quot;FLD_TiAl&quot; =&gt; Dict(&quot;E&quot; =&gt; 60.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ),
-        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ));</code></pre><p>To estimate the parameters we still need to choose a solver for the least squares system. In this tutorial we use a Bayesian linear regression, which is the recommended default at the moment. Many other solvers are available, and can be explored by looking at the documentation of <a href="https://github.com/ACEsuit/ACEfit.jl"><code>ACEfit.jl</code></a>.</p><pre><code class="language-julia hljs">solver = ACEfit.BLR()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ACEfit.BLR(Dict{Any, Any}())</code></pre><p>ACEpotentials provides a heuristic smoothness prior which assigns to each basis function <code>Bi</code> a scaling parameter <code>si</code> that estimates how &quot;rough&quot; that basis function is. The following line generates a regularizer (prior) with <code>si^q</code> on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential.</p><pre><code class="language-julia hljs">P = algebraic_smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">180×180 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
+        &quot;TiAl_T5000&quot; =&gt; Dict(&quot;E&quot; =&gt; 5.0, &quot;F&quot; =&gt; 1.0 , &quot;V&quot; =&gt; 1.0 ));</code></pre><p>To estimate the parameters we still need to choose a solver for the least squares system. In this tutorial we use a Bayesian linear regression, which is the recommended default at the moment. Many other solvers are available, and can be explored by looking at the documentation of <a href="https://github.com/ACEsuit/ACEfit.jl"><code>ACEfit.jl</code></a>.</p><pre><code class="language-julia hljs">solver = ACEfit.BLR()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ACEfit.BLR(Dict{Any, Any}())</code></pre><p>ACEpotentials provides a heuristic smoothness prior which assigns to each basis function <code>Bi</code> a scaling parameter <code>si</code> that estimates how &quot;rough&quot; that basis function is. The following line generates a regularizer (prior) with <code>si^q</code> on the diagonal, thus penalizing rougher basis functions and enforcing a smoother fitted potential.</p><pre><code class="language-julia hljs">P = algebraic_smoothness_prior(model; p = 4)    #  (p = 4 is in fact the default)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">270×270 LinearAlgebra.Diagonal{Float64, Vector{Float64}}:
  1.0    ⋅     ⋅      ⋅      ⋅       ⋅   …      ⋅        ⋅        ⋅        ⋅ 
   ⋅   16.0    ⋅      ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
   ⋅     ⋅   81.0     ⋅      ⋅       ⋅          ⋅        ⋅        ⋅        ⋅ 
@@ -46,114 +46,124 @@ model = ace1_model(; hyperparams...)
 │    missing │        0 │     0 │  0 │    0 │   0 │
 └────────────┴──────────┴───────┴────┴──────┴─────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (1770, 180).
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (1770, 270).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:03:45</span><span class="sgr32">Progress:   5%|█▉                                       |  ETA: 0:02:43</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:01:38</span><span class="sgr32">Progress:  11%|████▍                                    |  ETA: 0:01:27</span><span class="sgr32">Progress:  26%|██████████▌                              |  ETA: 0:00:46</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:41</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:39</span><span class="sgr32">Progress:  47%|███████████████████▎                     |  ETA: 0:00:27</span><span class="sgr32">Progress:  52%|█████████████████████▏                   |  ETA: 0:00:24</span><span class="sgr32">Progress:  53%|█████████████████████▊                   |  ETA: 0:00:23</span><span class="sgr32">Progress:  68%|████████████████████████████             |  ETA: 0:00:15</span><span class="sgr32">Progress:  70%|████████████████████████████▋            |  ETA: 0:00:14</span><span class="sgr32">Progress:  71%|█████████████████████████████▎           |  ETA: 0:00:13</span><span class="sgr32">Progress:  73%|█████████████████████████████▉           |  ETA: 0:00:13</span><span class="sgr32">Progress:  88%|████████████████████████████████████     |  ETA: 0:00:05</span><span class="sgr32">Progress:  89%|████████████████████████████████████▋    |  ETA: 0:00:05</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:04</span><span class="sgr32">Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:03</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:43</span>
+<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:03:50</span><span class="sgr32">Progress:   5%|█▉                                       |  ETA: 0:02:48</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:01:40</span><span class="sgr32">Progress:  11%|████▍                                    |  ETA: 0:01:29</span><span class="sgr32">Progress:  12%|█████                                    |  ETA: 0:01:21</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:01:14</span><span class="sgr32">Progress:  15%|██████▎                                  |  ETA: 0:01:08</span><span class="sgr32">Progress:  17%|██████▉                                  |  ETA: 0:01:04</span><span class="sgr32">Progress:  18%|███████▌                                 |  ETA: 0:01:00</span><span class="sgr32">Progress:  20%|████████▏                                |  ETA: 0:00:57</span><span class="sgr32">Progress:  21%|████████▊                                |  ETA: 0:00:54</span><span class="sgr32">Progress:  23%|█████████▍                               |  ETA: 0:00:51</span><span class="sgr32">Progress:  24%|██████████                               |  ETA: 0:00:49</span><span class="sgr32">Progress:  26%|██████████▌                              |  ETA: 0:00:47</span><span class="sgr32">Progress:  27%|███████████▏                             |  ETA: 0:00:45</span><span class="sgr32">Progress:  29%|███████████▊                             |  ETA: 0:00:43</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:41</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:39</span><span class="sgr32">Progress:  33%|█████████████▋                           |  ETA: 0:00:38</span><span class="sgr32">Progress:  35%|██████████████▎                          |  ETA: 0:00:36</span><span class="sgr32">Progress:  36%|██████████████▉                          |  ETA: 0:00:35</span><span class="sgr32">Progress:  38%|███████████████▌                         |  ETA: 0:00:34</span><span class="sgr32">Progress:  39%|████████████████▏                        |  ETA: 0:00:33</span><span class="sgr32">Progress:  41%|████████████████▊                        |  ETA: 0:00:31</span><span class="sgr32">Progress:  42%|█████████████████▍                       |  ETA: 0:00:30</span><span class="sgr32">Progress:  44%|██████████████████                       |  ETA: 0:00:29</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:28</span><span class="sgr32">Progress:  47%|███████████████████▎                     |  ETA: 0:00:27</span><span class="sgr32">Progress:  48%|███████████████████▉                     |  ETA: 0:00:26</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:25</span><span class="sgr32">Progress:  52%|█████████████████████▏                   |  ETA: 0:00:24</span><span class="sgr32">Progress:  67%|███████████████████████████▍             |  ETA: 0:00:16</span><span class="sgr32">Progress:  68%|████████████████████████████             |  ETA: 0:00:15</span><span class="sgr32">Progress:  70%|████████████████████████████▋            |  ETA: 0:00:14</span><span class="sgr32">Progress:  71%|█████████████████████████████▎           |  ETA: 0:00:13</span><span class="sgr32">Progress:  73%|█████████████████████████████▉           |  ETA: 0:00:13</span><span class="sgr32">Progress:  74%|██████████████████████████████▌          |  ETA: 0:00:12</span><span class="sgr32">Progress:  76%|███████████████████████████████          |  ETA: 0:00:11</span><span class="sgr32">Progress:  77%|███████████████████████████████▋         |  ETA: 0:00:10</span><span class="sgr32">Progress:  79%|████████████████████████████████▎        |  ETA: 0:00:10</span><span class="sgr32">Progress:  80%|████████████████████████████████▉        |  ETA: 0:00:09</span><span class="sgr32">Progress:  82%|█████████████████████████████████▌       |  ETA: 0:00:08</span><span class="sgr32">Progress:  83%|██████████████████████████████████▏      |  ETA: 0:00:07</span><span class="sgr32">Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:07</span><span class="sgr32">Progress:  86%|███████████████████████████████████▍     |  ETA: 0:00:06</span><span class="sgr32">Progress:  88%|████████████████████████████████████     |  ETA: 0:00:05</span><span class="sgr32">Progress:  89%|████████████████████████████████████▋    |  ETA: 0:00:05</span><span class="sgr32">Progress:  91%|█████████████████████████████████████▎   |  ETA: 0:00:04</span><span class="sgr32">Progress:  92%|█████████████████████████████████████▉   |  ETA: 0:00:03</span><span class="sgr32">Progress:  94%|██████████████████████████████████████▌  |  ETA: 0:00:03</span><span class="sgr32">Progress:  95%|███████████████████████████████████████▏ |  ETA: 0:00:02</span><span class="sgr32">Progress:  97%|███████████████████████████████████████▊ |  ETA: 0:00:01</span><span class="sgr32">Progress:  98%|████████████████████████████████████████▍|  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:43</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 <span class="sgr33"><span class="sgr1">┌ Warning: </span></span>x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
 <span class="sgr33"><span class="sgr1">└ </span></span><span class="sgr90">@ Optim ~/.julia/packages/Optim/7krni/src/types.jl:110</span>
 Iter     Function value   Gradient norm
-     0     5.345968e+03     3.643496e+03
- * time: 0.026199817657470703
-     1     5.304103e+03     2.187450e+02
- * time: 0.40590882301330566
-     2     3.338003e+03     1.106743e+02
- * time: 0.41124486923217773
-     3     3.332071e+03     1.145367e+02
- * time: 0.41301894187927246
-     4     3.211010e+03     1.023226e+02
- * time: 0.4141960144042969
-     5     3.008058e+03     1.766698e+02
- * time: 0.41538500785827637
-     6     1.425719e+03     6.753297e+02
- * time: 0.4171488285064697
-     7     1.410272e+03     1.394700e+03
- * time: 0.41892004013061523
-     8     8.105417e+02     4.324737e+03
- * time: 0.4207339286804199
-     9     7.567766e+02     1.542443e+03
- * time: 0.4219059944152832
-    10     7.110339e+02     6.721022e+02
- * time: 0.42366600036621094
-    11     7.036278e+02     3.845986e+01
- * time: 0.42484593391418457
-    12     7.002037e+02     4.416512e+02
- * time: 0.4266228675842285
-    13     6.885779e+02     2.115693e+02
- * time: 0.42838287353515625
-    14     6.876278e+02     2.993957e+01
- * time: 0.4301609992980957
-    15     6.875451e+02     6.557497e-01
- * time: 0.4319469928741455
-    16     6.875449e+02     1.702392e-02
- * time: 0.4337179660797119
-    17     6.875449e+02     1.525144e-05
- * time: 0.43489885330200195
-    18     6.875449e+02     3.734092e-06
- * time: 0.4360828399658203
-    19     6.875449e+02     1.172825e-05
- * time: 0.44066500663757324
-    20     6.875449e+02     5.164552e-05
- * time: 0.44412994384765625
+     0     4.671494e+03     2.457943e+03
+ * time: 0.025085926055908203
+     1     3.952872e+03     4.057872e+02
+ * time: 0.4089219570159912
+     2     3.371262e+03     4.421460e+02
+ * time: 0.41866111755371094
+     3     3.210146e+03     1.642349e+02
+ * time: 0.4255509376525879
+     4     3.174813e+03     1.968488e+02
+ * time: 0.4296300411224365
+     5     2.913051e+03     8.640587e+02
+ * time: 0.4336249828338623
+     6     2.675831e+03     7.730363e+02
+ * time: 0.4376850128173828
+     7     2.208479e+03     1.033571e+02
+ * time: 0.4442460536956787
+     8     2.095581e+03     1.164921e+03
+ * time: 0.44927096366882324
+     9     2.030514e+03     1.788361e+03
+ * time: 0.4572610855102539
+    10     1.860275e+03     3.236796e+03
+ * time: 0.4637899398803711
+    11     9.464181e+02     2.183137e+03
+ * time: 0.46909093856811523
+    12     8.279882e+02     1.258796e+03
+ * time: 0.4730701446533203
+    13     8.100141e+02     7.198045e+02
+ * time: 0.47568202018737793
+    14     8.036075e+02     6.032573e+01
+ * time: 0.478316068649292
+    15     8.035512e+02     1.365996e+01
+ * time: 0.4822371006011963
+    16     8.031186e+02     1.007694e+01
+ * time: 0.4887819290161133
+    17     8.031153e+02     8.502608e-01
+ * time: 0.49139904975891113
+    18     8.031153e+02     2.575506e-03
+ * time: 0.493988037109375
+    19     8.031153e+02     4.803294e-05
+ * time: 0.4966089725494385
+    20     8.031153e+02     3.227456e-06
+ * time: 0.4991919994354248
+    21     8.031153e+02     1.359103e-05
+ * time: 0.5018050670623779
+    22     8.031153e+02     6.940736e-06
+ * time: 0.5081989765167236
+    23     8.031153e+02     3.724300e-05
+ * time: 0.5119249820709229
+    24     8.031153e+02     7.200957e-06
+ * time: 0.5144979953765869
+    25     8.031153e+02     1.037340e-05
+ * time: 0.5171139240264893
  * Status: success
 
  * Candidate solution
-    Final objective value:     6.875449e+02
+    Final objective value:     8.031153e+02
 
  * Found with
     Algorithm:     L-BFGS
 
  * Convergence measures
-    |x - x&#39;|               = 6.04e-09 ≤ 1.0e-08
-    |x - x&#39;|/|x&#39;|          = 3.12e-11 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|         = 1.95e-06 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|/|f(x&#39;)| = 2.83e-09 ≰ 0.0e+00
-    |g(x)|                 = 5.16e-05 ≰ 0.0e+00
+    |x - x&#39;|               = 3.94e-09 ≤ 1.0e-08
+    |x - x&#39;|/|x&#39;|          = 2.99e-11 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|         = 3.14e-06 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|/|f(x&#39;)| = 3.91e-09 ≰ 0.0e+00
+    |g(x)|                 = 1.04e-05 ≰ 0.0e+00
 
  * Work counters
-    Seconds run:   0  (vs limit Inf)
-    Iterations:    20
-    f(x) calls:    86
-    ∇f(x) calls:   86</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
+    Seconds run:   1  (vs limit Inf)
+    Iterations:    25
+    f(x) calls:    105
+    ∇f(x) calls:   105</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
 err_train = ACEpotentials.compute_errors(train_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Training Error Table
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   4.450 │    0.051 │  73.640 │
-│ TiAl_T5000 │  15.099 │    0.326 │  30.313 │
+│   FLD_TiAl │   3.615 │    0.043 │  59.849 │
+│ TiAl_T5000 │  10.270 │    0.300 │  26.345 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   5.410 │    0.277 │  72.237 │
+│        set │   4.155 │    0.254 │  58.742 │
 └────────────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   3.194 │    0.034 │  46.429 │
-│ TiAl_T5000 │  12.513 │    0.252 │  24.126 │
+│   FLD_TiAl │   2.556 │    0.029 │  38.571 │
+│ TiAl_T5000 │   9.737 │    0.232 │  21.113 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   3.618 │    0.189 │  45.415 │
+│        set │   2.882 │    0.173 │  37.778 │
 └────────────┴─────────┴──────────┴─────────┘</code></pre><p>We should of course also look at test errors, which can be done as follows. Depending on the choice of solver, and solver parameters, the test errors might be very poor. Exploring different parameters in different applications can lead to significantly improved predictions.</p><pre><code class="language-julia hljs">@info(&quot;Test Error Table&quot;)
 err_test = ACEpotentials.compute_errors(test_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Test Error Table
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │  10.384 │    0.059 │  86.751 │
-│ TiAl_T5000 │   6.122 │    0.399 │  90.532 │
+│   FLD_TiAl │   7.571 │    0.049 │  66.284 │
+│ TiAl_T5000 │   9.361 │    0.402 │  94.015 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │  10.281 │    0.273 │  86.868 │
+│        set │   7.632 │    0.274 │  67.293 │
 └────────────┴─────────┴──────────┴─────────┘
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>MAE Table
 ┌────────────┬─────────┬──────────┬─────────┐
 │<span class="sgr1">       Type </span>│<span class="sgr1"> E [meV] </span>│<span class="sgr1"> F [eV/A] </span>│<span class="sgr1"> V [meV] </span>│
 ├────────────┼─────────┼──────────┼─────────┤
-│   FLD_TiAl │   5.837 │    0.041 │  51.207 │
-│ TiAl_T5000 │   6.122 │    0.311 │  81.636 │
+│   FLD_TiAl │   4.463 │    0.035 │  41.038 │
+│ TiAl_T5000 │   9.361 │    0.313 │  83.386 │
 ├────────────┼─────────┼──────────┼─────────┤
-│        set │   5.846 │    0.164 │  52.129 │
+│        set │   4.612 │    0.162 │  42.321 │
 └────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can simply save the hyperparameters and the parameters. At the moment this must be done manually but a more complete and convenient interface for this will be provided, also adding various sanity checks.</p><pre><code class="language-julia hljs">using JSON
 open(&quot;TiAl_model.json&quot;, &quot;w&quot;) do f
 	 JSON.print(f, Dict(&quot;hyperparams&quot; =&gt; hyperparams, &quot;params&quot; =&gt; model.ps))
-end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><h3 id="Fast-Evaluator"><a class="docs-heading-anchor" href="#Fast-Evaluator">Fast Evaluator</a><a id="Fast-Evaluator-1"></a><a class="docs-heading-anchor-permalink" href="#Fast-Evaluator" title="Permalink"></a></h3><p><code>ACEpotentials.jl</code> provides an experimental &quot;fast evaluator&quot;. This tries to merge some of the operations in the full model resulting in a &quot;slimmer&quot; and usually faster evaluator. In some cases the performance gain can be multiple factors up to an order of magnitude. This is particularly important when using a parameter estimation solver that sparsifies. In that case, the performance gain can be significant.</p><p>To construct the fast evaluator, simply use</p><pre><code class="language-julia hljs">fpot = fast_evaluator(model)</code></pre><p>An optional keyword argument <code>aa_static = true</code> can be used to optimize the n-correlation layer for very small models (at most a few hundred parameters). For larger models this leads to a stack overflow.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.0 on <span class="colophon-date" title="Tuesday 18 November 2025 09:56">Tuesday 18 November 2025</span>. Using Julia version 1.12.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><h3 id="Fast-Evaluator"><a class="docs-heading-anchor" href="#Fast-Evaluator">Fast Evaluator</a><a id="Fast-Evaluator-1"></a><a class="docs-heading-anchor-permalink" href="#Fast-Evaluator" title="Permalink"></a></h3><p><code>ACEpotentials.jl</code> provides an experimental &quot;fast evaluator&quot;. This tries to merge some of the operations in the full model resulting in a &quot;slimmer&quot; and usually faster evaluator. In some cases the performance gain can be multiple factors up to an order of magnitude. This is particularly important when using a parameter estimation solver that sparsifies. In that case, the performance gain can be significant.</p><p>To construct the fast evaluator, simply use</p><pre><code class="language-julia hljs">fpot = fast_evaluator(model)</code></pre><p>An optional keyword argument <code>aa_static = true</code> can be used to optimize the n-correlation layer for very small models (at most a few hundred parameters). For larger models this leads to a stack overflow.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.0 on <span class="colophon-date" title="Wednesday 19 November 2025 23:03">Wednesday 19 November 2025</span>. Using Julia version 1.12.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
