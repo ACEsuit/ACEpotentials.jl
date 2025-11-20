@@ -166,6 +166,213 @@ Fixed basis size bug introduced during migration in `src/models/ace.jl:96`:
 
 2. **Julia 1.12 basis ordering** (`test/test_bugs.jl:35-45`): Julia 1.12's new hash algorithm causes Dict iteration order changes that affect basis function construction. Test marked as `@test_broken` for Julia 1.12+. Requires either upstream EquivariantTensors fixes or comprehensive OrderedDict refactoring. Does not affect Julia 1.11 compatibility.
 
+### Future Work: Full Lux-based Backend Migration
+
+**Current Status**: The v0.10.0 migration is "superficial" - only the tensor coupling coefficients use EquivariantTensors' `SparseACEbasis`. The radial basis (rbasis), spherical harmonics (ybasis), distance transforms, and evaluation logic remain hand-written ACEpotentials code.
+
+**Goal**: Full migration to Lux-based backend leveraging EquivariantTensors' optimized kernels and enabling GPU acceleration.
+
+#### Why Further Migration is Needed
+
+Current limitations of v0.10.0:
+- **Hand-written evaluation**: Custom implementations for rbasis/ybasis evaluation instead of composable Lux layers
+- **Scalar-based loops**: Per-atom distance calculations instead of vectorized graph operations
+- **Custom differentiation**: Manual rrules for gradients instead of automatic Lux/Zygote AD
+- **No GPU support**: Hand-written code incompatible with KernelAbstractions/GPU backends
+- **Missed optimizations**: Doesn't leverage EquivariantTensors' optimized sparse kernels
+
+The current ACEModel struct (src/models/ace.jl:16-33) only uses ET for the `tensor` field. The `rbasis`, `ybasis`, and evaluation functions are all custom ACEpotentials code from the v0.9 era.
+
+#### Target Architecture
+
+Based on EquivariantTensors.jl examples (`mlip.jl`, `ace_lux.jl`) and the co/etback branch prototype:
+
+**Edge-centric graph evaluation:**
+- Move from `evaluate(model, Rs, Zs, Z0)` with per-atom loops
+- To graph-based `model(G, ps, st)` with batch edge operations
+- Input format: edge tuples `(𝐫ij, zi, zj)` instead of scalars `(r, Zi, Zj)`
+- Use `ETGraph` structure for efficient batching
+
+**Component replacements:**
+
+1. **Radial basis** (currently 297 lines in `Rnl_learnable.jl`):
+   ```julia
+   # Target: Lux Chain with EquivariantTensors components
+   rbasis = Chain(
+       trans = NTtransform(xij -> 1 / (1 + norm(xij.𝐫ij) / rcut)),
+       polys = SkipConnection(
+           P4ML.ChebBasis(maxdeg),
+           WrappedFunction((P, y) -> envelope(y) .* P)
+       ),
+       linl = SelectLinL(selector=(xij -> species_idx(xij.zi, xij.zj)))
+   )
+   ```
+
+2. **Spherical harmonics** (currently direct P4ML.evaluate! calls):
+   ```julia
+   # Target: Lux-wrapped spherical harmonics
+   ybasis = Chain(
+       trans = NTtransform(xij -> xij.𝐫ij),  # Extract direction vector
+       ylm = P4ML.lux(P4ML.real_sphericalharmonics(maxl))
+   )
+   ```
+
+3. **Embedding layer** (new component, doesn't currently exist):
+   ```julia
+   embed = EdgeEmbed(BranchLayer(; Rnl = rbasis, Ylm = ybasis))
+   ```
+
+4. **Full model as Lux Chain**:
+   ```julia
+   model = Chain(
+       embed = embed,                    # Evaluate (Rnl, Ylm) on edges
+       ace = SparseACElayer(𝔹basis, (1,)), # ACE coupling + weights
+       energy = WrappedFunction(x -> sum(x[1]) + vref)
+   )
+   ```
+
+**Key architectural changes:**
+- `NTtransform`: Differentiable transforms on edge NamedTuples
+- `SelectLinL`: Categorical linear layer for species-pair weights (replaces 4D tensors)
+- Graph batching: Vectorize over all edges simultaneously
+- Automatic differentiation: Lux/Zygote handles all gradients
+
+#### Proof-of-Concept Work (co/etback branch)
+
+The maintainer has created a prototype demonstrating the migration pattern in `test/models/test_learnable_Rnl.jl` (co/etback branch, commit `caeb7f07`):
+
+**What it demonstrates:**
+- How to rebuild `LearnableRnlrzzBasis` using pure EquivariantTensors + Lux components
+- Edge tuple format: `xij = (𝐫ij = SVector, zi = AtomicNumber, zj = AtomicNumber)`
+- `NTtransform` for differentiable distance transformations
+- `SelectLinL` replacing 4D weight tensors `Wnlq[:,:,iz,jz]`
+- Numerical equivalence verified: 100 random tests confirm old ≈ new
+
+**Key insight from prototype:**
+```julia
+# Old ACEpotentials pattern:
+P = evaluate(basis, r, Zi, Zj, ps, st)  # Scalar distance
+
+# New EquivariantTensors pattern:
+P = et_rbasis(xij, et_ps, et_st)  # Edge tuple with full geometric info
+```
+
+This is a **template** showing how to migrate, not production code. The actual implementation work remains to be done.
+
+**Pattern alignment:** The co/etback prototype uses the exact same patterns found in EquivariantTensors' mlip.jl example, confirming this is the recommended upstream approach.
+
+#### Migration Roadmap
+
+**Phase 1: Radial Basis Migration** (~2-3 weeks)
+- Apply co/etback pattern to production code in `src/models/Rnl_*.jl`
+- Rewrite `LearnableRnlrzzBasis` using `Chain(NTtransform, SkipConnection, SelectLinL)`
+- Update `RnlBasis` and spline-based variants
+- Create `evaluate_graph` interface accepting edge tuples
+- Maintain backward compatibility via wrapper functions
+- Verify numerical equivalence in all tests
+
+**Phase 2: Graph-based Evaluation** (~2-3 weeks)
+- Adopt edge tuple format `(𝐫ij, zi, zj)` in calculators.jl
+- Convert neighbor lists to edge representations with NamedTuples
+- Update `site_energy` and `site_energy_d` for graph evaluation
+- Vectorize over edges instead of per-atom loops
+- Update differentiation to work through graph eval path
+- Benchmark performance (should improve due to vectorization)
+
+**Phase 3: Full Lux Chain Integration** (~3-4 weeks)
+- Refactor ACEModel to be/use a Lux Chain
+- Integrate `EdgeEmbed(BranchLayer(...))` + `SparseACElayer` pattern
+- Update all constructors: `ace1_model`, `ace_model`, etc.
+- Update JSON serialization interface
+- Create migration utilities for existing fitted models
+- Update documentation and tutorials
+- Comprehensive testing across all features
+
+**Phase 4: GPU Enablement** (~2-3 weeks)
+- Add KernelAbstractions support (leveraging ET's GPU kernels)
+- Test on CUDA and Metal backends
+- Optimize memory allocations with Bumper.jl integration
+- Benchmark GPU vs CPU performance
+- Document GPU usage patterns and requirements
+- Add GPU tests to CI (if infrastructure available)
+
+**Total estimated effort**: 2-3 months of focused development work.
+
+#### Breaking Changes & Compatibility Strategy
+
+**Expected API changes:**
+
+1. **Model construction:**
+   ```julia
+   # v0.10 (current):
+   model = ace1_model(elements=[:Si], order=3, totaldegree=8, ...)
+   # Returns: ACEModel struct
+
+   # v0.11+ (future):
+   model = ace1_model_lux(elements=[:Si], order=3, totaldegree=8, ...)
+   # Returns: Lux.Chain
+   ```
+
+2. **Evaluation interface:**
+   ```julia
+   # v0.10 (current):
+   E = evaluate(model, Rs, Zs, Z0, ps, st)
+
+   # v0.11+ (future):
+   G = ETGraph(ii, jj; edge_data = [(𝐫=R, zi=Z0, zj=Z) for (R,Z) in zip(Rs, Zs)])
+   E, st = model(G, ps, st)
+   ```
+
+3. **Parameter structure:**
+   ```julia
+   # v0.10 (current): Custom NamedTuple
+   ps = (WB = ..., Wpair = ..., rbasis = (Wnlq = [...], ...), ...)
+
+   # v0.11+ (future): Auto-generated by Lux
+   ps, st = Lux.setup(rng, model)
+   # Access: ps.embed.Rnl.linl.weight[...]
+   ```
+
+**Backward compatibility strategy:**
+
+- **v0.10.x** (current): "Superficial" migration, classic API
+- **v0.11** (future): Add experimental Lux backend with `_lux` suffix constructors
+  - `ace1_model_lux(...)` returns Lux Chain
+  - Feature flag: `ace1_model(..., backend=:lux)`
+  - Both backends coexist, classic as default
+- **v0.12**: Lux backend becomes default, classic deprecated with warnings
+- **v0.13**: Remove classic backend entirely
+
+**Migration utilities needed:**
+- Convert old fitted model parameters to new Lux format
+- Wrapper functions maintaining old API during transition period
+- Comprehensive migration guide with examples
+- Automated testing for numerical equivalence
+
+**Serialization changes:**
+- Current JSON interface (`json_interface.jl`) needs updates
+- Lux models have different parameter structure
+- Consider using Lux.jl's built-in serialization or custom save/load
+
+#### References
+
+**EquivariantTensors.jl examples:**
+- `examples/mlip.jl`: Complete Lux-based ACE potential with graph evaluation
+- `examples/ace_lux.jl`: Additional architectural patterns and optimizations
+- GitHub: https://github.com/ACEsuit/EquivariantTensors.jl
+
+**ACEpotentials.jl branches:**
+- `co/etback`: Proof-of-concept prototype by maintainer (Christoph Ortner)
+- `test/models/test_learnable_Rnl.jl`: Migration pattern template
+- Demonstrates edge-centric evaluation with numerical equivalence verification
+
+**Related upstream work:**
+- EquivariantTensors uses KernelAbstractions for GPU kernels
+- P4ML has `P4ML.lux()` wrapper for converting bases to Lux layers
+- SelectLinL provides efficient categorical linear layers for species pairs
+
+**Maintainer feedback:** "The refactoring is fairly superficial right now - the new backends are not really used yet, but this is now the part that I will need to take on I think." This future migration work will unlock GPU capabilities and full integration with the EquivariantTensors ecosystem.
+
 ### Version Differences
 
 - **v0.6.x**: Uses ACE1.jl backend, mature but feature-frozen
