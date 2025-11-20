@@ -156,7 +156,9 @@ Fixed basis size bug introduced during migration in `src/models/ace.jl:96`:
 - **Bug**: Applied `unique()` to each basis element separately instead of to the entire specification
 - **Impact**: Created duplicate basis functions when multiple AA_spec entries had the same (n,l) values but different m values
 - **Consequence**: Models had inflated basis sizes, leading to redundant parameters and incorrect basis dimensions
+- **Symptom**: Silicon test RMSE values were elevated, requiring loosened thresholds to pass
 - **Fix**: Moved `unique()` outside the comprehension to deduplicate the entire mb_spec list
+- **Result**: RMSE thresholds reverted to original strict values; tests expected to pass with correct basis size
 - **How introduced**: During migration to EquivariantTensors, the conversion from (n,l,m) to (n,l) format required deduplication logic that was incorrectly placed
 
 **Known Issues** (documented as test skips/broken):
