@@ -55,12 +55,8 @@ AtomsBase = "0.5"
 AtomsBuilder = "0.2.0"
 AtomsCalculators = "0.2"
 AtomsCalculatorsUtilities = "0.1"
-<<<<<<< HEAD
 BenchmarkTools = "1.6.3"
 Bumper = "0.7"
-=======
-Bumper = "0.7" 
->>>>>>> parent of 1c1adf2e (Update RMSE test thresholds with scientific baseline methodology)
 ChunkSplitters = "3.0"
 EquivariantTensors = "0.3"
 ExtXYZ = "0.2.0"
