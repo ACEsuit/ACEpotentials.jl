@@ -151,6 +151,14 @@ The package maintains separation between:
 - ✅ Documentation build: Success
 - ✅ Numerical equivalence: Verified against main branch
 
+**Critical Bug Fix** (commit `0910f528`):
+Fixed basis size bug introduced during migration in `src/models/ace.jl:96`:
+- **Bug**: Applied `unique()` to each basis element separately instead of to the entire specification
+- **Impact**: Created duplicate basis functions when multiple AA_spec entries had the same (n,l) values but different m values
+- **Consequence**: Models had inflated basis sizes, leading to redundant parameters and incorrect basis dimensions
+- **Fix**: Moved `unique()` outside the comprehension to deduplicate the entire mb_spec list
+- **How introduced**: During migration to EquivariantTensors, the conversion from (n,l,m) to (n,l) format required deduplication logic that was incorrectly placed
+
 **Known Issues** (documented as test skips/broken):
 1. **fast_evaluator** (experimental feature): Requires major refactoring to work with new upstream API. Tests skipped in `test/test_fast.jl` and usage commented out in `docs/src/tutorials/asp.jl`. This is an optional optimization feature, not core functionality.
 
