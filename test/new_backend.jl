@@ -1,5 +1,6 @@
 using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
+# Pkg.develop("/Users/ortner/gits/EquivariantTensors.jl/")
 
 using ACEpotentials
 M = ACEpotentials.Models
@@ -24,9 +25,16 @@ max_level = 10
 order = 3 
 maxl = 6
 
+# modify rin0cuts to have same cutoff for all elements 
+# TODO: there is currently a bug with variable cutoffs 
+rin0cuts = M._default_rin0cuts(elements)
+rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts)
+
+
 model = M.ace_model(; elements = elements, order = order, 
             Ytype = :solid, level = level, max_level = max_level, 
-            maxl = maxl, pair_maxn = max_level, 
+            maxl = maxl, pair_maxn = max_level,
+            rin0cuts = rin0cuts,  
             init_WB = :glorot_normal, init_Wpair = :glorot_normal)
 
 ps, st = Lux.setup(rng, model)          
@@ -68,7 +76,10 @@ et_trans = let _i2z = (_i2z = et_i2z,), transforms = rbasis.transforms
    end 
 
 # the envelope is always a simple quartic (1 -x^2)^2
-#  (note the transforms is normalized to map to [-1, 1])
+#  ( note the transforms is normalized to map to [-1, 1]
+#    if r outside [0, rcut], then the normalized transform 
+#    maps to 1 or -1. )
+#
 et_env = y -> (1 - y^2)^2
 
 # the polynomial basis 
@@ -79,11 +90,11 @@ et_polys = rbasis.polys
 #   P(yij) -> W[a] * P(zij) 
 # with W[a] learnable weights 
 selector = let _i2z = (_i2z = et_i2z,)
-   x -> begin 
-         iz = M._z2i(_i2z, x.s0)
-         jz = M._z2i(_i2z, x.s1)
-         return (iz - 1) * length(_i2z) + jz
-      end 
+      x -> begin 
+            iz = M._z2i(_i2z, x.s0)
+            jz = M._z2i(_i2z, x.s1)
+            return (iz - 1) * length(_i2z) + jz
+         end 
    end 
 #                                          
 et_linl = ET.SelectLinL(length(et_polys),         # indim
@@ -156,6 +167,10 @@ nnll = M.get_nnll_spec(model.tensor)
 et_nnll = et_model.layers.ace.symbasis.meta["mb_spec"]
 @show nnll == et_nnll 
 
+# but this is also identical ... 
+@show model.tensor.A2Bmaps[1] == et_model.layers.ace.symbasis.A2Bmaps[1]
+
+
 # radial basis parameters 
 et_ps.embed.Rnl.connection.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
 et_ps.embed.Rnl.connection.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
@@ -180,7 +195,7 @@ calc_model = ACEpotentials.ACEPotential(model, ps, st)
 rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
 
 function rand_struct() 
-   sys = AtomsBuilder.bulk(:Si, cubic=true) * 2
+   sys = AtomsBuilder.bulk(:Si) * (2,1,1)
    rattle!(sys, 0.2u"Å") 
    AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
    return sys 
@@ -194,4 +209,4 @@ end
 sys = rand_struct()
 AtomsCalculators.potential_energy(sys, calc_model)
 energy_new(sys, et_model)
-
+ 
