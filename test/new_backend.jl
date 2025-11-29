@@ -2,6 +2,8 @@ using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
 # Pkg.develop("/Users/ortner/gits/EquivariantTensors.jl/")
 
+##
+
 using ACEpotentials
 M = ACEpotentials.Models
 
@@ -53,64 +55,9 @@ end
 # but in the final implementation we will have to create it directly 
 
 rbasis = model.rbasis
-
-# ET uses AtomsBase.ChemicalSpecies 
 et_i2z = AtomsBase.ChemicalSpecies.(rbasis._i2z)
-
-# In ET we currently store an edge xij as a NamedTuple, e.g, 
-#    xij = (𝐫ij = ..., zi = ..., zj = ...)
-# The NTtransform is a wrapper for mapping xij -> y 
-# (in this case y = transformed distance) adding logic to enable 
-# differentiation through this operation. 
-#
-# In ET.Atoms edges are of the form xij = (𝐫 = ..., s0 = ..., s1 = ...)
-#
-et_trans = let _i2z = (_i2z = et_i2z,), transforms = rbasis.transforms
-   ET.NTtransform(x -> begin
-         idx_i = M._z2i(_i2z, x.s0)
-         idx_j = M._z2i(_i2z, x.s1)
-         trans_ij = rbasis.transforms[idx_i, idx_j] 
-         r = norm(x.𝐫)
-         return trans_ij(r)
-      end)
-   end 
-
-# the envelope is always a simple quartic (1 -x^2)^2
-#  ( note the transforms is normalized to map to [-1, 1]
-#    if r outside [0, rcut], then the normalized transform 
-#    maps to 1 or -1. )
-#
-et_env = y -> (1 - y^2)^2
-
-# the polynomial basis 
-et_polys = rbasis.polys
-
-# the linear layer transformation 
-# selector maps a (Zi, Zj) pair to an index a for transforming 
-#   P(yij) -> W[a] * P(zij) 
-# with W[a] learnable weights 
-selector = let _i2z = (_i2z = et_i2z,)
-      x -> begin 
-            iz = M._z2i(_i2z, x.s0)
-            jz = M._z2i(_i2z, x.s1)
-            return (iz - 1) * length(_i2z) + jz
-         end 
-   end 
-#                                          
-et_linl = ET.SelectLinL(length(et_polys),         # indim
-                        size(ps.rbasis.Wnlq, 1),  # outdim
-                        4,                        # 4 categories
-                        selector)
-
-et_rbasis = SkipConnection(   # input is xij 
-         Chain(y = et_trans,  # transforms yij 
-               P = SkipConnection(
-                     et_polys, 
-                     WrappedFunction( Py -> et_env.(Py[2]) .* Py[1] )
-                  )
-               ),   # r -> y -> P = e(y) * polys(y)
-         et_linl    # P -> W(Zi, Zj) * P 
-      )
+et_rbasis = M._convert_Rnl_learnable(rbasis; zlist = et_i2z, 
+                                        rfun = x -> norm(x.𝐫) )
 
 # TODO: this is cheating, but this set can probably be generated quite 
 #       easily as part of the construction of et_rbasis. 
@@ -170,7 +117,6 @@ et_nnll = et_model.layers.ace.symbasis.meta["mb_spec"]
 # but this is also identical ... 
 @show model.tensor.A2Bmaps[1] == et_model.layers.ace.symbasis.A2Bmaps[1]
 
-
 # radial basis parameters 
 et_ps.embed.Rnl.connection.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
 et_ps.embed.Rnl.connection.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
@@ -206,7 +152,9 @@ function energy_new(sys, et_model)
    return et_model(G, et_ps, et_st)[1]
 end
 
-sys = rand_struct()
-AtomsCalculators.potential_energy(sys, calc_model)
-energy_new(sys, et_model)
- 
+for ntest = 1:10 
+   sys = rand_struct()
+   E1 = AtomsCalculators.potential_energy(sys, calc_model)
+   E2 = energy_new(sys, et_model)
+   print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
+end

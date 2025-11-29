@@ -3,24 +3,33 @@ import EquivariantTensors as ET
 using StaticArrays
 using Lux
 
+# In ET we currently store an edge xij as a NamedTuple, e.g, 
+#    xij = (𝐫ij = ..., zi = ..., zj = ...)
+# The NTtransform is a wrapper for mapping xij -> y 
+# (in this case y = transformed distance) adding logic to enable 
+# differentiation through this operation. 
+#
+# In ET.Atoms edges are of the form xij = (𝐫 = ..., s0 = ..., s1 = ...)
+
 
 # build a pure Lux Rnl basis 100% compatible with LearnableRnlrzz
 #
 
-function _convert_Rnl_learnable(basis)
+function _convert_Rnl_learnable(basis; zlist = basis._i2z, 
+                                       rfun = x -> x.r )
 
    # number of species 
-   NZ = length(basis._i2z)
+   NZ = length(zlist)
 
    # species z -> index i mapping 
-   __z2i = let _i2z = (_i2z = basis._i2z,) 
+   __z2i = let _i2z = (_i2z = zlist,) 
       z -> _z2i(_i2z, z)
    end
 
    # __zz2i maps a `(Zi, Zj)` pair to a single index `a` representing 
    # (Zi, Zj) in a flattened array
    __zz2ii = (zi, zj) -> (__z2i(zi) - 1) * NZ + __z2i(zj)
-   selector = xij -> __zz2ii(xij.z0, xij.z1)
+   selector = xij -> __zz2ii(xij.s0, xij.s1)
 
    # construct the transform to be a Lux layer that behaves a bit 
    # like a WrappedFunction, but with additional support for 
@@ -28,8 +37,8 @@ function _convert_Rnl_learnable(basis)
    #
    et_trans = let transforms = basis.transforms
       ET.NTtransform( xij -> begin
-            trans_ij = transforms[__z2i(xij.z0), __z2i(xij.z1)]
-            return trans_ij(xij.r)
+            trans_ij = transforms[__z2i(xij.s0), __z2i(xij.s1)]
+            return trans_ij(rfun(xij))
          end )
       end 
 
