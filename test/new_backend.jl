@@ -10,8 +10,9 @@ M = ACEpotentials.Models
 # build a pure Lux Rnl basis compatible with LearnableRnlrzz
 import EquivariantTensors as ET
 import Polynomials4ML as P4ML 
-using StaticArrays, AtomsBase
-using Lux
+
+using StaticArrays, Lux
+using AtomsBase, AtomsBuilder, Unitful, AtomsCalculators
 
 using Random, LuxCore, Test, LinearAlgebra, ACEbase 
 using Polynomials4ML.Testing: print_tf, println_slim
@@ -29,6 +30,7 @@ maxl = 6
 
 # modify rin0cuts to have same cutoff for all elements 
 # TODO: there is currently a bug with variable cutoffs 
+#       (?is there? The radials seem fine? check again)
 rin0cuts = M._default_rin0cuts(elements)
 rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts)
 
@@ -43,6 +45,7 @@ ps, st = Lux.setup(rng, model)
 
 # Missing issues: 
 #    Vref = 0  =>  this will not be tested 
+#    pair potential will also not be tested 
 
 # kill the pair basis for now 
 for s in model.pairbasis.splines
@@ -90,7 +93,21 @@ et_mb_basis = ET.sparse_equivariant_tensor(
       basis = real
    )
 
-et_acel = ET.SparseACElayer(et_mb_basis, (1,))
+# et_acel = ET.SparseACElayer(et_mb_basis, (1,))
+
+# ------------------------------------------------
+# readout layer : need to select which linear output to 
+#   use based on the center atom species
+
+__zi = let zlist = (_i2z = et_i2z, )
+   x -> M._z2i(zlist, x.s)
+end
+
+et_readout = ET.SelectLinL(
+                     et_mb_basis.lens[1],  # input dim
+                     1,                    # output dim
+                     length(et_i2z),       # num species
+                     __zi ) 
 
 # finally build the full model from the two layers 
 #
@@ -98,11 +115,31 @@ et_acel = ET.SparseACElayer(et_mb_basis, (1,))
 #       about the center species; need to figure out how to pass that information 
 #       through to the ace layer
 #
-et_model = Lux.Chain(; 
-            embed = et_embed,  # embedding layer 
-            ace = et_acel,     # ACE layer / correlation layer 
-            energy = WrappedFunction(x -> sum(x[1]))   # sum up to get a total energy 
+
+__sz(::Any) = nothing
+__sz(A::AbstractArray) = size(A) 
+__sz(x::Tuple) = __sz.(x)
+dbglayer(msg = ""; show=false) = WrappedFunction(x ->
+         begin 
+            println("$msg : ", typeof(x), ", ", __sz(x))
+            if show; display(x); end 
+            return x 
+         end ) 
+
+et_basis = Lux.Chain(;   
+            embed = et_embed,    # embedding layer 
+              ace = et_mb_basis,   # ACE layer -> basis
+            unwrp = WrappedFunction(x -> x[1]),  # unwrap the tuple 
             )
+
+et_model = Lux.Chain( 
+      L1 = Lux.BranchLayer(;
+         basis = et_basis,
+         nodes = WrappedFunction(G -> G.node_data),   # pass node data through
+         ),
+      Ei = et_readout, 
+      E = WrappedFunction(sum),         # sum up to get a total energy 
+  )
 et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
 
 ##
@@ -111,27 +148,26 @@ et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
 # is because meta["mb_spec"] only gives the original ordering before basis 
 # construction ... 
 nnll = M.get_nnll_spec(model.tensor)
-et_nnll = et_model.layers.ace.symbasis.meta["mb_spec"]
+et_nnll = et_mb_basis.meta["mb_spec"]
 @show nnll == et_nnll 
 
 # but this is also identical ... 
-@show model.tensor.A2Bmaps[1] == et_model.layers.ace.symbasis.A2Bmaps[1]
+@show model.tensor.A2Bmaps[1] == et_mb_basis.A2Bmaps[1]
 
 # radial basis parameters 
-et_ps.embed.Rnl.connection.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
-et_ps.embed.Rnl.connection.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
-et_ps.embed.Rnl.connection.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
-et_ps.embed.Rnl.connection.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
+et_ps.L1.basis.embed.Rnl.connection.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
+et_ps.L1.basis.embed.Rnl.connection.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
+et_ps.L1.basis.embed.Rnl.connection.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
+et_ps.L1.basis.embed.Rnl.connection.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
 
 # many-body basis parameters; because the readout layer doesn't know about 
 # species yet we take a single parameter set; this needs to be fixed asap. 
-ps.WB[:, 2] .= ps.WB[:, 1]
-et_ps.ace.WLL[1][:] .= ps.WB[:, 1]
+# ps.WB[:, 2] .= ps.WB[:, 1]
+
+et_ps.Ei.W[1, :, 1] .= ps.WB[:, 1]
+et_ps.Ei.W[1, :, 2] .= ps.WB[:, 2]
 
 ##
-
-# generate random structures 
-using AtomsBuilder, Unitful, AtomsCalculators
 
 # wrap the old ACE model into a calculator 
 calc_model = ACEpotentials.ACEPotential(model, ps, st)
@@ -152,8 +188,11 @@ function energy_new(sys, et_model)
    return et_model(G, et_ps, et_st)[1]
 end
 
-for ntest = 1:10 
+##
+
+for ntest = 1:30 
    sys = rand_struct()
+   G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
    E1 = AtomsCalculators.potential_energy(sys, calc_model)
    E2 = energy_new(sys, et_model)
    print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
