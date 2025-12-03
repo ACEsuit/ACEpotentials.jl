@@ -26,12 +26,8 @@ include("analysis/potential_analysis.jl")
 include("descriptor.jl")
 
 
-# TODO: to be completely rewritten
+# TODO: to be completely rewritten or retired 
 # include("export.jl")
-
-# Experimental 
-# TODO: this is basically the UFACE interface which we need to revive
-# include("experimental.jl")
 
 
 # ----------------- Exports that seem important to make the tutorials work. 

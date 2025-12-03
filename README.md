@@ -12,15 +12,34 @@
 - Version 0.6.x uses `ACE1.jl` as a backend. It is mature and suitable for linear models with few species. This is not longer actively developed, but critical bugfixes can still be provided.  [[docs-v0.6]](https://acesuit.github.io/ACEpotentials.jl/v0.6/)
 - Version 0.7.x is reserved
 - Version 0.8.x and onwards provides a new and much more flexible implementation, and integrates with the [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl) ecosystem. Most but not all features from 0.6.x have been ported to this re-implementation. Usability should be the same or improved for most end-users. For developers this provides a much more flexible framework for experimentation. [[docs-v0.8]](https://acesuit.github.io/ACEpotentials.jl/dev/)
-- Version 0.9 onwards is technically compatible with Julia 1.10, but some unit tests show unexplained increases in fit accuracy, hence we highly recommend to use it only with Julia 1.11.
+- Version 0.9.0 onwards is technically compatible with Julia 1.10, but some unit tests show unexplained increases in fit accuracy, hence we highly recommend to use it only with Julia 1.11.
+- Version 0.10 migrates internally to `EquivariantTensors.jl` for improved maintainability, flexibility for model building and different execution backends. User-facing API remains unchanged; existing code should mostly continue to work. Note however that support for the fast evaluator used for some Hessian calculations has been (temporarily) dropped. This series of minor releases is compatible with Julia 1.12
 
 ## Contributing
 
 Contributions are very welcome. Until clear guidelines and practices are established, we recommend to open an issue where the bugfix or enhancement can be discussed, before starting a pull request. We will do our best to respond in a timely manner.
 
-## Quick Start 
+## Quick Start for v0.10.x
 
-- Install Julia 1.11 
+- Versions after v0.10.x are registered in the General registry and are compatible with Julia 1.12
+- Install Julia 1.12
+- Create new folder a.g. `acetutorial`; Open a shell
+- Create a new project in `acetutorial` and install `ACEpotentials.jl`
+```
+julia --project=. 
+] 
+add ACEpotentials
+```
+- Install the Julia tutorials (this installs two Jupyter notebook tutorials)
+```julia-repl
+using ACEpotentials
+ACEpotentials.copy_tutorial()
+```
+- Work through the tutorials.
+
+## Quick Start for v0.9.x
+
+- Install Julia 1.11
 - Create new folder a.g. `acetutorial`; Open a shell
 - Create a new project in `acetutorial` and install `ACEpotentials.jl`
 ```

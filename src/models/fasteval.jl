@@ -42,15 +42,22 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    ybasis = model.model.ybasis
    abasis = model.model.tensor.abasis
    aabasis = model.model.tensor.aabasis
-   A2Bmap = model.model.tensor.A2Bmap
-   
+   # Note: SparseACEbasis has A2Bmaps as tuple; for L=0 invariants use [1]
+   A2Bmap = model.model.tensor.A2Bmaps[1]
+
    wB = model.ps.WB
    wAA = A2Bmap' * wB[:, iz]
    
-   # construct reduced A basis and AA basis 
+   # construct reduced A basis and AA basis
    Inz = findall(!iszero, wAA)
-   aa_spec_new = aabasis.meta["AA_spec"][Inz]
-   a_spec_new = unique(reduce(vcat, aa_spec_new))
+   # Get the full A spec using the upstream API function
+   a_spec_full = get_nnll_spec(model.model.tensor)
+   # Get AA spec from aabasis.specs (SparseSymmProd stores spec as tuple of vectors)
+   # We need to flatten it since it's structured by correlation order
+   aa_spec_full = reduce(vcat, model.model.tensor.aabasis.specs)
+   aa_spec_new = aa_spec_full[Inz]
+   # Map integer indices to actual A specs
+   a_spec_new = unique(reduce(vcat, [a_spec_full[i] for bb in aa_spec_new for i in bb]))
    
    # take human-readable specs and convert into layer-readable specs 
    # TODO: here we could try to make the y and r bases smaller 
@@ -59,18 +66,20 @@ function FastACEInner(model::ACEPotential{<: ACEModel}, iz;
    r_spec = rbasis.spec
    y_spec = _make_Y_spec(maxl)
    A_spec_idx = _make_idx_A_spec(a_spec_new, r_spec, y_spec)
-   a_basis = Polynomials4ML.PooledSparseProduct(A_spec_idx)
-   AA_spec_idx = _make_idx_AA_spec(aa_spec_new, a_spec_new) 
-   aa_basis = Polynomials4ML.SparseSymmProdDAG(AA_spec_idx)
+   a_basis = EquivariantTensors.PooledSparseProduct(A_spec_idx)
+   AA_spec_idx = _make_idx_AA_spec(aa_spec_new, a_spec_new)
+   aa_basis = EquivariantTensors.SparseSymmProd(AA_spec_idx)
    
-   if aa_static 
+   if aa_static
       # generate a static evaluator
       aadot = generate_AA_dot(AA_spec_idx, wAA[Inz])
-   else 
+   else
       # generate a standard evaluator
-      wAA_rec = zeros(length(aa_basis))
-      wAA_rec[aa_basis.projection] = wAA[Inz]
-      aadot = AADot(wAA_rec, aa_basis)
+      # Note: SparseSymmProd no longer needs projection; weights map directly
+      wAA_rec = wAA[Inz]
+      # Force conversion from SparseVector to Vector (AADot requires Vector{T})
+      wAA_vec = collect(wAA_rec)
+      aadot = AADot(wAA_vec, aa_basis)
    end 
    
    return FastACEinner(rbasis, ybasis, a_basis, aadot)   
@@ -240,14 +249,15 @@ function (aadot::AADot)(A)
 end
 
 function eval_and_grad!(∇φ_A, aadot::AADot, A)
-   @no_escape begin 
+   @no_escape begin
       AA = @alloc(eltype(A), length(aadot.aabasis))
       P4ML.evaluate!(AA, aadot.aabasis, A)
       φ = dot(aadot.cc, AA)
-      P4ML.unsafe_pullback!(∇φ_A, aadot.cc, aadot.aabasis, AA)
-      nothing 
+      # Note: pullback! takes A (input) not AA (output) in new API
+      P4ML.pullback!(∇φ_A, aadot.cc, aadot.aabasis, A)
+      nothing
    end
-   
+
    return φ
 end
 

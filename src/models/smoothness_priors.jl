@@ -67,17 +67,19 @@ function _nnll_basis(model)
    return global_spec
 end
 
-function _coupling_scalings(model) 
+function _coupling_scalings(model)
    scal = ones(_basis_length(model))
+   # Note: SparseACEbasis has A2Bmaps as tuple; for L=0 invariants use [1]
+   A2Bmap = model.tensor.A2Bmaps[1]
    for iz = 1:_get_nz(model)
       z = _i2z(model, iz)
       mb_inds = get_basis_inds(model, z)
-      @assert length(mb_inds) == size(model.tensor.A2Bmap, 1) 
+      @assert length(mb_inds) == size(A2Bmap, 1)
       for i = 1:length(mb_inds)
-         scal[mb_inds[i]] = sqrt(sum(abs2, model.tensor.A2Bmap[i,:]))
+         scal[mb_inds[i]] = sqrt(sum(abs2, A2Bmap[i,:]))
       end
    end
-   return scal 
+   return scal
 end
 
 smoothness_prior(model::ACEPotential, f; kwargs...) = 
