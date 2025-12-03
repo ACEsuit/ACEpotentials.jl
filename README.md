@@ -19,9 +19,27 @@
 
 Contributions are very welcome. Until clear guidelines and practices are established, we recommend to open an issue where the bugfix or enhancement can be discussed, before starting a pull request. We will do our best to respond in a timely manner.
 
-## Quick Start 
+## Quick Start for v0.10.x
 
-- Install Julia 1.11 (or 1.12 for 0.10.x)
+- Versions after v0.10.x are registered in the General registry and are compatible with Julia 1.12
+- Install Julia 1.12
+- Create new folder a.g. `acetutorial`; Open a shell
+- Create a new project in `acetutorial` and install `ACEpotentials.jl`
+```
+julia --project=. 
+] 
+add ACEpotentials
+```
+- Install the Julia tutorials (this installs two Jupyter notebook tutorials)
+```julia-repl
+using ACEpotentials
+ACEpotentials.copy_tutorial()
+```
+- Work through the tutorials.
+
+## Quick Start for v0.9.x
+
+- Install Julia 1.11
 - Create new folder a.g. `acetutorial`; Open a shell
 - Create a new project in `acetutorial` and install `ACEpotentials.jl`
 ```
