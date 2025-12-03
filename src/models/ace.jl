@@ -6,7 +6,6 @@ using StaticArrays: SVector
 using LinearAlgebra: norm, dot
 using Polynomials4ML: real_sphericalharmonics, real_solidharmonics
 
-import RepLieGroups
 import EquivariantTensors
 
 
