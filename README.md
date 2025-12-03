@@ -13,7 +13,7 @@
 - Version 0.7.x is reserved
 - Version 0.8.x and onwards provides a new and much more flexible implementation, and integrates with the [AtomsBase](https://github.com/JuliaMolSim/AtomsBase.jl) ecosystem. Most but not all features from 0.6.x have been ported to this re-implementation. Usability should be the same or improved for most end-users. For developers this provides a much more flexible framework for experimentation. [[docs-v0.8]](https://acesuit.github.io/ACEpotentials.jl/dev/)
 - Version 0.9.0 onwards is technically compatible with Julia 1.10, but some unit tests show unexplained increases in fit accuracy, hence we highly recommend to use it only with Julia 1.11.
-- Version 0.10 migrates internally to `EquivariantTensors.jl` for improved maintainability, flexibility for model building and different execution backends. User-facing API remains unchanged; existing code should continue to work.
+- Version 0.10 migrates internally to `EquivariantTensors.jl` for improved maintainability, flexibility for model building and different execution backends. User-facing API remains unchanged; existing code should mostly continue to work. Note however that support for the fast evaluator used for some Hessian calculations has been (temporarily) dropped. This series of minor releases is compatible with Julia 1.12
 
 ## Contributing
 
@@ -21,7 +21,7 @@ Contributions are very welcome. Until clear guidelines and practices are establi
 
 ## Quick Start 
 
-- Install Julia 1.11 
+- Install Julia 1.11 (or 1.12 for 0.10.x)
 - Create new folder a.g. `acetutorial`; Open a shell
 - Create a new project in `acetutorial` and install `ACEpotentials.jl`
 ```
