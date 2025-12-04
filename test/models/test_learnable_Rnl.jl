@@ -1,14 +1,17 @@
 
 using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 using TestEnv; TestEnv.activate();
-Pkg.develop("/Users/ortner/gits/EquivariantTensors.jl/")
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
 
 ##
 
 using ACEpotentials
 M = ACEpotentials.Models
+import EquivariantTensors as ET
 
-using Random, LuxCore, Test, LinearAlgebra, ACEbase 
+using Random, LuxCore, Test, LinearAlgebra, ACEbase
+using AtomsBase, StaticArrays
 using Polynomials4ML.Testing: print_tf, println_slim
 rng = Random.MersenneTwister(1234)
 
@@ -120,3 +123,47 @@ for ntest = 1:10
    print_tf(@test R1 ≈ R2) 
 end
 
+## 
+# run on GPU 
+using Metal 
+dev = Metal.mtl 
+
+z0 = rand(basis._i2z)
+xx = [ (𝐫 = SA[2.0 + 2 * rand(), 0.0, 0.0], 
+        s0 = ChemicalSpecies(z0), 
+        s1 = ChemicalSpecies(rand(basis._i2z))) for _ in 1:1000 ]
+
+xx_dev = dev(ET.float32.(xx))
+ps_dev = dev(ET.float32(et_ps))
+st_dev = dev(ET.float32(et_st))
+
+R1 = et_rbasis(xx, et_ps, et_st)[1]
+R2 = et_rbasis(xx_dev, ps_dev, st_dev)
+
+# this has a scalar indexing error, whereas the following tests work ok 
+
+## 
+
+trans1 = ET.NTtransform( x -> norm(x.𝐫) )
+ps, st = LuxCore.setup(rng, trans1)
+y1 = trans1(xx, ps, st)[1] 
+y1_dev = trans1(xx_dev, ps, st)[1] 
+
+trans2 = et_rbasis.layers.layers.y
+ps2, st2 = LuxCore.setup(rng, trans2)
+y2 = trans2(xx, ps2, st2)[1]
+st2_dev = dev(ET.float32(st2))
+y2_dev = trans2(xx_dev, ps2, st2_dev)[1]
+
+## 
+using Lux, Polynomials4ML
+import Polynomials4ML as P4ML
+
+l_P = et_rbasis.layers.layers.P.layers
+l_yP = Chain(; 
+      y = trans2, 
+      P = l_P ) 
+ps, st = LuxCore.setup(rng, l_yP)
+st_dev = dev(ET.float32(st))
+P1 = l_yP(xx, ps, st)[1]
+P1_dev = l_yP(xx_dev, ps, st_dev)[1]

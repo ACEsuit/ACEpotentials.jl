@@ -15,7 +15,7 @@ using Lux
 # build a pure Lux Rnl basis 100% compatible with LearnableRnlrzz
 
 function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z), 
-                                       rfun = x -> x.r )
+                                       rfun = x -> norm(x.𝐫) )
 
    # number of species 
    NZ = length(zlist)
@@ -36,7 +36,8 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    #
    et_trans = _convert_agnesi(basis)
    
-   # let transforms = basis.transforms
+   # OLD VERSION - KEEP FOR DEBUGGING then remove 
+   # et_trans = let transforms = basis.transforms
    #    ET.NTtransform( xij -> begin
    #          trans_ij = transforms[__z2i(xij.s0), __z2i(xij.s1)]
    #          return trans_ij(rfun(xij))
@@ -100,10 +101,12 @@ function _agnesi_et_params(trans)
    params = ET.agnesi_params(pcut, pin, rin, req, rcut)
    @assert params.a ≈ a 
 
+   # ----- for debugging -----------
    # r = rin + rand() * (rcut - rin)
    # y1 = trans(r) 
    # y2 = ET.eval_agnesi(r, params)
    # @assert y1 ≈ y2
+   # -------------------------------
 
    return params
 end 
