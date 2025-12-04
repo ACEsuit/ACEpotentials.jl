@@ -101,7 +101,7 @@ for ntest = 1:50
    r = 2.0 + 5 * rand()
    Zi = rand(basis._i2z)
    Zj = rand(basis._i2z)
-   xij = ( r = r, s0 = Zi, s1 = Zj )
+   xij = ( 𝐫 = SA[r,0.0,0.0], s0 = ChemicalSpecies(Zi), s1 = ChemicalSpecies(Zj) )
    R1 = basis(r, Zi, Zj, ps, st)
    R2 = et_rbasis( xij, et_ps, et_st)[1] 
    print_tf(@test R1 ≈ R2)
@@ -110,9 +110,11 @@ end
 # batched test 
 for ntest = 1:10 
    z0 = rand(basis._i2z)
-   xx = [ (r = 2.0 + 2 * rand(), s0 = z0, s1 = rand(basis._i2z)) for _ in 1:30 ]
-   rr = [ x.r for x in xx ]
-   Zjs = [ x.s1 for x in xx ]
+   xx = [ (𝐫 = SA[2.0 + 2 * rand(), 0.0, 0.0], 
+          s0 = ChemicalSpecies(z0), 
+          s1 = ChemicalSpecies(rand(basis._i2z))) for _ in 1:30 ]
+   rr = [ x.𝐫[1] for x in xx ]
+   Zjs = [ atomic_number(x.s1) for x in xx ]
    R1 = M.evaluate_batched(basis, rr, z0, Zjs, ps, st)
    R2 = et_rbasis( xx, et_ps, et_st)[1]
    print_tf(@test R1 ≈ R2) 

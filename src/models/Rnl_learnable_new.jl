@@ -13,9 +13,8 @@ using Lux
 
 
 # build a pure Lux Rnl basis 100% compatible with LearnableRnlrzz
-#
 
-function _convert_Rnl_learnable(basis; zlist = basis._i2z, 
+function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z), 
                                        rfun = x -> x.r )
 
    # number of species 
@@ -35,12 +34,14 @@ function _convert_Rnl_learnable(basis; zlist = basis._i2z,
    # like a WrappedFunction, but with additional support for 
    # named-tuple inputs 
    #
-   et_trans = let transforms = basis.transforms
-      ET.NTtransform( xij -> begin
-            trans_ij = transforms[__z2i(xij.s0), __z2i(xij.s1)]
-            return trans_ij(rfun(xij))
-         end )
-      end 
+   et_trans = _convert_agnesi(basis)
+   
+   # let transforms = basis.transforms
+   #    ET.NTtransform( xij -> begin
+   #          trans_ij = transforms[__z2i(xij.s0), __z2i(xij.s1)]
+   #          return trans_ij(rfun(xij))
+   #       end )
+   #    end 
 
    # the envelope is always a simple quartic (1 -x^2)^2
    # otherwise make this transform fail. 
@@ -83,3 +84,49 @@ function _convert_Rnl_learnable(basis; zlist = basis._i2z,
    return et_rbasis 
 end
 
+
+
+# important auxiliary function to convert the transforms 
+
+function _agnesi_et_params(trans) 
+   @assert trans.trans isa GeneralizedAgnesiTransform
+   a = trans.trans.a 
+   pcut = trans.trans.p 
+   pin = trans.trans.q 
+   req = trans.trans.r0 
+   rin = trans.trans.rin 
+   rcut = trans.rcut 
+
+   params = ET.agnesi_params(pcut, pin, rin, req, rcut)
+   @assert params.a ≈ a 
+
+   # r = rin + rand() * (rcut - rin)
+   # y1 = trans(r) 
+   # y2 = ET.eval_agnesi(r, params)
+   # @assert y1 ≈ y2
+
+   return params
+end 
+
+
+function _convert_agnesi(rbasis::LearnableRnlrzzBasis)
+   transforms = rbasis.transforms 
+   @assert transforms isa SMatrix 
+   NZ = size(transforms, 1) 
+   params = [] 
+   for i = 1:NZ, j = i:NZ 
+      push!(params, _agnesi_et_params(transforms[i,j]))
+   end
+   st = (zlist = ChemicalSpecies.(rbasis._i2z), 
+         params = SVector{length(params)}(identity.(params)) )
+    
+   f_agnesi = let 
+      (x, st) -> begin
+         r = norm(x.𝐫)
+         idx = ET.catcat2idx_sym(st.zlist, x.s0, x.s1)
+         return ET.eval_agnesi(r, st.params[idx])
+      end   
+   end
+         
+   return ET.NTtransformST(f_agnesi, st, :GeneralizedAgnesi)
+end 

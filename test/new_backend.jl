@@ -1,6 +1,7 @@
 using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
-# Pkg.develop("/Users/ortner/gits/EquivariantTensors.jl/")
+Pkg.develop(url = joinpath(@__DIR__(), ".."))
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
 
 ##
 
@@ -197,3 +198,26 @@ for ntest = 1:30
    E2 = energy_new(sys, et_model)
    print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
 end
+
+
+## 
+#
+# demo GPU evaluation 
+#
+
+using Metal
+dev = Metal.mtl
+
+sys = rand_struct()
+G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+G_32 = ET.ETGraph(G.ii, G.jj, G.first, ET.float32.(G.node_data), ET.float32.(G.edge_data), G.maxneigs)
+
+# move all data to the device 
+G_32_dev = dev(G_32)
+ps_dev = dev(ET.float32(et_ps))
+st_dev = dev(ET.float32(et_st))
+
+E1 = AtomsCalculators.potential_energy(sys, calc_model)
+E2 = et_model(G_32_dev, ps_dev, st_dev) 
+
+# print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
