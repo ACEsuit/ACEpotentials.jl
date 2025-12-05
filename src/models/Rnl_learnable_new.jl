@@ -28,7 +28,11 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    # __zz2i maps a `(Zi, Zj)` pair to a single index `a` representing 
    # (Zi, Zj) in a flattened array
    __zz2ii = (zi, zj) -> (__z2i(zi) - 1) * NZ + __z2i(zj)
-   selector = xij -> __zz2ii(xij.s0, xij.s1)
+
+   selector = let zlist = tuple(zlist...)
+      xij -> ET.catcat2idx(zlist, xij.s0, xij.s1)
+   end
+   # function selector = xij -> __zz2ii(xij.s0, xij.s1)
 
    # construct the transform to be a Lux layer that behaves a bit 
    # like a WrappedFunction, but with additional support for 
@@ -72,16 +76,27 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
                            NZ^2,                     # num (Zi,Zj) pairs
                            selector)
 
+   # et_rbasis = SkipConnection(   # input is (rij, zi, zj)
+   #          Chain(y = et_trans,  # transforms yij 
+   #                P = SkipConnection(
+   #                      et_polys, 
+   #                      WrappedFunction( Py -> et_env.(Py[2]) .* Py[1] )
+   #                   )
+   #                ),   # r -> y -> P = e(y) * polys(y)
+   #          et_linl    # P -> W(Zi, Zj) * P 
+   #       )
+
    et_rbasis = SkipConnection(   # input is (rij, zi, zj)
             Chain(y = et_trans,  # transforms yij 
-                  P = SkipConnection(
-                        et_polys, 
-                        WrappedFunction( Py -> et_env.(Py[2]) .* Py[1] )
-                     )
-                  ),   # r -> y -> P = e(y) * polys(y)
+                  Pe = BranchLayer(
+                     et_polys,   # y -> P
+                     WrappedFunction( y -> et_env.(y) ),  # y -> fₑₙᵥ
+                     fusion = WrappedFunction( Pe -> Pe[2] .* Pe[1])  
+                    ) 
+                 ), # r -> y -> P = e(y) * polys(y)
             et_linl    # P -> W(Zi, Zj) * P 
          )
-        
+   
    return et_rbasis 
 end
 

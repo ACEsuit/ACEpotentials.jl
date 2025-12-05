@@ -128,6 +128,9 @@ end
 using Metal 
 dev = Metal.mtl 
 
+et_rbasis = M._convert_Rnl_learnable(basis)
+et_ps, et_st = LuxCore.setup(Random.default_rng(), et_rbasis)
+
 z0 = rand(basis._i2z)
 xx = [ (𝐫 = SA[2.0 + 2 * rand(), 0.0, 0.0], 
         s0 = ChemicalSpecies(z0), 
@@ -138,32 +141,6 @@ ps_dev = dev(ET.float32(et_ps))
 st_dev = dev(ET.float32(et_st))
 
 R1 = et_rbasis(xx, et_ps, et_st)[1]
-R2 = et_rbasis(xx_dev, ps_dev, st_dev)
+R2 = et_rbasis(xx_dev, ps_dev, st_dev)[1]
+println_slim(@test Matrix(R2) ≈ R1) 
 
-# this has a scalar indexing error, whereas the following tests work ok 
-
-## 
-
-trans1 = ET.NTtransform( x -> norm(x.𝐫) )
-ps, st = LuxCore.setup(rng, trans1)
-y1 = trans1(xx, ps, st)[1] 
-y1_dev = trans1(xx_dev, ps, st)[1] 
-
-trans2 = et_rbasis.layers.layers.y
-ps2, st2 = LuxCore.setup(rng, trans2)
-y2 = trans2(xx, ps2, st2)[1]
-st2_dev = dev(ET.float32(st2))
-y2_dev = trans2(xx_dev, ps2, st2_dev)[1]
-
-## 
-using Lux, Polynomials4ML
-import Polynomials4ML as P4ML
-
-l_P = et_rbasis.layers.layers.P.layers
-l_yP = Chain(; 
-      y = trans2, 
-      P = l_P ) 
-ps, st = LuxCore.setup(rng, l_yP)
-st_dev = dev(ET.float32(st))
-P1 = l_yP(xx, ps, st)[1]
-P1_dev = l_yP(xx_dev, ps, st_dev)[1]
