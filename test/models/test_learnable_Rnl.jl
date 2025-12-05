@@ -1,14 +1,18 @@
 
+using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+using TestEnv; TestEnv.activate();
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
 
-
-# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
-# using TestEnv; TestEnv.activate();
+##
 
 using ACEpotentials
 M = ACEpotentials.Models
+import EquivariantTensors as ET
 
-using Random, LuxCore, Test, LinearAlgebra, ACEbase 
-using Polynomials4ML.Testing: print_tf
+using Random, LuxCore, Test, LinearAlgebra, ACEbase
+using AtomsBase, StaticArrays
+using Polynomials4ML.Testing: print_tf, println_slim
 rng = Random.MersenneTwister(1234)
 
 Random.seed!(1234)
@@ -82,4 +86,61 @@ Rnl_spl, ∇Rnl_spl = M.evaluate_ed(basis_spl, r, Zi, Zj, ps_spl, st_spl)
 
 println_slim(@test norm(Rnl - Rnl_spl, Inf) < 1e-4 )
 println_slim(@test norm(∇Rnl - ∇Rnl_spl, Inf) < 1e-2 )
+
+##
+#
+# test the conversion to a Lux style Rnl basis 
+# 
+et_rbasis = M._convert_Rnl_learnable(basis)
+et_ps, et_st = LuxCore.setup(Random.default_rng(), et_rbasis)
+
+et_ps.connection.W[:, :, 1] = ps.Wnlq[:, :, 1, 1]
+et_ps.connection.W[:, :, 2] = ps.Wnlq[:, :, 1, 2]
+et_ps.connection.W[:, :, 3] = ps.Wnlq[:, :, 2, 1]
+et_ps.connection.W[:, :, 4] = ps.Wnlq[:, :, 2, 2]
+
+for ntest = 1:50 
+   global ps, st, et_ps, et_st 
+   r = 2.0 + 5 * rand()
+   Zi = rand(basis._i2z)
+   Zj = rand(basis._i2z)
+   xij = ( 𝐫 = SA[r,0.0,0.0], s0 = ChemicalSpecies(Zi), s1 = ChemicalSpecies(Zj) )
+   R1 = basis(r, Zi, Zj, ps, st)
+   R2 = et_rbasis( xij, et_ps, et_st)[1] 
+   print_tf(@test R1 ≈ R2)
+end 
+
+# batched test 
+for ntest = 1:10 
+   z0 = rand(basis._i2z)
+   xx = [ (𝐫 = SA[2.0 + 2 * rand(), 0.0, 0.0], 
+          s0 = ChemicalSpecies(z0), 
+          s1 = ChemicalSpecies(rand(basis._i2z))) for _ in 1:30 ]
+   rr = [ x.𝐫[1] for x in xx ]
+   Zjs = [ atomic_number(x.s1) for x in xx ]
+   R1 = M.evaluate_batched(basis, rr, z0, Zjs, ps, st)
+   R2 = et_rbasis( xx, et_ps, et_st)[1]
+   print_tf(@test R1 ≈ R2) 
+end
+
+## 
+# run on GPU 
+using Metal 
+dev = Metal.mtl 
+
+et_rbasis = M._convert_Rnl_learnable(basis)
+et_ps, et_st = LuxCore.setup(Random.default_rng(), et_rbasis)
+
+z0 = rand(basis._i2z)
+xx = [ (𝐫 = SA[2.0 + 2 * rand(), 0.0, 0.0], 
+        s0 = ChemicalSpecies(z0), 
+        s1 = ChemicalSpecies(rand(basis._i2z))) for _ in 1:1000 ]
+
+xx_dev = dev(ET.float32.(xx))
+ps_dev = dev(ET.float32(et_ps))
+st_dev = dev(ET.float32(et_st))
+
+R1 = et_rbasis(xx, et_ps, et_st)[1]
+R2 = et_rbasis(xx_dev, ps_dev, st_dev)[1]
+println_slim(@test Matrix(R2) ≈ R1) 
 

@@ -277,7 +277,6 @@ function evaluate(model::ACEModel,
 
    # contract with params
    val = dot(B, (@view ps.WB[:, i_z0]))
-
    
    # ------------------- 
    #  pair potential 
