@@ -45,6 +45,18 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -restrict")
 endif()
 
+# OpenMP support (enabled by default)
+option(BUILD_OMP "Build with OpenMP support" ON)
+if(BUILD_OMP)
+  find_package(OpenMP)
+  if(OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
+  else()
+    message(WARNING "OpenMP not found, building without OpenMP support")
+    set(BUILD_OMP OFF)
+  endif()
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 include(CheckIncludeFileCXX)
 if(NOT LAMMPS_DIR)
@@ -64,6 +76,11 @@ target_link_libraries(aceplugin PRIVATE lammps)
 
 # Link against dl for dlopen/dlsym
 target_link_libraries(aceplugin PRIVATE ${CMAKE_DL_LIBS})
+
+# Link OpenMP if available
+if(BUILD_OMP AND OpenMP_CXX_FOUND)
+  target_link_libraries(aceplugin PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 set_target_properties(aceplugin PROPERTIES PREFIX "" SUFFIX ".so")
 
@@ -92,4 +109,9 @@ message(STATUS "ACE Plugin Configuration:")
 message(STATUS "  LAMMPS headers: ${LAMMPS_HEADER_DIR}")
 message(STATUS "  C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
+if(BUILD_OMP AND OpenMP_CXX_FOUND)
+  message(STATUS "  OpenMP: enabled (${OpenMP_CXX_VERSION})")
+else()
+  message(STATUS "  OpenMP: disabled")
+endif()
 message(STATUS "")

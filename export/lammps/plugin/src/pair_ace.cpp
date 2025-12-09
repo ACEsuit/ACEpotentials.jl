@@ -8,6 +8,10 @@
    using Julia's juliac --trim feature. Models are dynamically loaded at
    runtime via dlopen.
 
+   OpenMP parallelization: The atom loop in compute() is parallelized using
+   OpenMP. The Julia library is thread-safe for concurrent calls after
+   initialization (which happens in load_model via ace_get_cutoff()).
+
    Usage:
      pair_style ace
      pair_coeff * * /path/to/model.so Si O ...
@@ -28,6 +32,10 @@
 #include <cmath>
 #include <cstring>
 #include <dlfcn.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 using namespace LAMMPS_NS;
 
@@ -369,7 +377,7 @@ double PairACE::init_one(int /*i*/, int /*j*/)
 }
 
 /* ----------------------------------------------------------------------
-   Main compute function
+   Main compute function (OpenMP parallelized)
 ------------------------------------------------------------------------- */
 
 void PairACE::compute(int eflag, int vflag)
@@ -380,7 +388,7 @@ void PairACE::compute(int eflag, int vflag)
   double **f = atom->f;
   int *type = atom->type;
   int nlocal = atom->nlocal;
-  int newton_pair = force->newton_pair;
+  int ntotal = atom->nlocal + atom->nghost;
 
   int inum = list->inum;
   int *ilist = list->ilist;
@@ -389,143 +397,207 @@ void PairACE::compute(int eflag, int vflag)
 
   double cutsq_local = cutoff * cutoff;
 
-  // Loop over center atoms
-  for (int ii = 0; ii < inum; ii++) {
-    int i = ilist[ii];
-    int itype = type[i];
-    int z0 = type_to_Z[itype];
+  // Accumulators for reductions
+  double total_energy = 0.0;
+  double total_virial[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-    // Skip NULL types
-    if (z0 < 0) continue;
+#ifdef _OPENMP
+  // OpenMP parallel region with thread-private work arrays
+  #pragma omp parallel reduction(+:total_energy) reduction(+:total_virial[:6])
+  {
+    // Thread-private work arrays
+    int thread_maxneigh = 128;  // Initial size per thread
+    int *thread_neighbor_Z = new int[thread_maxneigh];
+    double *thread_neighbor_Rij = new double[thread_maxneigh * 3];
+    double *thread_site_forces = new double[thread_maxneigh * 3];
+    int *thread_neighbor_j = new int[thread_maxneigh];
+    double thread_site_virial[6];
 
-    double xi = x[i][0];
-    double yi = x[i][1];
-    double zi = x[i][2];
+    // Thread-private force accumulator (to avoid atomic operations)
+    double *thread_forces = new double[ntotal * 3]();
 
-    int *jlist = firstneigh[i];
-    int jnum = numneigh[i];
+    #pragma omp for schedule(dynamic)
+#else
+  {
+    // Serial fallback - use class member arrays
+    int thread_maxneigh = maxneigh;
+    int *thread_neighbor_Z = neighbor_Z;
+    double *thread_neighbor_Rij = neighbor_Rij;
+    double *thread_site_forces = site_forces;
+    int *thread_neighbor_j = new int[1024];
+    double thread_site_virial[6];
+    double *thread_forces = nullptr;  // Not needed in serial
+#endif
 
-    // Count neighbors within cutoff and resize work arrays if needed
-    int nneigh = 0;
-    for (int jj = 0; jj < jnum; jj++) {
-      int j = jlist[jj];
-      j &= NEIGHMASK;
+    // Loop over center atoms
+    for (int ii = 0; ii < inum; ii++) {
+      int i = ilist[ii];
+      int itype = type[i];
+      int z0 = type_to_Z[itype];
 
-      double dx = x[j][0] - xi;
-      double dy = x[j][1] - yi;
-      double dz = x[j][2] - zi;
-      double rsq = dx * dx + dy * dy + dz * dz;
+      // Skip NULL types
+      if (z0 < 0) continue;
 
-      if (rsq < cutsq_local && rsq > 1e-10) {
-        nneigh++;
+      double xi = x[i][0];
+      double yi = x[i][1];
+      double zi = x[i][2];
+
+      int *jlist = firstneigh[i];
+      int jnum = numneigh[i];
+
+      // Count neighbors within cutoff
+      int nneigh = 0;
+      for (int jj = 0; jj < jnum; jj++) {
+        int j = jlist[jj] & NEIGHMASK;
+        double dx = x[j][0] - xi;
+        double dy = x[j][1] - yi;
+        double dz = x[j][2] - zi;
+        double rsq = dx * dx + dy * dy + dz * dz;
+        if (rsq < cutsq_local && rsq > 1e-10) nneigh++;
+      }
+
+      // Resize thread-private arrays if needed
+      if (nneigh > thread_maxneigh) {
+        thread_maxneigh = nneigh + 32;
+        delete[] thread_neighbor_Z;
+        delete[] thread_neighbor_Rij;
+        delete[] thread_site_forces;
+        delete[] thread_neighbor_j;
+        thread_neighbor_Z = new int[thread_maxneigh];
+        thread_neighbor_Rij = new double[thread_maxneigh * 3];
+        thread_site_forces = new double[thread_maxneigh * 3];
+        thread_neighbor_j = new int[thread_maxneigh];
+      }
+
+      // Build neighbor arrays
+      nneigh = 0;
+      for (int jj = 0; jj < jnum; jj++) {
+        int j = jlist[jj] & NEIGHMASK;
+        int jtype = type[j];
+        int zj = type_to_Z[jtype];
+        if (zj < 0) continue;
+
+        double dx = x[j][0] - xi;
+        double dy = x[j][1] - yi;
+        double dz = x[j][2] - zi;
+        double rsq = dx * dx + dy * dy + dz * dz;
+
+        if (rsq < cutsq_local && rsq > 1e-10) {
+          thread_neighbor_j[nneigh] = j;
+          thread_neighbor_Z[nneigh] = zj;
+          thread_neighbor_Rij[nneigh * 3 + 0] = dx;
+          thread_neighbor_Rij[nneigh * 3 + 1] = dy;
+          thread_neighbor_Rij[nneigh * 3 + 2] = dz;
+          nneigh++;
+        }
+      }
+
+      if (nneigh == 0) continue;
+
+      // Initialize site outputs
+      for (int k = 0; k < nneigh * 3; k++) thread_site_forces[k] = 0.0;
+      for (int k = 0; k < 6; k++) thread_site_virial[k] = 0.0;
+
+      // Call ACE model - this is thread-safe
+      double site_energy = ace_site_energy_forces_virial(
+          z0, nneigh, thread_neighbor_Z, thread_neighbor_Rij,
+          thread_site_forces, thread_site_virial);
+
+      // Accumulate energy (will be reduced)
+      if (eflag_global)
+        total_energy += site_energy;
+
+      // Per-atom energy
+      if (eflag_atom)
+        eatom[i] += site_energy;
+
+      // Accumulate forces
+      double fxi = 0.0, fyi = 0.0, fzi = 0.0;
+      for (int k = 0; k < nneigh; k++) {
+        int j = thread_neighbor_j[k];
+        double fx = thread_site_forces[k * 3 + 0];
+        double fy = thread_site_forces[k * 3 + 1];
+        double fz = thread_site_forces[k * 3 + 2];
+
+#ifdef _OPENMP
+        // Thread-private force accumulation
+        thread_forces[j * 3 + 0] += fx;
+        thread_forces[j * 3 + 1] += fy;
+        thread_forces[j * 3 + 2] += fz;
+#else
+        f[j][0] += fx;
+        f[j][1] += fy;
+        f[j][2] += fz;
+#endif
+        fxi -= fx;
+        fyi -= fy;
+        fzi -= fz;
+      }
+
+#ifdef _OPENMP
+      thread_forces[i * 3 + 0] += fxi;
+      thread_forces[i * 3 + 1] += fyi;
+      thread_forces[i * 3 + 2] += fzi;
+#else
+      f[i][0] += fxi;
+      f[i][1] += fyi;
+      f[i][2] += fzi;
+#endif
+
+      // Accumulate virial (Voigt mapping: ACE -> LAMMPS)
+      if (vflag_global) {
+        total_virial[0] -= thread_site_virial[0];  // xx
+        total_virial[1] -= thread_site_virial[1];  // yy
+        total_virial[2] -= thread_site_virial[2];  // zz
+        total_virial[3] -= thread_site_virial[5];  // xy
+        total_virial[4] -= thread_site_virial[4];  // xz
+        total_virial[5] -= thread_site_virial[3];  // yz
+      }
+
+      // Per-atom virial
+      if (vflag_atom) {
+        vatom[i][0] -= thread_site_virial[0];
+        vatom[i][1] -= thread_site_virial[1];
+        vatom[i][2] -= thread_site_virial[2];
+        vatom[i][3] -= thread_site_virial[5];
+        vatom[i][4] -= thread_site_virial[4];
+        vatom[i][5] -= thread_site_virial[3];
+      }
+    }  // end atom loop
+
+#ifdef _OPENMP
+    // Reduce thread-private forces to global force array
+    #pragma omp critical
+    {
+      for (int i = 0; i < ntotal; i++) {
+        f[i][0] += thread_forces[i * 3 + 0];
+        f[i][1] += thread_forces[i * 3 + 1];
+        f[i][2] += thread_forces[i * 3 + 2];
       }
     }
 
-    // Resize work arrays if needed
-    if (nneigh > maxneigh) {
-      maxneigh = nneigh + 16;  // Add some padding
-      memory->destroy(neighbor_Z);
-      memory->destroy(neighbor_Rij);
-      memory->destroy(site_forces);
-      memory->create(neighbor_Z, maxneigh, "pair:neighbor_Z");
-      memory->create(neighbor_Rij, maxneigh * 3, "pair:neighbor_Rij");
-      memory->create(site_forces, maxneigh * 3, "pair:site_forces");
-    }
+    // Cleanup thread-private arrays
+    delete[] thread_neighbor_Z;
+    delete[] thread_neighbor_Rij;
+    delete[] thread_site_forces;
+    delete[] thread_neighbor_j;
+    delete[] thread_forces;
+#else
+    delete[] thread_neighbor_j;
+#endif
+  }  // end parallel region
 
-    // Build neighbor arrays (displacement vectors and atomic numbers)
-    // Also store j indices for force accumulation
-    int neighbor_j[nneigh];  // VLA for neighbor indices
-    nneigh = 0;
+  // Apply reductions to class members
+  if (eflag_global)
+    eng_vdwl += total_energy;
 
-    for (int jj = 0; jj < jnum; jj++) {
-      int j = jlist[jj];
-      j &= NEIGHMASK;
-
-      int jtype = type[j];
-      int zj = type_to_Z[jtype];
-      if (zj < 0) continue;  // Skip NULL types
-
-      double dx = x[j][0] - xi;
-      double dy = x[j][1] - yi;
-      double dz = x[j][2] - zi;
-      double rsq = dx * dx + dy * dy + dz * dz;
-
-      if (rsq < cutsq_local && rsq > 1e-10) {
-        neighbor_j[nneigh] = j;
-        neighbor_Z[nneigh] = zj;
-        neighbor_Rij[nneigh * 3 + 0] = dx;
-        neighbor_Rij[nneigh * 3 + 1] = dy;
-        neighbor_Rij[nneigh * 3 + 2] = dz;
-        nneigh++;
-      }
-    }
-
-    // Skip if no neighbors
-    if (nneigh == 0) continue;
-
-    // Initialize site forces and virial
-    for (int k = 0; k < nneigh * 3; k++)
-      site_forces[k] = 0.0;
-    for (int k = 0; k < 6; k++)
-      site_virial[k] = 0.0;
-
-    // Call ACE model evaluation
-    double site_energy = ace_site_energy_forces_virial(
-        z0, nneigh, neighbor_Z, neighbor_Rij, site_forces, site_virial);
-
-    // Accumulate energy
-    if (eflag_global)
-      eng_vdwl += site_energy;
-    if (eflag_atom)
-      eatom[i] += site_energy;
-
-    // Accumulate forces
-    // ACE returns forces ON neighbors, so:
-    //   f[j] += site_forces[k]
-    //   f[i] -= sum(site_forces)
-    double fxi = 0.0, fyi = 0.0, fzi = 0.0;
-
-    for (int k = 0; k < nneigh; k++) {
-      int j = neighbor_j[k];
-      double fx = site_forces[k * 3 + 0];
-      double fy = site_forces[k * 3 + 1];
-      double fz = site_forces[k * 3 + 2];
-
-      f[j][0] += fx;
-      f[j][1] += fy;
-      f[j][2] += fz;
-
-      fxi -= fx;
-      fyi -= fy;
-      fzi -= fz;
-    }
-
-    f[i][0] += fxi;
-    f[i][1] += fyi;
-    f[i][2] += fzi;
-
-    // Accumulate virial
-    // ACE returns virial as sum(r*f) in Voigt notation: [xx, yy, zz, yz, xz, xy]
-    // LAMMPS expects virial as -sum(r*f) in order: [xx, yy, zz, xy, xz, yz]
-    // So we negate the ACE virial values
-    if (vflag_global) {
-      virial[0] -= site_virial[0];  // xx
-      virial[1] -= site_virial[1];  // yy
-      virial[2] -= site_virial[2];  // zz
-      virial[3] -= site_virial[5];  // xy (ACE index 5)
-      virial[4] -= site_virial[4];  // xz (ACE index 4)
-      virial[5] -= site_virial[3];  // yz (ACE index 3)
-    }
-
-    // Per-atom virial (distribute to center atom)
-    if (vflag_atom) {
-      vatom[i][0] -= site_virial[0];
-      vatom[i][1] -= site_virial[1];
-      vatom[i][2] -= site_virial[2];
-      vatom[i][3] -= site_virial[5];
-      vatom[i][4] -= site_virial[4];
-      vatom[i][5] -= site_virial[3];
-    }
+  if (vflag_global) {
+    virial[0] += total_virial[0];
+    virial[1] += total_virial[1];
+    virial[2] += total_virial[2];
+    virial[3] += total_virial[3];
+    virial[4] += total_virial[4];
+    virial[5] += total_virial[5];
   }
 
   if (vflag_fdotr) virial_fdotr_compute();
