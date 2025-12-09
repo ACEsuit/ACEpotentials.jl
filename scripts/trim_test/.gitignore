@@ -1,0 +1,15 @@
+# Generated model files
+silicon_model.jl
+exported_model.jl
+
+# Compiled bundles
+*_bundle/
+
+# NFS lock files
+.nfs*
+
+# Logs
+*.log
+
+# Test environment
+et_test_env/

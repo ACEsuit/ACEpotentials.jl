@@ -1,0 +1,11 @@
+[deps]
+EquivariantTensors = "5e107534-7145-4f8f-b06f-47a52840c895"
+JuliaC = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+Polynomials4ML = "03c4bcba-a943-47e9-bfa1-b1661fc2974f"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[sources]
+Polynomials4ML = {url = "https://github.com/ACEsuit/Polynomials4ML.jl", rev = "main"}
+EquivariantTensors = {path = "../../../EquivariantTensors.jl"}
