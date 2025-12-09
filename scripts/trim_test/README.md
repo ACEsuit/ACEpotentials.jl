@@ -134,17 +134,67 @@ The `export_ace_model.jl` script extracts and hardcodes:
 4. **Use `zero(SVector{N,T})`** not `zeros(...)`
 5. **Manual pullback** instead of `ET.pullback`
 
-## Remaining Work for LAMMPS
+## C Interface and Shared Library (COMPLETE)
 
-1. **C Interface**: Add `@ccallable` functions:
-   ```julia
-   @ccallable function ace_compute_energy(...)::Cdouble
-   @ccallable function ace_compute_forces(...)::Cint
-   ```
+The export script now supports generating a C-callable shared library with two API levels:
 
-2. **Shared Library**: Use `--output-lib` instead of `--output-exe`
+### Site-Level API (for LAMMPS)
 
-3. **Multi-element**: Export script already supports multiple species
+Works with pre-computed neighbor lists from LAMMPS:
+
+```c
+// Get potential info
+double ace_get_cutoff(void);
+int ace_get_n_species(void);
+int ace_get_species(int idx);
+
+// Site-level evaluation (uses LAMMPS neighbor list)
+double ace_site_energy(int z0, int nneigh, int* neighbor_z, double* neighbor_Rij);
+double ace_site_energy_forces(int z0, int nneigh, int* neighbor_z, double* neighbor_Rij, double* forces);
+double ace_site_energy_forces_virial(int z0, int nneigh, int* neighbor_z, double* neighbor_Rij, double* forces, double* virial);
+```
+
+### System-Level API (for Python/ASE)
+
+Computes neighbor lists internally:
+
+```c
+double ace_energy(int natoms, int* species, double* positions, double* cell, int* pbc);
+double ace_energy_forces(int natoms, int* species, double* positions, double* cell, int* pbc, double* forces);
+double ace_energy_forces_virial(int natoms, int* species, double* positions, double* cell, int* pbc, double* forces, double* virial);
+```
+
+### Compiling as Shared Library
+
+```bash
+# Export with C interface
+julia --project=.. -e 'include("export_ace_model.jl"); export_ace_model(model, "silicon_lib.jl"; for_library=true)'
+
+# Compile shared library (note: --compile-ccallable is required!)
+mkdir -p silicon_lib/lib
+julia --project=. ~/.julia/juliaup/julia-1.12.2+0.x64.linux.gnu/share/julia/juliac/juliac.jl \
+    --output-lib silicon_lib/lib/libace.so \
+    --experimental --trim=safe --compile-ccallable \
+    silicon_lib.jl
+```
+
+**Library size**: 3.3 MB
+
+### Python/ASE Calculator
+
+A complete Python wrapper is provided in `ace_calculator.py`:
+
+```python
+from ace_calculator import ACECalculator
+from ase.build import bulk
+
+calc = ACECalculator("silicon_lib/lib/libace.so")
+atoms = bulk('Si', 'diamond', a=5.43)
+atoms.calc = calc
+
+energy = atoms.get_potential_energy()  # -527.998 eV
+forces = atoms.get_forces()            # shape (2, 3)
+```
 
 ## Important Notes on `--trim` Mode
 

@@ -1,9 +1,11 @@
 # Generated model files
 silicon_model.jl
+silicon_lib.jl
 exported_model.jl
 
-# Compiled bundles
+# Compiled bundles and libraries
 *_bundle/
+silicon_lib/
 
 # NFS lock files
 .nfs*
@@ -13,3 +15,8 @@ exported_model.jl
 
 # Test environment
 et_test_env/
+
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
