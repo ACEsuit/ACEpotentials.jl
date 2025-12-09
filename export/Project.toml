@@ -1,5 +1,10 @@
+name = "ACEExport"
+uuid = "f8f3a1e0-ace1-4ace-export-deployment"
+
 [deps]
+ACEpotentials = "3b86ca6f-cc73-4e48-8974-ffc28a207858"
 EquivariantTensors = "5e107534-7145-4f8f-b06f-47a52840c895"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuliaC = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
@@ -7,5 +12,5 @@ Polynomials4ML = "03c4bcba-a943-47e9-bfa1-b1661fc2974f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [sources]
+ACEpotentials = {path = ".."}
 Polynomials4ML = {url = "https://github.com/ACEsuit/Polynomials4ML.jl", rev = "main"}
-EquivariantTensors = {path = "../../../EquivariantTensors.jl"}

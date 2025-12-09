@@ -6,3 +6,15 @@ scratch
 .vscode
 .ipynb_checkpoints
 .CondaPkg
+
+# Export feature artifacts
+export/deployments/
+export/**/build/
+export/**/*.so
+export/**/*.log
+export/examples/**/deployments/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
