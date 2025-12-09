@@ -178,12 +178,61 @@ print('ok')
                 return
             end
 
-            lmp_exe = strip(read(`which lmp`, String))
+            # Find LAMMPS source directory (needed for executable and library path)
+            lammps_src = get(ENV, "LAMMPS_SRC", "")
+
+            # Find LAMMPS executable (prefer build directory if LAMMPS_SRC is set)
+            lmp_exe = ""
+            if !isempty(lammps_src) && isdir(lammps_src)
+                build_lmp = joinpath(dirname(lammps_src), "build", "lmp")
+                if isfile(build_lmp)
+                    lmp_exe = build_lmp
+                end
+            end
+            # Fall back to system lmp
+            if isempty(lmp_exe)
+                lmp_exe = try
+                    strip(read(`which lmp`, String))
+                catch
+                    ""
+                end
+            end
+
+            if isempty(lmp_exe) || !isfile(lmp_exe)
+                @test_skip "LAMMPS not found"
+                return
+            end
 
             # Set up environment with OpenMP threads
             env = copy(ENV)
             julia_lib_dir = joinpath(Sys.BINDIR, "..", "lib")
-            env["LD_LIBRARY_PATH"] = julia_lib_dir * ":" * dirname(lib_path) * ":" * get(ENV, "LD_LIBRARY_PATH", "")
+
+            # Find LAMMPS library directory
+            lammps_lib_dir = ""
+            if !isempty(lammps_src) && isdir(lammps_src)
+                lammps_build = joinpath(dirname(lammps_src), "build")
+                if isdir(lammps_build) && isfile(joinpath(lammps_build, "liblammps.so"))
+                    lammps_lib_dir = lammps_build
+                end
+            end
+
+            # Find GCC library directory (for C++ ABI compatibility)
+            gcc_lib_dir = ""
+            for gcc_version in ["14.3.0", "13.3.0", "13.2.0", "12.3.0", "12.2.0", "11.3.0"]
+                gcc_path = "/software/easybuild/software/GCCcore/$gcc_version/lib64"
+                if isdir(gcc_path) && isfile(joinpath(gcc_path, "libstdc++.so.6"))
+                    gcc_lib_dir = gcc_path
+                    break
+                end
+            end
+
+            env["LD_LIBRARY_PATH"] = join(filter(!isempty, [
+                gcc_lib_dir,
+                julia_lib_dir,
+                dirname(lib_path),
+                lammps_lib_dir,
+                get(ENV, "LD_LIBRARY_PATH", "")
+            ]), ":")
             env["OMP_NUM_THREADS"] = "4"
 
             # Run LAMMPS with OpenMP
