@@ -365,6 +365,15 @@ void PairACE::init_style()
 
   // Request a full neighbor list
   neighbor->add_request(this, NeighConst::REQ_FULL);
+
+  // Allocate initial work arrays for serial mode (used when OpenMP is not available)
+  // These are also used as fallback if the OpenMP path is not taken
+  if (maxneigh == 0) {
+    maxneigh = 128;
+    memory->create(neighbor_Z, maxneigh, "pair:neighbor_Z");
+    memory->create(neighbor_Rij, maxneigh * 3, "pair:neighbor_Rij");
+    memory->create(site_forces, maxneigh * 3, "pair:site_forces");
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -402,9 +411,19 @@ void PairACE::compute(int eflag, int vflag)
   double total_virial[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 #ifdef _OPENMP
+  // Get number of threads and allocate per-thread force arrays BEFORE parallel region
+  int nthreads = omp_get_max_threads();
+  double **all_thread_forces = new double*[nthreads];
+  for (int t = 0; t < nthreads; t++) {
+    all_thread_forces[t] = new double[ntotal * 3]();
+  }
+
   // OpenMP parallel region with thread-private work arrays
   #pragma omp parallel reduction(+:total_energy) reduction(+:total_virial[:6])
   {
+    int tid = omp_get_thread_num();
+    double *thread_forces = all_thread_forces[tid];
+
     // Thread-private work arrays
     int thread_maxneigh = 128;  // Initial size per thread
     int *thread_neighbor_Z = new int[thread_maxneigh];
@@ -413,20 +432,16 @@ void PairACE::compute(int eflag, int vflag)
     int *thread_neighbor_j = new int[thread_maxneigh];
     double thread_site_virial[6];
 
-    // Thread-private force accumulator (to avoid atomic operations)
-    double *thread_forces = new double[ntotal * 3]();
-
     #pragma omp for schedule(dynamic)
 #else
   {
-    // Serial fallback - use class member arrays
+    // Serial fallback - use class member arrays (allocated in init_style)
     int thread_maxneigh = maxneigh;
     int *thread_neighbor_Z = neighbor_Z;
     double *thread_neighbor_Rij = neighbor_Rij;
     double *thread_site_forces = site_forces;
-    int *thread_neighbor_j = new int[1024];
+    int *thread_neighbor_j = new int[thread_maxneigh > 0 ? thread_maxneigh : 128];
     double thread_site_virial[6];
-    double *thread_forces = nullptr;  // Not needed in serial
 #endif
 
     // Loop over center atoms
@@ -456,17 +471,32 @@ void PairACE::compute(int eflag, int vflag)
         if (rsq < cutsq_local && rsq > 1e-10) nneigh++;
       }
 
-      // Resize thread-private arrays if needed
+      // Resize thread-private arrays if needed (OpenMP path)
+      // For serial path, resize class member arrays
       if (nneigh > thread_maxneigh) {
-        thread_maxneigh = nneigh + 32;
+        int new_maxneigh = nneigh + 32;
+#ifdef _OPENMP
         delete[] thread_neighbor_Z;
         delete[] thread_neighbor_Rij;
         delete[] thread_site_forces;
         delete[] thread_neighbor_j;
-        thread_neighbor_Z = new int[thread_maxneigh];
-        thread_neighbor_Rij = new double[thread_maxneigh * 3];
-        thread_site_forces = new double[thread_maxneigh * 3];
-        thread_neighbor_j = new int[thread_maxneigh];
+        thread_neighbor_Z = new int[new_maxneigh];
+        thread_neighbor_Rij = new double[new_maxneigh * 3];
+        thread_site_forces = new double[new_maxneigh * 3];
+        thread_neighbor_j = new int[new_maxneigh];
+#else
+        // Serial: resize class member arrays
+        memory->grow(neighbor_Z, new_maxneigh, "pair:neighbor_Z");
+        memory->grow(neighbor_Rij, new_maxneigh * 3, "pair:neighbor_Rij");
+        memory->grow(site_forces, new_maxneigh * 3, "pair:site_forces");
+        delete[] thread_neighbor_j;
+        thread_neighbor_j = new int[new_maxneigh];
+        thread_neighbor_Z = neighbor_Z;
+        thread_neighbor_Rij = neighbor_Rij;
+        thread_site_forces = site_forces;
+        maxneigh = new_maxneigh;
+#endif
+        thread_maxneigh = new_maxneigh;
       }
 
       // Build neighbor arrays
@@ -520,7 +550,7 @@ void PairACE::compute(int eflag, int vflag)
         double fz = thread_site_forces[k * 3 + 2];
 
 #ifdef _OPENMP
-        // Thread-private force accumulation
+        // Thread-private force accumulation (no synchronization needed)
         thread_forces[j * 3 + 0] += fx;
         thread_forces[j * 3 + 1] += fy;
         thread_forces[j * 3 + 2] += fz;
@@ -566,26 +596,28 @@ void PairACE::compute(int eflag, int vflag)
     }  // end atom loop
 
 #ifdef _OPENMP
-    // Reduce thread-private forces to global force array
-    #pragma omp critical
-    {
-      for (int i = 0; i < ntotal; i++) {
-        f[i][0] += thread_forces[i * 3 + 0];
-        f[i][1] += thread_forces[i * 3 + 1];
-        f[i][2] += thread_forces[i * 3 + 2];
-      }
-    }
-
-    // Cleanup thread-private arrays
+    // Cleanup thread-private work arrays (NOT the force array)
     delete[] thread_neighbor_Z;
     delete[] thread_neighbor_Rij;
     delete[] thread_site_forces;
     delete[] thread_neighbor_j;
-    delete[] thread_forces;
 #else
     delete[] thread_neighbor_j;
 #endif
   }  // end parallel region
+
+#ifdef _OPENMP
+  // Sequential force reduction AFTER parallel region (no critical section needed)
+  for (int t = 0; t < nthreads; t++) {
+    for (int i = 0; i < ntotal; i++) {
+      f[i][0] += all_thread_forces[t][i * 3 + 0];
+      f[i][1] += all_thread_forces[t][i * 3 + 1];
+      f[i][2] += all_thread_forces[t][i * 3 + 2];
+    }
+    delete[] all_thread_forces[t];
+  }
+  delete[] all_thread_forces;
+#endif
 
   // Apply reductions to class members
   if (eflag_global)

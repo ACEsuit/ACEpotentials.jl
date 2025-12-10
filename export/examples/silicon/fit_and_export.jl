@@ -40,11 +40,13 @@ println("  Model created with $(length(model)) parameters")
 println("\n[3/4] Fitting model to data...")
 
 # Convert data to ACEpotentials format
+# Note: Si_tiny dataset uses dft_energy, dft_force, dft_virial keys
 train_data = [
     ACEpotentials.AtomsData(at;
-        energy_key = "energy",
-        force_key = "forces",
-        weights = Dict("default" => Dict("E" => 1.0, "F" => 1.0))
+        energy_key = "dft_energy",
+        force_key = "dft_force",
+        virial_key = "dft_virial",
+        weights = Dict("default" => Dict("E" => 1.0, "F" => 1.0, "V" => 1.0))
     )
     for at in data
 ]

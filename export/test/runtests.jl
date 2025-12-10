@@ -6,7 +6,8 @@ This file orchestrates all export-related tests:
 2. Python calculator integration
 3. LAMMPS plugin integration (serial)
 4. Multi-threading tests
-5. MPI parallel tests
+5. Multi-species model tests
+6. MPI parallel tests
 
 Usage:
     julia --project=.. runtests.jl              # Run all available tests
@@ -14,6 +15,7 @@ Usage:
     julia --project=.. runtests.jl python       # Run only Python tests
     julia --project=.. runtests.jl lammps       # Run only LAMMPS tests
     julia --project=.. runtests.jl threading    # Run only threading tests
+    julia --project=.. runtests.jl multispecies # Run only multi-species tests
     julia --project=.. runtests.jl mpi          # Run only MPI tests
 =#
 
@@ -265,6 +267,12 @@ function main()
         if should_run_test(selection, :threading) || should_run_test(selection, :all)
             @info "Running threading tests..."
             include(joinpath(TEST_DIR, "test_threading.jl"))
+        end
+
+        # Multi-species tests
+        if should_run_test(selection, :multispecies) || should_run_test(selection, :all)
+            @info "Running multi-species export tests..."
+            include(joinpath(TEST_DIR, "test_multispecies.jl"))
         end
 
         # MPI tests

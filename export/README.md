@@ -93,6 +93,7 @@ The LAMMPS plugin automatically parallelizes the atom loop when built with OpenM
 
 ```bash
 # Build with OpenMP (enabled by default)
+# From the export/ directory:
 cd lammps/plugin
 mkdir build && cd build
 cmake ../cmake -DLAMMPS_HEADER_DIR=/path/to/lammps/src
@@ -163,22 +164,87 @@ The wrapper parallelizes the neighbor-list construction and atom loop, providing
 
 The compiled library exports these C functions:
 
+### Model Information Functions
+
 ```c
-// Model information
-double ace_get_cutoff(void);
-int ace_get_n_species(void);
-int ace_get_species(int idx);  // 1-indexed
-
-// Site-level evaluation (for LAMMPS)
-double ace_site_energy(int z0, int nneigh, int* neighbor_z, double* Rij);
-double ace_site_energy_forces(int z0, int nneigh, int* neighbor_z, double* Rij, double* forces);
-double ace_site_energy_forces_virial(int z0, int nneigh, int* neighbor_z, double* Rij, double* forces, double* virial);
-
-// System-level evaluation (for Python)
-double ace_energy(int natoms, int* species, double* positions, double* cell, int* pbc);
-double ace_energy_forces(int natoms, int* species, double* positions, double* cell, int* pbc, double* forces);
-double ace_energy_forces_virial(int natoms, int* species, double* positions, double* cell, int* pbc, double* forces, double* virial);
+double ace_get_cutoff(void);      // Returns maximum cutoff radius (Angstroms)
+int ace_get_n_species(void);       // Returns number of supported species
+int ace_get_species(int idx);      // Returns atomic number for species index (1-indexed)
 ```
+
+### Site-Level Evaluation (for LAMMPS)
+
+These functions compute the contribution from a single site (atom i) given its neighbors.
+
+```c
+// Energy only
+double ace_site_energy(
+    int z0,           // Atomic number of center atom
+    int nneigh,       // Number of neighbors
+    int* neighbor_z,  // Array[nneigh]: atomic numbers of neighbors
+    double* Rij       // Array[nneigh*3]: displacement vectors R_j - R_i (row-major)
+);
+
+// Energy and forces
+double ace_site_energy_forces(
+    int z0,           // Atomic number of center atom
+    int nneigh,       // Number of neighbors
+    int* neighbor_z,  // Array[nneigh]: atomic numbers of neighbors
+    double* Rij,      // Array[nneigh*3]: displacement vectors (input)
+    double* forces    // Array[nneigh*3]: forces ON neighbors (output)
+);
+
+// Energy, forces, and virial
+double ace_site_energy_forces_virial(
+    int z0,           // Atomic number of center atom
+    int nneigh,       // Number of neighbors
+    int* neighbor_z,  // Array[nneigh]: atomic numbers of neighbors
+    double* Rij,      // Array[nneigh*3]: displacement vectors (input)
+    double* forces,   // Array[nneigh*3]: forces ON neighbors (output)
+    double* virial    // Array[6]: site virial in Voigt notation (xx,yy,zz,yz,xz,xy) (output)
+);
+```
+
+### System-Level Evaluation (for Python)
+
+These functions compute total energy, forces, and virial for an entire system.
+
+```c
+// Energy only
+double ace_energy(
+    int natoms,       // Number of atoms
+    int* species,     // Array[natoms]: atomic numbers
+    double* positions,// Array[natoms*3]: positions, row-major (x1,y1,z1,x2,y2,z2,...)
+    double* cell,     // Array[9]: cell vectors, row-major (a1x,a1y,a1z,a2x,...) or NULL
+    int* pbc          // Array[3]: periodic boundary conditions (0/1) or NULL
+);
+
+// Energy and forces
+double ace_energy_forces(
+    int natoms, int* species, double* positions, double* cell, int* pbc,
+    double* forces    // Array[natoms*3]: output forces (row-major)
+);
+
+// Energy, forces, and virial
+double ace_energy_forces_virial(
+    int natoms, int* species, double* positions, double* cell, int* pbc,
+    double* forces,   // Array[natoms*3]: output forces (row-major)
+    double* virial    // Array[9]: output virial tensor (3x3 row-major: Vxx,Vxy,Vxz,Vyx,...)
+);
+```
+
+### Important Conventions
+
+**Cell Layout (row-major):**
+```
+cell[0..2] = a1 (first lattice vector)
+cell[3..5] = a2 (second lattice vector)
+cell[6..8] = a3 (third lattice vector)
+```
+
+**Virial Format:**
+- **Site-level**: 6 elements in Voigt notation: (xx, yy, zz, yz, xz, xy)
+- **System-level**: 9 elements as 3x3 matrix (row-major): Vxx, Vxy, Vxz, Vyx, Vyy, Vyz, Vzx, Vzy, Vzz
 
 ## Technical Details
 

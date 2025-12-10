@@ -52,8 +52,9 @@ class ACELibrary:
         if not self.lib_path.exists():
             raise FileNotFoundError(f"Library not found: {self.lib_path}")
 
-        # Load the shared library
-        self.lib = ctypes.CDLL(str(self.lib_path))
+        # Load the shared library with RTLD_NOW to resolve all symbols immediately
+        # This ensures errors are caught at load time rather than delayed
+        self.lib = ctypes.CDLL(str(self.lib_path), mode=ctypes.RTLD_NOW)
 
         # Set up function signatures
         self._setup_functions()

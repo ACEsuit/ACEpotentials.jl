@@ -114,12 +114,14 @@ print('ok')
                             end
                         end
 
-                        env["LD_LIBRARY_PATH"] = join(filter(!isempty, [
+                        # Prepend required paths to existing LD_LIBRARY_PATH
+                        extra_paths = join(filter(!isempty, [
                             julia_lib_dir,
                             dirname(lib_path),
                             lammps_lib_dir,
-                            get(ENV, "LD_LIBRARY_PATH", "")
                         ]), ":")
+                        existing_ld_path = get(ENV, "LD_LIBRARY_PATH", "")
+                        env["LD_LIBRARY_PATH"] = isempty(existing_ld_path) ? extra_paths : "$extra_paths:$existing_ld_path"
                         env["OMP_NUM_THREADS"] = "4"
 
                         # Run LAMMPS with OpenMP

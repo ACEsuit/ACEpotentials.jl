@@ -235,12 +235,16 @@ function _write_radial_basis(io, rbasis::ACEpotentials.Models.SplineRnlrzzBasis,
 
     # Write rin0cuts
     println(io, "# Cutoff parameters: (rin, r0, rcut) for each species pair")
+    rcut_max = 0.0
     for iz in 1:NZ
         for jz in 1:NZ
             rin0cut = rbasis.rin0cuts[iz, jz]
             println(io, "const RIN0CUT_$(iz)_$(jz) = (rin=$(rin0cut.rin), r0=$(rin0cut.r0), rcut=$(rin0cut.rcut))")
+            rcut_max = max(rcut_max, rin0cut.rcut)
         end
     end
+    # Maximum cutoff across all species pairs (used for neighbor list construction)
+    println(io, "const RCUT_MAX = $(rcut_max)")
     println(io)
 
     # Write spec
@@ -1289,7 +1293,7 @@ function compute_total_energy(
     cell::Union{Nothing, SMatrix{3,3,Float64,9}},
     pbc::SVector{3, Bool}
 )
-    rcut = RIN0CUT_1_1.rcut
+    rcut = RCUT_MAX
     neighbors = compute_neighbor_list(positions, cell, pbc, rcut)
 
     total_energy = 0.0
@@ -1308,7 +1312,7 @@ function compute_total_energy_forces(
     pbc::SVector{3, Bool}
 )
     natoms = length(species)
-    rcut = RIN0CUT_1_1.rcut
+    rcut = RCUT_MAX
     neighbors = compute_neighbor_list(positions, cell, pbc, rcut)
 
     forces = zeros(SVector{3, Float64}, natoms)
@@ -1336,7 +1340,7 @@ function compute_total_energy_forces_virial(
     pbc::SVector{3, Bool}
 )
     natoms = length(species)
-    rcut = RIN0CUT_1_1.rcut
+    rcut = RCUT_MAX
     neighbors = compute_neighbor_list(positions, cell, pbc, rcut)
 
     forces = zeros(SVector{3, Float64}, natoms)
@@ -1482,7 +1486,7 @@ end
 # ============================================================================
 
 Base.@ccallable function ace_get_cutoff()::Cdouble
-    return RIN0CUT_1_1.rcut
+    return RCUT_MAX
 end
 
 Base.@ccallable function ace_get_n_species()::Cint
@@ -1496,10 +1500,6 @@ Base.@ccallable function ace_get_species(idx::Cint)::Cint
     return Cint(I2Z[idx])
 end
 
-# Initialization function (called by Julia runtime on load)
-function __init__()
-    # Nothing to initialize for now, but could be used for validation
-end
 """)
 end
 

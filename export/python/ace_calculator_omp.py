@@ -73,8 +73,8 @@ class ACECalculatorOMP(Calculator if HAS_ASE else object):
                 "Build it with: gcc -shared -fPIC -O3 -fopenmp -o libace_omp.so ace_omp_wrapper.c -ldl -lm"
             )
 
-        # Load wrapper
-        self.lib = ctypes.CDLL(str(self.omp_wrapper_path))
+        # Load wrapper with RTLD_NOW to resolve all symbols immediately
+        self.lib = ctypes.CDLL(str(self.omp_wrapper_path), mode=ctypes.RTLD_NOW)
         self._setup_functions()
 
         # Initialize
