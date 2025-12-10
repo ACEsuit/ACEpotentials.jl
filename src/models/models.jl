@@ -33,6 +33,8 @@ include("Rnl_basis.jl")
 include("Rnl_learnable.jl")
 include("Rnl_splines.jl")
 
+include("Rnl_learnable_new.jl")
+
 # sparse.jl removed - now using EquivariantTensors.SparseACEbasis directly
 
 include("ace_heuristics.jl") 
@@ -45,7 +47,7 @@ include("smoothness_priors.jl")
 
 include("utils.jl")
 
-include("fasteval.jl")
+# include("fasteval.jl")
 
 
 

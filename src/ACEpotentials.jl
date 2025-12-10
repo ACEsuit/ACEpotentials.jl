@@ -37,7 +37,6 @@ import ACEpotentials.Models: algebraic_smoothness_prior,
                              exp_smoothness_prior, 
                              gaussian_smoothness_prior, 
                              set_parameters!, 
-                             fast_evaluator, 
                              @committee, 
                              set_committee!
 import JSON 
