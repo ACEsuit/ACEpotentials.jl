@@ -83,71 +83,33 @@ forces = atoms.get_forces()
 
 See [python/](python/) for examples and the full API.
 
-## OpenMP Parallelization
+## Parallelization
 
-Both the LAMMPS plugin and Python calculator support OpenMP parallelization for multi-core speedup.
+### LAMMPS with MPI + OpenMP
 
-### LAMMPS with OpenMP
-
-The LAMMPS plugin automatically parallelizes the atom loop when built with OpenMP:
+The LAMMPS plugin supports both MPI domain decomposition and OpenMP threading:
 
 ```bash
-# Build with OpenMP (enabled by default)
-# From the export/ directory:
-cd lammps/plugin
+# Build plugin (from the export/lammps/plugin directory)
 mkdir build && cd build
 cmake ../cmake -DLAMMPS_HEADER_DIR=/path/to/lammps/src
 make
 
-# Run with multiple threads
-OMP_NUM_THREADS=4 lmp -in input.lmp
+# Run with MPI + OpenMP
+OMP_NUM_THREADS=4 mpirun -np 4 lmp -in input.lmp
 ```
 
-To disable OpenMP at build time:
-```bash
-cmake ../cmake -DBUILD_OMP=OFF -DLAMMPS_HEADER_DIR=/path/to/lammps/src
-```
+**Recommended**: Use MPI for domain decomposition with moderate OpenMP threading per rank.
 
-**Typical speedup** (216-atom Si system):
-| Threads | Speedup |
-|---------|---------|
-| 1       | 1.0×    |
-| 2       | 1.8×    |
-| 4       | 3.2×    |
-| 8       | 4.9×    |
+### Python Parallelization Options
 
-### Python with OpenMP
+For parallel Python calculations, we recommend:
 
-For Python, use the OpenMP-accelerated calculator wrapper:
+1. **LAMMPS + LAMPPSlib**: Use ASE's LAMMPS interface for production MD
+2. **JuliaCall/PythonCall**: Call Julia directly for Julia-level threading
+3. **IPICalculator.jl**: For i-PI socket interface integration
 
-```python
-from ace_calculator_omp import ACECalculatorOMP
-
-# Use 4 OpenMP threads
-calc = ACECalculatorOMP("/path/to/libace.so", num_threads=4)
-atoms.calc = calc
-
-energy = atoms.get_potential_energy()
-forces = atoms.get_forces()
-```
-
-Build the wrapper library first:
-```bash
-cd python
-gcc -shared -fPIC -O3 -fopenmp -o libace_omp.so ace_omp_wrapper.c -ldl -lm
-```
-
-The wrapper parallelizes the neighbor-list construction and atom loop, providing similar speedups to the LAMMPS implementation.
-
-### Threading Notes
-
-- **Julia runtime is NOT multithreaded**: The compiled ACE library uses a single-threaded Julia runtime. Parallelization is done at the C/C++ level via OpenMP.
-- **Thread safety**: The Julia library is thread-safe for concurrent calls after initialization.
-- **Initialization**: Model loading (`ace_get_cutoff()`) must happen on a single thread before parallel evaluation.
-- **MPI + OpenMP**: For large systems, combine MPI domain decomposition with OpenMP threading:
-  ```bash
-  OMP_NUM_THREADS=4 mpirun -np 4 lmp -in input.lmp
-  ```
+The Python `ACECalculator` is a simple ctypes wrapper intended as a reference implementation for prototyping and validation.
 
 ## Requirements
 
