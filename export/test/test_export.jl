@@ -67,11 +67,12 @@ using Libdl
             # Use juliac.jl script
             try
                 # juliac.jl usage: julia juliac.jl [options] <source.jl>
-                # Note: --project must come BEFORE juliac_script (it's a Julia arg, not juliac arg)
+                # Note: Julia args (--project, --startup-file, -C) must come BEFORE juliac_script
                 # --experimental is required to enable --trim
                 # --compile-ccallable is required to export @ccallable functions
-                # --cpu-target=generic makes the library portable across different CPU types
-                juliac_cmd = `$(Base.julia_cmd()) --startup-file=no --project=$(EXPORT_DIR) $(juliac_script) --experimental --compile-ccallable --cpu-target=generic --output-lib $(lib_path) --trim=safe $(model_file)`
+                # -C generic (--cpu-target=generic) makes the library portable across different CPU types
+                julia_exe = joinpath(Sys.BINDIR, "julia")
+                juliac_cmd = `$(julia_exe) --startup-file=no -C generic --project=$(EXPORT_DIR) $(juliac_script) --experimental --compile-ccallable --output-lib $(lib_path) --trim=safe $(model_file)`
                 @info "Running: $juliac_cmd"
                 run(juliac_cmd)
             catch e
