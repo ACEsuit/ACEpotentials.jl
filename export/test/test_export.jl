@@ -14,7 +14,7 @@ using StaticArrays
 using LinearAlgebra
 using Libdl
 
-@testset "Export Functionality" begin
+@testset "Export Functionality" verbose=true begin
 
     @testset "Model Export" begin
         # Get test model
@@ -70,7 +70,8 @@ using Libdl
                 # Note: --project must come BEFORE juliac_script (it's a Julia arg, not juliac arg)
                 # --experimental is required to enable --trim
                 # --compile-ccallable is required to export @ccallable functions
-                juliac_cmd = `$(Base.julia_cmd()) --startup-file=no --project=$(EXPORT_DIR) $(juliac_script) --experimental --compile-ccallable --output-lib $(lib_path) --trim=safe $(model_file)`
+                # --cpu-target=generic makes the library portable across different CPU types
+                juliac_cmd = `$(Base.julia_cmd()) --startup-file=no --project=$(EXPORT_DIR) $(juliac_script) --experimental --compile-ccallable --cpu-target=generic --output-lib $(lib_path) --trim=safe $(model_file)`
                 @info "Running: $juliac_cmd"
                 run(juliac_cmd)
             catch e

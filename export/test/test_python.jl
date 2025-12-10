@@ -7,7 +7,7 @@ Tests the Python/ASE calculator wrapper for the compiled ACE library.
 
 using Test
 
-@testset "Python Calculator" begin
+@testset "Python Calculator" verbose=true begin
     build_dir = joinpath(TEST_DIR, "build")
     lib_path = joinpath(build_dir, "libace_test.so")
 

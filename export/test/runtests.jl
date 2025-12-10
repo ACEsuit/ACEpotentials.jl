@@ -233,7 +233,7 @@ function main()
     @info "MPI available: $(check_mpi_available())"
     @info ""
 
-    @testset "ACE Export Tests" begin
+    @testset "ACE Export Tests" verbose=true begin
         # Julia export tests (always run)
         if should_run_test(selection, :export) || should_run_test(selection, :all)
             @info "Running Julia export tests..."

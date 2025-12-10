@@ -73,6 +73,9 @@ jobs:
             lammps/build/lmp
             lammps/build/liblammps.so*
             lammps/src/*.h
+            lammps/src/STUBS/
+            lammps/src/fmt/
+            lammps/src/nlohmann/
           retention-days: 1
 
   test-export:
@@ -97,10 +100,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-julia-export-
 
-      - name: Add ACE registry
-        run: |
-          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
-
       - name: Install Julia dependencies
         run: |
           julia --project=export -e '
@@ -113,12 +112,25 @@ jobs:
         run: |
           julia --project=export export/test/runtests.jl export
 
+      - name: Upload compiled library
+        uses: actions/upload-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build/libace_test.so
+          retention-days: 1
+
   test-python:
     runs-on: ubuntu-latest
     needs: test-export
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
 
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
@@ -149,10 +161,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-julia-export-
 
-      - name: Add ACE registry
-        run: |
-          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
-
       - name: Install Julia dependencies
         run: |
           julia --project=export -e '
@@ -162,7 +170,8 @@ jobs:
 
       - name: Run Python tests
         run: |
-          source export/.venv/bin/activate
+          export PATH="${{ github.workspace }}/export/.venv/bin:$PATH"
+          export VIRTUAL_ENV="${{ github.workspace }}/export/.venv"
           julia --project=export export/test/runtests.jl python
 
   test-lammps-serial:
@@ -171,6 +180,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
+
+      - name: Install MPI headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenmpi-dev
 
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
@@ -200,10 +220,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-julia-export-
 
-      - name: Add ACE registry
-        run: |
-          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
-
       - name: Install Julia dependencies
         run: |
           julia --project=export -e '
@@ -224,17 +240,40 @@ jobs:
         run: |
           julia --project=export export/test/runtests.jl lammps
 
-  test-threading:
+  test-openmp:
     runs-on: ubuntu-latest
-    needs: test-export
+    needs: [build-lammps, test-export]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
+
+      - name: Install MPI headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenmpi-dev
 
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
         with:
           version: '1.12'
+
+      - name: Download LAMMPS
+        uses: actions/download-artifact@v4
+        with:
+          name: lammps-build
+          path: lammps
+
+      - name: Setup LAMMPS
+        run: |
+          chmod +x lammps/build/lmp
+          echo "$GITHUB_WORKSPACE/lammps/build" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/lammps/build:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Cache Julia packages
         uses: actions/cache@v4
@@ -247,10 +286,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-julia-export-
 
-      - name: Add ACE registry
-        run: |
-          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
-
       - name: Install Julia dependencies
         run: |
           julia --project=export -e '
@@ -258,11 +293,20 @@ jobs:
             Pkg.instantiate()
           '
 
-      - name: Run threading tests
-        env:
-          JULIA_NUM_THREADS: 4
+      - name: Build ACE LAMMPS plugin
         run: |
-          julia --threads=4 --project=export export/test/runtests.jl threading
+          cd export/lammps/plugin
+          mkdir -p build && cd build
+          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src
+          make -j $(nproc)
+
+      - name: Run OpenMP tests
+        env:
+          JULIA_NUM_THREADS: 2
+          LAMMPS_SRC: ${{ github.workspace }}/lammps/src
+          OMP_NUM_THREADS: 4
+        run: |
+          julia --project=export export/test/runtests.jl threading
 
   test-mpi:
     runs-on: ubuntu-latest
@@ -270,6 +314,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
 
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
@@ -303,10 +353,6 @@ jobs:
           key: ${{ runner.os }}-julia-export-${{ hashFiles('export/Project.toml') }}
           restore-keys: |
             ${{ runner.os }}-julia-export-
-
-      - name: Add ACE registry
-        run: |
-          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
 
       - name: Install Julia dependencies
         run: |

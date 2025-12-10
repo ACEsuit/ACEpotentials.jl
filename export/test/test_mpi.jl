@@ -9,7 +9,7 @@ Tests for LAMMPS MPI parallel execution:
 
 using Test
 
-@testset "MPI Parallelization" begin
+@testset "MPI Parallelization" verbose=true begin
     build_dir = joinpath(TEST_DIR, "build")
     lib_path = joinpath(build_dir, "libace_test.so")
     lammps_test_dir = joinpath(TEST_DIR, "lammps")
