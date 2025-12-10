@@ -121,7 +121,8 @@ Check if Python with required packages is available.
 """
 function check_python_available()
     try
-        result = read(`python3 -c "import numpy; import ase; print('ok')"`, String)
+        # Redirect stderr to devnull to suppress import errors
+        result = read(pipeline(`python3 -c "import numpy; import ase; print('ok')"`, stderr=devnull), String)
         return strip(result) == "ok"
     catch
         return false
