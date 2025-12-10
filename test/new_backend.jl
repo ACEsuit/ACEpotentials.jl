@@ -2,6 +2,7 @@ using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
 Pkg.develop(url = joinpath(@__DIR__(), ".."))
 Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
 
 ##
 
@@ -100,15 +101,28 @@ et_mb_basis = ET.sparse_equivariant_tensor(
 # readout layer : need to select which linear output to 
 #   use based on the center atom species
 
-__zi = let zlist = (_i2z = et_i2z, )
-   x -> M._z2i(zlist, x.s)
+# CO: doing it this way is type unstable and causes problems in 
+#     the GPU kernel generation. 
+# __zi = let zlist = (_i2z = et_i2z, )
+#    x -> M._z2i(zlist, x.s)
+# end
+#
+# et_readout = ET.SelectLinL(
+#                      et_mb_basis.lens[1],  # input dim
+#                      1,                    # output dim
+#                      length(et_i2z),       # num species
+#                      __zi ) 
+
+
+et_readout_2 = let zlist = et_i2z
+      __zi = x -> ET.cat2idx(zlist, x.s)
+      ET.SelectLinL(
+               et_mb_basis.lens[1],  # input dim
+               1,                    # output dim
+               length(et_i2z),       # num species
+               __zi ) 
 end
 
-et_readout = ET.SelectLinL(
-                     et_mb_basis.lens[1],  # input dim
-                     1,                    # output dim
-                     length(et_i2z),       # num species
-                     __zi ) 
 
 # finally build the full model from the two layers 
 #
@@ -138,7 +152,7 @@ et_model = Lux.Chain(
          basis = et_basis,
          nodes = WrappedFunction(G -> G.node_data),   # pass node data through
          ),
-      Ei = et_readout, 
+      Ei = et_readout_2, 
       E = WrappedFunction(sum),         # sum up to get a total energy 
   )
 et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
@@ -198,7 +212,7 @@ for ntest = 1:30
    E2 = energy_new(sys, et_model)
    print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
 end
-
+println() 
 
 ## 
 #
@@ -218,6 +232,8 @@ ps_dev = dev(ET.float32(et_ps))
 st_dev = dev(ET.float32(et_st))
 
 E1 = AtomsCalculators.potential_energy(sys, calc_model)
-E2 = et_model(G_32_dev, ps_dev, st_dev) 
+E2 = energy_new(sys, et_model)
+E3 = et_model(G_32_dev, ps_dev, st_dev)[1]
 
-# print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
+println_slim( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
+println_slim( @test abs(ustrip(E1) - ustrip(E3)) / (abs(ustrip(E1)) + abs(ustrip(E3)) + 1e-7) < 1e-5 ) 
