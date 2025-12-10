@@ -54,7 +54,10 @@ class ACELibrary:
 
         # Load the shared library with RTLD_NOW to resolve all symbols immediately
         # This ensures errors are caught at load time rather than delayed
-        self.lib = ctypes.CDLL(str(self.lib_path), mode=ctypes.RTLD_NOW)
+        # Use os.RTLD_NOW for cross-platform compatibility (ctypes.RTLD_NOW not always available)
+        import os
+        rtld_now = getattr(os, 'RTLD_NOW', 2)  # 2 is the POSIX value for RTLD_NOW
+        self.lib = ctypes.CDLL(str(self.lib_path), mode=rtld_now)
 
         # Set up function signatures
         self._setup_functions()
