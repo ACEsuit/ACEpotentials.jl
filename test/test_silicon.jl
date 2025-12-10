@@ -43,18 +43,12 @@ function test_rmse(rmse, expected)
     end
 end
 
-# RMSE thresholds established 2025-11-13 using Julia 1.11.7 with EquivariantTensors v0.3
-# Methodology: Migration branch actual RMSEs + 20% safety margin
-# Reason: Main branch has Julia 1.11 compatibility issues preventing baseline measurement
-# Previous thresholds (now stale): dia V=0.027, E=0.0012, F=0.024; liq V=0.037, E=0.0006, F=0.16
-# Actual measured RMSEs: dia V=0.067, E=0.00297, F=0.026; liq V=0.047, E=0.00107, F=0.249
-#                        bt V=0.112, E=0.00427, F=0.082; set V=0.091, E=0.00358, F=0.191
 rmse_qr = Dict(
     "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-    "dia"           => Dict("V"=>0.081, "E"=>0.0036, "F"=>0.032),
-    "liq"           => Dict("V"=>0.057, "E"=>0.0013, "F"=>0.30),
-    "set"           => Dict("V"=>0.110, "E"=>0.0043, "F"=>0.23),
-    "bt"            => Dict("V"=>0.135, "E"=>0.0052, "F"=>0.099),)
+    "dia"           => Dict("V"=>0.027, "E"=>0.0012, "F"=>0.024),
+    "liq"           => Dict("V"=>0.037, "E"=>0.0006, "F"=>0.16),
+    "set"           => Dict("V"=>0.057, "E"=>0.0017, "F"=>0.12),
+    "bt"            => Dict("V"=>0.08, "E"=>0.0022, "F"=>0.07),)
 
 acefit!(data, model; 
        data_keys...,
@@ -83,17 +77,12 @@ test_rmse(err_dist["rmse"], rmse_qr)
 
 ##
 
-# BLR RMSE thresholds established 2025-11-13 using Julia 1.11.7 with EquivariantTensors v0.3
-# Methodology: Migration branch actual RMSEs + 20% safety margin
-# Previous thresholds: dia V=0.033, E=0.0016, F=0.03; liq V=0.035, E=0.0004, F=0.19
-# Actual measured RMSEs: dia V=0.067, E=0.00369, F=0.040; liq V=0.052, E=0.00084, F=0.290
-#                        bt V=0.127, E=0.00526, F=0.087; set V=0.100, E=0.00442, F=0.221
 rmse_blr = Dict(
          "isolated_atom" => Dict("E"=>0.0, "F"=>0.0),
-         "set" => Dict("V"=>0.121, "E"=>0.0053, "F"=>0.27),
-         "dia" => Dict("V"=>0.081, "E"=>0.0045, "F"=>0.048),
-         "liq" => Dict("V"=>0.063, "E"=>0.0011, "F"=>0.35),
-         "bt"  => Dict("V"=>0.153, "E"=>0.0064, "F"=>0.105),)
+         "set" => Dict("V"=>0.068, "E"=>0.0028, "F"=>0.14),
+         "dia" => Dict("V"=>0.0333255, "E"=>0.0016, "F"=>0.03),
+         "liq" => Dict("V"=>0.035, "E"=>0.0004, "F"=>0.19),
+         "bt"  => Dict("V"=>0.09, "E"=>0.0038, "F"=>0.073),)
 
 
 acefit!(data, model;
