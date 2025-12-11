@@ -2,8 +2,11 @@
 ACE Potential Calculator - Python wrapper for compiled Julia ACE shared library.
 
 This module provides:
-1. Low-level ctypes interface to the C functions
-2. High-level ASE-compatible Calculator class
+1. Low-level ctypes interface to the C site-level functions
+2. High-level ASE-compatible Calculator class using matscipy neighbor lists
+
+The calculator uses matscipy's efficient O(N) cell-list neighbor finder and
+calls the site-level C API (same as LAMMPS uses) for energy/force evaluation.
 
 Usage:
     from ace_calculator import ACECalculator
@@ -32,13 +35,20 @@ except ImportError:
     Calculator = object
     all_changes = []
 
+# Try to import matscipy for efficient neighbor lists
+try:
+    from matscipy.neighbours import neighbour_list
+    HAS_MATSCIPY = True
+except ImportError:
+    HAS_MATSCIPY = False
+
 
 class ACELibrary:
     """
     Low-level wrapper for the ACE shared library using ctypes.
 
-    This class provides direct access to the C functions exported by the
-    Julia-compiled ACE potential library.
+    This class provides direct access to the site-level C functions exported
+    by the Julia-compiled ACE potential library.
     """
 
     def __init__(self, library_path: str):
@@ -53,10 +63,8 @@ class ACELibrary:
             raise FileNotFoundError(f"Library not found: {self.lib_path}")
 
         # Load the shared library with RTLD_NOW to resolve all symbols immediately
-        # This ensures errors are caught at load time rather than delayed
-        # Use os.RTLD_NOW for cross-platform compatibility (ctypes.RTLD_NOW not always available)
         import os
-        rtld_now = getattr(os, 'RTLD_NOW', 2)  # 2 is the POSIX value for RTLD_NOW
+        rtld_now = getattr(os, 'RTLD_NOW', 2)
         self.lib = ctypes.CDLL(str(self.lib_path), mode=rtld_now)
 
         # Set up function signatures
@@ -68,7 +76,7 @@ class ACELibrary:
         self.species = [self.lib.ace_get_species(i+1) for i in range(self.n_species)]
 
     def _setup_functions(self):
-        """Configure ctypes function signatures."""
+        """Configure ctypes function signatures for site-level API."""
 
         # Utility functions
         self.lib.ace_get_cutoff.restype = ctypes.c_double
@@ -80,7 +88,7 @@ class ACELibrary:
         self.lib.ace_get_species.restype = ctypes.c_int
         self.lib.ace_get_species.argtypes = [ctypes.c_int]
 
-        # Site-level functions (for LAMMPS)
+        # Site-level functions
         self.lib.ace_site_energy.restype = ctypes.c_double
         self.lib.ace_site_energy.argtypes = [
             ctypes.c_int,                              # z0
@@ -108,37 +116,6 @@ class ACELibrary:
             ctypes.POINTER(ctypes.c_double),           # virial (output, 6 elements)
         ]
 
-        # System-level functions (for Python/ASE)
-        self.lib.ace_energy.restype = ctypes.c_double
-        self.lib.ace_energy.argtypes = [
-            ctypes.c_int,                              # natoms
-            ctypes.POINTER(ctypes.c_int),              # species
-            ctypes.POINTER(ctypes.c_double),           # positions
-            ctypes.POINTER(ctypes.c_double),           # cell (or NULL)
-            ctypes.POINTER(ctypes.c_int),              # pbc (or NULL)
-        ]
-
-        self.lib.ace_energy_forces.restype = ctypes.c_double
-        self.lib.ace_energy_forces.argtypes = [
-            ctypes.c_int,                              # natoms
-            ctypes.POINTER(ctypes.c_int),              # species
-            ctypes.POINTER(ctypes.c_double),           # positions
-            ctypes.POINTER(ctypes.c_double),           # cell (or NULL)
-            ctypes.POINTER(ctypes.c_int),              # pbc (or NULL)
-            ctypes.POINTER(ctypes.c_double),           # forces (output)
-        ]
-
-        self.lib.ace_energy_forces_virial.restype = ctypes.c_double
-        self.lib.ace_energy_forces_virial.argtypes = [
-            ctypes.c_int,                              # natoms
-            ctypes.POINTER(ctypes.c_int),              # species
-            ctypes.POINTER(ctypes.c_double),           # positions
-            ctypes.POINTER(ctypes.c_double),           # cell (or NULL)
-            ctypes.POINTER(ctypes.c_int),              # pbc (or NULL)
-            ctypes.POINTER(ctypes.c_double),           # forces (output)
-            ctypes.POINTER(ctypes.c_double),           # virial (output, 9 elements)
-        ]
-
     def site_energy(self, z0: int, neighbor_z: np.ndarray, neighbor_R: np.ndarray) -> float:
         """
         Compute site energy for a single atom.
@@ -152,8 +129,11 @@ class ACELibrary:
             Site energy in eV
         """
         nneigh = len(neighbor_z)
-        neighbor_z = np.asarray(neighbor_z, dtype=np.int32)
-        neighbor_R = np.asarray(neighbor_R, dtype=np.float64).flatten()
+        if nneigh == 0:
+            return 0.0
+
+        neighbor_z = np.ascontiguousarray(neighbor_z, dtype=np.int32)
+        neighbor_R = np.ascontiguousarray(neighbor_R, dtype=np.float64).flatten()
 
         return self.lib.ace_site_energy(
             ctypes.c_int(z0),
@@ -176,8 +156,11 @@ class ACELibrary:
             (energy, forces) where forces is (nneigh, 3) array of forces ON neighbors
         """
         nneigh = len(neighbor_z)
-        neighbor_z = np.asarray(neighbor_z, dtype=np.int32)
-        neighbor_R = np.asarray(neighbor_R, dtype=np.float64).flatten()
+        if nneigh == 0:
+            return 0.0, np.zeros((0, 3), dtype=np.float64)
+
+        neighbor_z = np.ascontiguousarray(neighbor_z, dtype=np.int32)
+        neighbor_R = np.ascontiguousarray(neighbor_R, dtype=np.float64).flatten()
         forces = np.zeros(nneigh * 3, dtype=np.float64)
 
         energy = self.lib.ace_site_energy_forces(
@@ -190,128 +173,40 @@ class ACELibrary:
 
         return energy, forces.reshape(nneigh, 3)
 
-    def energy(self, species: np.ndarray, positions: np.ndarray,
-               cell: Optional[np.ndarray] = None, pbc: Optional[np.ndarray] = None) -> float:
+    def site_energy_forces_virial(self, z0: int, neighbor_z: np.ndarray, neighbor_R: np.ndarray
+                                  ) -> Tuple[float, np.ndarray, np.ndarray]:
         """
-        Compute total energy of a system.
+        Compute site energy, forces, and virial for a single atom.
 
         Args:
-            species: Array of atomic numbers (natoms,)
-            positions: Array of positions (natoms, 3)
-            cell: Unit cell vectors (3, 3) or None for non-periodic
-            pbc: Periodic boundary conditions (3,) or None
+            z0: Atomic number of center atom
+            neighbor_z: Array of neighbor atomic numbers (nneigh,)
+            neighbor_R: Array of displacement vectors Rj - Ri (nneigh, 3)
 
         Returns:
-            Total energy in eV
+            (energy, forces, virial) where:
+            - forces is (nneigh, 3) array of forces ON neighbors
+            - virial is (6,) array in Voigt notation (xx, yy, zz, yz, xz, xy)
         """
-        natoms = len(species)
-        species = np.asarray(species, dtype=np.int32)
-        positions = np.asarray(positions, dtype=np.float64).flatten()
+        nneigh = len(neighbor_z)
+        if nneigh == 0:
+            return 0.0, np.zeros((0, 3), dtype=np.float64), np.zeros(6, dtype=np.float64)
 
-        cell_ptr = None
-        pbc_ptr = None
+        neighbor_z = np.ascontiguousarray(neighbor_z, dtype=np.int32)
+        neighbor_R = np.ascontiguousarray(neighbor_R, dtype=np.float64).flatten()
+        forces = np.zeros(nneigh * 3, dtype=np.float64)
+        virial = np.zeros(6, dtype=np.float64)
 
-        if cell is not None:
-            cell = np.asarray(cell, dtype=np.float64).flatten()
-            cell_ptr = cell.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-
-        if pbc is not None:
-            pbc = np.asarray(pbc, dtype=np.int32)
-            pbc_ptr = pbc.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
-
-        return self.lib.ace_energy(
-            ctypes.c_int(natoms),
-            species.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-            positions.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            cell_ptr,
-            pbc_ptr,
-        )
-
-    def energy_forces(self, species: np.ndarray, positions: np.ndarray,
-                      cell: Optional[np.ndarray] = None, pbc: Optional[np.ndarray] = None
-                     ) -> Tuple[float, np.ndarray]:
-        """
-        Compute total energy and forces.
-
-        Args:
-            species: Array of atomic numbers (natoms,)
-            positions: Array of positions (natoms, 3)
-            cell: Unit cell vectors (3, 3) or None
-            pbc: Periodic boundary conditions (3,) or None
-
-        Returns:
-            (energy, forces) tuple
-        """
-        natoms = len(species)
-        species = np.asarray(species, dtype=np.int32)
-        positions = np.asarray(positions, dtype=np.float64).flatten()
-        forces = np.zeros(natoms * 3, dtype=np.float64)
-
-        cell_ptr = None
-        pbc_ptr = None
-
-        if cell is not None:
-            cell = np.asarray(cell, dtype=np.float64).flatten()
-            cell_ptr = cell.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-
-        if pbc is not None:
-            pbc = np.asarray(pbc, dtype=np.int32)
-            pbc_ptr = pbc.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
-
-        energy = self.lib.ace_energy_forces(
-            ctypes.c_int(natoms),
-            species.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-            positions.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            cell_ptr,
-            pbc_ptr,
-            forces.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        )
-
-        return energy, forces.reshape(natoms, 3)
-
-    def energy_forces_virial(self, species: np.ndarray, positions: np.ndarray,
-                             cell: Optional[np.ndarray] = None, pbc: Optional[np.ndarray] = None
-                            ) -> Tuple[float, np.ndarray, np.ndarray]:
-        """
-        Compute total energy, forces, and virial stress.
-
-        Args:
-            species: Array of atomic numbers (natoms,)
-            positions: Array of positions (natoms, 3)
-            cell: Unit cell vectors (3, 3) or None
-            pbc: Periodic boundary conditions (3,) or None
-
-        Returns:
-            (energy, forces, virial) tuple where virial is (3, 3)
-        """
-        natoms = len(species)
-        species = np.asarray(species, dtype=np.int32)
-        positions = np.asarray(positions, dtype=np.float64).flatten()
-        forces = np.zeros(natoms * 3, dtype=np.float64)
-        virial = np.zeros(9, dtype=np.float64)
-
-        cell_ptr = None
-        pbc_ptr = None
-
-        if cell is not None:
-            cell = np.asarray(cell, dtype=np.float64).flatten()
-            cell_ptr = cell.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-
-        if pbc is not None:
-            pbc = np.asarray(pbc, dtype=np.int32)
-            pbc_ptr = pbc.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
-
-        energy = self.lib.ace_energy_forces_virial(
-            ctypes.c_int(natoms),
-            species.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-            positions.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-            cell_ptr,
-            pbc_ptr,
+        energy = self.lib.ace_site_energy_forces_virial(
+            ctypes.c_int(z0),
+            ctypes.c_int(nneigh),
+            neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+            neighbor_R.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
             forces.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
             virial.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         )
 
-        return energy, forces.reshape(natoms, 3), virial.reshape(3, 3)
+        return energy, forces.reshape(nneigh, 3), virial
 
 
 class ACECalculator(Calculator):
@@ -319,7 +214,8 @@ class ACECalculator(Calculator):
     ASE-compatible calculator for ACE potentials.
 
     This calculator wraps a compiled Julia ACE potential shared library
-    and provides the standard ASE Calculator interface.
+    and provides the standard ASE Calculator interface. It uses matscipy's
+    efficient O(N) cell-list neighbor finder and the site-level C API.
 
     Example:
         >>> from ace_calculator import ACECalculator
@@ -341,6 +237,12 @@ class ACECalculator(Calculator):
             library_path: Path to the compiled ACE shared library (.so file)
             **kwargs: Additional arguments passed to ASE Calculator
         """
+        if not HAS_MATSCIPY:
+            raise ImportError(
+                "matscipy is required for ACECalculator. "
+                "Install it with: pip install matscipy"
+            )
+
         if HAS_ASE:
             Calculator.__init__(self, **kwargs)
 
@@ -360,6 +262,8 @@ class ACECalculator(Calculator):
         """
         Perform calculation for given atoms object.
 
+        Uses matscipy neighbor list (O(N) cell-list algorithm) and site-level API.
+
         Args:
             atoms: ASE Atoms object
             properties: List of properties to calculate
@@ -368,43 +272,85 @@ class ACECalculator(Calculator):
         if HAS_ASE:
             Calculator.calculate(self, atoms, properties, system_changes)
 
-        # Get atomic data
-        species = atoms.get_atomic_numbers()
-        positions = atoms.get_positions()
+        natoms = len(atoms)
+        numbers = atoms.get_atomic_numbers()
 
-        # Handle periodic boundary conditions
-        if atoms.pbc.any():
-            cell = atoms.get_cell()
-            pbc = atoms.pbc.astype(np.int32)
+        # Build neighbor list using matscipy (O(N) cell-list algorithm)
+        # Returns: i (center), j (neighbor), D (displacement vector Rj - Ri)
+        i_idx, j_idx, D_vectors = neighbour_list(
+            'ijD',
+            atoms,
+            self.ace.cutoff
+        )
+
+        # Initialize output arrays
+        total_energy = 0.0
+        forces = np.zeros((natoms, 3), dtype=np.float64)
+
+        if 'stress' in properties:
+            # Voigt notation: xx, yy, zz, yz, xz, xy
+            total_virial = np.zeros(6, dtype=np.float64)
+
+        # Group neighbors by center atom for efficient processing
+        # matscipy returns neighbors sorted by i, so we can use searchsorted
+        if len(i_idx) > 0:
+            # Find where each atom's neighbors start and end
+            atom_starts = np.searchsorted(i_idx, np.arange(natoms))
+            atom_ends = np.searchsorted(i_idx, np.arange(natoms), side='right')
         else:
-            cell = None
-            pbc = None
+            atom_starts = np.zeros(natoms, dtype=int)
+            atom_ends = np.zeros(natoms, dtype=int)
 
         # Calculate based on requested properties
-        if 'stress' in properties or 'virial' in properties:
-            energy, forces, virial = self.ace.energy_forces_virial(
-                species, positions, cell, pbc
-            )
+        need_virial = 'stress' in properties
+
+        for i in range(natoms):
+            start, end = atom_starts[i], atom_ends[i]
+            nneigh = end - start
+
+            if nneigh == 0:
+                # No neighbors - zero contribution
+                continue
+
+            z0 = numbers[i]
+            neigh_j = j_idx[start:end]
+            neighbor_z = numbers[neigh_j]
+            neighbor_R = D_vectors[start:end]  # Already Rj - Ri from matscipy
+
+            if need_virial:
+                E_site, F_neigh, V_site = self.ace.site_energy_forces_virial(
+                    z0, neighbor_z, neighbor_R
+                )
+                total_virial += V_site
+            else:
+                E_site, F_neigh = self.ace.site_energy_forces(
+                    z0, neighbor_z, neighbor_R
+                )
+
+            total_energy += E_site
+
+            # Accumulate forces:
+            # F_neigh[k] is force ON neighbor j[k] due to center i
+            # Force on center i is negative sum of forces on neighbors
+            for k, j in enumerate(neigh_j):
+                forces[j] += F_neigh[k]
+                forces[i] -= F_neigh[k]
+
+        # Store results
+        self.results['energy'] = total_energy
+        self.results['forces'] = forces
+
+        if need_virial:
             # Convert virial to stress (stress = -virial / volume)
+            # Site virial is in Voigt notation: (xx, yy, zz, yz, xz, xy)
             if atoms.pbc.any():
                 volume = atoms.get_volume()
-                stress = -virial / volume
-                # Convert to Voigt notation for ASE: xx, yy, zz, yz, xz, xy
-                self.results['stress'] = np.array([
-                    stress[0, 0], stress[1, 1], stress[2, 2],
-                    stress[1, 2], stress[0, 2], stress[0, 1]
-                ])
-            self.results['energy'] = energy
-            self.results['forces'] = forces
-
-        elif 'forces' in properties:
-            energy, forces = self.ace.energy_forces(species, positions, cell, pbc)
-            self.results['energy'] = energy
-            self.results['forces'] = forces
-
-        else:
-            energy = self.ace.energy(species, positions, cell, pbc)
-            self.results['energy'] = energy
+                # ASE stress convention: positive = tensile
+                stress = -total_virial / volume
+                self.results['stress'] = stress
+            else:
+                # Non-periodic: stress is not well-defined
+                self.results['stress'] = np.zeros(6)
 
 
 def test_library():
@@ -417,9 +363,7 @@ def test_library():
 
     if not lib_path.exists():
         print(f"Library not found at {lib_path}")
-        print("Please compile the library first with:")
-        print("  julia scripts/trim_test/test_library_export.jl")
-        print("  juliac --output-lib ...")
+        print("Please compile the library first.")
         return
 
     print("=" * 60)
@@ -453,40 +397,9 @@ def test_library():
         print(f"    F[{i}] = [{f[0]:.4f}, {f[1]:.4f}, {f[2]:.4f}]")
     print()
 
-    # Test system-level API
-    print("System-level API test:")
-    # Diamond Si unit cell
-    a = 5.43
-    species = np.array([14, 14], dtype=np.int32)
-    positions = np.array([
-        [0.0, 0.0, 0.0],
-        [a/4, a/4, a/4]
-    ], dtype=np.float64)
-    cell = np.array([
-        [a/2, a/2, 0],
-        [a/2, 0, a/2],
-        [0, a/2, a/2]
-    ], dtype=np.float64)
-    pbc = np.array([1, 1, 1], dtype=np.int32)
-
-    E_total = ace.energy(species, positions, cell, pbc)
-    print(f"  Total energy (2-atom cell): {E_total:.6f} eV")
-
-    E_total2, forces = ace.energy_forces(species, positions, cell, pbc)
-    print(f"  Total energy (with forces): {E_total2:.6f} eV")
-    print(f"  Forces:")
-    for i, f in enumerate(forces):
-        print(f"    F[{i}] = [{f[0]:.6f}, {f[1]:.6f}, {f[2]:.6f}]")
-
-    E_total3, forces3, virial = ace.energy_forces_virial(species, positions, cell, pbc)
-    print(f"  Virial tensor:")
-    for row in virial:
-        print(f"    [{row[0]:.4f}, {row[1]:.4f}, {row[2]:.4f}]")
-    print()
-
     # Test ASE Calculator if available
-    if HAS_ASE:
-        print("ASE Calculator test:")
+    if HAS_ASE and HAS_MATSCIPY:
+        print("ASE Calculator test (with matscipy neighbor list):")
         from ase.build import bulk
 
         calc = ACECalculator(str(lib_path))
@@ -499,8 +412,15 @@ def test_library():
         print(f"  ASE energy: {E_ase:.6f} eV")
         print(f"  ASE forces shape: {F_ase.shape}")
         print(f"  Max force magnitude: {np.max(np.linalg.norm(F_ase, axis=1)):.6f} eV/A")
+
+        # Test stress
+        S_ase = atoms.get_stress()
+        print(f"  ASE stress (Voigt): {S_ase}")
     else:
-        print("ASE not available - skipping ASE Calculator test")
+        if not HAS_ASE:
+            print("ASE not available - skipping ASE Calculator test")
+        if not HAS_MATSCIPY:
+            print("matscipy not available - skipping ASE Calculator test")
 
     print()
     print("=" * 60)

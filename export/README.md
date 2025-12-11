@@ -45,7 +45,7 @@ export/
 │   └── examples/
 │
 ├── python/                       # Python integration
-│   ├── ace_calculator.py         # ASE-compatible calculator
+│   ├── ace_calculator.py         # ASE-compatible calculator (uses matscipy)
 │   └── examples/
 │
 ├── scripts/                      # Convenience scripts
@@ -69,6 +69,8 @@ See [lammps/](lammps/) for plugin build instructions and examples.
 
 ## Python/ASE Usage
 
+The Python calculator uses [matscipy](https://github.com/libAtoms/matscipy) for efficient O(N) neighbor list construction and calls the site-level C API for energy/force evaluation.
+
 ```python
 from ace_calculator import ACECalculator
 from ase.build import bulk
@@ -79,7 +81,10 @@ atoms.calc = calc
 
 energy = atoms.get_potential_energy()
 forces = atoms.get_forces()
+stress = atoms.get_stress()
 ```
+
+**Dependencies**: `pip install numpy ase matscipy`
 
 See [python/](python/) for examples and the full API.
 
@@ -103,13 +108,11 @@ OMP_NUM_THREADS=4 mpirun -np 4 lmp -in input.lmp
 
 ### Python Parallelization Options
 
-For parallel Python calculations, we recommend:
+The Python `ACECalculator` is single-threaded. For parallel Python calculations, we recommend:
 
-1. **LAMMPS + LAMPPSlib**: Use ASE's LAMMPS interface for production MD
+1. **LAMMPS + LAMMPSlib**: Use ASE's LAMMPS interface for production MD with MPI parallelization
 2. **JuliaCall/PythonCall**: Call Julia directly for Julia-level threading
 3. **IPICalculator.jl**: For i-PI socket interface integration
-
-The Python `ACECalculator` is a simple ctypes wrapper intended as a reference implementation for prototyping and validation.
 
 ## Requirements
 
@@ -120,7 +123,7 @@ The Python `ACECalculator` is a simple ctypes wrapper intended as a reference im
 ### For Deployment (End users)
 - **No Julia required** - runtime libraries are bundled
 - LAMMPS: Any version with plugin support
-- Python: 3.8+, numpy, ASE
+- Python: 3.9+, numpy, ASE, matscipy
 
 ## C API Reference
 
@@ -134,9 +137,10 @@ int ace_get_n_species(void);       // Returns number of supported species
 int ace_get_species(int idx);      // Returns atomic number for species index (1-indexed)
 ```
 
-### Site-Level Evaluation (for LAMMPS)
+### Site-Level Evaluation
 
 These functions compute the contribution from a single site (atom i) given its neighbors.
+Both LAMMPS and Python use this API (with their respective neighbor list implementations).
 
 ```c
 // Energy only
@@ -167,46 +171,15 @@ double ace_site_energy_forces_virial(
 );
 ```
 
-### System-Level Evaluation (for Python)
-
-These functions compute total energy, forces, and virial for an entire system.
-
-```c
-// Energy only
-double ace_energy(
-    int natoms,       // Number of atoms
-    int* species,     // Array[natoms]: atomic numbers
-    double* positions,// Array[natoms*3]: positions, row-major (x1,y1,z1,x2,y2,z2,...)
-    double* cell,     // Array[9]: cell vectors, row-major (a1x,a1y,a1z,a2x,...) or NULL
-    int* pbc          // Array[3]: periodic boundary conditions (0/1) or NULL
-);
-
-// Energy and forces
-double ace_energy_forces(
-    int natoms, int* species, double* positions, double* cell, int* pbc,
-    double* forces    // Array[natoms*3]: output forces (row-major)
-);
-
-// Energy, forces, and virial
-double ace_energy_forces_virial(
-    int natoms, int* species, double* positions, double* cell, int* pbc,
-    double* forces,   // Array[natoms*3]: output forces (row-major)
-    double* virial    // Array[9]: output virial tensor (3x3 row-major: Vxx,Vxy,Vxz,Vyx,...)
-);
-```
-
 ### Important Conventions
 
-**Cell Layout (row-major):**
-```
-cell[0..2] = a1 (first lattice vector)
-cell[3..5] = a2 (second lattice vector)
-cell[6..8] = a3 (third lattice vector)
-```
+**Force Convention:**
+The site-level API returns forces **on neighbors**:
+- `forces[j]` = force on neighbor j due to center atom
+- For total forces: `F[j] += forces[j]`, `F[i] -= sum(forces)`
 
 **Virial Format:**
-- **Site-level**: 6 elements in Voigt notation: (xx, yy, zz, yz, xz, xy)
-- **System-level**: 9 elements as 3x3 matrix (row-major): Vxx, Vxy, Vxz, Vyx, Vyy, Vyz, Vzx, Vzy, Vzz
+6 elements in Voigt notation: `[xx, yy, zz, yz, xz, xy]`
 
 ## Technical Details
 
@@ -226,16 +199,6 @@ Typical deployment sizes:
 - LAMMPS plugin: ~70 KB
 - **Total: ~25 MB**
 
-### Force Convention
-
-The site-level API returns forces **on neighbors**:
-- `forces[j]` = force on neighbor j due to center atom
-- For total forces: `F[j] += forces[j]`, `F[i] -= sum(forces)`
-
-### Virial Convention
-
-Virial tensor in Voigt notation: `[xx, yy, zz, yz, xz, xy]`
-
 ## Troubleshooting
 
 ### Library not found
@@ -252,5 +215,5 @@ cmake ../cmake -DLAMMPS_HEADER_DIR=/path/to/lammps/src
 ### Python import error
 Install dependencies:
 ```bash
-pip install numpy ase
+pip install numpy ase matscipy
 ```

@@ -6,6 +6,7 @@ requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.20",
     "ase>=3.22",
+    "matscipy>=1.0",
     "pytest>=7.0",
 ]
 
