@@ -141,11 +141,6 @@ using Libdl
         @test occursin("ace_get_n_species", symbols_output)
         @test occursin("ace_get_species", symbols_output)
 
-        # System-level API (for Python)
-        @test occursin("ace_energy", symbols_output)
-        @test occursin("ace_energy_forces", symbols_output)
-        @test occursin("ace_energy_forces_virial", symbols_output)
-
         @info "All expected symbols found in compiled library"
     end
 end

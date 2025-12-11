@@ -1,4 +1,5 @@
 *Manifest.toml
+!export/Manifest.toml
 /docs/Manifest.toml
 /docs/build/
 scratch
