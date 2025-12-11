@@ -1,0 +1,6 @@
+# Test outputs
+*.dump
+log.lammps
+test_mpi_*.lmp
+test_omp.lmp
+test_*.dump

@@ -1,0 +1,309 @@
+name: Export CI
+
+on:
+  push:
+    paths:
+      - 'export/**'
+      - '.github/workflows/export-ci.yml'
+  pull_request:
+    paths:
+      - 'export/**'
+      - '.github/workflows/export-ci.yml'
+
+env:
+  JULIA_NUM_THREADS: 2
+
+jobs:
+  build-lammps:
+    runs-on: ubuntu-latest
+    outputs:
+      lammps-version: ${{ steps.lammps-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            libfftw3-dev \
+            libopenmpi-dev \
+            mpi-default-bin \
+            mpi-default-dev
+
+      - name: Get LAMMPS version hash
+        id: lammps-version
+        run: |
+          LAMMPS_VERSION=$(git ls-remote https://github.com/lammps/lammps.git refs/heads/stable | awk '{print $1}' | cut -c1-8)
+          echo "version=$LAMMPS_VERSION" >> $GITHUB_OUTPUT
+          echo "LAMMPS_VERSION=$LAMMPS_VERSION" >> $GITHUB_ENV
+
+      - name: Cache LAMMPS
+        id: lammps-cache
+        uses: actions/cache@v4
+        with:
+          path: lammps
+          key: ${{ runner.os }}-lammps-${{ steps.lammps-version.outputs.version }}-plugin-v1
+
+      - name: Clone LAMMPS
+        if: steps.lammps-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -b stable --depth 1 https://github.com/lammps/lammps.git
+
+      - name: Build LAMMPS
+        if: steps.lammps-cache.outputs.cache-hit != 'true'
+        run: |
+          cd lammps
+          mkdir -p build && cd build
+          cmake ../cmake \
+            -D PKG_PLUGIN=on \
+            -D BUILD_SHARED_LIBS=on \
+            -D BUILD_MPI=on \
+            -D BUILD_OMP=on \
+            -D CMAKE_BUILD_TYPE=Release
+          cmake --build . -j $(nproc)
+
+      - name: Upload LAMMPS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lammps-build
+          path: |
+            lammps/build/lmp
+            lammps/build/liblammps.so*
+            lammps/src/*.h
+            lammps/src/STUBS/
+            lammps/src/fmt/
+            lammps/src/nlohmann/
+          retention-days: 1
+
+  test-export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - name: Cache Julia packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/compiled
+          key: ${{ runner.os }}-julia-export-${{ hashFiles('export/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-export-
+
+      - name: Install Julia dependencies
+        run: |
+          julia --project=export -e '
+            using Pkg
+            Pkg.instantiate()
+            Pkg.precompile()
+          '
+
+      - name: Run Julia export tests
+        run: |
+          julia --project=export export/test/runtests.jl export
+
+      - name: Upload compiled library
+        uses: actions/upload-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build/libace_test.so
+          retention-days: 1
+
+  test-python:
+    runs-on: ubuntu-latest
+    needs: test-export
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: |
+          cd export
+          uv sync
+
+      - name: Cache Julia packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/compiled
+          key: ${{ runner.os }}-julia-export-${{ hashFiles('export/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-export-
+
+      - name: Install Julia dependencies
+        run: |
+          julia --project=export -e '
+            using Pkg
+            Pkg.instantiate()
+          '
+
+      - name: Run Python tests
+        run: |
+          export PATH="${{ github.workspace }}/export/.venv/bin:$PATH"
+          export VIRTUAL_ENV="${{ github.workspace }}/export/.venv"
+          julia --project=export export/test/runtests.jl python
+
+  test-lammps-serial:
+    runs-on: ubuntu-latest
+    needs: [build-lammps, test-export]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
+
+      - name: Install MPI headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenmpi-dev
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - name: Download LAMMPS
+        uses: actions/download-artifact@v4
+        with:
+          name: lammps-build
+          path: lammps
+
+      - name: Setup LAMMPS
+        run: |
+          chmod +x lammps/build/lmp
+          echo "$GITHUB_WORKSPACE/lammps/build" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/lammps/build:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Cache Julia packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/compiled
+          key: ${{ runner.os }}-julia-export-${{ hashFiles('export/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-export-
+
+      - name: Install Julia dependencies
+        run: |
+          julia --project=export -e '
+            using Pkg
+            Pkg.instantiate()
+          '
+
+      - name: Build ACE LAMMPS plugin
+        run: |
+          cd export/lammps/plugin
+          mkdir -p build && cd build
+          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src
+          make -j $(nproc)
+
+      - name: Run LAMMPS tests (serial)
+        env:
+          LAMMPS_SRC: ${{ github.workspace }}/lammps/src
+        run: |
+          julia --project=export export/test/runtests.jl lammps
+
+  test-mpi:
+    runs-on: ubuntu-latest
+    needs: [build-lammps, test-lammps-serial]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download compiled library
+        uses: actions/download-artifact@v4
+        with:
+          name: ace-library
+          path: export/test/build
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+
+      - name: Install MPI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenmpi-dev mpi-default-bin
+
+      - name: Download LAMMPS
+        uses: actions/download-artifact@v4
+        with:
+          name: lammps-build
+          path: lammps
+
+      - name: Setup LAMMPS
+        run: |
+          chmod +x lammps/build/lmp
+          echo "$GITHUB_WORKSPACE/lammps/build" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/lammps/build:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Cache Julia packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/compiled
+          key: ${{ runner.os }}-julia-export-${{ hashFiles('export/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-julia-export-
+
+      - name: Install Julia dependencies
+        run: |
+          julia --project=export -e '
+            using Pkg
+            Pkg.instantiate()
+          '
+
+      - name: Build ACE LAMMPS plugin
+        run: |
+          cd export/lammps/plugin
+          mkdir -p build && cd build
+          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src
+          make -j $(nproc)
+
+      - name: Run MPI tests
+        env:
+          LAMMPS_SRC: ${{ github.workspace }}/lammps/src
+          OMPI_ALLOW_RUN_AS_ROOT: 1
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+        run: |
+          julia --project=export export/test/runtests.jl mpi
