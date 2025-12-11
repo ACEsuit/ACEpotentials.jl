@@ -12,6 +12,7 @@ Usage:
     julia --project=.. runtests.jl              # Run all available tests
     julia --project=.. runtests.jl export       # Run only export tests
     julia --project=.. runtests.jl python       # Run only Python tests
+    julia --project=.. runtests.jl portable     # Run only portable Python tests
     julia --project=.. runtests.jl lammps       # Run only LAMMPS tests
     julia --project=.. runtests.jl multispecies # Run only multi-species tests
     julia --project=.. runtests.jl mpi          # Run only MPI tests
@@ -248,6 +249,16 @@ function main()
                 include(joinpath(TEST_DIR, "test_python.jl"))
             else
                 @warn "Skipping Python tests (Python/numpy/ase not available)"
+            end
+        end
+
+        # Portable Python tests (validates relocatable deployment)
+        if should_run_test(selection, :portable) || should_run_test(selection, :all)
+            if check_python_available()
+                @info "Running portable Python tests..."
+                include(joinpath(TEST_DIR, "test_portable_python.jl"))
+            else
+                @warn "Skipping portable Python tests (Python/numpy/ase not available)"
             end
         end
 
