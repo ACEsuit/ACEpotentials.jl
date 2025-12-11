@@ -197,9 +197,8 @@ for alpha in range(3):
         neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         R_m.flatten().ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     )
-    # Force = -dE/dR, but site_energy_forces returns force ON neighbor
-    # which is +dE/dR_j (positive gradient)
-    fd_forces[alpha] = (E_p - E_m) / (2*h)
+    # site_energy_forces returns -dE/dRj (force ON neighbor)
+    fd_forces[alpha] = -(E_p - E_m) / (2*h)
 
 max_err = np.max(np.abs(forces[0] - fd_forces))
 print(f'{max_err:.2e}')
