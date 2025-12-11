@@ -45,6 +45,7 @@ timestep        0.001
 run             1000
 
 # Final energy check
-variable        dE equal pe-f_1
-print           "Final potential energy: ${pe} eV"
-print           "Energy drift: ${dE} eV"
+variable        final_pe equal pe
+variable        final_etotal equal etotal
+print           "Final potential energy: ${final_pe} eV"
+print           "Final total energy: ${final_etotal} eV"

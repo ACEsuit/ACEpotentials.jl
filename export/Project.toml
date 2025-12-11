@@ -12,7 +12,8 @@ Polynomials4ML = "03c4bcba-a943-47e9-bfa1-b1661fc2974f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [sources]
 ACEpotentials = {path = ".."}
-Polynomials4ML = {url = "https://github.com/ACEsuit/Polynomials4ML.jl", rev = "main"}
+Polynomials4ML = {rev = "main", url = "https://github.com/ACEsuit/Polynomials4ML.jl"}

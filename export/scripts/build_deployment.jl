@@ -63,7 +63,8 @@ function build_deployment(
     model_jl = joinpath(deploy_dir, "$(name)_model.jl")
     export_script = joinpath(export_dir, "src", "export_ace_model.jl")
     include(export_script)
-    export_ace_model(model, model_jl; splinify_first=true, for_library=true)
+    # Use invokelatest to handle world-age issues when include() defines new methods
+    Base.invokelatest(export_ace_model, model, model_jl; splinify_first=true, for_library=true)
     verbose && println("  → Exported to: $model_jl")
 
     # Step 2: Compile with juliac --trim
@@ -106,6 +107,10 @@ function build_deployment(
             cp(example_src, example_dst; force=true)
             # Update paths in example
             example_content = read(example_dst, String)
+            # Update plugin path to point to bundled plugin
+            example_content = replace(example_content,
+                r"plugin\s+load\s+\S+" => "plugin load plugin/build/aceplugin.so")
+            # Update pair_coeff path to point to bundled library
             example_content = replace(example_content,
                 r"pair_coeff\s+\*\s+\*\s+\S+" => "pair_coeff * * ../lib/libace_$(name).so")
             write(example_dst, example_content)

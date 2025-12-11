@@ -1,0 +1,38 @@
+# Example configuration for deploy_model.jl
+#
+# This configuration fits a simple ACE model for silicon and creates
+# a shareable deployment package.
+#
+# Usage:
+#   julia --project=export export/scripts/deploy_model.jl config.yaml
+
+# Name for the deployment (used in filenames)
+name: silicon_example
+
+# Mode: "fit" to train a new model, "export" to use existing model
+mode: fit
+
+# Training data (for mode: fit)
+data_path: Si_tiny.xyz
+energy_key: dft_energy
+force_key: dft_force
+virial_key: dft_virial
+
+# Model configuration
+model:
+  elements: [Si]
+  order: 2           # Body order (2 = up to 3-body)
+  totaldegree: 6     # Polynomial degree
+  rcut: 5.5          # Cutoff radius in Angstrom
+
+# Fitting options
+solver: BLR          # BLR (Bayesian), QR, or LSQR
+smoothness_prior: true
+
+# Output options
+output_dir: ./deployments
+include_lammps: true
+include_python: false
+
+# Set to true to remove unzipped directory after creating zip
+cleanup: false
