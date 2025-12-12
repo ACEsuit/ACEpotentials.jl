@@ -41,6 +41,7 @@ include("ace_heuristics.jl")
 include("ace.jl")
 
 include("calculators.jl")
+include("calculators_et.jl")
 include("committee.jl")
 
 include("smoothness_priors.jl")
