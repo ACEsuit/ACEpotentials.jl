@@ -35,7 +35,8 @@ include("Rnl_splines.jl")
 
 include("Rnl_learnable_new.jl")
 
-include("gpu_splines.jl")
+# GPU splines removed - Polynomials4ML v0.5.x already provides CubicSplines
+# with KernelAbstractions GPU support in splinify.jl
 
 # sparse.jl removed - now using EquivariantTensors.SparseACEbasis directly
 
