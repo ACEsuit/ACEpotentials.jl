@@ -35,6 +35,8 @@ include("Rnl_splines.jl")
 
 include("Rnl_learnable_new.jl")
 
+include("gpu_splines.jl")
+
 # sparse.jl removed - now using EquivariantTensors.SparseACEbasis directly
 
 include("ace_heuristics.jl") 
