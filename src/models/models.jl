@@ -44,6 +44,7 @@ include("ace.jl")
 
 include("calculators.jl")
 include("calculators_et.jl")
+include("batched_eval.jl")
 include("committee.jl")
 
 include("smoothness_priors.jl")
