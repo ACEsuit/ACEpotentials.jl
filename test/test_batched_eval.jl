@@ -51,9 +51,8 @@ end
 
 ##
 
-# Build calculators
+# Build unified calculator (supports both energy/forces/virial and basis evaluation)
 calc_et = M.build_et_calculator(model, ps, st)
-basis_calc = M.build_et_basis_calculator(model, ps, st)
 
 function rand_struct(n_repeat=(2,1,1))
    sys = AtomsBuilder.bulk(:Si) * n_repeat
@@ -177,12 +176,12 @@ println("\nTesting batched basis evaluation...")
          sys2 = rand_struct((2,2,1))
          systems = [sys1, sys2]
 
-         # Individual basis evaluation
-         B1 = M.evaluate_basis(basis_calc, sys1)
-         B2 = M.evaluate_basis(basis_calc, sys2)
+         # Individual basis evaluation (unified calculator supports both energy and basis)
+         B1 = M.evaluate_basis(calc_et, sys1)
+         B2 = M.evaluate_basis(calc_et, sys2)
 
          # Batched basis evaluation
-         B_batched = M.evaluate_batched_basis(basis_calc, systems)
+         B_batched = M.evaluate_batched_basis(calc_et, systems)
 
          # Compare
          B1_err = maximum(abs.(B_batched[1] - B1))

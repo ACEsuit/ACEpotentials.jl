@@ -51,64 +51,11 @@ end
 
 ##
 
-# Build the ET model manually (same as in new_backend.jl)
-rbasis = model.rbasis
-et_i2z = AtomsBase.ChemicalSpecies.(rbasis._i2z)
-et_rbasis = M._convert_Rnl_learnable(rbasis; zlist = et_i2z, rfun = x -> norm(x.𝐫))
-et_rspec = rbasis.spec
-
-et_ybasis = Lux.Chain(𝐫ij = ET.NTtransform(x -> x.𝐫), Y = model.ybasis)
-et_yspec = P4ML.natural_indices(et_ybasis.layers.Y)
-
-et_embed = ET.EdgeEmbed(Lux.BranchLayer(; Rnl = et_rbasis, Ylm = et_ybasis))
-
-AA_spec = model.tensor.meta["𝔸spec"]
-et_mb_spec = unique([[(n=b.n, l=b.l) for b in bb] for bb in AA_spec])
-
-et_mb_basis = ET.sparse_equivariant_tensor(
-      L = 0,
-      mb_spec = et_mb_spec,
-      Rnl_spec = et_rspec,
-      Ylm_spec = et_yspec,
-      basis = real)
-
-et_readout = let zlist = et_i2z
-      __zi = x -> ET.cat2idx(zlist, x.s)
-      ET.SelectLinL(et_mb_basis.lens[1], 1, length(et_i2z), __zi)
-end
-
-et_basis = Lux.Chain(;
-            embed = et_embed,
-            ace = et_mb_basis,
-            unwrp = Lux.WrappedFunction(x -> x[1]))
-
-et_model = Lux.Chain(
-      L1 = Lux.BranchLayer(;
-         basis = et_basis,
-         nodes = Lux.WrappedFunction(G -> G.node_data)),
-      Ei = et_readout,
-      E = Lux.WrappedFunction(sum))
-
-et_ps, et_st = LuxCore.setup(rng, et_model)
-
-# Copy parameters
-NZ = length(et_i2z)
-for i in 1:NZ, j in 1:NZ
-   idx = (i-1)*NZ + j
-   et_ps.L1.basis.embed.Rnl.connection.W[:, :, idx] = ps.rbasis.Wnlq[:, :, i, j]
-end
-
-et_ps.Ei.W[1, :, 1] .= ps.WB[:, 1]
-et_ps.Ei.W[1, :, 2] .= ps.WB[:, 2]
-
-##
-
-# Create calculators
+# Create calculators using unified build_et_calculator
 calc_ref = ACEpotentials.ACEPotential(model, ps, st)
-rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
 
-# Create ETCalculator directly
-calc_et = M.ETCalculator(et_model, et_ps, et_st, rcut * u"Å")
+# Use the unified build_et_calculator function
+calc_et = M.build_et_calculator(model, ps, st)
 
 function rand_struct()
    sys = AtomsBuilder.bulk(:Si) * (2,1,1)
@@ -170,6 +117,30 @@ println("\nTesting ETCalculator via AtomsCalculators interface...")
 
       V_err = maximum(abs.(ustrip(V_ref) - ustrip(V_et)))
       @test V_err < 1e-10
+   end
+
+   @testset "evaluate_basis" begin
+      println("\n  Testing evaluate_basis...")
+      for ntest = 1:5
+         sys = rand_struct()
+         # Evaluate basis using unified calculator
+         B = M.evaluate_basis(calc_et, sys)
+         @test size(B, 1) == length(sys)
+         @test size(B, 2) == M.length_basis(calc_et)
+         # Check that basis values are reasonable (not NaN or Inf)
+         print_tf(@test all(isfinite, B))
+      end
+      println()
+   end
+
+   # Note: evaluate_basis_ed is currently not fully functional due to AD limitations
+   # through the complex Lux/EquivariantTensors pipeline. The basis evaluation
+   # without gradients (evaluate_basis) works correctly and is the primary
+   # functionality needed for linear fitting.
+   #
+   # This test is skipped until the AD compatibility is resolved upstream.
+   @testset "evaluate_basis_ed" begin
+      @test_skip "evaluate_basis_ed requires AD-compatible Lux pipeline"
    end
 
 end

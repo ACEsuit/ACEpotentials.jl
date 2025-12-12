@@ -10,6 +10,9 @@ using StaticArrays
 using Unitful: ustrip, @u_str
 using Zygote
 
+# Import shared utilities from calculators_et.jl
+# _build_graph and _prepare_for_device are defined there
+
 # =========================================================================
 #  BatchedETGraph - Multiple structures in a single graph
 # =========================================================================
@@ -94,8 +97,8 @@ bg = batch_graphs(systems, 5.5u"Å")
 function batch_graphs(systems, rcut)
     n_sys = length(systems)
 
-    # Build individual graphs
-    graphs = [ET.Atoms.interaction_graph(sys, rcut) for sys in systems]
+    # Build individual graphs using shared utility
+    graphs = [_build_graph(sys, rcut) for sys in systems]
 
     # Compute offsets
     n_atoms_per = [ET.nnodes(g) for g in graphs]
@@ -214,8 +217,9 @@ Vector of energies with units.
 function evaluate_batched_energies(calc::ETCalculator, systems)
     bg = batch_graphs(systems, calc.rcut)
 
-    # Prepare for device
-    G_dev, ps_dev, st_dev = _prepare_for_device(bg.graph, calc.ps, calc.st, calc)
+    # Prepare for device using shared utility
+    G_dev, ps_dev, st_dev = _prepare_for_device(bg.graph, calc.ps, calc.st,
+                                                 calc.device, calc.precision)
 
     # Create modified batched graph with device arrays
     bg_dev = BatchedETGraph(G_dev, bg.n_structures,
@@ -237,22 +241,23 @@ end
 # =========================================================================
 
 """
-    evaluate_batched_basis(calc::ETBasisCalculator, systems)
+    evaluate_batched_basis(calc::ETCalculator, systems)
 
 Evaluate basis for multiple systems in a single batched call.
 
 # Arguments
-- `calc`: An ETBasisCalculator instance
+- `calc`: An ETCalculator instance
 - `systems`: Vector of AtomsBase-compatible atomic systems
 
 # Returns
 Vector of basis matrices, one per system. Each matrix has shape (n_atoms, length_basis).
 """
-function evaluate_batched_basis(calc::ETBasisCalculator, systems)
+function evaluate_batched_basis(calc::ETCalculator, systems)
     bg = batch_graphs(systems, calc.rcut)
 
-    # Prepare for device
-    G_dev, ps_dev, st_dev = _prepare_for_device(bg.graph, calc.ps, calc.st, calc)
+    # Prepare for device using shared utility
+    G_dev, ps_dev, st_dev = _prepare_for_device(bg.graph, calc.basis_ps, calc.basis_st,
+                                                 calc.device, calc.precision)
 
     # Evaluate basis on full batched graph
     Bi_all, _ = calc.basis_model(G_dev, ps_dev, st_dev)
