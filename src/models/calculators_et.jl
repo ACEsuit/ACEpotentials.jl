@@ -58,6 +58,59 @@ function _prepare_for_device(G, ps, st, device, precision)
     return G, ps, st
 end
 
+"""
+    _reconstruct_graph(𝐫_vec, G, node_data, s0_edges, s1_edges, dev; graph_data=nothing)
+
+Reconstruct an ETGraph with new edge positions. Used for differentiating
+through graph evaluation.
+
+If graph_data is not provided, uses G.graph_data.
+"""
+function _reconstruct_graph(𝐫_vec, G, node_data, s0_edges, s1_edges, dev; graph_data=nothing)
+    edge_data = [(𝐫 = r, s0 = s0, s1 = s1)
+                 for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
+    # Use provided graph_data, or use G.graph_data (may be nothing)
+    gd = graph_data !== nothing ? graph_data : G.graph_data
+    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, gd, G.maxneigs)
+    return dev === identity ? G_new : dev(G_new)
+end
+
+"""
+    _scatter_forces_virial(ii, jj, ∇𝐫, edge_positions, n_atoms; offset=0)
+
+Scatter edge gradients to atomic forces and compute virial tensor.
+
+# Arguments
+- `ii`, `jj`: Edge endpoint indices (global)
+- `∇𝐫`: Gradients w.r.t. edge positions (Vector of SVector{3})
+- `edge_positions`: Original edge position vectors (for virial)
+- `n_atoms`: Number of atoms in the result arrays
+- `offset`: Index offset for batched evaluation (default 0)
+
+# Returns
+(forces, virial) tuple where forces is Vector{SVector{3,Float64}} and
+virial is SMatrix{3,3,Float64}.
+"""
+function _scatter_forces_virial(ii, jj, ∇𝐫, edge_positions, n_atoms; offset=0)
+    T = Float64
+    F = zeros(SVector{3, T}, n_atoms)
+    virial = @SMatrix zeros(T, 3, 3)
+
+    for (k, (i, j)) in enumerate(zip(ii, jj))
+        i_local = i - offset
+        j_local = j - offset
+        ∂E_∂𝐫 = SVector{3, T}(∇𝐫[k])
+
+        F[i_local] += ∂E_∂𝐫
+        F[j_local] -= ∂E_∂𝐫
+
+        𝐫ij = SVector{3, T}(edge_positions[k])
+        virial -= ∂E_∂𝐫 * 𝐫ij'
+    end
+
+    return F, virial
+end
+
 # =========================================================================
 #  ETCalculator - Unified Lux-based ACE calculator using EquivariantTensors
 # =========================================================================
@@ -141,15 +194,7 @@ This is the differentiable function for Zygote.
 """
 function _energy_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
                                       model, ps, st, dev)
-    # Reconstruct edge_data from position vectors
-    edge_data = [(𝐫 = r, s0 = s0, s1 = s1)
-                 for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
-    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.graph_data, G.maxneigs)
-
-    if dev !== identity
-        G_new = dev(G_new)
-    end
-
+    G_new = _reconstruct_graph(𝐫_vec, G, node_data, s0_edges, s1_edges, dev)
     return model(G_new, ps, st)[1]
 end
 
@@ -219,24 +264,9 @@ function AtomsCalculators.energy_forces_virial(sys, calc::ETCalculator; kwargs..
         ∇𝐫 = collect(∇𝐫)
     end
 
-    # Compute forces via scatter
-    # F[i] = +∂E/∂𝐫_ij (since ∂𝐫_ij/∂X_i = -I)
-    # F[j] = -∂E/∂𝐫_ij (since ∂𝐫_ij/∂X_j = +I)
-    T = Float64  # Always return Float64 forces
-    F = zeros(SVector{3, T}, length(sys))
-    for (k, (i, j)) in enumerate(zip(G.ii, G.jj))
-        ∂E_∂𝐫 = SVector{3, T}(∇𝐫[k])
-        F[i] += ∂E_∂𝐫
-        F[j] -= ∂E_∂𝐫
-    end
-
-    # Compute virial: σ = -∑_edges (∂E/∂𝐫_ij) ⊗ 𝐫_ij
-    virial = @SMatrix zeros(T, 3, 3)
-    for (k, ed) in enumerate(G.edge_data)
-        𝐫ij = SVector{3, T}(ed.𝐫)
-        ∂E_∂𝐫 = SVector{3, T}(∇𝐫[k])
-        virial -= ∂E_∂𝐫 * 𝐫ij'
-    end
+    # Scatter edge gradients to forces and virial
+    edge_positions = [ed.𝐫 for ed in G.edge_data]
+    F, virial = _scatter_forces_virial(G.ii, G.jj, ∇𝐫, edge_positions, length(sys))
 
     return (
         energy = Float64(E) * energy_unit(calc),
@@ -307,15 +337,7 @@ This is the differentiable function for ForwardDiff jacobian.
 """
 function _basis_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
                                      model, ps, st, dev)
-    # Reconstruct edge_data from position vectors
-    edge_data = [(𝐫 = r, s0 = s0, s1 = s1)
-                 for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
-    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.graph_data, G.maxneigs)
-
-    if dev !== identity
-        G_new = dev(G_new)
-    end
-
+    G_new = _reconstruct_graph(𝐫_vec, G, node_data, s0_edges, s1_edges, dev)
     Bi_all, _ = model(G_new, ps, st)
     return Bi_all  # Shape: (n_atoms, len_Bi)
 end

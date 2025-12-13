@@ -23,6 +23,9 @@ using Random, LuxCore, Test, LinearAlgebra
 using Polynomials4ML.Testing: print_tf, println_slim
 using Zygote
 
+# Load shared test utilities
+include("test_utils.jl")
+
 rng = Random.MersenneTwister(1234)
 Random.seed!(1234)
 
@@ -30,27 +33,8 @@ Random.seed!(1234)
 
 println("Setting up model...")
 
-elements = (:Si, :O)
-level = M.TotalDegree()
-max_level = 8  # smaller for faster testing
-order = 2
-maxl = 4
-
-rin0cuts = M._default_rin0cuts(elements)
-rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts)
-
-model = M.ace_model(; elements = elements, order = order,
-            Ytype = :solid, level = level, max_level = max_level,
-            maxl = maxl, pair_maxn = max_level,
-            rin0cuts = rin0cuts,
-            init_WB = :glorot_normal, init_Wpair = :glorot_normal)
-
-ps, st = Lux.setup(rng, model)
-
-# Kill pair basis for now
-for s in model.pairbasis.splines
-   s.itp.itp.coefs[:] *= 0
-end
+# Use shared test model setup
+model, ps, st, _ = setup_test_model(; rng=rng)
 
 ##
 # Build ET model components
@@ -119,13 +103,6 @@ et_ps.Ei.W[1, :, 2] .= ps.WB[:, 2]
 
 calc_model = ACEpotentials.ACEPotential(model, ps, st)
 rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
-
-function rand_struct()
-   sys = AtomsBuilder.bulk(:Si) * (2,1,1)
-   rattle!(sys, 0.2u"Å")
-   AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
-   return sys
-end
 
 ##
 # Test energy first
@@ -197,7 +174,7 @@ s1_edges = [ed.s1 for ed in G.edge_data]
 function _energy_from_positions(𝐫_vec)
    # Reconstruct edge_data from position vectors and species
    edge_data = [(𝐫 = r, s0 = s0, s1 = s1) for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
-   G_new = ET.ETGraph(G.ii, G.jj, G.first, G.node_data, edge_data, G.maxneigs)
+   G_new = ET.ETGraph(G.ii, G.jj, G.first, G.node_data, edge_data, G.graph_data, G.maxneigs)
    return et_model(G_new, et_ps, et_st)[1]
 end
 

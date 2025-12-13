@@ -39,14 +39,6 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    # named-tuple inputs 
    #
    et_trans = _convert_agnesi(basis)
-   
-   # OLD VERSION - KEEP FOR DEBUGGING then remove 
-   # et_trans = let transforms = basis.transforms
-   #    ET.NTtransform( xij -> begin
-   #          trans_ij = transforms[__z2i(xij.s0), __z2i(xij.s1)]
-   #          return trans_ij(rfun(xij))
-   #       end )
-   #    end 
 
    # the envelope is always a simple quartic (1 -x^2)^2
    # otherwise make this transform fail. 
@@ -76,16 +68,6 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
                            NZ^2,                     # num (Zi,Zj) pairs
                            selector)
 
-   # et_rbasis = SkipConnection(   # input is (rij, zi, zj)
-   #          Chain(y = et_trans,  # transforms yij 
-   #                P = SkipConnection(
-   #                      et_polys, 
-   #                      WrappedFunction( Py -> et_env.(Py[2]) .* Py[1] )
-   #                   )
-   #                ),   # r -> y -> P = e(y) * polys(y)
-   #          et_linl    # P -> W(Zi, Zj) * P 
-   #       )
-
    et_rbasis = SkipConnection(   # input is (rij, zi, zj)
             Chain(y = et_trans,  # transforms yij 
                   Pe = BranchLayer(
@@ -114,14 +96,7 @@ function _agnesi_et_params(trans)
    rcut = trans.rcut 
 
    params = ET.agnesi_params(pcut, pin, rin, req, rcut)
-   @assert params.a ≈ a 
-
-   # ----- for debugging -----------
-   # r = rin + rand() * (rcut - rin)
-   # y1 = trans(r) 
-   # y2 = ET.eval_agnesi(r, params)
-   # @assert y1 ≈ y2
-   # -------------------------------
+   @assert params.a ≈ a
 
    return params
 end 

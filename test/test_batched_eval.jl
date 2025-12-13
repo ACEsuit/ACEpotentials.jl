@@ -20,6 +20,9 @@ using AtomsBase, AtomsBuilder, Unitful, AtomsCalculators
 using Random, LuxCore, Test, LinearAlgebra
 using Polynomials4ML.Testing: print_tf, println_slim
 
+# Load shared test utilities
+include("test_utils.jl")
+
 rng = Random.MersenneTwister(1234)
 Random.seed!(1234)
 
@@ -27,39 +30,13 @@ Random.seed!(1234)
 
 println("Setting up model...")
 
-elements = (:Si, :O)
-level = M.TotalDegree()
-max_level = 8
-order = 2
-maxl = 4
-
-rin0cuts = M._default_rin0cuts(elements)
-rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts)
-
-model = M.ace_model(; elements = elements, order = order,
-            Ytype = :solid, level = level, max_level = max_level,
-            maxl = maxl, pair_maxn = max_level,
-            rin0cuts = rin0cuts,
-            init_WB = :glorot_normal, init_Wpair = :glorot_normal)
-
-ps, st = Lux.setup(rng, model)
-
-# Kill pair basis for now (not yet implemented in ET backend)
-for s in model.pairbasis.splines
-   s.itp.itp.coefs[:] *= 0
-end
+# Use shared test model setup
+model, ps, st, _ = setup_test_model(; rng=rng)
 
 ##
 
 # Build unified calculator (supports both energy/forces/virial and basis evaluation)
 calc_et = M.build_et_calculator(model, ps, st)
-
-function rand_struct(n_repeat=(2,1,1))
-   sys = AtomsBuilder.bulk(:Si) * n_repeat
-   rattle!(sys, 0.2u"Å")
-   AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
-   return sys
-end
 
 ##
 

@@ -11,7 +11,14 @@ using Unitful: ustrip, @u_str
 using Zygote
 
 # Import shared utilities from calculators_et.jl
-# _build_graph and _prepare_for_device are defined there
+# _build_graph, _prepare_for_device, _energy_from_edge_positions,
+# _reconstruct_graph, and _scatter_forces_virial are defined there
+
+# Type alias for EFV result to improve readability
+const EFVResult = NamedTuple{(:energy, :forces, :virial),
+                              Tuple{typeof(1.0u"eV"),
+                                    Vector{SVector{3, typeof(1.0u"eV/Å")}},
+                                    SMatrix{3, 3, typeof(1.0u"eV"), 9}}}
 
 # =========================================================================
 #  BatchedETGraph - Multiple structures in a single graph
@@ -143,9 +150,9 @@ function batch_graphs(systems, rcut)
     # Compute max neighbors
     max_neigs = maximum(g.maxneigs for g in graphs)
 
-    # Create the concatenated graph
+    # Create the concatenated graph (with nothing for graph_data)
     batched_graph = ET.ETGraph(all_ii, all_jj, all_first,
-                               all_node_data, all_edge_data, max_neigs)
+                               all_node_data, all_edge_data, nothing, max_neigs)
 
     return BatchedETGraph(batched_graph, n_sys,
                           atom_offsets, edge_offsets,
@@ -339,17 +346,10 @@ function evaluate_batched_efv(calc::ETCalculator, systems)
         st_work = dev(st_work)
     end
 
-    # Energy function for differentiation
+    # Energy function for differentiation (uses shared utility)
     function _efunc(𝐫_vec)
-        edge_data = [(𝐫 = r, s0 = s0, s1 = s1)
-                     for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
-        G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.maxneigs)
-
-        if dev !== identity
-            G_new = dev(G_new)
-        end
-
-        return calc.model(G_new, ps_work, st_work)[1]
+        _energy_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
+                                    calc.model, ps_work, st_work, dev)
     end
 
     # Compute total energy and gradient
@@ -366,43 +366,27 @@ function evaluate_batched_efv(calc::ETCalculator, systems)
     end
 
     # Split results per structure
-    T = Float64
     n_sys = bg.n_structures
-    results = Vector{NamedTuple{(:energy, :forces, :virial), Tuple{typeof(1.0u"eV"), Vector{SVector{3, typeof(1.0u"eV/Å")}}, SMatrix{3, 3, typeof(1.0u"eV"), 9}}}}(undef, n_sys)
+    results = Vector{EFVResult}(undef, n_sys)
 
     for s in 1:n_sys
         sys = systems[s]
         n_atoms = bg.n_atoms_per_structure[s]
-        atom_range = get_structure_atoms(bg, s)
         edge_range = get_structure_edges(bg, s)
         atom_offset = bg.atom_offsets[s]
 
-        # Per-structure forces
-        F = zeros(SVector{3, T}, n_atoms)
+        # Extract edges for this structure
+        ii_s = G.ii[edge_range]
+        jj_s = G.jj[edge_range]
+        ∇𝐫_s = ∇𝐫[edge_range]
+        edge_positions_s = [G.edge_data[k].𝐫 for k in edge_range]
 
-        # Per-structure virial
-        virial = @SMatrix zeros(T, 3, 3)
-
-        for k in edge_range
-            # Map global edge to local atom indices
-            i_global = G.ii[k]
-            j_global = G.jj[k]
-            i_local = i_global - atom_offset
-            j_local = j_global - atom_offset
-
-            ∂E_∂𝐫 = SVector{3, T}(∇𝐫[k])
-
-            # Force scatter
-            F[i_local] += ∂E_∂𝐫
-            F[j_local] -= ∂E_∂𝐫
-
-            # Virial contribution
-            𝐫ij = SVector{3, T}(G.edge_data[k].𝐫)
-            virial -= ∂E_∂𝐫 * 𝐫ij'
-        end
+        # Use shared utility for force/virial scatter
+        F, virial = _scatter_forces_virial(ii_s, jj_s, ∇𝐫_s, edge_positions_s, n_atoms;
+                                           offset=atom_offset)
 
         # Compute per-structure energy by re-evaluating on just this structure
-        # (More accurate than trying to partition the total energy)
+        # TODO: Could optimize by extracting per-atom energies from forward pass
         E_s = evaluate_batched_energies(calc, [sys])[1]
 
         results[s] = (
