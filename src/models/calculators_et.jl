@@ -144,7 +144,7 @@ function _energy_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
     # Reconstruct edge_data from position vectors
     edge_data = [(𝐫 = r, s0 = s0, s1 = s1)
                  for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
-    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.maxneigs)
+    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.graph_data, G.maxneigs)
 
     if dev !== identity
         G_new = dev(G_new)
@@ -305,7 +305,7 @@ function _basis_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
     # Reconstruct edge_data from position vectors
     edge_data = [(𝐫 = r, s0 = s0, s1 = s1)
                  for (r, s0, s1) in zip(𝐫_vec, s0_edges, s1_edges)]
-    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.maxneigs)
+    G_new = ET.ETGraph(G.ii, G.jj, G.first, node_data, edge_data, G.graph_data, G.maxneigs)
 
     if dev !== identity
         G_new = dev(G_new)
