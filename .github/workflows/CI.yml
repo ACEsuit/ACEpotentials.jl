@@ -49,6 +49,13 @@ jobs:
           Pkg.pkg"registry add https://github.com/ACEsuit/ACEregistry"
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/cache@v2
+      # Use EquivariantTensors branch with Zygote rrule fixes (PR #75)
+      # TODO: Remove this once ET PR #75 is merged and released
+      - name: Dev EquivariantTensors branch
+        run: |
+          using Pkg
+          Pkg.develop(url="https://github.com/jameskermode/EquivariantTensors.jl", rev="jk/zygote-rrules")
+        shell: bash -c "julia --project=. --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
 
