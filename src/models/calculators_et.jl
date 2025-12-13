@@ -294,11 +294,16 @@ function evaluate_basis(calc::ETCalculator, sys)
     return B
 end
 
+# Helper functions for ForwardDiff (matching ace.jl pattern)
+# Convert Vector{SVector{3,T}} to flat Vector{T} and back
+__vec_edges(𝐫s::AbstractVector{<:SVector{3}}) = reinterpret(eltype(eltype(𝐫s)), 𝐫s)
+__svec_edges(v::AbstractVector{T}) where {T} = reinterpret(SVector{3, T}, v)
+
 """
     _basis_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges, model, ps, st, dev)
 
 Compute per-atom basis as a function of edge position vectors.
-This is the differentiable function for Zygote jacobian.
+This is the differentiable function for ForwardDiff jacobian.
 """
 function _basis_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
                                      model, ps, st, dev)
@@ -322,13 +327,14 @@ Evaluate the ACE basis and its gradients with respect to atomic positions.
 
 Returns (B, dB) where:
 - B: Matrix of shape (n_atoms, length_basis) with basis values
-- dB: Array of shape (n_atoms, length_basis, n_atoms, 3) with gradients
+- dB: Array of shape (n_atoms, length_basis, n_atoms) of SVector{3} gradients
 
-The gradient dB[i, b, j, α] = ∂B[i,b]/∂X[j,α] where X[j,α] is the α-th
-coordinate of atom j.
+The gradient dB[i, b, j] = ∂B[i,b]/∂X[j] is a 3-vector giving the derivative
+with respect to the 3D position of atom j.
 
-Note: Uses Zygote (backward-mode AD) for gradient computation since ForwardDiff
-requires the entire Lux model pipeline to be AD-compatible.
+Uses ForwardDiff.jacobian for efficient gradient computation. This is optimal
+for the "few inputs → many outputs" structure of this problem (edge positions
+→ basis values).
 
 # Arguments
 - `calc`: ETCalculator instance
@@ -345,63 +351,40 @@ function evaluate_basis_ed(calc::ETCalculator, sys)
     s0_edges = [ed.s0 for ed in G.edge_data]
     s1_edges = [ed.s1 for ed in G.edge_data]
 
-    # Prepare parameters and states
-    dev = calc.device
+    # Prepare parameters and states (CPU only for ForwardDiff)
     ps_work = calc.basis_ps
     st_work = calc.basis_st
     node_data = G.node_data
 
-    if calc.precision == :Float32
-        𝐫_edges = ET.float32.(𝐫_edges)
-        ps_work = ET.float32(ps_work)
-        st_work = ET.float32(st_work)
-        node_data = ET.float32.(node_data)
+    # ForwardDiff requires CPU - warn if GPU was requested
+    if calc.device !== identity
+        @warn "evaluate_basis_ed uses ForwardDiff (CPU only). GPU device ignored." maxlog=1
     end
 
-    if dev !== identity
-        ps_work = dev(ps_work)
-        st_work = dev(st_work)
+    # Basis function taking flat vector of edge positions for ForwardDiff
+    function _bfunc_flat(𝐫_flat)
+        𝐫_vec = __svec_edges(𝐫_flat)
+        Bi_all = _basis_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
+                                            calc.basis_model, ps_work, st_work, identity)
+        return vec(Bi_all)  # Flatten to 1D for jacobian
     end
 
-    # Basis function for differentiation
-    function _bfunc(𝐫_vec)
-        _basis_from_edge_positions(𝐫_vec, G, node_data, s0_edges, s1_edges,
-                                   calc.basis_model, ps_work, st_work, dev)
-    end
+    # Flatten edge positions for ForwardDiff
+    𝐫_flat = collect(__vec_edges(𝐫_edges))
 
-    # Evaluate basis
-    Bi_all = _bfunc(𝐫_edges)
+    # Evaluate basis and Jacobian using ForwardDiff
+    Bi_all_flat = _bfunc_flat(𝐫_flat)
+    dB_flat = ForwardDiff.jacobian(_bfunc_flat, 𝐫_flat)
 
-    # Compute Jacobian via Zygote pullback
+    # Reshape results
     len_Bi = calc.len_Bi
     n_atoms = length(sys)
     n_edges = length(𝐫_edges)
-
-    # Use Zygote pullback to get gradients
-    _, pullback = Zygote.pullback(_bfunc, 𝐫_edges)
-
-    # Initialize gradient storage
-    # dB_edges[i, b, k] = ∂B[i,b]/∂𝐫_edges[k] (3-vector)
     T = Float64
-    dB_edges = zeros(SVector{3, T}, n_atoms, len_Bi, n_edges)
 
-    # Compute gradients for each output component
-    for i in 1:n_atoms
-        for b in 1:len_Bi
-            # Create one-hot tangent vector matching Bi_all shape (n_atoms, len_Bi)
-            tangent = zeros(T, n_atoms, len_Bi)
-            tangent[i, b] = one(T)
-
-            # Pullback to get gradient w.r.t. edges
-            ∇𝐫 = pullback(tangent)[1]
-
-            if ∇𝐫 !== nothing
-                for k in 1:n_edges
-                    dB_edges[i, b, k] = SVector{3, T}(∇𝐫[k])
-                end
-            end
-        end
-    end
+    # dB_flat: (n_atoms * len_Bi) × (3 * n_edges)
+    # Reshape to (n_atoms, len_Bi, 3, n_edges) then permute to (n_atoms, len_Bi, n_edges, 3)
+    dB_reshaped = permutedims(reshape(dB_flat, n_atoms, len_Bi, 3, n_edges), (1, 2, 4, 3))
 
     # Convert edge gradients to atomic position gradients
     dB = zeros(SVector{3, T}, n_atoms, length_basis(calc), n_atoms)
@@ -413,7 +396,7 @@ function evaluate_basis_ed(calc::ETCalculator, sys)
             inds = get_basis_inds(calc, Zs)
 
             for (local_b, global_b) in enumerate(inds)
-                ∂B_∂𝐫 = dB_edges[atom_idx, local_b, k]
+                ∂B_∂𝐫 = SVector{3, T}(dB_reshaped[atom_idx, local_b, k, :])
                 # ∂B/∂X_i = -∂B/∂𝐫_ij (since ∂𝐫_ij/∂X_i = -I)
                 # ∂B/∂X_j = +∂B/∂𝐫_ij (since ∂𝐫_ij/∂X_j = +I)
                 dB[atom_idx, global_b, i] -= ∂B_∂𝐫
@@ -423,10 +406,7 @@ function evaluate_basis_ed(calc::ETCalculator, sys)
     end
 
     # Assemble B matrix
-    if calc.device !== identity
-        Bi_all = collect(Bi_all)
-    end
-
+    Bi_all = reshape(Bi_all_flat, n_atoms, len_Bi)
     B = zeros(T, n_atoms, length_basis(calc))
     for i in 1:n_atoms
         Z = AtomsBase.atomic_symbol(sys, i)

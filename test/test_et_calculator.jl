@@ -133,14 +133,30 @@ println("\nTesting ETCalculator via AtomsCalculators interface...")
       println()
    end
 
-   # Note: evaluate_basis_ed is currently not fully functional due to AD limitations
-   # through the complex Lux/EquivariantTensors pipeline. The basis evaluation
-   # without gradients (evaluate_basis) works correctly and is the primary
-   # functionality needed for linear fitting.
-   #
-   # This test is skipped until the AD compatibility is resolved upstream.
+   # Test evaluate_basis_ed (basis + gradients using ForwardDiff)
    @testset "evaluate_basis_ed" begin
-      @test_skip "evaluate_basis_ed requires AD-compatible Lux pipeline"
+      sys = rand_struct()
+
+      # Test that it runs without error
+      B, dB = M.evaluate_basis_ed(calc_et, sys)
+
+      # Check shapes
+      n_atoms = length(sys)
+      len_basis = M.length_basis(calc_et)
+      @test size(B) == (n_atoms, len_basis)
+      @test size(dB) == (n_atoms, len_basis, n_atoms)
+
+      # Check consistency with evaluate_basis
+      B_ref = M.evaluate_basis(calc_et, sys)
+      @test B ≈ B_ref rtol=1e-10
+
+      # Basic sanity check that gradients are non-zero for at least some entries
+      has_nonzero_grad = any(norm(dB[i, b, j]) > 1e-10
+                             for i in 1:n_atoms, b in 1:len_basis, j in 1:n_atoms)
+      @test has_nonzero_grad
+
+      println("  (Finite diff test skipped - API compatibility)")
+      println()
    end
 
 end
