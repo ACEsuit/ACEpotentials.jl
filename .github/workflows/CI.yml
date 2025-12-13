@@ -54,6 +54,8 @@ jobs:
       - name: Add EquivariantTensors branch
         run: |
           using Pkg
+          # Ensure General registry is available for dependencies
+          Pkg.Registry.add("General")
           Pkg.add(url="https://github.com/jameskermode/EquivariantTensors.jl", rev="jk/zygote-rrules")
         shell: bash -c "julia --project=. --color=yes {0}"
       - uses: julia-actions/julia-buildpkg@v1
