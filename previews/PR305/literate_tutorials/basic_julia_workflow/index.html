@@ -4,9 +4,7 @@ using ExtXYZ
 data_file = &quot;path/to/TiAl_tutorial.xyz&quot;
 data = ExtXYZ.load(data_file)</code></pre><p>For convenience we provide this dataset as a <a href="https://docs.julialang.org/en/v1/stdlib/Artifacts/">Julia artifact</a> and make it accessible via <code>ACEpotentials.example_dataset</code>. We keep only a small subset of the structures for training and testing to keep the regression problem small.</p><pre><code class="language-julia hljs">data, _, meta = ACEpotentials.example_dataset(&quot;TiAl_tutorial&quot;)
 train_data = data[1:5:end];
-test_data = data[2:10:end];</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: TiAl_tutorial
-<span class="sgr31"><span class="sgr1">     Failure</span></span> artifact: TiAl_tutorial
-<span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: TiAl_tutorial</code></pre><p>The next step is to generate a model. Here we generate a linear ACE model using the <code>ACE1compat</code> interface, which generates models that are essentially equivalent to those provided by the discontinued <code>ACE1.jl</code> package.</p><ul><li><code>order = 3</code> : We take 3-correlation, i.e. a 4-body potential,</li><li><code>totaldegree = 6</code> : a very low polynomial degree just for testing</li><li><code>rcut = 5.5</code> : this is a typical cutoff radius for metals</li></ul><p>These three are the most important approximation parameters to explore when trying to improve the fit-accuracy. There are many other parameters to explore, which are documented in <code>?acemodel</code>. Even further model refinements are possible by studying the internals of <code>ACE1.jl</code> and <code>ACE1x.jl</code>. We also specify a reference potential that will be added to the learned 2-body and many-body potential components. Here we use a one-body potential i.e. a reference atom energy for each individual species. Usage of a one-body reference potential generally results in very slightly reduced fit accuracy but significantly improved 2-body potentials with a realistic dimer shape and improved robustness in predictions.</p><pre><code class="language-julia hljs">hyperparams = (elements = [:Ti, :Al],
+test_data = data[2:10:end];</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: TiAl_tutorial</code></pre><p>The next step is to generate a model. Here we generate a linear ACE model using the <code>ACE1compat</code> interface, which generates models that are essentially equivalent to those provided by the discontinued <code>ACE1.jl</code> package.</p><ul><li><code>order = 3</code> : We take 3-correlation, i.e. a 4-body potential,</li><li><code>totaldegree = 6</code> : a very low polynomial degree just for testing</li><li><code>rcut = 5.5</code> : this is a typical cutoff radius for metals</li></ul><p>These three are the most important approximation parameters to explore when trying to improve the fit-accuracy. There are many other parameters to explore, which are documented in <code>?acemodel</code>. Even further model refinements are possible by studying the internals of <code>ACE1.jl</code> and <code>ACE1x.jl</code>. We also specify a reference potential that will be added to the learned 2-body and many-body potential components. Here we use a one-body potential i.e. a reference atom energy for each individual species. Usage of a one-body reference potential generally results in very slightly reduced fit accuracy but significantly improved 2-body potentials with a realistic dimer shape and improved robustness in predictions.</p><pre><code class="language-julia hljs">hyperparams = (elements = [:Ti, :Al],
 					order = 3,
 					totaldegree = 6,
 					rcut = 5.5,
@@ -48,64 +46,66 @@ model = ace1_model(; hyperparams...)
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling linear problem.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Creating feature matrix with size (1770, 270).
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Beginning assembly with processor count:  1.
-<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:03:55</span><span class="sgr32">Progress:   5%|█▉                                       |  ETA: 0:02:51</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:01:41</span><span class="sgr32">Progress:  11%|████▍                                    |  ETA: 0:01:30</span><span class="sgr32">Progress:  12%|█████                                    |  ETA: 0:01:21</span><span class="sgr32">Progress:  14%|█████▋                                   |  ETA: 0:01:15</span><span class="sgr32">Progress:  15%|██████▎                                  |  ETA: 0:01:09</span><span class="sgr32">Progress:  17%|██████▉                                  |  ETA: 0:01:04</span><span class="sgr32">Progress:  18%|███████▌                                 |  ETA: 0:01:00</span><span class="sgr32">Progress:  20%|████████▏                                |  ETA: 0:00:57</span><span class="sgr32">Progress:  21%|████████▊                                |  ETA: 0:00:54</span><span class="sgr32">Progress:  23%|█████████▍                               |  ETA: 0:00:51</span><span class="sgr32">Progress:  24%|██████████                               |  ETA: 0:00:49</span><span class="sgr32">Progress:  29%|███████████▊                             |  ETA: 0:00:43</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:41</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:39</span><span class="sgr32">Progress:  33%|█████████████▋                           |  ETA: 0:00:38</span><span class="sgr32">Progress:  38%|███████████████▌                         |  ETA: 0:00:34</span><span class="sgr32">Progress:  39%|████████████████▏                        |  ETA: 0:00:33</span><span class="sgr32">Progress:  41%|████████████████▊                        |  ETA: 0:00:31</span><span class="sgr32">Progress:  42%|█████████████████▍                       |  ETA: 0:00:30</span><span class="sgr32">Progress:  44%|██████████████████                       |  ETA: 0:00:29</span><span class="sgr32">Progress:  45%|██████████████████▋                      |  ETA: 0:00:28</span><span class="sgr32">Progress:  47%|███████████████████▎                     |  ETA: 0:00:27</span><span class="sgr32">Progress:  48%|███████████████████▉                     |  ETA: 0:00:26</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:25</span><span class="sgr32">Progress:  52%|█████████████████████▏                   |  ETA: 0:00:24</span><span class="sgr32">Progress:  53%|█████████████████████▊                   |  ETA: 0:00:23</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:22</span><span class="sgr32">Progress:  56%|███████████████████████                  |  ETA: 0:00:21</span><span class="sgr32">Progress:  58%|███████████████████████▋                 |  ETA: 0:00:20</span><span class="sgr32">Progress:  59%|████████████████████████▎                |  ETA: 0:00:20</span><span class="sgr32">Progress:  61%|████████████████████████▉                |  ETA: 0:00:19</span><span class="sgr32">Progress:  62%|█████████████████████████▌               |  ETA: 0:00:18</span><span class="sgr32">Progress:  64%|██████████████████████████▏              |  ETA: 0:00:17</span><span class="sgr32">Progress:  79%|████████████████████████████████▎        |  ETA: 0:00:10</span><span class="sgr32">Progress:  80%|████████████████████████████████▉        |  ETA: 0:00:09</span><span class="sgr32">Progress:  95%|███████████████████████████████████████▏ |  ETA: 0:00:02</span><span class="sgr32">Progress:  97%|███████████████████████████████████████▊ |  ETA: 0:00:01</span><span class="sgr32">Progress:  98%|████████████████████████████████████████▍|  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:43</span>
+<span class="sgr32">Progress:   3%|█▎                                       |  ETA: 0:04:19</span><span class="sgr32">Progress:   5%|█▉                                       |  ETA: 0:03:08</span><span class="sgr32">Progress:   9%|███▊                                     |  ETA: 0:01:51</span><span class="sgr32">Progress:  24%|██████████                               |  ETA: 0:00:54</span><span class="sgr32">Progress:  26%|██████████▌                              |  ETA: 0:00:51</span><span class="sgr32">Progress:  27%|███████████▏                             |  ETA: 0:00:49</span><span class="sgr32">Progress:  29%|███████████▊                             |  ETA: 0:00:47</span><span class="sgr32">Progress:  30%|████████████▍                            |  ETA: 0:00:45</span><span class="sgr32">Progress:  32%|█████████████                            |  ETA: 0:00:43</span><span class="sgr32">Progress:  33%|█████████████▋                           |  ETA: 0:00:42</span><span class="sgr32">Progress:  35%|██████████████▎                          |  ETA: 0:00:40</span><span class="sgr32">Progress:  36%|██████████████▉                          |  ETA: 0:00:39</span><span class="sgr32">Progress:  38%|███████████████▌                         |  ETA: 0:00:37</span><span class="sgr32">Progress:  39%|████████████████▏                        |  ETA: 0:00:36</span><span class="sgr32">Progress:  41%|████████████████▊                        |  ETA: 0:00:35</span><span class="sgr32">Progress:  42%|█████████████████▍                       |  ETA: 0:00:33</span><span class="sgr32">Progress:  44%|██████████████████                       |  ETA: 0:00:32</span><span class="sgr32">Progress:  48%|███████████████████▉                     |  ETA: 0:00:29</span><span class="sgr32">Progress:  50%|████████████████████▌                    |  ETA: 0:00:28</span><span class="sgr32">Progress:  52%|█████████████████████▏                   |  ETA: 0:00:27</span><span class="sgr32">Progress:  53%|█████████████████████▊                   |  ETA: 0:00:26</span><span class="sgr32">Progress:  55%|██████████████████████▍                  |  ETA: 0:00:25</span><span class="sgr32">Progress:  56%|███████████████████████                  |  ETA: 0:00:24</span><span class="sgr32">Progress:  58%|███████████████████████▋                 |  ETA: 0:00:23</span><span class="sgr32">Progress:  59%|████████████████████████▎                |  ETA: 0:00:22</span><span class="sgr32">Progress:  74%|██████████████████████████████▌          |  ETA: 0:00:13</span><span class="sgr32">Progress:  76%|███████████████████████████████          |  ETA: 0:00:12</span><span class="sgr32">Progress:  80%|████████████████████████████████▉        |  ETA: 0:00:10</span><span class="sgr32">Progress:  85%|██████████████████████████████████▊      |  ETA: 0:00:07</span><span class="sgr32">Progress:  97%|███████████████████████████████████████▊ |  ETA: 0:00:01</span><span class="sgr32">Progress:  98%|████████████████████████████████████████▍|  ETA: 0:00:01</span><span class="sgr32">Progress: 100%|█████████████████████████████████████████| Time: 0:00:47</span>
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>  - Assembly completed.
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>Assembling full weight vector.
 <span class="sgr33"><span class="sgr1">┌ Warning: </span></span>x_tol is deprecated. Use x_abstol or x_reltol instead. The provided value (1.0e-8) will be used as x_abstol.
 <span class="sgr33"><span class="sgr1">└ </span></span><span class="sgr90">@ Optim ~/.julia/packages/Optim/gmigl/src/types.jl:110</span>
 Iter     Function value   Gradient norm
      0     4.671494e+03     2.457943e+03
- * time: 0.02623891830444336
+ * time: 0.023585081100463867
      1     3.952872e+03     4.057872e+02
- * time: 0.4274158477783203
+ * time: 0.41431713104248047
      2     3.371262e+03     4.421460e+02
- * time: 0.4375948905944824
+ * time: 0.4306361675262451
      3     3.210146e+03     1.642349e+02
- * time: 0.44466686248779297
+ * time: 0.4421842098236084
      4     3.174813e+03     1.968488e+02
- * time: 0.44884204864501953
+ * time: 0.4493441581726074
      5     2.913051e+03     8.640587e+02
- * time: 0.45297884941101074
+ * time: 0.4563171863555908
      6     2.675831e+03     7.730363e+02
- * time: 0.456981897354126
+ * time: 0.46361303329467773
      7     2.208479e+03     1.033571e+02
- * time: 0.4637908935546875
+ * time: 0.47595810890197754
      8     2.095581e+03     1.164921e+03
- * time: 0.46997785568237305
+ * time: 0.48554301261901855
      9     2.030514e+03     1.788361e+03
- * time: 0.47810792922973633
+ * time: 0.5000510215759277
     10     1.860275e+03     3.236796e+03
- * time: 0.48555803298950195
+ * time: 0.5119791030883789
     11     9.464181e+02     2.183137e+03
- * time: 0.4908750057220459
+ * time: 0.5214512348175049
     12     8.279882e+02     1.258796e+03
- * time: 0.49583888053894043
-    13     8.100141e+02     7.198045e+02
- * time: 0.4985220432281494
-    14     8.036075e+02     6.032573e+01
- * time: 0.5012309551239014
-    15     8.035512e+02     1.365996e+01
- * time: 0.5055258274078369
-    16     8.031186e+02     1.007694e+01
- * time: 0.5130560398101807
-    17     8.031153e+02     8.502608e-01
- * time: 0.5157749652862549
-    18     8.031153e+02     2.575506e-03
- * time: 0.5184168815612793
-    19     8.031153e+02     4.803294e-05
- * time: 0.5210838317871094
-    20     8.031153e+02     3.227456e-06
- * time: 0.5237119197845459
-    21     8.031153e+02     1.359103e-05
- * time: 0.5270848274230957
-    22     8.031153e+02     6.940736e-06
- * time: 0.5334959030151367
-    23     8.031153e+02     3.724300e-05
- * time: 0.5373408794403076
-    24     8.031153e+02     7.200957e-06
- * time: 0.5399999618530273
-    25     8.031153e+02     1.037340e-05
- * time: 0.542672872543335
+ * time: 0.5286221504211426
+    13     8.100141e+02     7.198047e+02
+ * time: 0.5334300994873047
+    14     8.036075e+02     6.032579e+01
+ * time: 0.5381851196289062
+    15     8.035512e+02     1.366001e+01
+ * time: 0.5456061363220215
+    16     8.031186e+02     1.007562e+01
+ * time: 0.5578172206878662
+    17     8.031153e+02     8.502459e-01
+ * time: 0.5627870559692383
+    18     8.031153e+02     2.593510e-03
+ * time: 0.5677051544189453
+    19     8.031153e+02     1.572338e-06
+ * time: 0.5750651359558105
+    20     8.031153e+02     1.553656e-05
+ * time: 0.5821940898895264
+    21     8.031153e+02     1.677257e-05
+ * time: 0.5871260166168213
+    22     8.031153e+02     6.212407e-06
+ * time: 0.5919070243835449
+    23     8.031153e+02     1.980083e-05
+ * time: 0.5966951847076416
+    24     8.031153e+02     1.914481e-05
+ * time: 0.6038920879364014
+    25     8.031153e+02     3.118384e-06
+ * time: 0.6086711883544922
+    26     8.031153e+02     8.672485e-07
+ * time: 0.6208112239837646
  * Status: success
 
  * Candidate solution
@@ -115,17 +115,17 @@ Iter     Function value   Gradient norm
     Algorithm:     L-BFGS
 
  * Convergence measures
-    |x - x&#39;|               = 3.94e-09 ≤ 1.0e-08
-    |x - x&#39;|/|x&#39;|          = 2.99e-11 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|         = 3.14e-06 ≰ 0.0e+00
-    |f(x) - f(x&#39;)|/|f(x&#39;)| = 3.91e-09 ≰ 0.0e+00
-    |g(x)|                 = 1.04e-05 ≰ 0.0e+00
+    |x - x&#39;|               = 3.36e-09 ≤ 1.0e-08
+    |x - x&#39;|/|x&#39;|          = 2.55e-11 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|         = 8.18e-07 ≰ 0.0e+00
+    |f(x) - f(x&#39;)|/|f(x&#39;)| = 1.02e-09 ≰ 0.0e+00
+    |g(x)|                 = 8.67e-07 ≰ 0.0e+00
 
  * Work counters
     Seconds run:   1  (vs limit Inf)
-    Iterations:    25
-    f(x) calls:    105
-    ∇f(x) calls:   105</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
+    Iterations:    26
+    f(x) calls:    109
+    ∇f(x) calls:   109</code></pre><p>We can display an error table as follows:</p><pre><code class="language-julia hljs">@info(&quot;Training Error Table&quot;)
 err_train = ACEpotentials.compute_errors(train_data, model; weights=weights);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Training Error Table
 <span class="sgr36"><span class="sgr1">[ Info: </span></span>RMSE Table
 ┌────────────┬─────────┬──────────┬─────────┐
@@ -166,4 +166,4 @@ err_test = ACEpotentials.compute_errors(test_data, model; weights=weights);</cod
 └────────────┴─────────┴──────────┴─────────┘</code></pre><p>If we want to save the fitted potentials to disk to later use we can simply save the hyperparameters and the parameters. At the moment this must be done manually but a more complete and convenient interface for this will be provided, also adding various sanity checks.</p><pre><code class="language-julia hljs">using JSON
 open(&quot;TiAl_model.json&quot;, &quot;w&quot;) do f
 	 JSON.print(f, Dict(&quot;hyperparams&quot; =&gt; hyperparams, &quot;params&quot; =&gt; model.ps))
-end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><h3 id="Fast-Evaluator"><a class="docs-heading-anchor" href="#Fast-Evaluator">Fast Evaluator</a><a id="Fast-Evaluator-1"></a><a class="docs-heading-anchor-permalink" href="#Fast-Evaluator" title="Permalink"></a></h3><p><code>ACEpotentials.jl</code> provides an experimental &quot;fast evaluator&quot;. This tries to merge some of the operations in the full model resulting in a &quot;slimmer&quot; and usually faster evaluator. In some cases the performance gain can be multiple factors up to an order of magnitude. This is particularly important when using a parameter estimation solver that sparsifies. In that case, the performance gain can be significant.</p><p>To construct the fast evaluator, simply use</p><pre><code class="language-julia hljs">fpot = fast_evaluator(model)</code></pre><p>An optional keyword argument <code>aa_static = true</code> can be used to optimize the n-correlation layer for very small models (at most a few hundred parameters). For larger models this leads to a stack overflow.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Wednesday 10 December 2025 04:40">Wednesday 10 December 2025</span>. Using Julia version 1.12.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p>To load the model back from disk it is safest to work within the same Julia project, i.e. the same version of all packages; ideally the the Manifest should not be changed. One then generates the model again, loads the parameters from disk and then sets them in the model. Again, this will be automated in the future.</p><p>Finally, we delete the model to clean up.</p><pre><code class="language-julia hljs">rm(&quot;TiAl_model.json&quot;)</code></pre><h3 id="Fast-Evaluator"><a class="docs-heading-anchor" href="#Fast-Evaluator">Fast Evaluator</a><a id="Fast-Evaluator-1"></a><a class="docs-heading-anchor-permalink" href="#Fast-Evaluator" title="Permalink"></a></h3><p><code>ACEpotentials.jl</code> provides an experimental &quot;fast evaluator&quot;. This tries to merge some of the operations in the full model resulting in a &quot;slimmer&quot; and usually faster evaluator. In some cases the performance gain can be multiple factors up to an order of magnitude. This is particularly important when using a parameter estimation solver that sparsifies. In that case, the performance gain can be significant.</p><p>To construct the fast evaluator, simply use</p><pre><code class="language-julia hljs">fpot = fast_evaluator(model)</code></pre><p>An optional keyword argument <code>aa_static = true</code> can be used to optimize the n-correlation layer for very small models (at most a few hundred parameters). For larger models this leads to a stack overflow.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/">« Tutorials Overview</a><a class="docs-footer-nextpage" href="../smoothness_priors/">Smoothness Priors »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 19 December 2025 19:28">Friday 19 December 2025</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
