@@ -213,7 +213,7 @@ calc_model = ACEpotentials.ACEPotential(model, ps, st)
 rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
 
 function rand_struct() 
-   sys = AtomsBuilder.bulk(:Si) * (2,1,1)
+   sys = AtomsBuilder.bulk(:Si) * (2,2,1)
    rattle!(sys, 0.2u"Å") 
    AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
    return sys 
@@ -226,7 +226,8 @@ end
 
 function energy_new_2(sys, et_model)
    G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-   return et_model(G, et_ps_2, et_st_2)[1]
+   Ei, _ = et_model_2(G, et_ps_2, et_st_2)
+   return sum(Ei) 
 end
 
 ##
@@ -277,9 +278,14 @@ using Zygote
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
 ∂G1 = Zygote.gradient(G -> et_model(G, et_ps, et_st)[1], G)[1]
-∂G2 = Zygote.gradient(G -> et_model_2(G, et_ps_2, et_st_2)[1], G)[1]
+∂G2a = Zygote.gradient(G -> sum(et_model_2(G, et_ps_2, et_st_2)[1]), G)[1]
+∂G2b = ETM.site_grads(et_model_2, G, et_ps_2, et_st_2)
+
+@show all(∂G1.edge_data .≈ ∂G2a.edge_data .≈ ∂G2b.edge_data)
 
 ##
 #
 # Jacobians cannot work yet - these need manual work or more infrastructure 
 #
+
+ETM.eval_basis(et_model_2, G, et_ps_2, et_st_2)
