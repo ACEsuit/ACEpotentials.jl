@@ -12,6 +12,10 @@ include("defaults.jl")
 include("models/models.jl")
 include("ace1_compat.jl")
 
+# New ET backend based models 
+include("et_models/et_models.jl")
+
+
 # Fitting
 include("atoms_data.jl")
 include("fit_model.jl")

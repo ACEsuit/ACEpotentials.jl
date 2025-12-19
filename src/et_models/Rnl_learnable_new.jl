@@ -1,7 +1,15 @@
 
-import EquivariantTensors as ET
 using StaticArrays
 using Lux
+
+import EquivariantTensors as ET
+import Polynomials4ML as P4ML
+
+import ACEpotentials.Models: LearnableRnlrzzBasis, PolyEnvelope2sX, 
+         _i2z, GeneralizedAgnesiTransform 
+
+using LinearAlgebra: norm, dot 
+
 
 # In ET we currently store an edge xij as a NamedTuple, e.g, 
 #    xij = (𝐫ij = ..., zi = ..., zj = ...)

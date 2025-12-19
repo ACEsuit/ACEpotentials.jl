@@ -7,6 +7,7 @@ Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
 
 using ACEpotentials
 M = ACEpotentials.Models
+ETM = ACEpotentials.ETModels
 
 # build a pure Lux Rnl basis compatible with LearnableRnlrzz
 import EquivariantTensors as ET
@@ -63,7 +64,7 @@ rbasis = model.rbasis
 et_i2z = AtomsBase.ChemicalSpecies.(rbasis._i2z)
 # et_rbasis = M._convert_Rnl_learnable(rbasis; zlist = et_i2z, 
 #                                         rfun = x -> norm(x.𝐫) )
-et_rbasis = M._convert_Rnl_learnable(rbasis)
+et_rbasis = ETM._convert_Rnl_learnable(rbasis)
 
 # TODO: this is cheating, but this set can probably be generated quite 
 #       easily as part of the construction of et_rbasis. 
@@ -159,6 +160,11 @@ et_model = Lux.Chain(
   )
 et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
 
+## 
+# generate a second ET model based on the implementation in ETM 
+et_model_2 = ETM.convert2et(model)
+et_ps_2, et_st_2 = LuxCore.setup(MersenneTwister(1234), et_model_2)
+
 ##
 # fixup all the parameters to make sure they match 
 # the basis ordering appears to be identical, but it is not clear it really 
@@ -166,16 +172,25 @@ et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
 # construction ... 
 nnll = M.get_nnll_spec(model.tensor)
 et_nnll = et_mb_basis.meta["mb_spec"]
-@show nnll == et_nnll 
+et_nnll_2 = et_model_2.basis.meta["mb_spec"]
+@show nnll == et_nnll == et_nnll_2
 
 # but this is also identical ... 
-@show model.tensor.A2Bmaps[1] == et_mb_basis.A2Bmaps[1]
+@show ( model.tensor.A2Bmaps[1] 
+        == et_mb_basis.A2Bmaps[1]
+        == et_model_2.basis.A2Bmaps[1] )
 
-# radial basis parameters 
+# radial basis parameters for et_model 
 et_ps.L1.basis.embed.Rnl.post.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
 et_ps.L1.basis.embed.Rnl.post.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
 et_ps.L1.basis.embed.Rnl.post.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
 et_ps.L1.basis.embed.Rnl.post.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
+
+# radial basis parameters for et_model_2 
+et_ps_2.rembed.post.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
+et_ps_2.rembed.post.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
+et_ps_2.rembed.post.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
+et_ps_2.rembed.post.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
 
 # many-body basis parameters; because the readout layer doesn't know about 
 # species yet we take a single parameter set; this needs to be fixed asap. 
@@ -183,6 +198,10 @@ et_ps.L1.basis.embed.Rnl.post.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
 
 et_ps.Ei.W[1, :, 1] .= ps.WB[:, 1]
 et_ps.Ei.W[1, :, 2] .= ps.WB[:, 2]
+
+et_ps_2.readout.W[1, :, 1] .= ps.WB[:, 1]
+et_ps_2.readout.W[1, :, 2] .= ps.WB[:, 2]
+
 
 ##
 
@@ -205,6 +224,11 @@ function energy_new(sys, et_model)
    return et_model(G, et_ps, et_st)[1]
 end
 
+function energy_new_2(sys, et_model)
+   G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+   return et_model(G, et_ps_2, et_st_2)[1]
+end
+
 ##
 
 for ntest = 1:30 
@@ -212,7 +236,9 @@ for ntest = 1:30
    G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
    E1 = AtomsCalculators.potential_energy(sys, calc_model)
    E2 = energy_new(sys, et_model)
+   E3 = energy_new_2(sys, et_model_2)
    print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
+   print_tf( @test abs(ustrip(E1) - ustrip(E3)) < 1e-5 ) 
 end
 println() 
 
@@ -250,7 +276,8 @@ using Zygote
 
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-∂G = Zygote.gradient(G -> et_model(G, et_ps, et_st)[1], G)[1]
+∂G1 = Zygote.gradient(G -> et_model(G, et_ps, et_st)[1], G)[1]
+∂G2 = Zygote.gradient(G -> et_model_2(G, et_ps_2, et_st_2)[1], G)[1]
 
 ##
 #
