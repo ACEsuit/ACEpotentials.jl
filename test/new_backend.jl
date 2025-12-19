@@ -69,54 +69,18 @@ et_rbasis = M._convert_Rnl_learnable(rbasis)
 #       easily as part of the construction of et_rbasis. 
 et_rspec = rbasis.spec
 
-##
-# test a new implementation of the Rnl basis that is _ed differentiable 
-# which is needed for jacobians 
-
-psr, str = Lux.setup(rng, et_rbasis)
-
-transr = et_rbasis.layers.layers.y
-sellinl = et_rbasis.connection
-polys = et_rbasis.layers.layers.Pe
-
-et_rbasis3 = ET.EmbedDP(transr, P4ML.wrapped_basis(polys, rand()), sellinl)
-psr3, str3 = Lux.setup(rng, et_rbasis3)
-psr3.post.W[:] .= psr.connection.W[:]
-
-
-X = [ DP.PState( 𝐫 = 2*randn(SVector{3, Float64}), z0 = rand(et_i2z), z1 = rand(et_i2z)) 
-        for _ = 1:10 ]
-
-R1, _ = et_rbasis(X, psr, str)
-
-y = transr.(X, Ref(transr.refstate))
-P, _ = polys(y, psr3.basis, str3.basis)
-R2, _ = sellinl((P, X), psr3.post, str3.post)
-
-R3, _ = et_rbasis3(X, psr3, str3)
-
-@show R1 ≈ R2 ≈ R3 
-
-## 
-
-(R3a, ∂R3), _ = ET.evaluate_ed(et_rbasis3, X, psr3, str3)
-R3a ≈ R3
-
-
 ## 
 # build the ybasis 
 
-et_ybasis = Chain( 𝐫ij = ET.NTtransform(x -> x.𝐫), 
-                   Y = model.ybasis )
-et_yspec = P4ML.natural_indices(et_ybasis.layers.Y)
+et_ybasis = ET.EmbedDP( ET.NTtransform(x -> x.𝐫), 
+                        model.ybasis )
+et_yspec = P4ML.natural_indices(et_ybasis.basis)
 
 ##
 # combining the Rnl and Ylm basis we can build an embedding layer 
-et_embed = ET.EdgeEmbed( BranchLayer(; 
-               Rnl = et_rbasis, 
-               Ylm = et_ybasis ) )
-
-
+et_embed = BranchLayer(; 
+               Rnl = ET.EdgeEmbed( et_rbasis ), 
+               Ylm = ET.EdgeEmbed( et_ybasis ) )
 
 ## 
 # now build the linear ACE layer 
@@ -153,7 +117,7 @@ et_mb_basis = ET.sparse_equivariant_tensor(
 
 
 et_readout_2 = let zlist = et_i2z
-      __zi = x -> ET.cat2idx(zlist, x.s)
+      __zi = x -> ET.cat2idx(zlist, x.z)
       ET.SelectLinL(
                et_mb_basis.lens[1],  # input dim
                1,                    # output dim
@@ -208,10 +172,10 @@ et_nnll = et_mb_basis.meta["mb_spec"]
 @show model.tensor.A2Bmaps[1] == et_mb_basis.A2Bmaps[1]
 
 # radial basis parameters 
-et_ps.L1.basis.embed.Rnl.connection.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
-et_ps.L1.basis.embed.Rnl.connection.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
-et_ps.L1.basis.embed.Rnl.connection.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
-et_ps.L1.basis.embed.Rnl.connection.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
+et_ps.L1.basis.embed.Rnl.post.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
+et_ps.L1.basis.embed.Rnl.post.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
+et_ps.L1.basis.embed.Rnl.post.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
+et_ps.L1.basis.embed.Rnl.post.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
 
 # many-body basis parameters; because the readout layer doesn't know about 
 # species yet we take a single parameter set; this needs to be fixed asap. 
@@ -257,21 +221,40 @@ println()
 # demo GPU evaluation 
 #
 
-using Metal
-dev = Metal.mtl
+# CURRENTLY BROKEN DUE TO USE OF FLOAT64 SOMEWHERE 
+
+# using Metal
+# dev = Metal.mtl
+
+# sys = rand_struct()
+# G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+# G_32 = ET.float32(G)
+
+# # move all data to the device 
+# G_32_dev = dev(G_32)
+# ps_dev = dev(ET.float32(et_ps))
+# st_dev = dev(ET.float32(et_st))
+
+# E1 = AtomsCalculators.potential_energy(sys, calc_model)
+# E2 = energy_new(sys, et_model)
+# E3 = et_model(G_32_dev, ps_dev, st_dev)[1]
+
+# println_slim( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
+# println_slim( @test abs(ustrip(E1) - ustrip(E3)) / (abs(ustrip(E1)) + abs(ustrip(E3)) + 1e-7) < 1e-5 ) 
+
+##
+#
+# Zygote gradient 
+#
+using Zygote 
 
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-G_32 = ET.ETGraph(G.ii, G.jj, G.first, ET.float32.(G.node_data), ET.float32.(G.edge_data), G.maxneigs)
+Zygote.gradient(G -> et_model(G, et_ps, et_st)[1], G) 
 
-# move all data to the device 
-G_32_dev = dev(G_32)
-ps_dev = dev(ET.float32(et_ps))
-st_dev = dev(ET.float32(et_st))
 
-E1 = AtomsCalculators.potential_energy(sys, calc_model)
-E2 = energy_new(sys, et_model)
-E3 = et_model(G_32_dev, ps_dev, st_dev)[1]
 
-println_slim( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
-println_slim( @test abs(ustrip(E1) - ustrip(E3)) / (abs(ustrip(E1)) + abs(ustrip(E3)) + 1e-7) < 1e-5 ) 
+##
+#
+# Jacoabians cannot work yet - these need manual work or more infrastructure 
+#

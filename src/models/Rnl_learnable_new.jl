@@ -32,11 +32,10 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    selector = let zlist = tuple(zlist...)
       xij -> ET.catcat2idx(zlist, xij.z0, xij.z1)
    end
-   # function selector = xij -> __zz2ii(xij.s0, xij.s1)
 
    # construct the transform to be a Lux layer that behaves a bit 
    # like a WrappedFunction, but with additional support for 
-   # named-tuple inputs 
+   # named-tuple or DP inputs 
    #
    et_trans = _convert_agnesi(basis)
    
@@ -48,7 +47,7 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    #       end )
    #    end 
 
-   # the envelope is always a simple quartic (1 -x^2)^2
+   # the envelope is always a simple quartic y -> (1 - y^2)^2
    # otherwise make this transform fail. 
    #  ( note the transforms is normalized to map to [-1, 1]
    #    y outside [-1, 1] maps to 1 or -1. )  
@@ -64,9 +63,15 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    et_env = y -> (1 - y^2)^2
 
    # the polynomial basis just stays the same 
-   #
+   # but needs to be wrapped due to the envelope being applied 
+   # 
    et_polys = basis.polys
-    
+   Penv = P4ML.wrapped_basis( BranchLayer(
+            et_polys,   # y -> P
+            WrappedFunction( y -> et_env.(y) ),  # y -> fₑₙᵥ
+            fusion = WrappedFunction( Pe -> Pe[2] .* Pe[1] )  
+         ), rand() ) 
+
    # the linear layer transformation  
    #   P(yij) -> W[(Zi, Zj)] * P(yij) 
    # with W[a] learnable weights 
@@ -76,36 +81,7 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
                            NZ^2,                     # num (Zi,Zj) pairs
                            selector)
 
-   # et_rbasis = SkipConnection(   # input is (rij, zi, zj)
-   #          Chain(y = et_trans,  # transforms yij 
-   #                P = SkipConnection(
-   #                      et_polys, 
-   #                      WrappedFunction( Py -> et_env.(Py[2]) .* Py[1] )
-   #                   )
-   #                ),   # r -> y -> P = e(y) * polys(y)
-   #          et_linl    # P -> W(Zi, Zj) * P 
-   #       )
-
-   # et_rbasis = ET.EdgeEmbed( 
-   #    P4ML.WrappedBasis(
-   #       SkipConnection( 
-   #          ET.EmbedDP( 
-   #          et_trans, 
-            
-
-   #       )
-
-   et_rbasis = SkipConnection(   # input is (rij, zi, zj, sij)
-            Chain(y = et_trans,  # transforms yij 
-                  Pe = BranchLayer(
-                     et_polys,   # y -> P
-                     WrappedFunction( y -> et_env.(y) ),  # y -> fₑₙᵥ
-                     fusion = WrappedFunction( Pe -> Pe[2] .* Pe[1])  
-                    ) 
-                 ), # r -> y -> P = e(y) * polys(y)
-            et_linl    # P -> W(Zi, Zj) * P 
-         )
-   
+   et_rbasis = ET.EmbedDP(et_trans, Penv, et_linl)
    return et_rbasis 
 end
 
@@ -155,5 +131,5 @@ function _convert_agnesi(rbasis::LearnableRnlrzzBasis)
       end   
    end
          
-   return ET.NTtransformST(f_agnesi, st, :GeneralizedAgnesi)
+   return ET.NTtransformST(f_agnesi, st)
 end 
