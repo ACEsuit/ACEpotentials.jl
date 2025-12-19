@@ -288,4 +288,10 @@ G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
 # Jacobians cannot work yet - these need manual work or more infrastructure 
 #
 
-ETM.eval_basis(et_model_2, G, et_ps_2, et_st_2)
+sys = rand_struct()
+G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+
+𝔹1 = ETM.site_basis(et_model_2, G, et_ps_2, et_st_2)
+𝔹2, ∂𝔹2 = ETM.site_basis_jacobian(et_model_2, G, et_ps_2, et_st_2)
+
+𝔹1 ≈ 𝔹2

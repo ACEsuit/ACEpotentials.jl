@@ -56,8 +56,8 @@ end
 # ----------------------------------------------------------- 
 #    basis and jacobian evaluation 
 
-#=
-function eval_basis(l::ETACE, X::ET.ETGraph, ps, st)      
+
+function site_basis(l::ETACE, X::ET.ETGraph, ps, st)      
    # embed edges 
    Rnl, _ = l.rembed(X, ps.rembed, st.rembed)
    Ylm, _ = l.yembed(X, ps.yembed, st.yembed)
@@ -69,14 +69,9 @@ function eval_basis(l::ETACE, X::ET.ETGraph, ps, st)
 end
 
 
-function jacobian_basis(l::ETACE, X::ET.ETGraph, ps, st)      
-   # embed edges 
-   Rnl, _ = l.rembed(X, ps.rembed, st.rembed)
-   Ylm, _ = l.yembed(X, ps.yembed, st.yembed)
-
-   # many-body basis jacobian 
-   (𝔹,), ∂𝔹 = l.basis.jacobian((Rnl, Ylm), ps.basis, st.basis)
-
-   return 𝔹[1], ∂𝔹[1]
+function site_basis_jacobian(l::ETACE, X::ET.ETGraph, ps, st)    
+   (R, ∂R), _ = ET.evaluate_ed(l.rembed, X, ps.rembed, st.rembed)
+   (Y, ∂Y), _ = ET.evaluate_ed(l.yembed, X, ps.yembed, st.yembed)
+   (𝔹,), (∂𝔹,) = ET._jacobian_X(l.basis, R, Y, ∂R, ∂Y)
+   return 𝔹, ∂𝔹
 end
-=#
