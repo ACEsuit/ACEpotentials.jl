@@ -1,8 +1,7 @@
 using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
-Pkg.develop(url = joinpath(@__DIR__(), ".."))
 Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
-Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
 
 ##
 
@@ -12,6 +11,7 @@ M = ACEpotentials.Models
 # build a pure Lux Rnl basis compatible with LearnableRnlrzz
 import EquivariantTensors as ET
 import Polynomials4ML as P4ML 
+import DecoratedParticles as DP
 
 using StaticArrays, Lux
 using AtomsBase, AtomsBuilder, Unitful, AtomsCalculators
@@ -61,12 +61,47 @@ end
 
 rbasis = model.rbasis
 et_i2z = AtomsBase.ChemicalSpecies.(rbasis._i2z)
-et_rbasis = M._convert_Rnl_learnable(rbasis; zlist = et_i2z, 
-                                        rfun = x -> norm(x.𝐫) )
+# et_rbasis = M._convert_Rnl_learnable(rbasis; zlist = et_i2z, 
+#                                         rfun = x -> norm(x.𝐫) )
+et_rbasis = M._convert_Rnl_learnable(rbasis)
 
 # TODO: this is cheating, but this set can probably be generated quite 
 #       easily as part of the construction of et_rbasis. 
 et_rspec = rbasis.spec
+
+##
+# test a new implementation of the Rnl basis that is _ed differentiable 
+# which is needed for jacobians 
+
+psr, str = Lux.setup(rng, et_rbasis)
+
+transr = et_rbasis.layers.layers.y
+sellinl = et_rbasis.connection
+polys = et_rbasis.layers.layers.Pe
+
+et_rbasis3 = ET.EmbedDP(transr, P4ML.wrapped_basis(polys, rand()), sellinl)
+psr3, str3 = Lux.setup(rng, et_rbasis3)
+psr3.post.W[:] .= psr.connection.W[:]
+
+
+X = [ DP.PState( 𝐫 = 2*randn(SVector{3, Float64}), z0 = rand(et_i2z), z1 = rand(et_i2z)) 
+        for _ = 1:10 ]
+
+R1, _ = et_rbasis(X, psr, str)
+
+y = transr.(X, Ref(transr.refstate))
+P, _ = polys(y, psr3.basis, str3.basis)
+R2, _ = sellinl((P, X), psr3.post, str3.post)
+
+R3, _ = et_rbasis3(X, psr3, str3)
+
+@show R1 ≈ R2 ≈ R3 
+
+## 
+
+(R3a, ∂R3), _ = ET.evaluate_ed(et_rbasis3, X, psr3, str3)
+R3a ≈ R3
+
 
 ## 
 # build the ybasis 
@@ -75,10 +110,13 @@ et_ybasis = Chain( 𝐫ij = ET.NTtransform(x -> x.𝐫),
                    Y = model.ybasis )
 et_yspec = P4ML.natural_indices(et_ybasis.layers.Y)
 
+##
 # combining the Rnl and Ylm basis we can build an embedding layer 
 et_embed = ET.EdgeEmbed( BranchLayer(; 
                Rnl = et_rbasis, 
                Ylm = et_ybasis ) )
+
+
 
 ## 
 # now build the linear ACE layer 

@@ -30,7 +30,7 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    __zz2ii = (zi, zj) -> (__z2i(zi) - 1) * NZ + __z2i(zj)
 
    selector = let zlist = tuple(zlist...)
-      xij -> ET.catcat2idx(zlist, xij.s0, xij.s1)
+      xij -> ET.catcat2idx(zlist, xij.z0, xij.z1)
    end
    # function selector = xij -> __zz2ii(xij.s0, xij.s1)
 
@@ -86,7 +86,16 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    #          et_linl    # P -> W(Zi, Zj) * P 
    #       )
 
-   et_rbasis = SkipConnection(   # input is (rij, zi, zj)
+   # et_rbasis = ET.EdgeEmbed( 
+   #    P4ML.WrappedBasis(
+   #       SkipConnection( 
+   #          ET.EmbedDP( 
+   #          et_trans, 
+            
+
+   #       )
+
+   et_rbasis = SkipConnection(   # input is (rij, zi, zj, sij)
             Chain(y = et_trans,  # transforms yij 
                   Pe = BranchLayer(
                      et_polys,   # y -> P
@@ -141,7 +150,7 @@ function _convert_agnesi(rbasis::LearnableRnlrzzBasis)
    f_agnesi = let 
       (x, st) -> begin
          r = norm(x.𝐫)
-         idx = ET.catcat2idx_sym(st.zlist, x.s0, x.s1)
+         idx = ET.catcat2idx_sym(st.zlist, x.z0, x.z1)
          return ET.eval_agnesi(r, st.params[idx])
       end   
    end
