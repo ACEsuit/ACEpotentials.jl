@@ -250,11 +250,9 @@ using Zygote
 
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-Zygote.gradient(G -> et_model(G, et_ps, et_st)[1], G) 
-
-
+∂G = Zygote.gradient(G -> et_model(G, et_ps, et_st)[1], G)[1]
 
 ##
 #
-# Jacoabians cannot work yet - these need manual work or more infrastructure 
+# Jacobians cannot work yet - these need manual work or more infrastructure 
 #
