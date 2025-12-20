@@ -2,6 +2,7 @@ using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
 Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
 Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "DecoratedParticles"))
 
 ##
 
@@ -243,32 +244,6 @@ for ntest = 1:30
 end
 println() 
 
-## 
-#
-# demo GPU evaluation 
-#
-
-# CURRENTLY BROKEN DUE TO USE OF FLOAT64 SOMEWHERE 
-
-# using Metal
-# dev = Metal.mtl
-
-# sys = rand_struct()
-# G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-# G_32 = ET.float32(G)
-
-# # move all data to the device 
-# G_32_dev = dev(G_32)
-# ps_dev = dev(ET.float32(et_ps))
-# st_dev = dev(ET.float32(et_st))
-
-# E1 = AtomsCalculators.potential_energy(sys, calc_model)
-# E2 = energy_new(sys, et_model)
-# E3 = et_model(G_32_dev, ps_dev, st_dev)[1]
-
-# println_slim( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
-# println_slim( @test abs(ustrip(E1) - ustrip(E3)) / (abs(ustrip(E1)) + abs(ustrip(E3)) + 1e-7) < 1e-5 ) 
-
 ##
 #
 # Zygote gradient 
@@ -354,3 +329,40 @@ println(@test Ei_a ≈ Ei_b)
 ∇Ei3 = reshape(∇Ei2, size(∇Ei2)..., 1)
 ∇E_𝔹_edges = ET.rev_reshape_embedding(∇Ei3, G)[:]
 println(@test all(∇E_𝔹_edges .≈ ∂G2b.edge_data))
+
+
+## 
+#
+# demo GPU evaluation 
+#
+
+@info("Checking GPU evaluation with Metal.jl")
+
+# TODO: replace Metal with generic GPU test 
+using Metal
+dev = Metal.mtl
+
+sys = rand_struct()
+G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+G_32 = ET.float32(G)
+
+# move all data to the device 
+G_32_dev = dev(G_32)
+ps_dev = dev(ET.float32(et_ps))
+st_dev = dev(ET.float32(et_st))
+ps_dev_2 = dev(ET.float32(et_ps_2))
+st_dev_2 = dev(ET.float32(et_st_2))
+
+E1 = ustrip(AtomsCalculators.potential_energy(sys, calc_model))
+E2 = energy_new(sys, et_model)
+E3 = et_model(G_32_dev, ps_dev, st_dev)[1]
+E4 = sum(et_model_2(G_32_dev, ps_dev_2, st_dev_2)[1])
+
+println_slim( @test abs(E1 - E2) < 1e-5 ) 
+println_slim( @test abs(E1 - E3) / (abs(E1) + abs(E3) + 1e-7) < 1e-5 ) 
+println_slim( @test abs(E1 - E4) / (abs(E1) + abs(E4) + 1e-7) < 1e-5 ) 
+
+## 
+# gradients on GPU 
+
+ETM.site_grads(et_model_2, G_32_dev, ps_dev_2, st_dev_2)

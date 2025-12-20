@@ -27,7 +27,7 @@ function convert2et(model)
    et_rspec = rbasis.spec
    # convert the radial basis into an edge embedding layer which has some 
    # additional logic for handling the ETGraph input correctly 
-   rembed = ET.EdgeEmbed( et_rbasis; name = "Rnl" )
+   rembed = ET.EdgeEmbed( et_rbasis)
 
    # ---------------------------- YEMBED 
    # convert the angular basis
@@ -35,7 +35,7 @@ function convert2et(model)
    et_ybasis = ET.EmbedDP( ET.NTtransform(x -> x.𝐫), 
                            ybasis )
    et_yspec = P4ML.natural_indices(et_ybasis.basis)
-   yembed = ET.EdgeEmbed( et_ybasis; name = "Ylm" )
+   yembed = ET.EdgeEmbed( et_ybasis)
 
    # ---------------------------- MANY-BODY BASIS
    # Convert AA_spec from (n,l,m) format to (n,l) format for mb_spec
