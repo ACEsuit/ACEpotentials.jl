@@ -1,7 +1,7 @@
 using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
 using TestEnv; TestEnv.activate();
 Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
-# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
+Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
 
 ##
 
@@ -273,7 +273,7 @@ println()
 #
 # Zygote gradient 
 #
-using Zygote 
+using Zygote, ForwardDiff
 
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
@@ -281,17 +281,76 @@ G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
 ∂G2a = Zygote.gradient(G -> sum(et_model_2(G, et_ps_2, et_st_2)[1]), G)[1]
 ∂G2b = ETM.site_grads(et_model_2, G, et_ps_2, et_st_2)
 
-@show all(∂G1.edge_data .≈ ∂G2a.edge_data .≈ ∂G2b.edge_data)
+@info("confirm consistency of three gradients")
+println(@test all(∂G1.edge_data .≈ ∂G2a.edge_data .≈ ∂G2b.edge_data))
+
+##
+# test gradient against ForwardDiff 
+
+function grad_fd(G, model, ps, st)
+   function _replace_edges(X, Rmat)
+      Rsvec = [ SVector{3}(Rmat[:, i]) for i in 1:size(Rmat, 2) ]
+      new_edgedata = [ DP.PState(𝐫 = 𝐫, z0 = x.z0, z1 = x.z1, 𝐒 = x.𝐒) 
+                      for (𝐫, x) in zip(Rsvec, G.edge_data) ]
+      return ET.ETGraph( X.ii, X.jj, X.first, 
+                  X.node_data, new_edgedata, X.graph_data, 
+                  X.maxneigs )
+   end 
+
+   function _energy(Rmat)
+      G_new = _replace_edges(G, Rmat)
+      return sum(model(G_new, ps, st)[1])
+   end
+      
+   Rsvec = [ x.𝐫 for x in G.edge_data ]
+   Rmat = reinterpret(reshape, eltype(Rsvec[1]), Rsvec)
+   ∇E_fd = ForwardDiff.gradient(_energy, Rmat)
+   ∇E_svec = [ SVector{3}(∇E_fd[:, i]) for i in 1:size(∇E_fd, 2) ]
+   ∇E_edges = [ DP.VState(; 𝐫 = 𝐫) for 𝐫 in ∇E_svec ]
+   return ET.ETGraph( G.ii, G.jj, G.first, 
+               G.node_data, ∇E_edges, G.graph_data, 
+               G.maxneigs )
+end 
+
+@info("confirm consistency of gradients with ForwardDiff")
+
+∇E_fd = grad_fd(G, et_model_2, et_ps_2, et_st_2)
+println(@test all(∇E_fd.edge_data .≈ ∂G2b.edge_data))
 
 ##
 #
 # Jacobians cannot work yet - these need manual work or more infrastructure 
 #
 
-sys = rand_struct()
+# sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+nnodes = length(G.node_data)
+iZ = et_model_2.readout.selector.(G.node_data)
+WW = et_ps_2.readout.W
 
 𝔹1 = ETM.site_basis(et_model_2, G, et_ps_2, et_st_2)
 𝔹2, ∂𝔹2 = ETM.site_basis_jacobian(et_model_2, G, et_ps_2, et_st_2)
 
-𝔹1 ≈ 𝔹2
+et_model_2.readout.selector.(G.node_data)  # to fix a bug
+
+##
+
+@info("confirm correctness of site basis")
+
+println_slim(@test 𝔹1 ≈ 𝔹2)
+Ei_a = [ dot(𝔹2[i, :], WW[1, :, iZ[i]])    for (i, iz) in enumerate(iZ) ]
+Ei_b = et_model_2(G, et_ps_2, et_st_2)[1][:]
+println(@test Ei_a ≈ Ei_b)
+
+##
+
+@info("Confirm correctness of Jacobian against gradient")
+# compute the gradient from the jacobian by hand 
+#    size(𝔹2) = (num_nodes, basis_len)
+#    size(∂𝔹2) = (num_edges, num_nodes, basislen)
+
+∇Ei2 = reduce( hcat, ∂𝔹2[:, i, :] * WW[1, :, iZ[i]] 
+                    for (i, iz) in enumerate(iZ) )
+∇Ei3 = reshape(∇Ei2, size(∇Ei2)..., 1)
+∇E_𝔹_edges = ET.rev_reshape_embedding(∇Ei3, G)[:]
+println(@test all(∇E_𝔹_edges .≈ ∂G2b.edge_data))

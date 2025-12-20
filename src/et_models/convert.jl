@@ -135,7 +135,7 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
             et_polys,   # y -> P
             WrappedFunction( y -> et_env.(y) ),  # y -> fₑₙᵥ
             fusion = WrappedFunction( Pe -> Pe[2] .* Pe[1] )  
-         ), rand() ) 
+         ) ) 
 
    # the linear layer transformation  
    #   P(yij) -> W[(Zi, Zj)] * P(yij) 
