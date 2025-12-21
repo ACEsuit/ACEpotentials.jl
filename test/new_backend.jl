@@ -371,8 +371,12 @@ println_slim( @test abs(E1 - E4) / (abs(E1) + abs(E4) + 1e-7) < 1e-5 )
 # currently failing because somehow the transform is still 
 # accessing some Float64 values somewhere .... 
 
-ETM.site_grads(et_model_2, G_32_dev, ps_dev_2, st_dev_2)
-
+@info("Check Evaluation of gradient on GPU")
+g1 = ETM.site_grads(et_model_2, G_32, ps_32_2, st_32_2)
+g2_dev = ETM.site_grads(et_model_2, G_32_dev, ps_dev_2, st_dev_2)
+∇1 = g1.edge_data
+∇2 = Array(g2_dev.edge_data)
+println_slim( @test all(∇1 .≈ ∇2) )
 
 ##
 # leftover debugging snippets 

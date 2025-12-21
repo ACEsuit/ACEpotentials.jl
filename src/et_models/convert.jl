@@ -173,11 +173,13 @@ function _agnesi_et_params(trans)
    # @assert y1 ≈ y2
    # -------------------------------
 
+   # ----- for debugging -----------
    # DEBUG: convert to Float32, to see if that fixes the 
    #        site_grads on GPU? 
    # @show params 
    # params_32 = ET.float32(params) 
    # @show params_32 
+   # -------------------------------
 
    return params
 end 
