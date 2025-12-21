@@ -74,7 +74,7 @@ et_rspec = rbasis.spec
 ## 
 # build the ybasis 
 
-et_ybasis = ET.EmbedDP( ET.NTtransform(x -> x.𝐫), 
+et_ybasis = ET.EmbedDP( ET.NTtransformST( (x, st) -> x.𝐫, NamedTuple()), 
                         model.ybasis )
 et_yspec = P4ML.natural_indices(et_ybasis.basis)
 
@@ -239,8 +239,8 @@ for ntest = 1:30
    E1 = AtomsCalculators.potential_energy(sys, calc_model)
    E2 = energy_new(sys, et_model)
    E3 = energy_new_2(sys, et_model_2)
-   print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-5 ) 
-   print_tf( @test abs(ustrip(E1) - ustrip(E3)) < 1e-5 ) 
+   print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-6 ) 
+   print_tf( @test abs(ustrip(E1) - ustrip(E3)) < 1e-6 ) 
 end
 println() 
 
@@ -258,6 +258,10 @@ G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
 
 @info("confirm consistency of three gradients")
 println(@test all(∂G1.edge_data .≈ ∂G2a.edge_data .≈ ∂G2b.edge_data))
+
+##
+
+# Rnl, _ = et_model_2.rembed(G, et_ps_2.rembed, et_st_2.rembed)
 
 ##
 # test gradient against ForwardDiff 
@@ -306,8 +310,6 @@ WW = et_ps_2.readout.W
 𝔹1 = ETM.site_basis(et_model_2, G, et_ps_2, et_st_2)
 𝔹2, ∂𝔹2 = ETM.site_basis_jacobian(et_model_2, G, et_ps_2, et_st_2)
 
-et_model_2.readout.selector.(G.node_data)  # to fix a bug
-
 ##
 
 @info("confirm correctness of site basis")
@@ -352,6 +354,8 @@ ps_dev = dev(ET.float32(et_ps))
 st_dev = dev(ET.float32(et_st))
 ps_dev_2 = dev(ET.float32(et_ps_2))
 st_dev_2 = dev(ET.float32(et_st_2))
+ps_32_2 = ET.float32(et_ps_2)
+st_32_2 = ET.float32(et_st_2)
 
 E1 = ustrip(AtomsCalculators.potential_energy(sys, calc_model))
 E2 = energy_new(sys, et_model)
@@ -364,5 +368,69 @@ println_slim( @test abs(E1 - E4) / (abs(E1) + abs(E4) + 1e-7) < 1e-5 )
 
 ## 
 # gradients on GPU 
+# currently failing because somehow the transform is still 
+# accessing some Float64 values somewhere .... 
 
 ETM.site_grads(et_model_2, G_32_dev, ps_dev_2, st_dev_2)
+
+
+##
+# leftover debugging snippets 
+#
+# This was a huge problem, namely to get the differentiation through 
+# the radial transform to behave nicely. At the moment this is solved 
+# via a workaround by implementing 2 x NTtransformST _pb_ed functions.
+# this should be revisited. 
+#
+# ET.evaluate_ed(et_model_2.rembed, G, 
+#                et_ps_2.rembed, et_st_2.rembed)
+
+# (R, dR), _ = ET.evaluate_ed(et_model_2.rembed, G_32, 
+#                ps_32_2.rembed, st_32_2.rembed)
+
+
+# ET.evaluate_ed(et_model_2.rembed, G_32_dev, 
+#                ps_dev_2.rembed, st_dev_2.rembed)
+
+
+##
+
+# This one is also quote interesting and could be posted on 
+# the julia discourse forum. Using reinterpret works 
+# fine on CPU but fail on GPU. 
+#
+
+#=
+using DecoratedParticles, ForwardDiff, StaticArrays
+using Metal 
+import EquivariantTensors as ET
+
+function graddp(f, v) 
+   # _dp2svec(v) = v.𝐫
+   # _svec2dp(sv) = VState(𝐫 = sv)
+   _dp2svec(v) = reinterpret(SVector{3, Float32}, v) 
+   _dp2svec(v) = ET.DiffNT._nt2svec(v)
+   _svec2dp(sv) = ET.DiffNT._svec2nt(sv, v)
+   _fvec = _v -> f(_svec2dp(_v))
+   g = ForwardDiff.gradient(_fvec, _dp2svec(v))
+   return _svec2dp(g)
+   # return g 
+end
+
+function gradX(X, P) 
+   function _gradx(x, p) 
+      v0 = zero(vstate_type(x))
+      graddp(_v -> sum((x + _v).𝐫 .* p), v0) 
+   end
+   return _gradx.(X, P)
+end
+
+X = [ VState(𝐫 = randn(SVector{3, Float32})) for _=1:10 ]
+P = randn(SVector{3, Float32}, 10)
+vsP = [ VState(𝐫 = p) for p in P ]
+gradX(X, P) 
+
+X_dev = mtl(X)
+P_dev = mtl(P)
+Array(gradX(X_dev, P_dev))
+=#

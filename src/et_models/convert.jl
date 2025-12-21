@@ -32,7 +32,7 @@ function convert2et(model)
    # ---------------------------- YEMBED 
    # convert the angular basis
    ybasis = model.ybasis
-   et_ybasis = ET.EmbedDP( ET.NTtransform(x -> x.𝐫), 
+   et_ybasis = ET.EmbedDP( ET.NTtransformST( (x, st) -> x.𝐫, NamedTuple()), 
                            ybasis )
    et_yspec = P4ML.natural_indices(et_ybasis.basis)
    yembed = ET.EdgeEmbed( et_ybasis)
@@ -172,6 +172,12 @@ function _agnesi_et_params(trans)
    # y2 = ET.eval_agnesi(r, params)
    # @assert y1 ≈ y2
    # -------------------------------
+
+   # DEBUG: convert to Float32, to see if that fixes the 
+   #        site_grads on GPU? 
+   # @show params 
+   # params_32 = ET.float32(params) 
+   # @show params_32 
 
    return params
 end 
