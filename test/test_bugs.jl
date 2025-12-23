@@ -5,6 +5,7 @@ using ACEpotentials.ACE1compat: ace1_model
 using ACEpotentials.Models: ACEPotential, potential_energy
 using AtomsBuilder
 using Unitful
+using ACEbase.Testing: println_slim 
 
 @info(" ============== Testing for ACEpotentials #208 ================")
 @info(" On Julia 1.9 some energy computations were inconsistent. ")

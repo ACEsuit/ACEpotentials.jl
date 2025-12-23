@@ -1,0 +1,1 @@
+lux_model.jl shows how to build a Lux model out of standard layers instead of the "canned" layers provided. This has disadvantages for both performance and flexibility (e.g. unclear how to get efficient jacobians) but can be useful for experimenting. The file is leftover from an extensive development and testing period, likely out of date, and needs to be cleaned up. 

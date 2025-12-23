@@ -15,11 +15,11 @@ write_dict(T::GeneralizedAgnesiTransform) =
       Dict("__id__" => "ACEpotentials_GeneralizedAgnesiTransform", 
            "r0" => T.r0, "p" => T.p, "q" => T.q, "a" => T.a, "rin" => T.rin)
 
-GeneralizedAgnesiTransform(D::Dict) = 
+GeneralizedAgnesiTransform(D::AbstractDict) = 
       GeneralizedAgnesiTransform(D["r0"], D["p"], D["q"], 
                                  D["a"], D["rin"])
 
-read_dict(::Val{:ACEpotentials_GeneralizedAgnesiTransform}, D::Dict) = 
+read_dict(::Val{:ACEpotentials_GeneralizedAgnesiTransform}, D::AbstractDict) = 
       GeneralizedAgnesiTransform(D)
 
 function evaluate(t::GeneralizedAgnesiTransform{T}, r::Number) where {T} 
@@ -98,7 +98,7 @@ write_dict(T::NormalizedTransform) =
             "yin" => T.yin, "ycut" => T.ycut, 
             "rin" => T.rin, "rcut" => T.rcut ) 
             
-read_dict(::Val{:ACEpotentials_NormalizedTransform}, D::Dict) = 
+read_dict(::Val{:ACEpotentials_NormalizedTransform}, D::AbstractDict) = 
       NormalizedTransform(read_dict(D["trans"]), 
                           D["yin"], D["ycut"], D["rin"], D["rcut"])
 

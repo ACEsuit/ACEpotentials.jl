@@ -16,6 +16,9 @@ using ACEpotentials, Test, LazyArtifacts
     # make sure miscellaneous and weird bugs 
     @testset "Weird bugs" begin include("test_bugs.jl") end
 
+    # new ET backend tests
+    @testset "New ET backend" begin include("test_etbackend.jl") end
+
     # ACE1 compatibility tests 
     # TODO: these tests need to be revived either by creating a JSON 
     #       of test data, or by updating ACE1/ACE1x/JuLIP to be compatible. 

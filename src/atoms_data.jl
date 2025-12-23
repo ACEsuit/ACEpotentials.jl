@@ -351,12 +351,12 @@ function compute_errors(data::AbstractArray{AtomsData}, model;
 end
 
 
-function print_errors_tables(config_errors::Dict)
+function print_errors_tables(config_errors::AbstractDict)
     print_rmse_table(config_errors)
     print_mae_table(config_errors)
 end
 
-function _print_err_tbl(D::Dict)
+function _print_err_tbl(D::AbstractDict)
     header = ["Type", "E [meV]", "F [eV/A]", "V [meV]"]
     config_types = setdiff(collect(keys(D)), ["set",])
     push!(config_types, "set")
@@ -374,12 +374,12 @@ function _print_err_tbl(D::Dict)
 
 end
 
-function print_rmse_table(config_errors::Dict; header=true)
+function print_rmse_table(config_errors::AbstractDict; header=true)
     if header; (@info "RMSE Table"); end 
     _print_err_tbl(config_errors["rmse"])
 end
 
-function print_mae_table(config_errors::Dict; header=true)
+function print_mae_table(config_errors::AbstractDict; header=true)
     if header; (@info "MAE Table"); end 
     _print_err_tbl(config_errors["mae"])
 end
