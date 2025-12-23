@@ -50,9 +50,6 @@ WithAlloc = "fb1aa66a-603c-4c1d-9bc4-66947c7b08dd"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
-[sources]
-EquivariantTensors = {path = "/Users/ortner/gits/EquivariantTensors.jl/"}
-
 [compat]
 ACEfit = "0.3.0"
 ArgParse = "1"
@@ -68,7 +65,7 @@ ConcreteStructs = "0.2.3"
 DecoratedParticles = "0.1.1"
 DynamicPolynomials = "0.6"
 EmpiricalPotentials = "0.2"
-EquivariantTensors = "0.3"
+EquivariantTensors = "0.4"
 ExtXYZ = "0.2.0"
 Folds = "0.2"
 ForwardDiff = "0.10"

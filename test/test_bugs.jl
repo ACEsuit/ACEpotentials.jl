@@ -32,17 +32,10 @@ E_per_at = [ energy_per_at(model, i) for i = 1:10 ]
 maxdiff = maximum(abs(E_per_at[i] - E_per_at[j]) for i = 1:10, j = 1:10 )
 @show maxdiff
 
-# NOTE: Known failure on Julia 1.12 due to hash algorithm changes
-# Julia 1.12 introduces a new hash algorithm that affects Dict iteration order.
-# This causes basis function ordering issues during model construction, resulting
-# in catastrophic energy errors (~28 eV instead of <1e-9 eV).
-# TODO: Requires investigation of upstream EquivariantTensors package and/or
-# comprehensive refactoring to use OrderedDict throughout the basis construction pipeline.
-if VERSION >= v"1.12"
-    @test_broken ustrip(u"eV", maxdiff) < 1e-9
-else
-    @test ustrip(u"eV", maxdiff) < 1e-9
-end
+# NOTE: this failed on Julia 1.12 due to hash algorithm changes, but 
+#       eventually passed again for unknown reasons. If it fails again 
+#       need to investigate more thoroughly. 
+@test ustrip(u"eV", maxdiff) < 1e-9
 
 @info(" ============================================================")
 @info(" ============== Testing for no Eref bug ====================")
