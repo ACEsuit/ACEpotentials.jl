@@ -106,7 +106,7 @@ for (i, sys) in enumerate(data[2:min(11, length(data))])
     local E_ace = ustrip(u"eV", AtomsCalculators.potential_energy(sys, model))
     local E_etace = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
     local diff = abs(E_ace - E_etace)
-    max_energy_diff = max(max_energy_diff, diff)
+    global max_energy_diff = max(max_energy_diff, diff)
 end
 
 @info("Max energy difference: $max_energy_diff eV")
@@ -123,7 +123,7 @@ for (i, sys) in enumerate(data[1:min(10, length(data))])
     F_etace = AtomsCalculators.forces(sys, et_calc)
     for (f1, f2) in zip(F_ace, F_etace)
         diff = norm(ustrip.(f1) - ustrip.(f2))
-        max_force_diff = max(max_force_diff, diff)
+        global max_force_diff = max(max_force_diff, diff)
     end
 end
 
@@ -140,7 +140,7 @@ for (i, sys) in enumerate(data[1:min(10, length(data))])
     V_ace = AtomsCalculators.virial(sys, model)
     V_etace = AtomsCalculators.virial(sys, et_calc)
     diff = maximum(abs.(ustrip.(V_ace) - ustrip.(V_etace)))
-    max_virial_diff = max(max_virial_diff, diff)
+    global max_virial_diff = max(max_virial_diff, diff)
 end
 
 @info("Max virial difference: $max_virial_diff eV")

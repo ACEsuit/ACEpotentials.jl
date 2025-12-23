@@ -408,12 +408,16 @@ function energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
 
    # Get basis and jacobian
+   # 𝔹: (nnodes, nbasis) - basis values per site (Float64)
+   # ∂𝔹: (maxneigs, nnodes, nbasis) - directional derivatives (VState objects)
    𝔹, ∂𝔹 = site_basis_jacobian(calc.model, G, calc.ps, calc.st)
 
    natoms = length(sys)
+   nnodes = size(𝔹, 1)
    nbasis = calc.model.readout.in_dim
    nspecies = calc.model.readout.ncat
    nparams = nbasis * nspecies
+   maxneigs = size(∂𝔹, 1)
 
    # Species indices for each node
    iZ = calc.model.readout.selector.(G.node_data)
@@ -423,6 +427,16 @@ function energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
    F_basis = zeros(SVector{3, Float64}, natoms, nparams)
    V_basis = zeros(SMatrix{3, 3, Float64, 9}, nparams)
 
+   # Pre-allocate work buffer for gradient (same element type as ∂𝔹)
+   # This avoids allocating a new matrix in each iteration
+   ∇Ei_buf = similar(∂𝔹, maxneigs, nnodes)
+
+   # Pre-compute a zero element for masking (same type as ∂𝔹 elements)
+   zero_grad = zero(∂𝔹[1, 1, 1])
+
+   # Pre-compute edge vectors for virial (avoid repeated access)
+   edge_𝐫 = [edge.𝐫 for edge in G.edge_data]
+
    # Compute basis values for each parameter (k, s) pair
    # Parameter index: p = (s-1) * nbasis + k
    for s in 1:nspecies
@@ -430,21 +444,24 @@ function energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
          p = (s - 1) * nbasis + k
 
          # Energy basis: sum of 𝔹[i, k] for atoms of species s
-         for i in 1:length(G.node_data)
+         for i in 1:nnodes
             if iZ[i] == s
                E_basis[p] += 𝔹[i, k]
             end
          end
 
-         # Create unit weight: W[1, k, s] = 1, others = 0
-         # Then compute edge gradients and convert to forces/virial
-         W_unit = zeros(1, nbasis, nspecies)
-         W_unit[1, k, s] = 1.0
+         # Fill gradient buffer: ∇Ei[:, i] = ∂𝔹[:, i, k] if iZ[i] == s, else zeros
+         # This avoids allocating W_unit and doing matrix-vector multiply
+         for i in 1:nnodes
+            if iZ[i] == s
+               @views ∇Ei_buf[:, i] .= ∂𝔹[:, i, k]
+            else
+               @views ∇Ei_buf[:, i] .= Ref(zero_grad)
+            end
+         end
 
-         # Compute edge gradients using the reconstruction pattern
-         # ∇Ei = ∂𝔹[:, i, :] * W[1, :, iZ[i]] for each node i
-         ∇Ei = reduce(hcat, ∂𝔹[:, i, :] * W_unit[1, :, iZ[i]] for i in 1:length(iZ))
-         ∇Ei_3d = reshape(∇Ei, size(∇Ei)..., 1)
+         # Reshape for rev_reshape_embedding (needs 3D array) - this is a view, no allocation
+         ∇Ei_3d = reshape(∇Ei_buf, maxneigs, nnodes, 1)
 
          # Convert to edge-indexed format with 3D vectors
          ∇E_edges = ET.rev_reshape_embedding(∇Ei_3d, G)[:]
@@ -453,9 +470,9 @@ function energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
          F_basis[:, p] = -ET.Atoms.forces_from_edge_grads(sys, G, ∇E_edges)
 
          # Compute virial: V = -∑ (∂E/∂𝐫ij) ⊗ 𝐫ij
-         V = zeros(SMatrix{3, 3, Float64, 9})
-         for (edge, ∂edge) in zip(G.edge_data, ∇E_edges)
-            V -= ∂edge.𝐫 * edge.𝐫'
+         V = zero(SMatrix{3, 3, Float64, 9})
+         for (e, ∂edge) in enumerate(∇E_edges)
+            V -= ∂edge.𝐫 * edge_𝐫[e]'
          end
          V_basis[p] = V
       end
