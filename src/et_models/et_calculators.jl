@@ -359,3 +359,168 @@ function AtomsCalculators.energy_forces_virial(
    )
 end
 
+
+# ============================================================================
+#  Training Assembly Interface
+# ============================================================================
+#
+# These functions compute the basis values for linear least squares fitting.
+# The linear parameters are the readout weights W[1, k, s] where:
+#   k = basis function index (1:nbasis)
+#   s = species index (1:nspecies)
+#
+# Total parameters: nbasis * nspecies
+#
+# Energy basis: E = ∑_i ∑_k W[k, species[i]] * 𝔹[i, k]
+# Force basis:  F_atom = -∑ edges ∂E/∂r_edge, computed per basis function
+# Virial basis: V = -∑ edges (∂E/∂r_edge) ⊗ r_edge, computed per basis function
+
+"""
+    length_basis(calc::ETACEPotential)
+
+Return the number of linear parameters in the model (nbasis * nspecies).
+"""
+function length_basis(calc::ETACEPotential)
+   nbasis = calc.model.readout.in_dim
+   nspecies = calc.model.readout.ncat
+   return nbasis * nspecies
+end
+
+"""
+    energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
+
+Compute the basis functions for energy, forces, and virial.
+Returns a named tuple with:
+- `energy::Vector{Float64}` - length = length_basis(calc)
+- `forces::Matrix{SVector{3,Float64}}` - size = (natoms, length_basis)
+- `virial::Vector{SMatrix{3,3,Float64}}` - length = length_basis(calc)
+
+The linear combination of basis values with parameters gives:
+  E = dot(energy, params)
+  F = forces * params
+  V = sum(params .* virial)
+"""
+function energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
+   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+
+   # Get basis and jacobian
+   𝔹, ∂𝔹 = site_basis_jacobian(calc.model, G, calc.ps, calc.st)
+
+   natoms = length(sys)
+   nbasis = calc.model.readout.in_dim
+   nspecies = calc.model.readout.ncat
+   nparams = nbasis * nspecies
+
+   # Species indices for each node
+   iZ = calc.model.readout.selector.(G.node_data)
+
+   # Initialize outputs
+   E_basis = zeros(nparams)
+   F_basis = zeros(SVector{3, Float64}, natoms, nparams)
+   V_basis = zeros(SMatrix{3, 3, Float64, 9}, nparams)
+
+   # Compute basis values for each parameter (k, s) pair
+   # Parameter index: p = (s-1) * nbasis + k
+   for s in 1:nspecies
+      for k in 1:nbasis
+         p = (s - 1) * nbasis + k
+
+         # Energy basis: sum of 𝔹[i, k] for atoms of species s
+         for i in 1:length(G.node_data)
+            if iZ[i] == s
+               E_basis[p] += 𝔹[i, k]
+            end
+         end
+
+         # Create unit weight: W[1, k, s] = 1, others = 0
+         # Then compute edge gradients and convert to forces/virial
+         W_unit = zeros(1, nbasis, nspecies)
+         W_unit[1, k, s] = 1.0
+
+         # Compute edge gradients using the reconstruction pattern
+         # ∇Ei = ∂𝔹[:, i, :] * W[1, :, iZ[i]] for each node i
+         ∇Ei = reduce(hcat, ∂𝔹[:, i, :] * W_unit[1, :, iZ[i]] for i in 1:length(iZ))
+         ∇Ei_3d = reshape(∇Ei, size(∇Ei)..., 1)
+
+         # Convert to edge-indexed format with 3D vectors
+         ∇E_edges = ET.rev_reshape_embedding(∇Ei_3d, G)[:]
+
+         # Convert edge gradients to atomic forces (negate for forces)
+         F_basis[:, p] = -ET.Atoms.forces_from_edge_grads(sys, G, ∇E_edges)
+
+         # Compute virial: V = -∑ (∂E/∂𝐫ij) ⊗ 𝐫ij
+         V = zeros(SMatrix{3, 3, Float64, 9})
+         for (edge, ∂edge) in zip(G.edge_data, ∇E_edges)
+            V -= ∂edge.𝐫 * edge.𝐫'
+         end
+         V_basis[p] = V
+      end
+   end
+
+   return (
+      energy = E_basis * u"eV",
+      forces = F_basis .* u"eV/Å",
+      virial = V_basis * u"eV"
+   )
+end
+
+"""
+    potential_energy_basis(sys::AbstractSystem, calc::ETACEPotential)
+
+Compute only the energy basis (faster when forces/virial not needed).
+"""
+function potential_energy_basis(sys::AbstractSystem, calc::ETACEPotential)
+   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+
+   # Get basis values
+   𝔹 = site_basis(calc.model, G, calc.ps, calc.st)
+
+   nbasis = calc.model.readout.in_dim
+   nspecies = calc.model.readout.ncat
+   nparams = nbasis * nspecies
+
+   # Species indices for each node
+   iZ = calc.model.readout.selector.(G.node_data)
+
+   # Compute energy basis
+   E_basis = zeros(nparams)
+   for s in 1:nspecies
+      for k in 1:nbasis
+         p = (s - 1) * nbasis + k
+         for i in 1:length(G.node_data)
+            if iZ[i] == s
+               E_basis[p] += 𝔹[i, k]
+            end
+         end
+      end
+   end
+
+   return E_basis * u"eV"
+end
+
+"""
+    get_linear_parameters(calc::ETACEPotential)
+
+Extract the linear parameters (readout weights) as a flat vector.
+Parameters are ordered as: [W[1,:,1]; W[1,:,2]; ... ; W[1,:,nspecies]]
+"""
+function get_linear_parameters(calc::ETACEPotential)
+   return vec(calc.ps.readout.W)
+end
+
+"""
+    set_linear_parameters!(calc::ETACEPotential, θ::AbstractVector)
+
+Set the linear parameters (readout weights) from a flat vector.
+"""
+function set_linear_parameters!(calc::ETACEPotential, θ::AbstractVector)
+   nbasis = calc.model.readout.in_dim
+   nspecies = calc.model.readout.ncat
+   @assert length(θ) == nbasis * nspecies
+
+   # Reshape and copy into ps
+   new_W = reshape(θ, 1, nbasis, nspecies)
+   calc.ps = merge(calc.ps, (readout = merge(calc.ps.readout, (W = new_W,)),))
+   return calc
+end
+

@@ -506,3 +506,104 @@ println("StackedCalculator(E0 only) forces (zero): OK")
 ##
 
 @info("All Phase 2 tests passed!")
+
+## ============================================================================
+##  Phase 5: Training Assembly Tests
+## ============================================================================
+
+@info("Testing Phase 5: Training assembly functions")
+
+##
+
+@info("Testing length_basis")
+nparams = ETM.length_basis(et_calc)
+nbasis = et_model.readout.in_dim
+nspecies = et_model.readout.ncat
+@test nparams == nbasis * nspecies
+println("length_basis: OK (nparams=$nparams, nbasis=$nbasis, nspecies=$nspecies)")
+
+##
+
+@info("Testing get/set_linear_parameters round-trip")
+θ_orig = ETM.get_linear_parameters(et_calc)
+@test length(θ_orig) == nparams
+
+# Modify and restore
+θ_test = randn(nparams)
+ETM.set_linear_parameters!(et_calc, θ_test)
+θ_check = ETM.get_linear_parameters(et_calc)
+@test θ_check ≈ θ_test
+
+# Restore original
+ETM.set_linear_parameters!(et_calc, θ_orig)
+@test ETM.get_linear_parameters(et_calc) ≈ θ_orig
+println("get/set_linear_parameters round-trip: OK")
+
+##
+
+@info("Testing potential_energy_basis")
+sys = rand_struct()
+E_basis = ETM.potential_energy_basis(sys, et_calc)
+@test length(E_basis) == nparams
+@test eltype(ustrip.(E_basis)) <: Real
+println("potential_energy_basis shape: OK")
+
+##
+
+@info("Testing energy_forces_virial_basis")
+efv_basis = ETM.energy_forces_virial_basis(sys, et_calc)
+natoms = length(sys)
+
+@test length(efv_basis.energy) == nparams
+@test size(efv_basis.forces) == (natoms, nparams)
+@test length(efv_basis.virial) == nparams
+println("energy_forces_virial_basis shapes: OK")
+
+##
+
+@info("Testing linear combination gives correct energy")
+
+# E = dot(E_basis, θ) should match potential_energy
+θ = ETM.get_linear_parameters(et_calc)
+E_from_basis = dot(ustrip.(efv_basis.energy), θ)
+E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
+
+print_tf(@test E_from_basis ≈ E_direct rtol=1e-10)
+println()
+println("Energy from basis: OK")
+
+##
+
+@info("Testing linear combination gives correct forces")
+
+# F = efv_basis.forces * θ should match forces
+F_from_basis = efv_basis.forces * θ
+F_direct = AtomsCalculators.forces(sys, et_calc)
+
+max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
+print_tf(@test max_diff < 1e-10)
+println()
+println("Forces from basis: OK (max_diff = $max_diff)")
+
+##
+
+@info("Testing linear combination gives correct virial")
+
+# V = sum(θ .* virial) should match virial
+V_from_basis = sum(θ[i] * ustrip.(efv_basis.virial[i]) for i in 1:nparams)
+V_direct = ustrip.(AtomsCalculators.virial(sys, et_calc))
+
+virial_diff = maximum(abs.(V_from_basis - V_direct))
+print_tf(@test virial_diff < 1e-10)
+println()
+println("Virial from basis: OK (max_diff = $virial_diff)")
+
+##
+
+@info("Testing potential_energy_basis matches energy from efv_basis")
+@test ustrip.(E_basis) ≈ ustrip.(efv_basis.energy)
+println("potential_energy_basis consistency: OK")
+
+##
+
+@info("All Phase 5 tests passed!")
