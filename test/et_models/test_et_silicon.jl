@@ -1,10 +1,11 @@
 # Integration test for ETACE calculators
 #
-# This test verifies that ETACE calculators produce comparable results
-# to the original ACE models when used for evaluation (not fitting).
+# This test verifies that ETACE calculators produce identical results
+# to the many-body part of ACE models (excluding pair potential).
 #
 # Note: convert2et only supports LearnableRnlrzzBasis (not SplineRnlrzzBasis),
 # so we use ace_model() directly instead of ace1_model().
+# ETACE implements only the many-body basis, not the pair potential.
 
 using Test
 using ACEpotentials
@@ -96,14 +97,19 @@ rcut = maximum(a.rcut for a in ace_model.pairbasis.rin0cuts)
 # Create ETACEPotential
 et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
 
+# Create ACE model WITHOUT pair potential for fair comparison
+# (ETACE only implements the many-body basis, not the pair potential)
+ps_nopair = merge(ps, (Wpair = zeros(size(ps.Wpair)),))
+model_nopair = M.ACEPotential(ace_model, ps_nopair, st)
+
 ## ----- Test energy consistency -----
 
-@info("Testing energy consistency between ACE and ETACE")
+@info("Testing energy consistency between ACE (no pair) and ETACE")
 
 # Skip isolated atom (index 1) - ETACE requires at least 2 atoms for graph construction
 max_energy_diff = 0.0
 for (i, sys) in enumerate(data[2:min(11, length(data))])
-    local E_ace = ustrip(u"eV", AtomsCalculators.potential_energy(sys, model))
+    local E_ace = ustrip(u"eV", AtomsCalculators.potential_energy(sys, model_nopair))
     local E_etace = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
     local diff = abs(E_ace - E_etace)
     global max_energy_diff = max(max_energy_diff, diff)
@@ -115,11 +121,11 @@ println("Energy consistency: OK (max_diff = $max_energy_diff eV)")
 
 ## ----- Test forces consistency -----
 
-@info("Testing forces consistency between ACE and ETACE")
+@info("Testing forces consistency between ACE (no pair) and ETACE")
 
 max_force_diff = 0.0
-for (i, sys) in enumerate(data[1:min(10, length(data))])
-    F_ace = AtomsCalculators.forces(sys, model)
+for (i, sys) in enumerate(data[2:min(10, length(data))])
+    F_ace = AtomsCalculators.forces(sys, model_nopair)
     F_etace = AtomsCalculators.forces(sys, et_calc)
     for (f1, f2) in zip(F_ace, F_etace)
         diff = norm(ustrip.(f1) - ustrip.(f2))
@@ -133,11 +139,11 @@ println("Forces consistency: OK (max_diff = $max_force_diff eV/Å)")
 
 ## ----- Test virial consistency -----
 
-@info("Testing virial consistency between ACE and ETACE")
+@info("Testing virial consistency between ACE (no pair) and ETACE")
 
 max_virial_diff = 0.0
-for (i, sys) in enumerate(data[1:min(10, length(data))])
-    V_ace = AtomsCalculators.virial(sys, model)
+for (i, sys) in enumerate(data[2:min(10, length(data))])
+    V_ace = AtomsCalculators.virial(sys, model_nopair)
     V_etace = AtomsCalculators.virial(sys, et_calc)
     diff = maximum(abs.(ustrip.(V_ace) - ustrip.(V_etace)))
     global max_virial_diff = max(max_virial_diff, diff)
@@ -188,7 +194,7 @@ println("Training basis assembly: OK")
 @info("Testing StackedCalculator with E0Model")
 
 # Create E0 model with arbitrary E0 value for testing
-E0s = Dict(14 => -158.54496821)  # Si atomic number => E0
+E0s = Dict(:Si => -158.54496821)  # Si symbol => E0
 E0_model = ETM.E0Model(E0s)
 E0_calc = ETM.WrappedSiteCalculator(E0_model)
 
@@ -199,8 +205,8 @@ ace_calc = ETM.WrappedSiteCalculator(wrapped_etace)
 # Stack them
 stacked = ETM.StackedCalculator((E0_calc, ace_calc))
 
-# Test on a few structures
-for (i, sys) in enumerate(data[1:5])
+# Test on a few structures (skip isolated atom)
+for (i, sys) in enumerate(data[2:5])
     E_E0 = AtomsCalculators.potential_energy(sys, E0_calc)
     E_ace = AtomsCalculators.potential_energy(sys, ace_calc)
     E_stacked = AtomsCalculators.potential_energy(sys, stacked)
@@ -217,8 +223,9 @@ println("StackedCalculator: OK")
 
 @info("All ETACE integration tests passed!")
 @info("Summary:")
-@info("  - Energy matches original ACE to < 1e-10 eV")
-@info("  - Forces match original ACE to < 1e-10 eV/Å")
-@info("  - Virial matches original ACE to < 1e-9 eV")
+@info("  - Energy matches ACE (many-body only) to < 1e-10 eV")
+@info("  - Forces match ACE (many-body only) to < 1e-10 eV/Å")
+@info("  - Virial matches ACE (many-body only) to < 1e-9 eV")
 @info("  - Training basis assembly verified")
 @info("  - StackedCalculator composition verified")
+@info("Note: ETACE implements only the many-body basis, not the pair potential.")
