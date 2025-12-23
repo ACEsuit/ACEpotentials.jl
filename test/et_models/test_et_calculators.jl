@@ -306,3 +306,203 @@ end
 ##
 
 @info("All Phase 1 tests passed!")
+
+# ============================================================================
+#  Phase 2 Tests: SiteEnergyModel Interface, WrappedSiteCalculator, StackedCalculator
+# ============================================================================
+
+@info("Testing Phase 2: SiteEnergyModel interface and calculators")
+
+##
+
+@info("Testing E0Model")
+
+# Create E0 model with reference energies
+E0_Si = -0.846
+E0_O = -2.15
+E0 = ETM.E0Model(Dict(:Si => E0_Si, :O => E0_O))
+
+# Test cutoff radius
+@test ETM.cutoff_radius(E0) == 0.0
+println("E0Model cutoff_radius: OK")
+
+# Test site energies
+sys = rand_struct()
+G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+Ei_E0 = ETM.site_energies(E0, G, nothing, nothing)
+
+# Count Si and O atoms
+n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
+n_O = count(node -> node.z == AtomsBase.ChemicalSpecies(:O), G.node_data)
+expected_E0 = n_Si * E0_Si + n_O * E0_O
+
+@test length(Ei_E0) == length(sys)
+@test sum(Ei_E0) ≈ expected_E0
+println("E0Model site_energies: OK")
+
+# Test site energy gradients (should be zero)
+∂G_E0 = ETM.site_energy_grads(E0, G, nothing, nothing)
+@test all(norm(e.𝐫) == 0 for e in ∂G_E0.edge_data)
+println("E0Model site_energy_grads (zero): OK")
+
+##
+
+@info("Testing WrappedETACE")
+
+# Create wrapped ETACE model
+wrapped_ace = ETM.WrappedETACE(et_model, et_ps, et_st, rcut)
+
+# Test cutoff radius
+@test ETM.cutoff_radius(wrapped_ace) == rcut
+println("WrappedETACE cutoff_radius: OK")
+
+# Test site energies match direct evaluation
+Ei_wrapped = ETM.site_energies(wrapped_ace, G, nothing, nothing)
+Ei_direct, _ = et_model(G, et_ps, et_st)
+@test Ei_wrapped ≈ Ei_direct
+println("WrappedETACE site_energies: OK")
+
+# Test site energy gradients match direct evaluation
+∂G_wrapped = ETM.site_energy_grads(wrapped_ace, G, nothing, nothing)
+∂G_direct = ETM.site_grads(et_model, G, et_ps, et_st)
+@test all(∂G_wrapped.edge_data[i].𝐫 ≈ ∂G_direct.edge_data[i].𝐫 for i in 1:length(G.edge_data))
+println("WrappedETACE site_energy_grads: OK")
+
+##
+
+@info("Testing WrappedSiteCalculator")
+
+# Wrap E0 model in a calculator
+E0_calc = ETM.WrappedSiteCalculator(E0)
+@test ustrip(u"Å", ETM.cutoff_radius(E0_calc)) == 3.0  # minimum cutoff
+println("WrappedSiteCalculator(E0) cutoff_radius: OK")
+
+# Wrap ETACE model in a calculator
+ace_site_calc = ETM.WrappedSiteCalculator(wrapped_ace)
+@test ustrip(u"Å", ETM.cutoff_radius(ace_site_calc)) == rcut
+println("WrappedSiteCalculator(ETACE) cutoff_radius: OK")
+
+# Test E0 calculator energy
+sys = rand_struct()
+E_E0_calc = AtomsCalculators.potential_energy(sys, E0_calc)
+G = ET.Atoms.interaction_graph(sys, 3.0 * u"Å")
+n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
+n_O = count(node -> node.z == AtomsBase.ChemicalSpecies(:O), G.node_data)
+expected_E = (n_Si * E0_Si + n_O * E0_O) * u"eV"
+@test ustrip(E_E0_calc) ≈ ustrip(expected_E)
+println("WrappedSiteCalculator(E0) energy: OK")
+
+# Test E0 calculator forces (should be zero)
+F_E0_calc = AtomsCalculators.forces(sys, E0_calc)
+@test all(norm(ustrip.(f)) < 1e-14 for f in F_E0_calc)
+println("WrappedSiteCalculator(E0) forces (zero): OK")
+
+# Test ETACE calculator matches ETACEPotential
+sys = rand_struct()
+E_ace_site = AtomsCalculators.potential_energy(sys, ace_site_calc)
+E_ace_pot = AtomsCalculators.potential_energy(sys, et_calc)
+@test ustrip(E_ace_site) ≈ ustrip(E_ace_pot)
+println("WrappedSiteCalculator(ETACE) energy matches ETACEPotential: OK")
+
+F_ace_site = AtomsCalculators.forces(sys, ace_site_calc)
+F_ace_pot = AtomsCalculators.forces(sys, et_calc)
+max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_ace_site, F_ace_pot))
+@test max_diff < 1e-10
+println("WrappedSiteCalculator(ETACE) forces match ETACEPotential: OK")
+
+##
+
+@info("Testing StackedCalculator construction")
+
+# Create stacked calculator with E0 + ACE (both wrapped)
+stacked = ETM.StackedCalculator((E0_calc, ace_site_calc))
+
+@test ustrip(u"Å", ETM.cutoff_radius(stacked)) == rcut
+@test length(stacked.calcs) == 2
+println("StackedCalculator construction: OK")
+
+##
+
+@info("Testing StackedCalculator energy consistency")
+
+for ntest = 1:10
+   local sys, E_stacked, E_separate
+
+   sys = rand_struct()
+
+   # Energy from stacked calculator
+   E_stacked = AtomsCalculators.potential_energy(sys, stacked)
+
+   # Energy from separate evaluations
+   E_E0 = AtomsCalculators.potential_energy(sys, E0_calc)
+   E_ace = AtomsCalculators.potential_energy(sys, ace_site_calc)
+   E_separate = E_E0 + E_ace
+
+   print_tf(@test ustrip(E_stacked) ≈ ustrip(E_separate))
+end
+println()
+
+##
+
+@info("Testing StackedCalculator forces consistency")
+
+for ntest = 1:10
+   local sys, F_stacked, F_ace_only, max_diff
+
+   sys = rand_struct()
+
+   # Forces from stacked calculator
+   F_stacked = AtomsCalculators.forces(sys, stacked)
+
+   # Forces from ACE-only (E0 has zero forces)
+   F_ace_only = AtomsCalculators.forces(sys, et_calc)
+
+   # Should be identical since E0 contributes zero forces
+   max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_stacked, F_ace_only))
+   print_tf(@test max_diff < 1e-10)
+end
+println()
+
+##
+
+@info("Testing StackedCalculator virial consistency")
+
+for ntest = 1:10
+   local sys, efv_stacked, efv_ace_only
+
+   sys = rand_struct()
+
+   efv_stacked = AtomsCalculators.energy_forces_virial(sys, stacked)
+   efv_ace_only = AtomsCalculators.energy_forces_virial(sys, et_calc)
+
+   # Virial should match (E0 has zero virial)
+   V_stacked = ustrip.(efv_stacked.virial)
+   V_ace_only = ustrip.(efv_ace_only.virial)
+
+   print_tf(@test norm(V_stacked - V_ace_only) / (norm(V_ace_only) + 1e-10) < 1e-10)
+end
+println()
+
+##
+
+@info("Testing StackedCalculator with E0 only")
+
+# Create stacked calculator with just E0
+E0_only_stacked = ETM.StackedCalculator((E0_calc,))
+
+sys = rand_struct()
+E = AtomsCalculators.potential_energy(sys, E0_only_stacked)
+F = AtomsCalculators.forces(sys, E0_only_stacked)
+
+# Energy should match E0_calc
+E_direct = AtomsCalculators.potential_energy(sys, E0_calc)
+@test ustrip(E) ≈ ustrip(E_direct)
+println("StackedCalculator(E0 only) energy: OK")
+
+# Forces should be zero
+@test all(norm(ustrip.(f)) < 1e-14 for f in F)
+println("StackedCalculator(E0 only) forces (zero): OK")
+
+##
+
+@info("All Phase 2 tests passed!")
