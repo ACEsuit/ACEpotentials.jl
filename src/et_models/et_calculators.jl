@@ -386,6 +386,10 @@ function length_basis(calc::ETACEPotential)
    return nbasis * nspecies
 end
 
+# ACEfit integration
+import ACEfit
+ACEfit.basis_size(calc::ETACEPotential) = length_basis(calc)
+
 """
     energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
 

@@ -606,4 +606,153 @@ println("potential_energy_basis consistency: OK")
 
 ##
 
-@info("All Phase 5 tests passed!")
+@info("All Phase 5 basic tests passed!")
+
+## ============================================================================
+##  Phase 5b: Extended Training Assembly Tests
+## ============================================================================
+
+@info("Testing Phase 5b: Extended training assembly tests")
+
+##
+
+@info("Testing ACEfit.basis_size integration")
+import ACEfit
+@test ACEfit.basis_size(et_calc) == ETM.length_basis(et_calc)
+println("ACEfit.basis_size: OK")
+
+##
+
+@info("Testing training assembly on multiple structures")
+
+# Generate multiple random structures
+nstructs = 5
+test_systems = [rand_struct() for _ in 1:nstructs]
+
+all_ok = true
+for (i, sys) in enumerate(test_systems)
+   local θ = ETM.get_linear_parameters(et_calc)
+   local efv_basis = ETM.energy_forces_virial_basis(sys, et_calc)
+
+   # Check energy
+   local E_from_basis = dot(ustrip.(efv_basis.energy), θ)
+   local E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
+   if !isapprox(E_from_basis, E_direct, rtol=1e-10)
+      @warn "Energy mismatch on structure $i"
+      all_ok = false
+   end
+
+   # Check forces
+   local F_from_basis = efv_basis.forces * θ
+   local F_direct = AtomsCalculators.forces(sys, et_calc)
+   local max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
+   if max_diff >= 1e-10
+      @warn "Force mismatch on structure $i: max_diff = $max_diff"
+      all_ok = false
+   end
+
+   # Check virial
+   local V_from_basis = sum(θ[k] * ustrip.(efv_basis.virial[k]) for k in 1:length(θ))
+   local V_direct = ustrip.(AtomsCalculators.virial(sys, et_calc))
+   local virial_diff = maximum(abs.(V_from_basis - V_direct))
+   if virial_diff >= 1e-10
+      @warn "Virial mismatch on structure $i: max_diff = $virial_diff"
+      all_ok = false
+   end
+end
+print_tf(@test all_ok)
+println()
+println("Multiple structures ($nstructs): OK")
+
+##
+
+@info("Testing multi-species parameter ordering")
+
+# Create structures with varying species compositions
+# Pure Si
+sys_si = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_si, 0.1u"Å")
+
+# Pure O (use Si lattice but with O atoms)
+sys_o = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_o, 0.1u"Å")
+AtomsBuilder.randz!(sys_o, [:O => 1.0])
+
+# Mixed 50/50
+sys_mixed = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_mixed, 0.1u"Å")
+AtomsBuilder.randz!(sys_mixed, [:Si => 0.5, :O => 0.5])
+
+# Mixed 25/75
+sys_mixed2 = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_mixed2, 0.1u"Å")
+AtomsBuilder.randz!(sys_mixed2, [:Si => 0.25, :O => 0.75])
+
+species_test_systems = [sys_si, sys_o, sys_mixed, sys_mixed2]
+species_labels = ["Pure Si", "Pure O", "50/50 Si:O", "25/75 Si:O"]
+
+all_species_ok = true
+for (label, sys) in zip(species_labels, species_test_systems)
+   local θ = ETM.get_linear_parameters(et_calc)
+   local efv_basis = ETM.energy_forces_virial_basis(sys, et_calc)
+
+   # Check energy consistency
+   local E_from_basis = dot(ustrip.(efv_basis.energy), θ)
+   local E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
+
+   if !isapprox(E_from_basis, E_direct, rtol=1e-10)
+      @warn "Energy mismatch for $label: basis=$E_from_basis, direct=$E_direct"
+      all_species_ok = false
+   end
+
+   # Check forces
+   local F_from_basis = efv_basis.forces * θ
+   local F_direct = AtomsCalculators.forces(sys, et_calc)
+   local max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
+
+   if max_diff >= 1e-10
+      @warn "Force mismatch for $label: max_diff=$max_diff"
+      all_species_ok = false
+   end
+end
+print_tf(@test all_species_ok)
+println()
+println("Multi-species parameter ordering: OK")
+
+##
+
+@info("Testing species-specific basis contributions")
+
+# Verify that different species contribute to different parts of the basis
+nbasis = et_model.readout.in_dim
+nspecies = et_model.readout.ncat
+
+# For pure Si system, only Si basis should contribute
+efv_si = ETM.energy_forces_virial_basis(sys_si, et_calc)
+E_basis_si = ustrip.(efv_si.energy)
+
+# For pure O system, only O basis should contribute
+efv_o = ETM.energy_forces_virial_basis(sys_o, et_calc)
+E_basis_o = ustrip.(efv_o.energy)
+
+# Check that the patterns differ (different species activate different parameters)
+# Si uses parameters 1:nbasis, O uses parameters (nbasis+1):(2*nbasis)
+si_params = E_basis_si[1:nbasis]
+o_params_for_si = E_basis_si[(nbasis+1):end]
+o_params = E_basis_o[(nbasis+1):end]
+si_params_for_o = E_basis_o[1:nbasis]
+
+# Pure Si should have zero contribution from O parameters
+@test all(abs.(o_params_for_si) .< 1e-12)
+# Pure O should have zero contribution from Si parameters
+@test all(abs.(si_params_for_o) .< 1e-12)
+# Pure Si should have nonzero Si parameters
+@test any(abs.(si_params) .> 1e-12)
+# Pure O should have nonzero O parameters
+@test any(abs.(o_params) .> 1e-12)
+
+println("Species-specific basis contributions: OK")
+
+##
+
+@info("All Phase 5b extended tests passed!")

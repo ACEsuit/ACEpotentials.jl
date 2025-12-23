@@ -1,5 +1,6 @@
 [deps]
 ACEbase = "14bae519-eb20-449c-a949-9c58ed33163e"
+ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 ACEpotentials = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
