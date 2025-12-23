@@ -19,5 +19,6 @@ include("convert.jl")
 include("splinify.jl")
 
 include("et_calculators.jl")
+include("stackedcalc.jl")
 
 end
