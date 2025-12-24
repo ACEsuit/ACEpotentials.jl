@@ -77,11 +77,13 @@ end
 @info("Testing ETACEPotential construction")
 
 # Create calculator from ETACE model
+# ETACEPotential is now WrappedSiteCalculator{WrappedETACE}
 et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
 
-@test et_calc.model === et_model
+# Access underlying ETACE via calc.model.model (calc.model is WrappedETACE)
+@test et_calc.model.model === et_model
 @test et_calc.rcut == rcut
-@test et_calc.co_ps === nothing
+@test et_calc.model.co_ps === nothing
 println("ETACEPotential construction: OK")
 
 ##

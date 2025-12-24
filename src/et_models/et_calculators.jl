@@ -102,32 +102,41 @@ end
 # ============================================================================
 
 """
-    WrappedETACE{MOD<:ETACE, T}
+    WrappedETACE{MOD<:ETACE, PS, ST}
 
 Wraps an ETACE model to implement the SiteEnergyModel interface.
+Mutable to allow parameter updates during training.
 
 # Fields
 - `model::ETACE` - The underlying ETACE model
-- `ps` - Model parameters
+- `ps` - Model parameters (mutable for training)
 - `st` - Model state
 - `rcut::Float64` - Cutoff radius in Ångström
+- `co_ps` - Optional committee parameters for uncertainty quantification
 """
-struct WrappedETACE{MOD<:ETACE, PS, ST}
+mutable struct WrappedETACE{MOD<:ETACE, PS, ST}
    model::MOD
    ps::PS
    st::ST
    rcut::Float64
+   co_ps::Any
+end
+
+# Constructor without committee parameters
+function WrappedETACE(model::ETACE, ps, st, rcut::Real)
+   return WrappedETACE(model, ps, st, Float64(rcut), nothing)
 end
 
 cutoff_radius(w::WrappedETACE) = w.rcut
 
 function site_energies(w::WrappedETACE, G::ET.ETGraph, ps, st)
    # Use wrapper's ps/st, ignore passed ones (they're for StackedCalculator dispatch)
-   return _core_site_energies(w.model, G, w.ps, w.st)
+   Ei, _ = w.model(G, w.ps, w.st)
+   return Ei
 end
 
 function site_energy_grads(w::WrappedETACE, G::ET.ETGraph, ps, st)
-   return _core_site_grads(w.model, G, w.ps, w.st)
+   return site_grads(w.model, G, w.ps, w.st)
 end
 
 
@@ -185,6 +194,16 @@ function _wrapped_forces(calc::WrappedSiteCalculator, sys::AbstractSystem)
    end
    # forces_from_edge_grads returns +∇E, negate for forces
    return -ET.Atoms.forces_from_edge_grads(sys, G, ∂G.edge_data)
+end
+
+# Compute virial tensor from edge gradients
+function _compute_virial(G::ET.ETGraph, ∂G)
+   # V = -∑ (∂E/∂𝐫ij) ⊗ 𝐫ij
+   V = zeros(SMatrix{3,3,Float64,9})
+   for (edge, ∂edge) in zip(G.edge_data, ∂G.edge_data)
+      V -= ∂edge.𝐫 * edge.𝐫'
+   end
+   return V
 end
 
 function _wrapped_virial(calc::WrappedSiteCalculator, sys::AbstractSystem)
@@ -247,134 +266,36 @@ end
 
 
 # ============================================================================
-#  ETACEPotential - Standalone calculator for ETACE models
+#  ETACEPotential - Type alias for WrappedSiteCalculator{WrappedETACE}
 # ============================================================================
 
 """
     ETACEPotential
 
 AtomsCalculators-compatible calculator wrapping an ETACE model.
+This is a type alias for `WrappedSiteCalculator{<:WrappedETACE}`.
 
-# Fields
-- `model::ETACE` - The ETACE model
-- `ps` - Model parameters
-- `st` - Model state
-- `rcut::Float64` - Cutoff radius in Ångström
-- `co_ps` - Optional committee parameters for uncertainty quantification
+Access underlying components via:
+- `calc.model` - The WrappedETACE wrapper
+- `calc.model.model` - The ETACE model
+- `calc.model.ps` - Model parameters
+- `calc.model.st` - Model state
+- `calc.rcut` - Cutoff radius in Ångström
+- `calc.model.co_ps` - Committee parameters (optional)
+
+# Example
+```julia
+calc = ETACEPotential(et_model, ps, st, 5.5)
+E = potential_energy(sys, calc)
+```
 """
-mutable struct ETACEPotential{MOD<:ETACE, T}
-   model::MOD
-   ps::T
-   st::NamedTuple
-   rcut::Float64
-   co_ps::Any
-end
+const ETACEPotential{MOD<:ETACE, PS, ST} = WrappedSiteCalculator{WrappedETACE{MOD, PS, ST}}
 
-# Constructor without committee parameters
+# Constructor: creates WrappedSiteCalculator wrapping WrappedETACE
 function ETACEPotential(model::ETACE, ps, st, rcut::Real)
-   return ETACEPotential(model, ps, st, Float64(rcut), nothing)
+   wrapped = WrappedETACE(model, ps, st, rcut)
+   return WrappedSiteCalculator(wrapped, Float64(rcut))
 end
-
-# Cutoff radius accessor
-cutoff_radius(calc::ETACEPotential) = calc.rcut * u"Å"
-
-# ============================================================================
-#  Internal evaluation functions
-# ============================================================================
-
-function _compute_virial(G::ET.ETGraph, ∂G)
-   # V = -∑ (∂E/∂𝐫ij) ⊗ 𝐫ij
-   V = zeros(SMatrix{3,3,Float64,9})
-   for (edge, ∂edge) in zip(G.edge_data, ∂G.edge_data)
-      V -= ∂edge.𝐫 * edge.𝐫'
-   end
-   return V
-end
-
-# ============================================================================
-#  Core Evaluation Helpers (shared by ETACEPotential and WrappedSiteCalculator)
-# ============================================================================
-
-"""
-    _core_site_energies(model::ETACE, G::ET.ETGraph, ps, st)
-
-Core site energy computation: forward pass through ETACE model.
-Returns per-site energies (vector of length nnodes(G)).
-"""
-function _core_site_energies(model::ETACE, G::ET.ETGraph, ps, st)
-   Ei, _ = model(G, ps, st)
-   return Ei
-end
-
-"""
-    _core_site_grads(model::ETACE, G::ET.ETGraph, ps, st)
-
-Core site gradient computation: backward pass for forces/virial.
-Returns named tuple with edge_data containing gradient vectors.
-"""
-function _core_site_grads(model::ETACE, G::ET.ETGraph, ps, st)
-   return site_grads(model, G, ps, st)
-end
-
-function _evaluate_energy(calc::ETACEPotential, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   Ei = _core_site_energies(calc.model, G, calc.ps, calc.st)
-   return sum(Ei)
-end
-
-function _evaluate_forces(calc::ETACEPotential, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   ∂G = _core_site_grads(calc.model, G, calc.ps, calc.st)
-   # Note: forces_from_edge_grads returns +∇E, we need -∇E for forces
-   return -ET.Atoms.forces_from_edge_grads(sys, G, ∂G.edge_data)
-end
-
-function _evaluate_virial(calc::ETACEPotential, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   ∂G = _core_site_grads(calc.model, G, calc.ps, calc.st)
-   return _compute_virial(G, ∂G)
-end
-
-function _energy_forces_virial(calc::ETACEPotential, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   Ei = _core_site_energies(calc.model, G, calc.ps, calc.st)
-   ∂G = _core_site_grads(calc.model, G, calc.ps, calc.st)
-   return (
-      energy = sum(Ei),
-      forces = -ET.Atoms.forces_from_edge_grads(sys, G, ∂G.edge_data),
-      virial = _compute_virial(G, ∂G)
-   )
-end
-
-# ============================================================================
-#  AtomsCalculators interface
-# ============================================================================
-
-AtomsCalculators.@generate_interface function AtomsCalculators.potential_energy(
-      sys::AbstractSystem, calc::ETACEPotential; kwargs...)
-   return _evaluate_energy(calc, sys) * u"eV"
-end
-
-AtomsCalculators.@generate_interface function AtomsCalculators.forces(
-      sys::AbstractSystem, calc::ETACEPotential; kwargs...)
-   return _evaluate_forces(calc, sys) .* u"eV/Å"
-end
-
-AtomsCalculators.@generate_interface function AtomsCalculators.virial(
-      sys::AbstractSystem, calc::ETACEPotential; kwargs...)
-   return _evaluate_virial(calc, sys) * u"eV"
-end
-
-function AtomsCalculators.energy_forces_virial(
-      sys::AbstractSystem, calc::ETACEPotential; kwargs...)
-   efv = _energy_forces_virial(calc, sys)
-   return (
-      energy = efv.energy * u"eV",
-      forces = efv.forces .* u"eV/Å",
-      virial = efv.virial * u"eV"
-   )
-end
-
 
 # ============================================================================
 #  Training Assembly Interface
@@ -391,14 +312,20 @@ end
 # Force basis:  F_atom = -∑ edges ∂E/∂r_edge, computed per basis function
 # Virial basis: V = -∑ edges (∂E/∂r_edge) ⊗ r_edge, computed per basis function
 
+# Accessor helpers for ETACEPotential (which is WrappedSiteCalculator{WrappedETACE})
+_etace(calc::ETACEPotential) = calc.model.model      # Underlying ETACE model
+_ps(calc::ETACEPotential) = calc.model.ps            # Model parameters
+_st(calc::ETACEPotential) = calc.model.st            # Model state
+
 """
     length_basis(calc::ETACEPotential)
 
 Return the number of linear parameters in the model (nbasis * nspecies).
 """
 function length_basis(calc::ETACEPotential)
-   nbasis = calc.model.readout.in_dim
-   nspecies = calc.model.readout.ncat
+   etace = _etace(calc)
+   nbasis = etace.readout.in_dim
+   nspecies = etace.readout.ncat
    return nbasis * nspecies
 end
 
@@ -422,21 +349,22 @@ The linear combination of basis values with parameters gives:
 """
 function energy_forces_virial_basis(sys::AbstractSystem, calc::ETACEPotential)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+   etace = _etace(calc)
 
    # Get basis and jacobian
    # 𝔹: (nnodes, nbasis) - basis values per site (Float64)
    # ∂𝔹: (maxneigs, nnodes, nbasis) - directional derivatives (VState objects)
-   𝔹, ∂𝔹 = site_basis_jacobian(calc.model, G, calc.ps, calc.st)
+   𝔹, ∂𝔹 = site_basis_jacobian(etace, G, _ps(calc), _st(calc))
 
    natoms = length(sys)
    nnodes = size(𝔹, 1)
-   nbasis = calc.model.readout.in_dim
-   nspecies = calc.model.readout.ncat
+   nbasis = etace.readout.in_dim
+   nspecies = etace.readout.ncat
    nparams = nbasis * nspecies
    maxneigs = size(∂𝔹, 1)
 
    # Species indices for each node
-   iZ = calc.model.readout.selector.(G.node_data)
+   iZ = etace.readout.selector.(G.node_data)
 
    # Initialize outputs
    E_basis = zeros(nparams)
@@ -508,16 +436,17 @@ Compute only the energy basis (faster when forces/virial not needed).
 """
 function potential_energy_basis(sys::AbstractSystem, calc::ETACEPotential)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+   etace = _etace(calc)
 
    # Get basis values
-   𝔹 = site_basis(calc.model, G, calc.ps, calc.st)
+   𝔹 = site_basis(etace, G, _ps(calc), _st(calc))
 
-   nbasis = calc.model.readout.in_dim
-   nspecies = calc.model.readout.ncat
+   nbasis = etace.readout.in_dim
+   nspecies = etace.readout.ncat
    nparams = nbasis * nspecies
 
    # Species indices for each node
-   iZ = calc.model.readout.selector.(G.node_data)
+   iZ = etace.readout.selector.(G.node_data)
 
    # Compute energy basis
    E_basis = zeros(nparams)
@@ -542,7 +471,7 @@ Extract the linear parameters (readout weights) as a flat vector.
 Parameters are ordered as: [W[1,:,1]; W[1,:,2]; ... ; W[1,:,nspecies]]
 """
 function get_linear_parameters(calc::ETACEPotential)
-   return vec(calc.ps.readout.W)
+   return vec(_ps(calc).readout.W)
 end
 
 """
@@ -551,13 +480,15 @@ end
 Set the linear parameters (readout weights) from a flat vector.
 """
 function set_linear_parameters!(calc::ETACEPotential, θ::AbstractVector)
-   nbasis = calc.model.readout.in_dim
-   nspecies = calc.model.readout.ncat
+   etace = _etace(calc)
+   nbasis = etace.readout.in_dim
+   nspecies = etace.readout.ncat
    @assert length(θ) == nbasis * nspecies
 
-   # Reshape and copy into ps
+   # Reshape and copy into ps (via the WrappedETACE which is mutable)
+   ps = _ps(calc)
    new_W = reshape(θ, 1, nbasis, nspecies)
-   calc.ps = merge(calc.ps, (readout = merge(calc.ps.readout, (W = new_W,)),))
+   calc.model.ps = merge(ps, (readout = merge(ps.readout, (W = new_W,)),))
    return calc
 end
 
