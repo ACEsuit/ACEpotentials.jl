@@ -60,78 +60,35 @@ end
 #  Efficient implementations using @generated for compile-time unrolling
 # ============================================================================
 
-# Helper to generate sum expression: E_1 + E_2 + ... + E_N
-function _gen_sum(N, prefix)
-   if N == 1
-      return Symbol(prefix, "_1")
-   else
-      ex = Symbol(prefix, "_1")
-      for i in 2:N
-         ex = :($ex + $(Symbol(prefix, "_", i)))
-      end
-      return ex
-   end
-end
-
-# Helper to generate broadcast sum: F_1 .+ F_2 .+ ... .+ F_N
-function _gen_broadcast_sum(N, prefix)
-   if N == 1
-      return Symbol(prefix, "_1")
-   else
-      ex = Symbol(prefix, "_1")
-      for i in 2:N
-         ex = :($ex .+ $(Symbol(prefix, "_", i)))
-      end
-      return ex
-   end
-end
-
 @generated function _stacked_energy(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
-   assignments = [:($(Symbol("E_", i)) = AtomsCalculators.potential_energy(sys, calc.calcs[$i])) for i in 1:N]
-   sum_expr = _gen_sum(N, "E")
    quote
-      $(assignments...)
-      return $sum_expr
+      @nexprs $N i -> E_i = AtomsCalculators.potential_energy(sys, calc.calcs[i])
+      return sum(@ntuple $N E)
    end
 end
 
 @generated function _stacked_forces(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
-   assignments = [:($(Symbol("F_", i)) = AtomsCalculators.forces(sys, calc.calcs[$i])) for i in 1:N]
-   sum_expr = _gen_broadcast_sum(N, "F")
    quote
-      $(assignments...)
-      return $sum_expr
+      @nexprs $N i -> F_i = AtomsCalculators.forces(sys, calc.calcs[i])
+      return reduce(.+, @ntuple $N F)
    end
 end
 
 @generated function _stacked_virial(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
-   assignments = [:($(Symbol("V_", i)) = AtomsCalculators.virial(sys, calc.calcs[$i])) for i in 1:N]
-   sum_expr = _gen_sum(N, "V")
    quote
-      $(assignments...)
-      return $sum_expr
+      @nexprs $N i -> V_i = AtomsCalculators.virial(sys, calc.calcs[i])
+      return sum(@ntuple $N V)
    end
 end
 
 @generated function _stacked_efv(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
-   # Generate assignments for each calculator
-   assignments = [:($(Symbol("efv_", i)) = AtomsCalculators.energy_forces_virial(sys, calc.calcs[$i])) for i in 1:N]
-
-   # Generate sum expressions
-   E_exprs = [:($(Symbol("efv_", i)).energy) for i in 1:N]
-   F_exprs = [:($(Symbol("efv_", i)).forces) for i in 1:N]
-   V_exprs = [:($(Symbol("efv_", i)).virial) for i in 1:N]
-
-   E_sum = N == 1 ? E_exprs[1] : reduce((a, b) -> :($a + $b), E_exprs)
-   F_sum = N == 1 ? F_exprs[1] : reduce((a, b) -> :($a .+ $b), F_exprs)
-   V_sum = N == 1 ? V_exprs[1] : reduce((a, b) -> :($a + $b), V_exprs)
-
    quote
-      $(assignments...)
-      E_total = $E_sum
-      F_total = $F_sum
-      V_total = $V_sum
-      return (energy=E_total, forces=F_total, virial=V_total)
+      @nexprs $N i -> efv_i = AtomsCalculators.energy_forces_virial(sys, calc.calcs[i])
+      return (
+         energy = sum(@ntuple $N i -> efv_i.energy),
+         forces = reduce(.+, @ntuple $N i -> efv_i.forces),
+         virial = sum(@ntuple $N i -> efv_i.virial)
+      )
    end
 end
 

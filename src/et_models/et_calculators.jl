@@ -123,12 +123,11 @@ cutoff_radius(w::WrappedETACE) = w.rcut
 
 function site_energies(w::WrappedETACE, G::ET.ETGraph, ps, st)
    # Use wrapper's ps/st, ignore passed ones (they're for StackedCalculator dispatch)
-   Ei, _ = w.model(G, w.ps, w.st)
-   return Ei
+   return _core_site_energies(w.model, G, w.ps, w.st)
 end
 
 function site_energy_grads(w::WrappedETACE, G::ET.ETGraph, ps, st)
-   return site_grads(w.model, G, w.ps, w.st)
+   return _core_site_grads(w.model, G, w.ps, w.st)
 end
 
 
@@ -292,42 +291,59 @@ function _compute_virial(G::ET.ETGraph, ∂G)
    return V
 end
 
+# ============================================================================
+#  Core Evaluation Helpers (shared by ETACEPotential and WrappedSiteCalculator)
+# ============================================================================
+
+"""
+    _core_site_energies(model::ETACE, G::ET.ETGraph, ps, st)
+
+Core site energy computation: forward pass through ETACE model.
+Returns per-site energies (vector of length nnodes(G)).
+"""
+function _core_site_energies(model::ETACE, G::ET.ETGraph, ps, st)
+   Ei, _ = model(G, ps, st)
+   return Ei
+end
+
+"""
+    _core_site_grads(model::ETACE, G::ET.ETGraph, ps, st)
+
+Core site gradient computation: backward pass for forces/virial.
+Returns named tuple with edge_data containing gradient vectors.
+"""
+function _core_site_grads(model::ETACE, G::ET.ETGraph, ps, st)
+   return site_grads(model, G, ps, st)
+end
+
 function _evaluate_energy(calc::ETACEPotential, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   Ei, _ = calc.model(G, calc.ps, calc.st)
+   Ei = _core_site_energies(calc.model, G, calc.ps, calc.st)
    return sum(Ei)
 end
 
 function _evaluate_forces(calc::ETACEPotential, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   ∂G = site_grads(calc.model, G, calc.ps, calc.st)
+   ∂G = _core_site_grads(calc.model, G, calc.ps, calc.st)
    # Note: forces_from_edge_grads returns +∇E, we need -∇E for forces
    return -ET.Atoms.forces_from_edge_grads(sys, G, ∂G.edge_data)
 end
 
 function _evaluate_virial(calc::ETACEPotential, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   ∂G = site_grads(calc.model, G, calc.ps, calc.st)
+   ∂G = _core_site_grads(calc.model, G, calc.ps, calc.st)
    return _compute_virial(G, ∂G)
 end
 
 function _energy_forces_virial(calc::ETACEPotential, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-
-   # Forward pass for energy
-   Ei, _ = calc.model(G, calc.ps, calc.st)
-   E = sum(Ei)
-
-   # Backward pass for gradients (forces and virial)
-   ∂G = site_grads(calc.model, G, calc.ps, calc.st)
-
-   # Forces from edge gradients (negate since forces_from_edge_grads returns +∇E)
-   F = -ET.Atoms.forces_from_edge_grads(sys, G, ∂G.edge_data)
-
-   # Virial from edge gradients
-   V = _compute_virial(G, ∂G)
-
-   return (energy=E, forces=F, virial=V)
+   Ei = _core_site_energies(calc.model, G, calc.ps, calc.st)
+   ∂G = _core_site_grads(calc.model, G, calc.ps, calc.st)
+   return (
+      energy = sum(Ei),
+      forces = -ET.Atoms.forces_from_edge_grads(sys, G, ∂G.edge_data),
+      virial = _compute_virial(G, ∂G)
+   )
 end
 
 # ============================================================================
