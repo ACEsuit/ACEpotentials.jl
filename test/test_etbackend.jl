@@ -173,6 +173,8 @@ println(@test all(∇E_fd.edge_data .≈ ∂G2b.edge_data))
 ##
 #
 # sys = rand_struct()
+@info("Testing basis and jacobian")
+
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
 nnodes = length(G.node_data)
 iZ = et_model_2.readout.selector.(G.node_data)
@@ -214,6 +216,7 @@ println(@test all(∇E_𝔹_edges .≈ ∂G2b.edge_data))
 # until then this just needs to be done manually and locally?
 
 #=
+
 @info("Checking GPU evaluation with Metal.jl")
 
 # TODO: replace Metal with generic GPU test 
@@ -256,14 +259,15 @@ println_slim( @test all(∇1 .≈ ∇2) )
 𝔹2 = Array(𝔹2_dev)
 println_slim( @test 𝔹1 ≈ 𝔹2 )
 
-
 @info("Basis jacobian evaluation on GPU")
 𝔹1, ∂𝔹1 = ETM.site_basis_jacobian(et_model_2, G_32, ps_32_2, st_32_2)
+𝔹2_dev, ∂𝔹2_dev = ETM.site_basis_jacobian(et_model_2, G_32_dev, ps_dev_2, st_dev_2)
 
-try
-   𝔹2_dev, ∂𝔹2_dev = ETM.site_basis_jacobian(et_model_2, G_32_dev, ps_dev_2, st_dev_2)
-catch 
-   @warn("Basis jacobian evaluation on GPU still failing")
-end
+𝔹2 = Array(𝔹2_dev)
+∂𝔹2 = Array(∂𝔹2_dev)
 
-=#
+println_slim( @test 𝔹1 ≈ 𝔹2 )
+err_jac = norm.(∂𝔹1 - ∂𝔹2) ./ (norm.(∂𝔹1) + norm.(∂𝔹2) .+ 0.1) 
+println_slim( @test maximum(err_jac) < 1e-5 )
+
+=# 
