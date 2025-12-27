@@ -69,5 +69,4 @@ function site_basis_jacobian(l::ETOneBody, X::ET.ETGraph, ps, st)
    ∂𝔹 = fill(VState(), (ET.maxneigs(X), ET.nnodes(X), 0))
    return 𝔹, ∂𝔹
 end
-𝔹
 
