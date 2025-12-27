@@ -121,6 +121,7 @@ println_slim(@test size(∂𝔹2) == (ET.maxneigs(G), length(sys), 0))
 
 ##
 
+# turn off during CI -- need to sort out CI for GPU tests 
 #=
 @info("Check GPU evaluation") 
 using Metal 
@@ -139,4 +140,20 @@ E1, st = et_V0(G_32, ps_32, st_32)
 E2_dev, st_dev = et_V0(G_dev, ps_dev, st_dev)
 E2 = Array(E2_dev)
 
+g1 = ETM.site_grads(et_V0, G_32, ps_32, st_32)
+g2_dev = ETM.site_grads(et_V0, G_dev, ps_dev, st_dev)
+g2 = Array(g2_dev)
+println_slim(@test g1 == g2)
+
+b1 = ETM.site_basis(et_V0, G_32, ps_32, st_32)
+b2_dev = ETM.site_basis(et_V0, G_dev, ps_dev, st_dev)
+b2 = Array(b2_dev)
+println_slim(@test b1 == b2)
+
+b1, ∂db1 = ETM.site_basis_jacobian(et_V0, G_32, ps_32, st_32)
+b2_dev, ∂db2_dev = ETM.site_basis_jacobian(et_V0, G_dev, ps_dev, st_dev)
+b2 = Array(b2_dev)
+∂db2 = Array(∂db2_dev)
+println_slim(@test b1 == b2)
+println_slim(@test ∂db1 == ∂db2)
 =#

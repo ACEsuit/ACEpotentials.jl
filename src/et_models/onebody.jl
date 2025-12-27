@@ -52,7 +52,11 @@ _apply_onebody(l::ETOneBody, X::ET.ETGraph, st) =
       _apply_onebody(l, X.node_data, st)
 
 _apply_onebody(l::ETOneBody, X::AbstractVector, st) = 
-         map(x -> st.E0s[l.selector(x)], X)
+         ___apply_onebody(l.selector, X, st.E0s)
+
+___apply_onebody(selector, X::AbstractVector, E0s) = 
+         map(x -> E0s[selector(x)], X)
+
 
 site_grads(l::ETOneBody, X::ET.ETGraph, ps, st) = 
          fill(VState(), (ET.maxneigs(X), ET.nnodes(X), ))
