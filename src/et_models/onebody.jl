@@ -7,6 +7,12 @@
 # of making the E0s either constants or learnable parameters. 
 #
 
+using Random: AbstractRNG
+import EquivariantTensors as ET
+using DecoratedParticles: VState
+using StaticArrays: SVector
+
+
 """
    one_body(D::Dict, catfun)
 
@@ -54,6 +60,10 @@ site_grads(l::ETOneBody, X::ET.ETGraph, ps, st) =
 site_basis(l::ETOneBody, X::ET.ETGraph, ps, st) = 
          fill(zero(eltype(st.E0s)), (ET.nnodes(X), 0))
 
-site_basis_jacobian(l::ETOneBody, X::ET.ETGraph, ps, st) = 
-         fill(VState(), (ET.maxneigs(X), ET.nnodes(X), 0))
+function site_basis_jacobian(l::ETOneBody, X::ET.ETGraph, ps, st) 
+   𝔹 = site_basis(l, X, ps, st) 
+   ∂𝔹 = fill(VState(), (ET.maxneigs(X), ET.nnodes(X), 0))
+   return 𝔹, ∂𝔹
+end
+𝔹
 
