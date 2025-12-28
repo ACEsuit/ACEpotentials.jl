@@ -110,14 +110,14 @@ function _convert_Rnl_learnable(basis; zlist = ChemicalSpecies.(basis._i2z),
    #    y outside [-1, 1] maps to 1 or -1. )  
    # this obviously needs to be relaxed if we want compatibility 
    # with older versions of the code 
-   # for env in basis.envelopes
-   #    @assert env isa PolyEnvelope2sX
-   #    @assert env.p1 == env.p2 == 2 
-   #    @assert env.x1 == -1
-   #    @assert env.x2 == 1
-   # end
-   # et_env = y -> (1 - y^2)^2
-   et_env = _convert_envelope(basis.envelopes)
+   for env in basis.envelopes
+      @assert env isa PolyEnvelope2sX
+      @assert env.p1 == env.p2 == 2 
+      @assert env.x1 == -1
+      @assert env.x2 == 1
+   end
+   et_env = y -> (1 - y^2)^2
+   # et_env = _convert_envelope(basis.envelopes)
 
    # the polynomial basis just stays the same 
    # but needs to be wrapped due to the envelope being applied 
