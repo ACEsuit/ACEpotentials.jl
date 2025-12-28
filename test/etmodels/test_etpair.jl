@@ -125,9 +125,9 @@ readout = ET.SelectLinL(
                selector1)            
 
 et_pair = ETM.ETPairModel(et_basis, readout)
-et_ps, st_st = Lux.setup(rng, et_pair)
+et_ps, et_st = Lux.setup(rng, et_pair)
 
-et_pair(G, et_ps, st_st)  # test run
+et_pair(G, et_ps, et_st)  # test run
 
 ##
 # fixup the parameters to match the ACE model - here we incorporate the 
@@ -152,12 +152,55 @@ calc_model = ACEpotentials.ACEPotential(model, ps, st)
 
 function energy_new(sys, et_model)
    G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-   Ei, _ = et_model(G, et_ps, st_st)
+   Ei, _ = et_model(G, et_ps, et_st)
    return sum(Ei) 
 end
+
+##
 
 sys = rand_struct() 
 E1 = AtomsCalculators.potential_energy(sys, calc_model) |> ustrip 
 E2 = energy_new(sys, et_pair)
 
+E1 ≈ E2
+@show E1 
+@show E2 
+
 ##
+
+#
+# DEBUG 
+#
+
+sys = rand_struct() 
+G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+rr = [ norm(x.𝐫) for x in G.edge_data ]
+zz0 = [ x.z0 for x in G.edge_data ]
+zz1 = [ x.z1 for x in G.edge_data ]
+at_zz0 = AtomsBase.atomic_number.(zz0)
+at_zz1 = AtomsBase.atomic_number.(zz1)
+
+# confirm transform 
+trans0 = basis.transforms[1]
+y1 = trans0.(rr)
+y2 = r_agnesi.(rr)
+@show y1 ≈ y2
+
+# confirm envelopes 
+env0 = basis.envelopes[1]
+e1 = M.evaluate.(Ref(env0), rr, y1)
+e2 = f_env.(rr)
+@show e1 ≈ e2
+
+# confirm polynomials 
+p1 = e1 .* basis.polys(y1) 
+p2, _ = et_rbasis(rr, et_ps.rembed.basis, et_st.rembed.basis)
+@show p1 ≈ p2
+
+# transformed radial basis 
+_q1 = [ M.evaluate(basis, r, z0, z1, ps.pairbasis, st.pairbasis)
+        for (r, z0, z1) in zip(rr, at_zz0, at_zz1) ]
+q1 = permutedims(reduce(hcat, _q1))
+q2, _ = et_basis.layer(G.edge_data, et_ps.rembed, et_st.rembed)
+
+@show q1 ≈ q2
