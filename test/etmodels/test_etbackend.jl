@@ -1,4 +1,4 @@
-# using Pkg; Pkg.activate(joinpath(@__DIR__(), ".."))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 # using TestEnv; TestEnv.activate();
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "EquivariantTensors.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))

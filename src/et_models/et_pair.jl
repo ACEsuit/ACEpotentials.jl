@@ -15,11 +15,11 @@ end
       
       
 function _apply_etpairmodel(l::ETPairModel, X::ET.ETGraph, ps, st)      
-   # embed edges 
-   Rnl, _ = l.rembed(X, ps.rembed, st.rembed)
+   # evaluate the basis 
+   𝔹 = site_basis(l, X, ps, st)
 
    # readout layer 
-   φ, _ = l.readout((Rnl, X.node_data), ps.readout, st.readout)
+   φ, _ = l.readout((𝔹, X.node_data), ps.readout, st.readout)
 
    return φ
 end
@@ -41,7 +41,11 @@ function site_basis(l::ETPairModel, X::ET.ETGraph, ps, st)
    # embed edges 
    Rnl, _ = l.rembed(X, ps.rembed, st.rembed)
 
-   return Rnl 
+   # the basis is obtain by summing over the neighbours of each node, 
+   # which is just a sum over the first dimension of Rnl 
+   𝔹 = dropdims(sum(Rnl, dims=1), dims=1)
+
+   return 𝔹
 end
 
 
