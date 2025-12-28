@@ -180,7 +180,8 @@ zz1 = [ x.z1 for x in G.edge_data ]
 at_zz0 = AtomsBase.atomic_number.(zz0)
 at_zz1 = AtomsBase.atomic_number.(zz1)
 
-# confirm transform 
+# confirm transform  ====> this is likely the mistake 
+#      because the transform parameters are different for each species pair 
 trans0 = basis.transforms[1]
 y1 = trans0.(rr)
 y2 = r_agnesi.(rr)
@@ -204,3 +205,19 @@ q1 = permutedims(reduce(hcat, _q1))
 q2, _ = et_basis.layer(G.edge_data, et_ps.rembed, et_st.rembed)
 
 @show q1 ≈ q2
+
+##
+idx = 5
+display(G.edge_data[idx])
+p1_ = p1[idx, :]
+p2_ = p2[idx, :]
+q1_ = q1[idx, :]
+q2_ = q2[idx, :]
+@show p1_ ≈ p2_
+@show q1_ ≈ q2_
+i1 = M._z2i(basis, at_zz0[idx])
+j1 = M._z2i(basis, at_zz1[idx])
+i2 = selector2(G.edge_data[idx])
+W1 = ps.pairbasis.Wnlq[:, :, i1, j1]
+W2 = et_ps.rembed.post.W[:, :, i2]
+@show W1 ≈ W2
