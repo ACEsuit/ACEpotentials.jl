@@ -190,7 +190,7 @@ WW = et_ps_2.readout.W
 println_slim(@test 𝔹1 ≈ 𝔹2)
 Ei_a = [ dot(𝔹2[i, :], WW[1, :, iZ[i]])    for (i, iz) in enumerate(iZ) ]
 Ei_b = et_model_2(G, et_ps_2, et_st_2)[1][:]
-println(@test Ei_a ≈ Ei_b)
+println_slim(@test Ei_a ≈ Ei_b)
 
 ##
 

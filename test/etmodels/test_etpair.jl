@@ -64,28 +64,10 @@ basis = model.pairbasis
 et_zlist = ChemicalSpecies.(basis._i2z)
 NZ = length(et_zlist)
 
-# 1: extract r = |x.𝐫|
-trans = ET.dp_transform( x -> norm(x.𝐫) )
-
-# 2: radial basis r -> y -> P(y)   \
-#                    -----> env(r) -> P(y) * env(r) 
-#
-# 2a : define the agnesi transform y = y(r) 
+# 1: polynomials without the envelope
+# 
 dp_agnesi = ETM._convert_agnesi(basis)
-r_agnesi = ET.st_transform( (r, st) -> ET.eval_agnesi(r, st), 
-                            dp_agnesi.refstate.params[1] )
-# 2b : extract the radial basis
 polys = basis.polys
-# 2c : extract the envelopes
-f_env = ETM._convert_envelope(basis.envelopes)
-
-et_rbasis = BranchLayer(
-                f_env, 
-                Chain(; agnesi = r_agnesi, polys = polys); 
-                fusion = WrappedFunction(eP -> eP[2] .* eP[1])
-               )
-
-# 3 : construct the SelLinL layer 
 selector2 = let zlist = et_zlist
    xij -> ET.catcat2idx(zlist, xij.z0, xij.z1)
 end
@@ -93,9 +75,18 @@ et_linl = ET.SelectLinL(length(polys),         # indim
                         length(basis),       # outdim
                         NZ^2,                     # num (Zi,Zj) pairs
                         selector2)
+rbasis_1 = ET.EmbedDP(dp_agnesi, polys, et_linl)
 
-et_basis = ET.EdgeEmbed( ET.EmbedDP(trans, et_rbasis, et_linl) ) 
-et_ps, st_st = Lux.setup(rng, et_basis)
+# 2: envelope 
+_env_r = ETM._convert_envelope(basis.envelopes)
+dp_envelope = ET.dp_transform( (x, st) -> _env_r.f( norm(x.𝐫), st ), _env_r.refstate )
+
+# 3. combine into the radial basis 
+et_rbasis = ETM.EnvRBranchL(dp_envelope, rbasis_1)
+
+# convert this into an edge embedding                         
+rembed = ET.EdgeEmbed( et_rbasis )
+et_ps, et_st = Lux.setup(rng, rembed)
 
 ## 
 
@@ -109,7 +100,7 @@ end
 
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-et_basis(G, et_ps, st_st)  # just a test run
+out = rembed(G, et_ps, et_st)  # just a test run
 
 ##
 #
@@ -124,7 +115,7 @@ readout = ET.SelectLinL(
                NZ,     # number of categories = num species 
                selector1)            
 
-et_pair = ETM.ETPairModel(et_basis, readout)
+et_pair = ETM.ETPairModel(rembed, readout)
 et_ps, et_st = Lux.setup(rng, et_pair)
 
 et_pair(G, et_ps, et_st)  # test run
@@ -134,10 +125,10 @@ et_pair(G, et_ps, et_st)  # test run
 # 
 
 # radial basis parameters for et_model_2 
-et_ps.rembed.post.W[:, :, 1] = ps.pairbasis.Wnlq[:, :, 1, 1]
-et_ps.rembed.post.W[:, :, 2] = ps.pairbasis.Wnlq[:, :, 1, 2]
-et_ps.rembed.post.W[:, :, 3] = ps.pairbasis.Wnlq[:, :, 2, 1]
-et_ps.rembed.post.W[:, :, 4] = ps.pairbasis.Wnlq[:, :, 2, 2]
+et_ps.rembed.rbasis.post.W[:, :, 1] = ps.pairbasis.Wnlq[:, :, 1, 1]
+et_ps.rembed.rbasis.post.W[:, :, 2] = ps.pairbasis.Wnlq[:, :, 1, 2]
+et_ps.rembed.rbasis.post.W[:, :, 3] = ps.pairbasis.Wnlq[:, :, 2, 1]
+et_ps.rembed.rbasis.post.W[:, :, 4] = ps.pairbasis.Wnlq[:, :, 2, 2]
 
 # many-body basis parameters for et_model_2
 et_ps.readout.W[1, :, 1] .= ps.Wpair[:, 1]
@@ -158,66 +149,39 @@ end
 
 ##
 
-sys = rand_struct() 
-E1 = AtomsCalculators.potential_energy(sys, calc_model) |> ustrip 
-E2 = energy_new(sys, et_pair)
-
-E1 ≈ E2
-@show E1 
-@show E2 
+@info("Check total energies match")
+for ntest = 1:30 
+   sys = rand_struct()
+   G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+   E1 = AtomsCalculators.potential_energy(sys, calc_model)
+   E2 = energy_new(sys, et_pair)
+   print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-6 ) 
+end
 
 ##
 
-#
-# DEBUG 
-#
+@info("Check gradients and jacobians")
 
-sys = rand_struct() 
+sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-rr = [ norm(x.𝐫) for x in G.edge_data ]
-zz0 = [ x.z0 for x in G.edge_data ]
-zz1 = [ x.z1 for x in G.edge_data ]
-at_zz0 = AtomsBase.atomic_number.(zz0)
-at_zz1 = AtomsBase.atomic_number.(zz1)
+nnodes = length(G.node_data)
+iZ = et_pair.readout.selector.(G.node_data)
+WW = et_ps.readout.W
 
-# confirm transform  ====> this is likely the mistake 
-#      because the transform parameters are different for each species pair 
-trans0 = basis.transforms[1]
-y1 = trans0.(rr)
-y2 = r_agnesi.(rr)
-@show y1 ≈ y2
+# gradient of model w.r.t. positions 
+∂G = ETM.site_grads(et_pair, G, et_ps, et_st)  # test run
 
-# confirm envelopes 
-env0 = basis.envelopes[1]
-e1 = M.evaluate.(Ref(env0), rr, y1)
-e2 = f_env.(rr)
-@show e1 ≈ e2
+# basis 
+𝔹1 = ETM.site_basis(et_pair, G, et_ps, et_st)
 
-# confirm polynomials 
-p1 = e1 .* basis.polys(y1) 
-p2, _ = et_rbasis(rr, et_ps.rembed.basis, et_st.rembed.basis)
-@show p1 ≈ p2
+# basis jacobian 
+𝔹2, ∂𝔹2 = ETM.site_basis_jacobian(et_pair, G, et_ps, et_st)
 
-# transformed radial basis 
-_q1 = [ M.evaluate(basis, r, z0, z1, ps.pairbasis, st.pairbasis)
-        for (r, z0, z1) in zip(rr, at_zz0, at_zz1) ]
-q1 = permutedims(reduce(hcat, _q1))
-q2, _ = et_basis.layer(G.edge_data, et_ps.rembed, et_st.rembed)
+println_slim(@test 𝔹1 ≈ 𝔹2)
 
-@show q1 ≈ q2
+∇Ei2 = reduce( hcat, ∂𝔹2[:, i, :] * WW[1, :, iZ[i]] 
+                    for (i, iz) in enumerate(iZ) )
+∇Ei3 = reshape(∇Ei2, size(∇Ei2)..., 1)
+∇E_𝔹_edges = ET.rev_reshape_embedding(∇Ei3, G)[:]
+println_slim(@test all(∇E_𝔹_edges .≈ ∂G.edge_data))
 
-##
-idx = 5
-display(G.edge_data[idx])
-p1_ = p1[idx, :]
-p2_ = p2[idx, :]
-q1_ = q1[idx, :]
-q2_ = q2[idx, :]
-@show p1_ ≈ p2_
-@show q1_ ≈ q2_
-i1 = M._z2i(basis, at_zz0[idx])
-j1 = M._z2i(basis, at_zz1[idx])
-i2 = selector2(G.edge_data[idx])
-W1 = ps.pairbasis.Wnlq[:, :, i1, j1]
-W2 = et_ps.rembed.post.W[:, :, i2]
-@show W1 ≈ W2

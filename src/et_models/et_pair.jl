@@ -51,6 +51,8 @@ end
 
 function site_basis_jacobian(l::ETPairModel, X::ET.ETGraph, ps, st)    
    (R, ∂R), _ = ET.evaluate_ed(l.rembed, X, ps.rembed, st.rembed)
-   return R, ∂R
+   𝔹 = dropdims(sum(R, dims=1), dims=1)
+   # ∂𝔹 == ∂R
+   return 𝔹, ∂R
 end
 
