@@ -230,12 +230,28 @@ function _convert_env_TENV(::Type{<: PolyEnvelope1sR}, envelopes)
    return ET.st_transform(f_env, refst)
 end 
 
-
 function _eval_env_1sr(r, rcut, p)
    _1 = one(r)
    s = r / rcut 
    return (s^(-p) - _1) * (_1 - s) * (s < _1)
 end
+
+function _convert_pair_envelope(envelopes) 
+   TENV = typeof(envelopes[1]) 
+   for env in envelopes
+      @assert typeof(env) == TENV
+   end 
+   env1 = envelopes[1]
+   @assert env1 isa PolyEnvelope1sR 
+   for env in envelopes
+      @assert env == env1 
+   end
+   refst = ( rcut = env1.rcut, p = env1.p ) 
+   f_env = ET.dp_transform( (x, st) -> _eval_env_1sr( norm(x.𝐫), st.rcut, st.p ), 
+                            refst )
+   return f_env                             
+end
+
 
 
 function convertpair(model)
@@ -263,9 +279,10 @@ function convertpair(model)
    rbasis_1 = ET.EmbedDP(dp_agnesi, polys, et_linl)
 
    # 2: envelope 
-   _env_r = _convert_envelope(basis.envelopes)
-   dp_envelope = ET.dp_transform( (x, st) -> _env_r.f( norm(x.𝐫), st ), 
-                                   _env_r.refstate )
+   dp_envelope = _convert_pair_envelope(basis.envelopes)
+   # _env_r = _convert_envelope(basis.envelopes)
+   # dp_envelope = ET.dp_transform( (x, st) -> _env_r.f( norm(x.𝐫), st ), 
+   #                                 _env_r.refstate )
 
    # 3. combine into the radial basis
    rembed = ET.EdgeEmbed( EnvRBranchL(dp_envelope, rbasis_1) )

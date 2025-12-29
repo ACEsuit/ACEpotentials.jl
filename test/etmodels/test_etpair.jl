@@ -1,7 +1,7 @@
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
-using TestEnv; TestEnv.activate();
-Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
-# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using TestEnv; TestEnv.activate();
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "DecoratedParticles"))
 
 ##
@@ -137,6 +137,8 @@ println_slim(@test all(∇E_𝔹_edges .≈ ∂G.edge_data))
 
 # turn off during CI -- need to sort out CI for GPU tests 
 
+#= 
+
 @info("Check GPU evaluation") 
 using Metal 
 dev = Metal.mtl
@@ -153,21 +155,25 @@ G_dev = dev(G_32)
 E1, st = et_pair(G_32, ps_32, st_32)
 E2_dev, st_dev = et_pair(G_dev, ps_dev, st_dev)
 E2 = Array(E2_dev)
+println_slim(@test E1 ≈ E2)
 
+g1 = ETM.site_grads(et_pair, G_32, ps_32, st_32)
+g2_dev = ETM.site_grads(et_pair, G_dev, ps_dev, st_dev)
+g2_edge = Array(g2_dev.edge_data)
+println_slim(@test all(g1.edge_data .≈ g2_edge))
 
-g1 = ETM.site_grads(et_V0, G_32, ps_32, st_32)
-g2_dev = ETM.site_grads(et_V0, G_dev, ps_dev, st_dev)
-g2 = Array(g2_dev)
-println_slim(@test g1 == g2)
-
-b1 = ETM.site_basis(et_V0, G_32, ps_32, st_32)
-b2_dev = ETM.site_basis(et_V0, G_dev, ps_dev, st_dev)
+b1 = ETM.site_basis(et_pair, G_32, ps_32, st_32)
+b2_dev = ETM.site_basis(et_pair, G_dev, ps_dev, st_dev)
 b2 = Array(b2_dev)
-println_slim(@test b1 == b2)
+println_slim(@test b1 ≈ b2)
 
-b1, ∂db1 = ETM.site_basis_jacobian(et_V0, G_32, ps_32, st_32)
-b2_dev, ∂db2_dev = ETM.site_basis_jacobian(et_V0, G_dev, ps_dev, st_dev)
+b1, ∂db1 = ETM.site_basis_jacobian(et_pair, G_32, ps_32, st_32)
+b2_dev, ∂db2_dev = ETM.site_basis_jacobian(et_pair, G_dev, ps_dev, st_dev)
 b2 = Array(b2_dev)
 ∂db2 = Array(∂db2_dev)
-println_slim(@test b1 == b2)
-println_slim(@test ∂db1 == ∂db2)
+println_slim(@test b1 ≈ b2)
+jacerr = norm.(∂db1 .- ∂db2) ./ (1 .+ norm.(∂db1) + norm.(∂db2))
+@show maximum(jacerr)
+println_slim( @test maximum(jacerr) < 1e-4 )
+
+=#
