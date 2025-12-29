@@ -59,70 +59,10 @@ ps.WB[:] .= 0
 ## 
 #
 # construct an ETPairModel that is consistent with `model`
+# fixup the parameters to match the ACE model 
 
-basis = model.pairbasis
-et_zlist = ChemicalSpecies.(basis._i2z)
-NZ = length(et_zlist)
-
-# 1: polynomials without the envelope
-# 
-dp_agnesi = ETM._convert_agnesi(basis)
-polys = basis.polys
-selector2 = let zlist = et_zlist
-   xij -> ET.catcat2idx(zlist, xij.z0, xij.z1)
-end
-et_linl = ET.SelectLinL(length(polys),         # indim
-                        length(basis),       # outdim
-                        NZ^2,                     # num (Zi,Zj) pairs
-                        selector2)
-rbasis_1 = ET.EmbedDP(dp_agnesi, polys, et_linl)
-
-# 2: envelope 
-_env_r = ETM._convert_envelope(basis.envelopes)
-dp_envelope = ET.dp_transform( (x, st) -> _env_r.f( norm(x.𝐫), st ), _env_r.refstate )
-
-# 3. combine into the radial basis 
-et_rbasis = ETM.EnvRBranchL(dp_envelope, rbasis_1)
-
-# convert this into an edge embedding                         
-rembed = ET.EdgeEmbed( et_rbasis )
-et_ps, et_st = Lux.setup(rng, rembed)
-
-## 
-
-function rand_struct() 
-   sys = AtomsBuilder.bulk(:Si) * (2,2,1)
-   rattle!(sys, 0.2u"Å") 
-   AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
-   return sys 
-end 
-
-
-sys = rand_struct()
-G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-out = rembed(G, et_ps, et_st)  # just a test run
-
-##
-#
-# Complete the pair model 
-
-selector1 = let zlist = et_zlist
-   x -> ET.cat2idx(zlist, x.z)
-end
-readout = ET.SelectLinL(
-               length(basis), 
-               1,                  # output dim (only one site energy per atom)
-               NZ,     # number of categories = num species 
-               selector1)            
-
-et_pair = ETM.ETPairModel(rembed, readout)
+et_pair = ETM.convertpair(model)
 et_ps, et_st = Lux.setup(rng, et_pair)
-
-et_pair(G, et_ps, et_st)  # test run
-
-##
-# fixup the parameters to match the ACE model - here we incorporate the 
-# 
 
 # radial basis parameters for et_model_2 
 et_ps.rembed.rbasis.post.W[:, :, 1] = ps.pairbasis.Wnlq[:, :, 1, 1]
@@ -140,6 +80,13 @@ et_ps.readout.W[1, :, 2] .= ps.Wpair[:, 2]
 # 
 
 calc_model = ACEpotentials.ACEPotential(model, ps, st)
+
+function rand_struct() 
+   sys = AtomsBuilder.bulk(:Si) * (2,2,1)
+   rattle!(sys, 0.2u"Å") 
+   AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
+   return sys 
+end 
 
 function energy_new(sys, et_model)
    G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
@@ -185,3 +132,42 @@ println_slim(@test 𝔹1 ≈ 𝔹2)
 ∇E_𝔹_edges = ET.rev_reshape_embedding(∇Ei3, G)[:]
 println_slim(@test all(∇E_𝔹_edges .≈ ∂G.edge_data))
 
+##
+
+
+# turn off during CI -- need to sort out CI for GPU tests 
+
+@info("Check GPU evaluation") 
+using Metal 
+dev = Metal.mtl
+ps_32 = ET.float32(et_ps)
+st_32 = ET.float32(et_st)
+ps_dev = dev(ps_32)
+st_dev = dev(st_32)
+
+sys = rand_struct()
+G = ET.Atoms.interaction_graph(sys, 5.0 * u"Å")
+G_32 = ET.float32(G)
+G_dev = dev(G_32)
+
+E1, st = et_pair(G_32, ps_32, st_32)
+E2_dev, st_dev = et_pair(G_dev, ps_dev, st_dev)
+E2 = Array(E2_dev)
+
+
+g1 = ETM.site_grads(et_V0, G_32, ps_32, st_32)
+g2_dev = ETM.site_grads(et_V0, G_dev, ps_dev, st_dev)
+g2 = Array(g2_dev)
+println_slim(@test g1 == g2)
+
+b1 = ETM.site_basis(et_V0, G_32, ps_32, st_32)
+b2_dev = ETM.site_basis(et_V0, G_dev, ps_dev, st_dev)
+b2 = Array(b2_dev)
+println_slim(@test b1 == b2)
+
+b1, ∂db1 = ETM.site_basis_jacobian(et_V0, G_32, ps_32, st_32)
+b2_dev, ∂db2_dev = ETM.site_basis_jacobian(et_V0, G_dev, ps_dev, st_dev)
+b2 = Array(b2_dev)
+∂db2 = Array(∂db2_dev)
+println_slim(@test b1 == b2)
+println_slim(@test ∂db1 == ∂db2)

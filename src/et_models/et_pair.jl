@@ -1,3 +1,11 @@
+#
+# This is a temporary model implementation needed due to the fact that 
+# ETACEModel has Rnl, Ylm hard-coded. In the future it could be tested 
+# whether the pair model could simply be taken as another ACE model 
+# with a single embedding rather than several, This would need generalization 
+# of a fair few methods in both ACEpotentials and EquivariantTensors.
+#
+
 
 import EquivariantTensors as ET 
 import Zygote 

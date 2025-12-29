@@ -19,6 +19,7 @@ using ACEpotentials, Test, LazyArtifacts
     # new ET backend tests
     @testset "ET ACE" begin include("etmodels/test_etbackend.jl") end 
     @testset "ET OneBody" begin include("etmodels/test_etonebody.jl") end
+    @testset "ET Pair" begin include("etmodels/test_etpair.jl") end
 
     # ACE1 compatibility tests 
     # TODO: these tests need to be revived either by creating a JSON 
