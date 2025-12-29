@@ -139,6 +139,7 @@ G_dev = dev(G_32)
 E1, st = et_V0(G_32, ps_32, st_32)
 E2_dev, st_dev = et_V0(G_dev, ps_dev, st_dev)
 E2 = Array(E2_dev)
+# TODO: add E1 ≈ E2 test??
 
 g1 = ETM.site_grads(et_V0, G_32, ps_32, st_32)
 g2_dev = ETM.site_grads(et_V0, G_dev, ps_dev, st_dev)
