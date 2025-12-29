@@ -215,7 +215,7 @@ println(@test all(∇E_𝔹_edges .≈ ∂G2b.edge_data))
 # turning off this test until we figure out how to do proper CI on GPUs?
 # until then this just needs to be done manually and locally?
 
-
+#=
 
 @info("Checking GPU evaluation with Metal.jl")
 
@@ -269,3 +269,5 @@ err_jac = norm.(∂𝔹1 - ∂𝔹2) ./ (norm.(∂𝔹1) + norm.(∂𝔹2) .+ 0.
 println_slim( @test maximum(err_jac) < 1e-4 )
 @show maximum(err_jac)
 @info("The jacobian error feels a bit large. This may need further investigation.")
+
+=#
