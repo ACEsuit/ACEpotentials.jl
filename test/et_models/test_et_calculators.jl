@@ -341,9 +341,10 @@ expected_E0 = n_Si * E0_Si + n_O * E0_O
 @test sum(Ei_E0) ≈ expected_E0
 println("ETOneBody site energies: OK")
 
-# Test site gradients (should be zero for constant energies)
+# Test site gradients (should be empty for constant energies)
+# Returns NamedTuple with empty edge_data, matching ETACE/ETPairModel interface
 ∂G_E0 = ETM.site_grads(et_onebody, G, nothing, onebody_st)
-@test all(norm(e.𝐫) == 0 for e in ∂G_E0.edge_data)
+@test isempty(∂G_E0.edge_data)
 println("ETOneBody site_grads (zero): OK")
 
 ##

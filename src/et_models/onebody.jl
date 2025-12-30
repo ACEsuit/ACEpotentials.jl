@@ -58,8 +58,13 @@ ___apply_onebody(selector, X::AbstractVector, E0s) =
          map(x -> E0s[selector(x)], X)
 
 
-site_grads(l::ETOneBody, X::ET.ETGraph, ps, st) = 
-         fill(VState(), (ET.maxneigs(X), ET.nnodes(X), ))
+# ETOneBody energy only depends on atom types (categorical), not positions.
+# Gradient w.r.t. positions is always zero.
+# Return NamedTuple matching Zygote gradient structure with empty edge_data.
+# The calling code checks isempty(∂G.edge_data) and returns zero forces/virial.
+function site_grads(l::ETOneBody, X::ET.ETGraph, ps, st)
+   return (; edge_data = similar(X.edge_data, 0))
+end
 
 site_basis(l::ETOneBody, X::ET.ETGraph, ps, st) = 
          fill(zero(eltype(st.E0s)), (ET.nnodes(X), 0))
