@@ -3,11 +3,13 @@
 # Provides AtomsCalculators-compatible energy/forces/virial evaluation
 #
 # Architecture:
-# - SiteEnergyModel interface: Any model producing per-site energies can implement this
-# - E0Model: One-body reference energies (constant per species)
-# - WrappedETACE: Wraps ETACE model with the SiteEnergyModel interface
-# - WrappedSiteCalculator: Converts SiteEnergyModel to AtomsCalculators interface
-# - ETACEPotential: Standalone calculator for simple use cases
+# - WrappedSiteCalculator: Unified wrapper for ETACE-pattern models (ETACE, ETPairModel, ETOneBody)
+# - ETACEPotential: Type alias for WrappedSiteCalculator with ETACE model
+# - StackedCalculator: Combines multiple calculators (see stackedcalc.jl)
+#
+# All wrapped models must implement the ETACE interface:
+#   model(G, ps, st) -> (site_energies, st)
+#   site_grads(model, G, ps, st) -> edge gradients
 #
 # See also: stackedcalc.jl for StackedCalculator (combines multiple calculators)
 
@@ -19,103 +21,46 @@ using StaticArrays
 using Unitful
 using LinearAlgebra: norm
 
-# ============================================================================
-#  SiteEnergyModel Interface
-# ============================================================================
-#
-# Any model producing per-site (per-atom) energies can implement this interface:
-#
-#   site_energies(model, G::ETGraph, ps, st) -> Vector  # per-atom energies
-#   site_energy_grads(model, G::ETGraph, ps, st) -> ∂G  # edge gradients for forces
-#   cutoff_radius(model) -> Float64                     # in Ångström
-#
-# This enables composition via StackedCalculator for:
-# - One-body reference energies (E0Model)
-# - Pairwise interactions (PairModel)
-# - Many-body ACE (WrappedETACE)
-# - Future: dispersion, coulomb, etc.
-
-"""
-    site_energies(model, G, ps, st)
-
-Compute per-site (per-atom) energies for the given interaction graph.
-Returns a vector of length `nnodes(G)`.
-"""
-function site_energies end
-
-"""
-    site_energy_grads(model, G, ps, st)
-
-Compute gradients of site energies w.r.t. edge positions.
-Returns a named tuple with `edge_data` field containing gradient vectors.
-"""
-function site_energy_grads end
-
-"""
-    cutoff_radius(model)
-
-Return the cutoff radius in Ångström for the model.
-"""
-function cutoff_radius end
-
 
 # ============================================================================
-#  E0Model - One-body reference energies
+#  WrappedSiteCalculator - Unified wrapper for ETACE-pattern models
 # ============================================================================
 
 """
-    E0Model{T}
+    WrappedSiteCalculator{M, PS, ST}
 
-One-body reference energy model. Assigns constant energy per atomic species.
-No forces (energy is position-independent).
+Wraps any ETACE-pattern model (ETACE, ETPairModel, ETOneBody) and provides
+the AtomsCalculators interface.
+
+All wrapped models must implement the ETACE interface:
+- `model(G, ps, st)` → `(site_energies, st)`
+- `site_grads(model, G, ps, st)` → edge gradients
+
+Mutable to allow parameter updates during training.
 
 # Example
 ```julia
-E0 = E0Model(Dict(ChemicalSpecies(:Si) => -0.846, ChemicalSpecies(:O) => -2.15))
+# With ETACE model
+calc = WrappedSiteCalculator(et_model, ps, st, 5.5)
+
+# With ETOneBody (upstream)
+et_onebody = ETM.one_body(Dict(:Si => -0.846), x -> x.z)
+_, onebody_st = Lux.setup(rng, et_onebody)
+calc = WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+
+E = potential_energy(sys, calc)
+F = forces(sys, calc)
 ```
-"""
-struct E0Model{T<:Real}
-   E0s::Dict{ChemicalSpecies, T}
-end
-
-# Constructor from element symbols
-function E0Model(E0s::Dict{Symbol, T}) where T<:Real
-   return E0Model(Dict(ChemicalSpecies(k) => v for (k, v) in E0s))
-end
-
-cutoff_radius(::E0Model) = 0.0  # No neighbors needed
-
-function site_energies(model::E0Model, G::ET.ETGraph, ps, st)
-   T = valtype(model.E0s)
-   return T[model.E0s[node.z] for node in G.node_data]
-end
-
-function site_energy_grads(model::E0Model{T}, G::ET.ETGraph, ps, st) where T
-   # Constant energy → zero gradients
-   zero_grad = PState(𝐫 = zero(SVector{3, T}))
-   return (edge_data = fill(zero_grad, length(G.edge_data)),)
-end
-
-
-# ============================================================================
-#  WrappedETACE - ETACE model with SiteEnergyModel interface
-# ============================================================================
-
-"""
-    WrappedETACE{MOD<:ETACE, PS, ST}
-
-Wraps an ETACE model to implement the SiteEnergyModel interface.
-Mutable to allow parameter updates during training.
 
 # Fields
-- `model::ETACE` - The underlying ETACE model
-- `ps` - Model parameters (mutable for training)
+- `model` - ETACE-pattern model (ETACE, ETPairModel, or ETOneBody)
+- `ps` - Model parameters (can be `nothing` for ETOneBody)
 - `st` - Model state
-- `rcut::Float64` - Cutoff radius in Ångström
+- `rcut::Float64` - Cutoff radius for graph construction (Å)
 - `co_ps` - Optional committee parameters for uncertainty quantification
 """
-mutable struct WrappedETACE{MOD<:ETACE, PS, ST}
-   model::MOD
+mutable struct WrappedSiteCalculator{M, PS, ST}
+   model::M
    ps::PS
    st::ST
    rcut::Float64
@@ -123,72 +68,22 @@ mutable struct WrappedETACE{MOD<:ETACE, PS, ST}
 end
 
 # Constructor without committee parameters
-function WrappedETACE(model::ETACE, ps, st, rcut::Real)
-   return WrappedETACE(model, ps, st, Float64(rcut), nothing)
-end
-
-cutoff_radius(w::WrappedETACE) = w.rcut
-
-function site_energies(w::WrappedETACE, G::ET.ETGraph, ps, st)
-   # Use wrapper's ps/st, ignore passed ones (they're for StackedCalculator dispatch)
-   Ei, _ = w.model(G, w.ps, w.st)
-   return Ei
-end
-
-function site_energy_grads(w::WrappedETACE, G::ET.ETGraph, ps, st)
-   return site_grads(w.model, G, w.ps, w.st)
-end
-
-
-# ============================================================================
-#  WrappedSiteCalculator - Converts SiteEnergyModel to AtomsCalculators
-# ============================================================================
-
-"""
-    WrappedSiteCalculator{M}
-
-Wraps a SiteEnergyModel and provides the AtomsCalculators interface.
-Converts site quantities (per-atom energies, edge gradients) to global
-quantities (total energy, atomic forces, virial tensor).
-
-# Example
-```julia
-E0 = E0Model(Dict(:Si => -0.846, :O => -2.15))
-calc = WrappedSiteCalculator(E0, 5.5)  # cutoff for graph construction
-
-E = potential_energy(sys, calc)
-F = forces(sys, calc)
-```
-
-# Fields
-- `model` - Model implementing SiteEnergyModel interface
-- `rcut::Float64` - Cutoff radius for graph construction (Å)
-"""
-struct WrappedSiteCalculator{M}
-   model::M
-   rcut::Float64
-end
-
-function WrappedSiteCalculator(model)
-   rcut = cutoff_radius(model)
-   # Ensure minimum cutoff for graph construction (must be > 0 for neighbor list)
-   # Use 3.0 Å as minimum - smaller than typical bond lengths
-   rcut = max(rcut, 3.0)
-   return WrappedSiteCalculator(model, rcut)
+function WrappedSiteCalculator(model, ps, st, rcut::Real)
+   return WrappedSiteCalculator(model, ps, st, Float64(rcut), nothing)
 end
 
 cutoff_radius(calc::WrappedSiteCalculator) = calc.rcut * u"Å"
 
 function _wrapped_energy(calc::WrappedSiteCalculator, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   Ei = site_energies(calc.model, G, nothing, nothing)
+   Ei, _ = calc.model(G, calc.ps, calc.st)
    return sum(Ei)
 end
 
 function _wrapped_forces(calc::WrappedSiteCalculator, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   ∂G = site_energy_grads(calc.model, G, nothing, nothing)
-   # Handle empty edge case (e.g., E0 model with small cutoff)
+   ∂G = site_grads(calc.model, G, calc.ps, calc.st)
+   # Handle empty edge case (e.g., ETOneBody with small cutoff)
    if isempty(∂G.edge_data)
       return zeros(SVector{3, Float64}, length(sys))
    end
@@ -208,7 +103,7 @@ end
 
 function _wrapped_virial(calc::WrappedSiteCalculator, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
-   ∂G = site_energy_grads(calc.model, G, nothing, nothing)
+   ∂G = site_grads(calc.model, G, calc.ps, calc.st)
    # Handle empty edge case
    if isempty(∂G.edge_data)
       return zeros(SMatrix{3,3,Float64,9})
@@ -219,14 +114,14 @@ end
 function _wrapped_energy_forces_virial(calc::WrappedSiteCalculator, sys::AbstractSystem)
    G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
 
-   # Energy from site energies
-   Ei = site_energies(calc.model, G, nothing, nothing)
+   # Energy from site energies (call model directly - ETACE interface)
+   Ei, _ = calc.model(G, calc.ps, calc.st)
    E = sum(Ei)
 
    # Forces and virial from edge gradients
-   ∂G = site_energy_grads(calc.model, G, nothing, nothing)
+   ∂G = site_grads(calc.model, G, calc.ps, calc.st)
 
-   # Handle empty edge case (e.g., E0 model with small cutoff)
+   # Handle empty edge case (e.g., ETOneBody with small cutoff)
    if isempty(∂G.edge_data)
       F = zeros(SVector{3, Float64}, length(sys))
       V = zeros(SMatrix{3,3,Float64,9})
@@ -266,22 +161,21 @@ end
 
 
 # ============================================================================
-#  ETACEPotential - Type alias for WrappedSiteCalculator{WrappedETACE}
+#  ETACEPotential - Type alias for WrappedSiteCalculator{ETACE}
 # ============================================================================
 
 """
     ETACEPotential
 
 AtomsCalculators-compatible calculator wrapping an ETACE model.
-This is a type alias for `WrappedSiteCalculator{<:WrappedETACE}`.
+This is a type alias for `WrappedSiteCalculator{<:ETACE, PS, ST}`.
 
 Access underlying components via:
-- `calc.model` - The WrappedETACE wrapper
-- `calc.model.model` - The ETACE model
-- `calc.model.ps` - Model parameters
-- `calc.model.st` - Model state
+- `calc.model` - The ETACE model
+- `calc.ps` - Model parameters
+- `calc.st` - Model state
 - `calc.rcut` - Cutoff radius in Ångström
-- `calc.model.co_ps` - Committee parameters (optional)
+- `calc.co_ps` - Committee parameters (optional)
 
 # Example
 ```julia
@@ -289,12 +183,11 @@ calc = ETACEPotential(et_model, ps, st, 5.5)
 E = potential_energy(sys, calc)
 ```
 """
-const ETACEPotential{MOD<:ETACE, PS, ST} = WrappedSiteCalculator{WrappedETACE{MOD, PS, ST}}
+const ETACEPotential{MOD<:ETACE, PS, ST} = WrappedSiteCalculator{MOD, PS, ST}
 
-# Constructor: creates WrappedSiteCalculator wrapping WrappedETACE
+# Constructor: creates WrappedSiteCalculator with ETACE model directly
 function ETACEPotential(model::ETACE, ps, st, rcut::Real)
-   wrapped = WrappedETACE(model, ps, st, rcut)
-   return WrappedSiteCalculator(wrapped, Float64(rcut))
+   return WrappedSiteCalculator(model, ps, st, Float64(rcut))
 end
 
 # ============================================================================
@@ -312,10 +205,10 @@ end
 # Force basis:  F_atom = -∑ edges ∂E/∂r_edge, computed per basis function
 # Virial basis: V = -∑ edges (∂E/∂r_edge) ⊗ r_edge, computed per basis function
 
-# Accessor helpers for ETACEPotential (which is WrappedSiteCalculator{WrappedETACE})
-_etace(calc::ETACEPotential) = calc.model.model      # Underlying ETACE model
-_ps(calc::ETACEPotential) = calc.model.ps            # Model parameters
-_st(calc::ETACEPotential) = calc.model.st            # Model state
+# Accessor helpers for ETACEPotential (which is WrappedSiteCalculator{ETACE})
+_etace(calc::ETACEPotential) = calc.model      # Underlying ETACE model (direct)
+_ps(calc::ETACEPotential) = calc.ps            # Model parameters
+_st(calc::ETACEPotential) = calc.st            # Model state
 
 """
     length_basis(calc::ETACEPotential)
@@ -485,10 +378,10 @@ function set_linear_parameters!(calc::ETACEPotential, θ::AbstractVector)
    nspecies = etace.readout.ncat
    @assert length(θ) == nbasis * nspecies
 
-   # Reshape and copy into ps (via the WrappedETACE which is mutable)
+   # Reshape and copy into ps (WrappedSiteCalculator is mutable)
    ps = _ps(calc)
    new_W = reshape(θ, 1, nbasis, nspecies)
-   calc.model.ps = merge(ps, (readout = merge(ps.readout, (W = new_W,)),))
+   calc.ps = merge(ps, (readout = merge(ps.readout, (W = new_W,)),))
    return calc
 end
 
