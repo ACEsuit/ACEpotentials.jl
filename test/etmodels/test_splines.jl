@@ -7,7 +7,8 @@ Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
 ##
 
 using ACEpotentials, StaticArrays, Lux, AtomsBase, AtomsBuilder, Unitful, 
-      AtomsCalculators, Random, LuxCore, Test, LinearAlgebra, ACEbase 
+      AtomsCalculators, Random, LuxCore, Test, LinearAlgebra, ACEbase, 
+      ForwardDiff 
 
 M = ACEpotentials.Models
 ETM = ACEpotentials.ETModels
@@ -110,8 +111,10 @@ function rand_X()
    return G.edge_data 
 end 
 
+
 ##
 
+@info("Checking spline accuracy against polynomial basis")
 Random.seed!(1234)  # new seed to make sure the tests are ok.
 for ntest = 1:30 
    X = rand_X()
@@ -120,9 +123,34 @@ for ntest = 1:30
    spl_err = abs.(P1 - P2) ./ (abs.(P1) .+ abs.(P2) .+ 1)
    # @show maximum(spl_err)
    print_tf(@test maximum(spl_err) < 1e-5)
+
+   (P1a, dP1), _ = ET.evaluate_ed(poly_rbasis, X, ps_poly, st_poly)
+   (P2a, dP2), _ = ET.evaluate_ed(spl_rbasis, X, ps_spl, st_spl)
+   print_tf(@test P2 ≈ P2a) 
+   dspl_err = norm.(dP1 - dP2) ./ (1 .+ abs.(P1) + abs.(P2))
+   # @show maximum(dspl_err)
+   print_tf(@test maximum(dspl_err) < 1e-3)
 end
 
 ##
+
+@info("Checking machine precision derivative accuracy ")
+# NOTE: This test should really be in ET and not here ... 
+
+X = rand_X()
+rand_u() = ( u = (@SVector randn(3)); DP.VState(𝐫 = u/norm(u)) )
+U = [ rand_u() for _ = 1:length(X) ]
+
+f(t) = spl_rbasis(X + t * U, ps_spl, st_spl)[1]
+df0 = ForwardDiff.derivative(f, 0.0)
+
+(P2a, dP2), _ = ET.evaluate_ed(spl_rbasis, X, ps_spl, st_spl)
+dp = [ dot(U[i], dP2[i, j]) for i in 1:length(U), j = 1:size(dP2, 2) ]
+println_slim(@test df0 ≈ dp) 
+
+
+##
+
 
 #= 
 
