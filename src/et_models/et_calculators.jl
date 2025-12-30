@@ -385,3 +385,125 @@ function set_linear_parameters!(calc::ETACEPotential, θ::AbstractVector)
    return calc
 end
 
+
+# ============================================================================
+#  Full Model Conversion
+# ============================================================================
+
+using Random: AbstractRNG, default_rng
+using Lux: setup
+
+"""
+    convert2et_full(model, ps, st; rng=default_rng()) -> StackedCalculator
+
+Convert a complete ACE model (E0 + Pair + Many-body) to an ETACE-based
+StackedCalculator. This creates a calculator that combines:
+1. ETOneBody - reference energies per species
+2. ETPairModel - pair potential
+3. ETACE - many-body ACE potential
+
+The returned StackedCalculator is fully compatible with AtomsCalculators
+and can be used for energy, forces, and virial evaluation.
+
+# Arguments
+- `model`: ACE model (from ACEpotentials.Models)
+- `ps`: Model parameters (from Lux.setup)
+- `st`: Model state (from Lux.setup)
+- `rng`: Random number generator (default: `default_rng()`)
+
+# Returns
+- `StackedCalculator` combining ETOneBody, ETPairModel, and ETACE
+
+# Example
+```julia
+model = ace_model(elements=[:Si], order=3, totaldegree=8)
+ps, st = Lux.setup(rng, model)
+# ... fit model ...
+calc = convert2et_full(model, ps, st)
+E = potential_energy(sys, calc)
+```
+"""
+function convert2et_full(model, ps, st; rng::AbstractRNG=default_rng())
+   # Extract cutoff radius from pair basis
+   rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
+
+   # 1. Convert E0/Vref to ETOneBody
+   E0s = model.Vref.E0  # Dict{Int, Float64}
+   zlist = ChemicalSpecies.(model.rbasis._i2z)
+   E0_dict = Dict(z => E0s[z.number] for z in zlist)
+   et_onebody = one_body(E0_dict, x -> x.z)
+   _, onebody_st = setup(rng, et_onebody)
+   # Use minimum cutoff for graph construction (ETOneBody needs no neighbors)
+   onebody_calc = WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+
+   # 2. Convert pair potential to ETPairModel
+   et_pair = convertpair(model)
+   et_pair_ps, et_pair_st = setup(rng, et_pair)
+   _copy_pair_params!(et_pair_ps, ps, model)
+   pair_calc = WrappedSiteCalculator(et_pair, et_pair_ps, et_pair_st, rcut)
+
+   # 3. Convert many-body to ETACE
+   et_ace = convert2et(model)
+   et_ace_ps, et_ace_st = setup(rng, et_ace)
+   _copy_ace_params!(et_ace_ps, ps, model)
+   ace_calc = WrappedSiteCalculator(et_ace, et_ace_ps, et_ace_st, rcut)
+
+   # 4. Stack all components
+   return StackedCalculator((onebody_calc, pair_calc, ace_calc))
+end
+
+
+# ============================================================================
+#  Parameter Copying Utilities
+# ============================================================================
+
+"""
+    _copy_ace_params!(et_ps, ps, model)
+
+Copy many-body (ACE) parameters from ACE model format to ETACE format.
+"""
+function _copy_ace_params!(et_ps, ps, model)
+   NZ = length(model.rbasis._i2z)
+
+   # Copy radial basis parameters (Wnlq)
+   # ACE format: Wnlq[:, :, iz, jz] for species pair (iz, jz)
+   # ETACE format: W[:, :, idx] where idx = (i-1)*NZ + j (or symmetric idx)
+   for i in 1:NZ, j in 1:NZ
+      idx = (i-1)*NZ + j
+      et_ps.rembed.basis.linl.W[:, :, idx] .= ps.rbasis.Wnlq[:, :, i, j]
+   end
+
+   # Copy readout (many-body) parameters
+   # ACE format: WB[:, s] for species s
+   # ETACE format: W[1, :, s]
+   for s in 1:NZ
+      et_ps.readout.W[1, :, s] .= ps.WB[:, s]
+   end
+end
+
+
+"""
+    _copy_pair_params!(et_ps, ps, model)
+
+Copy pair potential parameters from ACE model format to ETPairModel format.
+Based on parameter mapping from test/etmodels/test_etpair.jl.
+"""
+function _copy_pair_params!(et_ps, ps, model)
+   NZ = length(model.pairbasis._i2z)
+
+   # Copy pair radial basis parameters
+   # ACE format: pairbasis.Wnlq[:, :, i, j] for species pair (i, j)
+   # ETACE format: rembed.basis.rbasis.linl.W[:, :, idx] where idx = (i-1)*NZ + j
+   for i in 1:NZ, j in 1:NZ
+      idx = (i-1)*NZ + j
+      et_ps.rembed.basis.rbasis.linl.W[:, :, idx] .= ps.pairbasis.Wnlq[:, :, i, j]
+   end
+
+   # Copy pair readout parameters
+   # ACE format: Wpair[:, s] for species s
+   # ETACE format: readout.W[1, :, s]
+   for s in 1:NZ
+      et_ps.readout.W[1, :, s] .= ps.Wpair[:, s]
+   end
+end
+
