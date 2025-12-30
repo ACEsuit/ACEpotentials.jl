@@ -189,18 +189,18 @@ max_V_diff = maximum(abs.(V_from_basis - V_direct))
 
 println("Training basis assembly: OK")
 
-## ----- Test StackedCalculator with E0 -----
+## ----- Test StackedCalculator with ETOneBody -----
 
-@info("Testing StackedCalculator with E0Model")
+@info("Testing StackedCalculator with ETOneBody")
 
-# Create E0 model with arbitrary E0 value for testing
+# Create ETOneBody model with arbitrary E0 value for testing (upstream interface)
 E0s = Dict(:Si => -158.54496821)  # Si symbol => E0
-E0_model = ETM.E0Model(E0s)
-E0_calc = ETM.WrappedSiteCalculator(E0_model)
+et_onebody = ETM.one_body(E0s, x -> x.z)
+_, onebody_st = Lux.setup(rng, et_onebody)
+E0_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
 
-# Create wrapped ETACE
-wrapped_etace = ETM.WrappedETACE(et_model, et_ps, et_st, rcut)
-ace_calc = ETM.WrappedSiteCalculator(wrapped_etace)
+# Create wrapped ETACE (unified interface)
+ace_calc = ETM.WrappedSiteCalculator(et_model, et_ps, et_st, rcut)
 
 # Stack them
 stacked = ETM.StackedCalculator((E0_calc, ace_calc))

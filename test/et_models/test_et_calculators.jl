@@ -77,13 +77,13 @@ end
 @info("Testing ETACEPotential construction")
 
 # Create calculator from ETACE model
-# ETACEPotential is now WrappedSiteCalculator{WrappedETACE}
+# ETACEPotential is now WrappedSiteCalculator{ETACE} (direct, no WrappedETACE)
 et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
 
-# Access underlying ETACE via calc.model.model (calc.model is WrappedETACE)
-@test et_calc.model.model === et_model
+# Access underlying ETACE directly via calc.model
+@test et_calc.model === et_model
 @test et_calc.rcut == rcut
-@test et_calc.model.co_ps === nothing
+@test et_calc.co_ps === nothing
 println("ETACEPotential construction: OK")
 
 ##
@@ -310,28 +310,27 @@ end
 @info("All Phase 1 tests passed!")
 
 # ============================================================================
-#  Phase 2 Tests: SiteEnergyModel Interface, WrappedSiteCalculator, StackedCalculator
+#  Phase 2 Tests: WrappedSiteCalculator and StackedCalculator
 # ============================================================================
 
-@info("Testing Phase 2: SiteEnergyModel interface and calculators")
+@info("Testing Phase 2: WrappedSiteCalculator and StackedCalculator")
 
 ##
 
-@info("Testing E0Model")
+@info("Testing ETOneBody (upstream one-body model)")
 
-# Create E0 model with reference energies
+using Lux
+
+# Create ETOneBody model with reference energies (using upstream interface)
 E0_Si = -0.846
 E0_O = -2.15
-E0 = ETM.E0Model(Dict(:Si => E0_Si, :O => E0_O))
+et_onebody = ETM.one_body(Dict(:Si => E0_Si, :O => E0_O), x -> x.z)
+_, onebody_st = Lux.setup(rng, et_onebody)
 
-# Test cutoff radius
-@test ETM.cutoff_radius(E0) == 0.0
-println("E0Model cutoff_radius: OK")
-
-# Test site energies
+# Test site energies via direct model call
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-Ei_E0 = ETM.site_energies(E0, G, nothing, nothing)
+Ei_E0, _ = et_onebody(G, nothing, onebody_st)
 
 # Count Si and O atoms
 n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
@@ -340,51 +339,23 @@ expected_E0 = n_Si * E0_Si + n_O * E0_O
 
 @test length(Ei_E0) == length(sys)
 @test sum(Ei_E0) ≈ expected_E0
-println("E0Model site_energies: OK")
+println("ETOneBody site energies: OK")
 
-# Test site energy gradients (should be zero)
-∂G_E0 = ETM.site_energy_grads(E0, G, nothing, nothing)
+# Test site gradients (should be zero for constant energies)
+∂G_E0 = ETM.site_grads(et_onebody, G, nothing, onebody_st)
 @test all(norm(e.𝐫) == 0 for e in ∂G_E0.edge_data)
-println("E0Model site_energy_grads (zero): OK")
+println("ETOneBody site_grads (zero): OK")
 
 ##
 
-@info("Testing WrappedETACE")
+@info("Testing WrappedSiteCalculator with ETOneBody")
 
-# Create wrapped ETACE model
-wrapped_ace = ETM.WrappedETACE(et_model, et_ps, et_st, rcut)
-
-# Test cutoff radius
-@test ETM.cutoff_radius(wrapped_ace) == rcut
-println("WrappedETACE cutoff_radius: OK")
-
-# Test site energies match direct evaluation
-Ei_wrapped = ETM.site_energies(wrapped_ace, G, nothing, nothing)
-Ei_direct, _ = et_model(G, et_ps, et_st)
-@test Ei_wrapped ≈ Ei_direct
-println("WrappedETACE site_energies: OK")
-
-# Test site energy gradients match direct evaluation
-∂G_wrapped = ETM.site_energy_grads(wrapped_ace, G, nothing, nothing)
-∂G_direct = ETM.site_grads(et_model, G, et_ps, et_st)
-@test all(∂G_wrapped.edge_data[i].𝐫 ≈ ∂G_direct.edge_data[i].𝐫 for i in 1:length(G.edge_data))
-println("WrappedETACE site_energy_grads: OK")
-
-##
-
-@info("Testing WrappedSiteCalculator")
-
-# Wrap E0 model in a calculator
-E0_calc = ETM.WrappedSiteCalculator(E0)
+# Wrap ETOneBody in a calculator (using new unified interface)
+E0_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
 @test ustrip(u"Å", ETM.cutoff_radius(E0_calc)) == 3.0  # minimum cutoff
-println("WrappedSiteCalculator(E0) cutoff_radius: OK")
+println("WrappedSiteCalculator(ETOneBody) cutoff_radius: OK")
 
-# Wrap ETACE model in a calculator
-ace_site_calc = ETM.WrappedSiteCalculator(wrapped_ace)
-@test ustrip(u"Å", ETM.cutoff_radius(ace_site_calc)) == rcut
-println("WrappedSiteCalculator(ETACE) cutoff_radius: OK")
-
-# Test E0 calculator energy
+# Test ETOneBody calculator energy
 sys = rand_struct()
 E_E0_calc = AtomsCalculators.potential_energy(sys, E0_calc)
 G = ET.Atoms.interaction_graph(sys, 3.0 * u"Å")
@@ -392,12 +363,21 @@ n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
 n_O = count(node -> node.z == AtomsBase.ChemicalSpecies(:O), G.node_data)
 expected_E = (n_Si * E0_Si + n_O * E0_O) * u"eV"
 @test ustrip(E_E0_calc) ≈ ustrip(expected_E)
-println("WrappedSiteCalculator(E0) energy: OK")
+println("WrappedSiteCalculator(ETOneBody) energy: OK")
 
-# Test E0 calculator forces (should be zero)
+# Test ETOneBody calculator forces (should be zero)
 F_E0_calc = AtomsCalculators.forces(sys, E0_calc)
 @test all(norm(ustrip.(f)) < 1e-14 for f in F_E0_calc)
-println("WrappedSiteCalculator(E0) forces (zero): OK")
+println("WrappedSiteCalculator(ETOneBody) forces (zero): OK")
+
+##
+
+@info("Testing WrappedSiteCalculator with ETACE")
+
+# Wrap ETACE model in a calculator (unified interface)
+ace_site_calc = ETM.WrappedSiteCalculator(et_model, et_ps, et_st, rcut)
+@test ustrip(u"Å", ETM.cutoff_radius(ace_site_calc)) == rcut
+println("WrappedSiteCalculator(ETACE) cutoff_radius: OK")
 
 # Test ETACE calculator matches ETACEPotential
 sys = rand_struct()
@@ -487,9 +467,9 @@ println()
 
 ##
 
-@info("Testing StackedCalculator with E0 only")
+@info("Testing StackedCalculator with ETOneBody only")
 
-# Create stacked calculator with just E0
+# Create stacked calculator with just ETOneBody (E0_calc is WrappedSiteCalculator{ETOneBody})
 E0_only_stacked = ETM.StackedCalculator((E0_calc,))
 
 sys = rand_struct()
@@ -499,11 +479,11 @@ F = AtomsCalculators.forces(sys, E0_only_stacked)
 # Energy should match E0_calc
 E_direct = AtomsCalculators.potential_energy(sys, E0_calc)
 @test ustrip(E) ≈ ustrip(E_direct)
-println("StackedCalculator(E0 only) energy: OK")
+println("StackedCalculator(ETOneBody only) energy: OK")
 
 # Forces should be zero
 @test all(norm(ustrip.(f)) < 1e-14 for f in F)
-println("StackedCalculator(E0 only) forces (zero): OK")
+println("StackedCalculator(ETOneBody only) forces (zero): OK")
 
 ##
 
