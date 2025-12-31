@@ -40,27 +40,28 @@ end
 
 function site_grads(l::ETPairModel, X::ET.ETGraph, ps, st)
    # Use evaluate_ed to get basis and derivatives, avoiding Zygote thunk issues
+   # (Zygote has InplaceableThunk issues with upstream EdgeEmbed rrule)
    (R, ∂R), _ = ET.evaluate_ed(l.rembed, X, ps.rembed, st.rembed)
 
-   # R has shape (maxneigs, nnodes, nbasis) after embedding
-   # 𝔹 = sum over neighbours: shape (nnodes, nbasis)
-   𝔹 = dropdims(sum(R, dims=1), dims=1)
-
-   # Get readout weights
+   # Get readout weights and species indices
    iZ = l.readout.selector.(X.node_data)
    WW = ps.readout.W
 
-   # ∂E/∂R = W[1, :, iZ[i]] for each node, broadcast over neighbours
-   # ∂R has shape (maxneigs, nnodes, nbasis)
-   nnodes = length(X.node_data)
-   ∂E_∂𝔹 = reduce(hcat, WW[1, :, iZ[i]] for i in 1:nnodes)'  # (nnodes, nbasis)
-
-   # ∂E/∂R[j, i, k] = ∂E/∂𝔹[i, k] (same for all neighbours j)
-   ∂E_∂R = reshape(∂E_∂𝔹, 1, size(∂E_∂𝔹)...)  # (1, nnodes, nbasis)
-
-   # Chain rule: ∂E/∂X = sum over k of (∂E/∂R * ∂R/∂X)
    # ∂R has shape (maxneigs, nnodes, nbasis), contains VState gradients
-   ∂E_edges = dropdims(sum(∂E_∂R .* ∂R, dims=3), dims=3)  # (maxneigs, nnodes)
+   # Compute: ∂E_edges[j, i] = Σₖ WW[1, k, iZ[i]] * ∂R[j, i, k]
+   # This is the chain rule through the linear readout
+   maxneigs, nnodes, nbasis = size(∂R)
+
+   # Compute edge gradients directly without forming intermediate matrix
+   # (avoids O(nnodes * nbasis) memory allocation)
+   ∂E_edges = zeros(eltype(∂R), maxneigs, nnodes)
+   @inbounds for i in 1:nnodes
+      iz = iZ[i]
+      @inbounds for k in 1:nbasis
+         w = WW[1, k, iz]
+         @views ∂E_edges[:, i] .+= w .* ∂R[:, i, k]
+      end
+   end
 
    # Reshape to match edge_data format
    ∂E_edges_vec = ET.rev_reshape_embedding(∂E_edges, X)
