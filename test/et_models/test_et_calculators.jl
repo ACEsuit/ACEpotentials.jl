@@ -739,3 +739,199 @@ println("Species-specific basis contributions: OK")
 ##
 
 @info("All Phase 5b extended tests passed!")
+
+## ============================================================================
+##  Phase 5c: Training Assembly for ETPairPotential, ETOneBodyPotential, StackedCalculator
+## ============================================================================
+
+@info("Testing Phase 5c: Training assembly for pair, onebody, and stacked calculators")
+
+##
+
+@info("Testing ETOneBodyPotential training assembly (empty - no learnable params)")
+
+# Create ETOneBody calculator
+E0s = model.Vref.E0
+zlist = ChemicalSpecies.(model.rbasis._i2z)
+E0_dict = Dict(z => E0s[z.atomic_number] for z in zlist)
+et_onebody = ETM.one_body(E0_dict, x -> x.z)
+_, onebody_st = Lux.setup(rng, et_onebody)
+onebody_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+
+# Test length_basis returns 0
+@test ETM.length_basis(onebody_calc) == 0
+println("ETOneBodyPotential length_basis: OK (0 parameters)")
+
+# Test energy_forces_virial_basis returns empty arrays
+sys = rand_struct()
+efv_onebody = ETM.energy_forces_virial_basis(sys, onebody_calc)
+@test length(efv_onebody.energy) == 0
+@test size(efv_onebody.forces, 2) == 0
+@test length(efv_onebody.virial) == 0
+println("ETOneBodyPotential energy_forces_virial_basis: OK (empty arrays)")
+
+# Test get/set_linear_parameters
+@test length(ETM.get_linear_parameters(onebody_calc)) == 0
+ETM.set_linear_parameters!(onebody_calc, Float64[])  # Should not error
+println("ETOneBodyPotential get/set_linear_parameters: OK")
+
+# Test ACEfit.basis_size
+@test ACEfit.basis_size(onebody_calc) == 0
+println("ETOneBodyPotential ACEfit.basis_size: OK")
+
+##
+
+@info("Testing ETPairPotential training assembly")
+
+# Need a model with learnable pair basis for this test
+# Create a new model with pair_learnable=true
+elements_pair = (:Si, :O)
+level_pair = M.TotalDegree()
+max_level_pair = 10
+order_pair = 3
+maxl_pair = 4
+
+rin0cuts_pair = M._default_rin0cuts(elements_pair)
+rin0cuts_pair = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts_pair)
+
+model_pair = M.ace_model(; elements = elements_pair, order = order_pair,
+            Ytype = :solid, level = level_pair, max_level = max_level_pair,
+            maxl = maxl_pair, pair_maxn = max_level_pair,
+            rin0cuts = rin0cuts_pair,
+            pair_learnable = true,
+            init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+ps_pair, st_pair = Lux.setup(rng, model_pair)
+
+# Convert pair potential
+et_pair = ETM.convertpair(model_pair)
+et_pair_ps, et_pair_st = Lux.setup(rng, et_pair)
+
+# Copy pair parameters
+NZ_pair = length(model_pair.pairbasis._i2z)
+for i in 1:NZ_pair, j in 1:NZ_pair
+   idx = (i-1)*NZ_pair + j
+   et_pair_ps.rembed.rbasis.post.W[:, :, idx] .= ps_pair.pairbasis.Wnlq[:, :, i, j]
+end
+for s in 1:NZ_pair
+   et_pair_ps.readout.W[1, :, s] .= ps_pair.Wpair[:, s]
+end
+
+rcut_pair = maximum(a.rcut for a in model_pair.pairbasis.rin0cuts)
+pair_calc = ETM.ETPairPotential(et_pair, et_pair_ps, et_pair_st, rcut_pair)
+
+# Test length_basis
+pair_nbasis = et_pair.readout.in_dim
+pair_nspecies = et_pair.readout.ncat
+@test ETM.length_basis(pair_calc) == pair_nbasis * pair_nspecies
+println("ETPairPotential length_basis: OK ($(pair_nbasis * pair_nspecies) parameters)")
+
+# Test energy_forces_virial_basis
+sys_pair = rand_struct()  # Uses Si/O system from earlier
+efv_pair = ETM.energy_forces_virial_basis(sys_pair, pair_calc)
+natoms_pair = length(sys_pair)
+nparams_pair = ETM.length_basis(pair_calc)
+
+@test length(efv_pair.energy) == nparams_pair
+@test size(efv_pair.forces) == (natoms_pair, nparams_pair)
+@test length(efv_pair.virial) == nparams_pair
+println("ETPairPotential energy_forces_virial_basis shapes: OK")
+
+# Test linear combination gives correct energy
+θ_pair = ETM.get_linear_parameters(pair_calc)
+E_from_pair_basis = dot(ustrip.(efv_pair.energy), θ_pair)
+E_pair_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys_pair, pair_calc))
+print_tf(@test E_from_pair_basis ≈ E_pair_direct rtol=1e-10)
+println()
+println("ETPairPotential energy from basis: OK")
+
+# Test get/set round-trip
+θ_pair_test = randn(nparams_pair)
+ETM.set_linear_parameters!(pair_calc, θ_pair_test)
+@test ETM.get_linear_parameters(pair_calc) ≈ θ_pair_test
+ETM.set_linear_parameters!(pair_calc, θ_pair)  # Restore
+println("ETPairPotential get/set_linear_parameters: OK")
+
+# Test ACEfit.basis_size
+@test ACEfit.basis_size(pair_calc) == nparams_pair
+println("ETPairPotential ACEfit.basis_size: OK")
+
+##
+
+@info("Testing StackedCalculator training assembly")
+
+# Create a StackedCalculator with E0 + Pair + ManyBody (using convert2et_full)
+stacked_calc = ETM.convert2et_full(model_pair, ps_pair, st_pair)
+
+# Verify structure: 3 components (ETOneBody, ETPairModel, ETACE)
+@test length(stacked_calc.calcs) == 3
+println("StackedCalculator has $(length(stacked_calc.calcs)) components")
+
+# Test length_basis is sum of components
+n_onebody = ETM.length_basis(stacked_calc.calcs[1])
+n_pair = ETM.length_basis(stacked_calc.calcs[2])
+n_ace = ETM.length_basis(stacked_calc.calcs[3])
+n_total = ETM.length_basis(stacked_calc)
+
+@test n_onebody == 0  # ETOneBody has no learnable params
+@test n_pair > 0
+@test n_ace > 0
+@test n_total == n_onebody + n_pair + n_ace
+println("StackedCalculator length_basis: OK (0 + $n_pair + $n_ace = $n_total)")
+
+# Test energy_forces_virial_basis
+sys_stacked = rand_struct()
+efv_stacked = ETM.energy_forces_virial_basis(sys_stacked, stacked_calc)
+natoms_stacked = length(sys_stacked)
+
+@test length(efv_stacked.energy) == n_total
+@test size(efv_stacked.forces) == (natoms_stacked, n_total)
+@test length(efv_stacked.virial) == n_total
+println("StackedCalculator energy_forces_virial_basis shapes: OK")
+
+# Test linear combination gives correct energy
+θ_stacked = ETM.get_linear_parameters(stacked_calc)
+@test length(θ_stacked) == n_total
+E_from_stacked_basis = dot(ustrip.(efv_stacked.energy), θ_stacked)
+E_stacked_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys_stacked, stacked_calc))
+print_tf(@test E_from_stacked_basis ≈ E_stacked_direct rtol=1e-10)
+println()
+println("StackedCalculator energy from basis: OK")
+
+# Test linear combination gives correct forces
+F_from_stacked_basis = efv_stacked.forces * θ_stacked
+F_stacked_direct = AtomsCalculators.forces(sys_stacked, stacked_calc)
+max_diff_stacked_F = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_stacked_basis, F_stacked_direct))
+print_tf(@test max_diff_stacked_F < 1e-10)
+println()
+println("StackedCalculator forces from basis: OK (max_diff = $max_diff_stacked_F)")
+
+# Test linear combination gives correct virial
+V_from_stacked_basis = sum(θ_stacked[k] * ustrip.(efv_stacked.virial[k]) for k in 1:n_total)
+V_stacked_direct = ustrip.(AtomsCalculators.virial(sys_stacked, stacked_calc))
+virial_diff_stacked = maximum(abs.(V_from_stacked_basis - V_stacked_direct))
+print_tf(@test virial_diff_stacked < 1e-10)
+println()
+println("StackedCalculator virial from basis: OK (max_diff = $virial_diff_stacked)")
+
+# Test get/set_linear_parameters round-trip
+θ_stacked_orig = copy(θ_stacked)
+θ_stacked_test = randn(n_total)
+ETM.set_linear_parameters!(stacked_calc, θ_stacked_test)
+θ_stacked_check = ETM.get_linear_parameters(stacked_calc)
+@test θ_stacked_check ≈ θ_stacked_test
+ETM.set_linear_parameters!(stacked_calc, θ_stacked_orig)  # Restore
+println("StackedCalculator get/set_linear_parameters: OK")
+
+# Test potential_energy_basis consistency
+E_basis_stacked = ETM.potential_energy_basis(sys_stacked, stacked_calc)
+@test length(E_basis_stacked) == n_total
+@test ustrip.(E_basis_stacked) ≈ ustrip.(efv_stacked.energy) rtol=1e-10
+println("StackedCalculator potential_energy_basis consistency: OK")
+
+# Test ACEfit.basis_size
+@test ACEfit.basis_size(stacked_calc) == n_total
+println("StackedCalculator ACEfit.basis_size: OK")
+
+##
+
+@info("All Phase 5c tests passed!")
