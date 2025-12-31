@@ -156,18 +156,24 @@ energy_forces_virial_basis(sys, calc)        # Full EFV design row
 
 ## Outstanding Work
 
-### 1. Training Assembly for Pair Model
-**Priority**: Medium
-**Description**: `ETPairModel` has `site_basis_jacobian` but isn't integrated into training assembly. Currently only ETACE (many-body) supports `energy_forces_virial_basis`.
+### ~~1. Training Assembly for Pair Model~~ ✅ Complete
+**Status**: Implemented in `et_calculators.jl` and `stackedcalc.jl`
 
-**Implementation**:
-- Extend `energy_forces_virial_basis` to detect model type
-- Call `site_basis_jacobian` on ETPairModel
-- ETOneBody returns empty basis (no learnable params)
+**What was done**:
+- Added `ETPairPotential` type alias with full training assembly support
+- Added `ETOneBodyPotential` type alias (returns empty arrays - no learnable params)
+- Implemented `length_basis`, `energy_forces_virial_basis`, `potential_energy_basis`, `get_linear_parameters`, `set_linear_parameters!` for all calculator types
+- Extended `StackedCalculator` to concatenate basis functions from all components
+- Added `ACEfit.basis_size` dispatch for all calculator types
 
-### 2. ACEfit.assemble Dispatch Integration
-**Priority**: Medium
-**Description**: Add dispatch for `ACEfit.assemble` to work with full ETACE models.
+### ~~2. ACEfit.assemble Dispatch Integration~~ ✅ Complete
+**Status**: Works out-of-the-box after extending `length_basis` and `energy_forces_virial_basis`
+
+**What was done**:
+- Added empty function declarations in `models/models.jl` for `length_basis`, `energy_forces_virial_basis`, `potential_energy_basis`
+- ETModels now imports and extends these functions
+- `ACEfit.feature_matrix(d::AtomsData, calc)` works with ETACE calculators
+- `ACEfit.assemble(data, calc)` works with `StackedCalculator`
 
 ### 3. Committee Support
 **Priority**: Low

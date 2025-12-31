@@ -21,6 +21,9 @@ using StaticArrays
 using Unitful
 using LinearAlgebra: norm
 
+# Import from parent Models module to extend these functions
+import ..Models: length_basis, energy_forces_virial_basis, potential_energy_basis
+
 
 # ============================================================================
 #  WrappedSiteCalculator - Unified wrapper for ETACE-pattern models
@@ -382,6 +385,276 @@ function set_linear_parameters!(calc::ETACEPotential, θ::AbstractVector)
    ps = _ps(calc)
    new_W = reshape(θ, 1, nbasis, nspecies)
    calc.ps = merge(ps, (readout = merge(ps.readout, (W = new_W,)),))
+   return calc
+end
+
+
+# ============================================================================
+#  ETPairPotential - Type alias for WrappedSiteCalculator{ETPairModel}
+# ============================================================================
+
+"""
+    ETPairPotential
+
+AtomsCalculators-compatible calculator wrapping an ETPairModel.
+This is a type alias for `WrappedSiteCalculator{<:ETPairModel, PS, ST}`.
+
+Supports training assembly functions:
+- `length_basis(calc)` - Total linear parameters
+- `energy_forces_virial_basis(sys, calc)` - Full EFV design row
+- `potential_energy_basis(sys, calc)` - Energy design row
+- `get_linear_parameters(calc)` / `set_linear_parameters!(calc, θ)`
+
+# Example
+```julia
+et_pair = convertpair(model)
+ps, st = Lux.setup(rng, et_pair)
+calc = ETPairPotential(et_pair, ps, st, 5.5)
+E = potential_energy(sys, calc)
+```
+"""
+const ETPairPotential{MOD<:ETPairModel, PS, ST} = WrappedSiteCalculator{MOD, PS, ST}
+
+function ETPairPotential(model::ETPairModel, ps, st, rcut::Real)
+   return WrappedSiteCalculator(model, ps, st, Float64(rcut))
+end
+
+# ============================================================================
+#  ETPairPotential Training Assembly
+# ============================================================================
+
+# Accessor helpers
+_pair(calc::ETPairPotential) = calc.model
+_ps(calc::ETPairPotential) = calc.ps
+_st(calc::ETPairPotential) = calc.st
+
+"""
+    length_basis(calc::ETPairPotential)
+
+Return the number of linear parameters in the pair model (nbasis * nspecies).
+"""
+function length_basis(calc::ETPairPotential)
+   pair = _pair(calc)
+   nbasis = pair.readout.in_dim
+   nspecies = pair.readout.ncat
+   return nbasis * nspecies
+end
+
+ACEfit.basis_size(calc::ETPairPotential) = length_basis(calc)
+
+"""
+    energy_forces_virial_basis(sys::AbstractSystem, calc::ETPairPotential)
+
+Compute the basis functions for energy, forces, and virial for pair potential.
+"""
+function energy_forces_virial_basis(sys::AbstractSystem, calc::ETPairPotential)
+   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+   pair = _pair(calc)
+
+   # Get basis and jacobian
+   𝔹, ∂𝔹 = site_basis_jacobian(pair, G, _ps(calc), _st(calc))
+
+   natoms = length(sys)
+   nnodes = size(𝔹, 1)
+   nbasis = pair.readout.in_dim
+   nspecies = pair.readout.ncat
+   nparams = nbasis * nspecies
+   maxneigs = size(∂𝔹, 1)
+
+   # Species indices for each node
+   iZ = pair.readout.selector.(G.node_data)
+
+   # Initialize outputs
+   E_basis = zeros(nparams)
+   F_basis = zeros(SVector{3, Float64}, natoms, nparams)
+   V_basis = zeros(SMatrix{3, 3, Float64, 9}, nparams)
+
+   # Pre-allocate work buffer
+   ∇Ei_buf = similar(∂𝔹, maxneigs, nnodes)
+   zero_grad = zero(∂𝔹[1, 1, 1])
+   edge_𝐫 = [edge.𝐫 for edge in G.edge_data]
+
+   # Compute basis values for each parameter (k, s) pair
+   for s in 1:nspecies
+      for k in 1:nbasis
+         p = (s - 1) * nbasis + k
+
+         # Energy basis
+         for i in 1:nnodes
+            if iZ[i] == s
+               E_basis[p] += 𝔹[i, k]
+            end
+         end
+
+         # Fill gradient buffer
+         for i in 1:nnodes
+            if iZ[i] == s
+               @views ∇Ei_buf[:, i] .= ∂𝔹[:, i, k]
+            else
+               @views ∇Ei_buf[:, i] .= Ref(zero_grad)
+            end
+         end
+
+         # Convert to edge format and compute forces/virial
+         ∇Ei_3d = reshape(∇Ei_buf, maxneigs, nnodes, 1)
+         ∇E_edges = ET.rev_reshape_embedding(∇Ei_3d, G)[:]
+         F_basis[:, p] = -ET.Atoms.forces_from_edge_grads(sys, G, ∇E_edges)
+
+         V = zero(SMatrix{3, 3, Float64, 9})
+         for (e, ∂edge) in enumerate(∇E_edges)
+            V -= ∂edge.𝐫 * edge_𝐫[e]'
+         end
+         V_basis[p] = V
+      end
+   end
+
+   return (
+      energy = E_basis * u"eV",
+      forces = F_basis .* u"eV/Å",
+      virial = V_basis * u"eV"
+   )
+end
+
+"""
+    potential_energy_basis(sys::AbstractSystem, calc::ETPairPotential)
+
+Compute only the energy basis for pair potential.
+"""
+function potential_energy_basis(sys::AbstractSystem, calc::ETPairPotential)
+   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+   pair = _pair(calc)
+
+   𝔹 = site_basis(pair, G, _ps(calc), _st(calc))
+
+   nbasis = pair.readout.in_dim
+   nspecies = pair.readout.ncat
+   nparams = nbasis * nspecies
+
+   iZ = pair.readout.selector.(G.node_data)
+
+   E_basis = zeros(nparams)
+   for s in 1:nspecies
+      for k in 1:nbasis
+         p = (s - 1) * nbasis + k
+         for i in 1:length(G.node_data)
+            if iZ[i] == s
+               E_basis[p] += 𝔹[i, k]
+            end
+         end
+      end
+   end
+
+   return E_basis * u"eV"
+end
+
+"""
+    get_linear_parameters(calc::ETPairPotential)
+
+Extract the linear parameters (readout weights) as a flat vector.
+"""
+function get_linear_parameters(calc::ETPairPotential)
+   return vec(_ps(calc).readout.W)
+end
+
+"""
+    set_linear_parameters!(calc::ETPairPotential, θ::AbstractVector)
+
+Set the linear parameters (readout weights) from a flat vector.
+"""
+function set_linear_parameters!(calc::ETPairPotential, θ::AbstractVector)
+   pair = _pair(calc)
+   nbasis = pair.readout.in_dim
+   nspecies = pair.readout.ncat
+   @assert length(θ) == nbasis * nspecies
+
+   ps = _ps(calc)
+   new_W = reshape(θ, 1, nbasis, nspecies)
+   calc.ps = merge(ps, (readout = merge(ps.readout, (W = new_W,)),))
+   return calc
+end
+
+
+# ============================================================================
+#  ETOneBodyPotential - Type alias for WrappedSiteCalculator{ETOneBody}
+# ============================================================================
+
+"""
+    ETOneBodyPotential
+
+AtomsCalculators-compatible calculator wrapping an ETOneBody model.
+This is a type alias for `WrappedSiteCalculator{<:ETOneBody, PS, ST}`.
+
+ETOneBody has no learnable parameters, so training assembly returns empty results:
+- `length_basis(calc)` returns 0
+- `energy_forces_virial_basis(sys, calc)` returns empty arrays
+- Forces and virial are always zero (energy only depends on atom types)
+
+# Example
+```julia
+et_onebody = one_body(Dict(:Si => -0.846), x -> x.z)
+_, st = Lux.setup(rng, et_onebody)
+calc = ETOneBodyPotential(et_onebody, nothing, st, 3.0)
+E = potential_energy(sys, calc)
+```
+"""
+const ETOneBodyPotential{MOD<:ETOneBody, PS, ST} = WrappedSiteCalculator{MOD, PS, ST}
+
+function ETOneBodyPotential(model::ETOneBody, ps, st, rcut::Real)
+   return WrappedSiteCalculator(model, ps, st, Float64(rcut))
+end
+
+# ============================================================================
+#  ETOneBodyPotential Training Assembly (empty - no learnable parameters)
+# ============================================================================
+
+_onebody(calc::ETOneBodyPotential) = calc.model
+_ps(calc::ETOneBodyPotential) = calc.ps
+_st(calc::ETOneBodyPotential) = calc.st
+
+"""
+    length_basis(calc::ETOneBodyPotential)
+
+Return 0 - ETOneBody has no learnable linear parameters.
+"""
+length_basis(calc::ETOneBodyPotential) = 0
+
+ACEfit.basis_size(calc::ETOneBodyPotential) = 0
+
+"""
+    energy_forces_virial_basis(sys::AbstractSystem, calc::ETOneBodyPotential)
+
+Return empty arrays - ETOneBody has no learnable parameters.
+"""
+function energy_forces_virial_basis(sys::AbstractSystem, calc::ETOneBodyPotential)
+   natoms = length(sys)
+   return (
+      energy = zeros(0) * u"eV",
+      forces = zeros(SVector{3, Float64}, natoms, 0) .* u"eV/Å",
+      virial = zeros(SMatrix{3, 3, Float64, 9}, 0) * u"eV"
+   )
+end
+
+"""
+    potential_energy_basis(sys::AbstractSystem, calc::ETOneBodyPotential)
+
+Return empty array - ETOneBody has no learnable parameters.
+"""
+potential_energy_basis(sys::AbstractSystem, calc::ETOneBodyPotential) = zeros(0) * u"eV"
+
+"""
+    get_linear_parameters(calc::ETOneBodyPotential)
+
+Return empty vector - ETOneBody has no learnable parameters.
+"""
+get_linear_parameters(calc::ETOneBodyPotential) = Float64[]
+
+"""
+    set_linear_parameters!(calc::ETOneBodyPotential, θ::AbstractVector)
+
+No-op for ETOneBody (no learnable parameters).
+"""
+function set_linear_parameters!(calc::ETOneBodyPotential, θ::AbstractVector)
+   @assert length(θ) == 0 "ETOneBody has no learnable parameters"
    return calc
 end
 

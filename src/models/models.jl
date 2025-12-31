@@ -18,7 +18,9 @@ import LuxCore: AbstractLuxLayer,
                initialparameters,
                initialstates      
                
-function length_basis end 
+function length_basis end
+function energy_forces_virial_basis end
+function potential_energy_basis end
 
 include("elements.jl")
 
