@@ -149,8 +149,16 @@ G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
 ∂G2a = Zygote.gradient(G -> sum(et_model(G, et_ps, et_st)[1]), G)[1]
 ∂G2b = ETM.site_grads(et_model, G, et_ps, et_st)
 
+∂G_50 = ETM.site_grads(spl_50, G, ps_50, st_50)
+∂G_200 = ETM.site_grads(spl_200, G, ps_200, st_200)
+
 @info("confirm consistency of Zygote and site_grads")
 println(@test all(∂G2a.edge_data .≈ ∂G2b.edge_data))
+
+err_50 = maximum(norm.(∂G2b.edge_data - ∂G_50.edge_data) ./ (1 .+ norm.(∂G2b.edge_data) .+ norm.(∂G_50.edge_data)))
+err_200 = maximum(norm.(∂G2b.edge_data - ∂G_200.edge_data) ./ (1 .+ norm.(∂G2b.edge_data) .+ norm.(∂G_200.edge_data)))
+println_slim(@test err_50 < 1)
+println_slim(@test err_200 < 0.01)
 
 ##
 # test gradient against ForwardDiff 
@@ -206,6 +214,16 @@ println_slim(@test 𝔹1 ≈ 𝔹2)
 Ei_a = [ dot(𝔹2[i, :], WW[1, :, iZ[i]])    for (i, iz) in enumerate(iZ) ]
 Ei_b = et_model(G, et_ps, et_st)[1][:]
 println_slim(@test Ei_a ≈ Ei_b)
+
+## 
+
+@info("splined site basis")
+𝔹_200 = ETM.site_basis(spl_200, G, ps_200, st_200) 
+𝔹2_200, ∂𝔹2_200 = ETM.site_basis_jacobian(spl_200, G, ps_200, st_200)
+
+println_slim(@test 𝔹_200 ≈ 𝔹2_200 )
+println_slim(@test norm(𝔹1 - 𝔹_200, Inf) < 3e-3)
+println_slim(@test maximum(norm.(∂𝔹2 - ∂𝔹2_200)) < 0.1)
 
 ##
 
