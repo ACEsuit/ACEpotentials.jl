@@ -430,7 +430,7 @@ function convert2et_full(model, ps, st; rng::AbstractRNG=default_rng())
    # 1. Convert E0/Vref to ETOneBody
    E0s = model.Vref.E0  # Dict{Int, Float64}
    zlist = ChemicalSpecies.(model.rbasis._i2z)
-   E0_dict = Dict(z => E0s[z.number] for z in zlist)
+   E0_dict = Dict(z => E0s[z.atomic_number] for z in zlist)
    et_onebody = one_body(E0_dict, x -> x.z)
    _, onebody_st = setup(rng, et_onebody)
    # Use minimum cutoff for graph construction (ETOneBody needs no neighbors)
@@ -467,10 +467,11 @@ function _copy_ace_params!(et_ps, ps, model)
 
    # Copy radial basis parameters (Wnlq)
    # ACE format: Wnlq[:, :, iz, jz] for species pair (iz, jz)
-   # ETACE format: W[:, :, idx] where idx = (i-1)*NZ + j (or symmetric idx)
+   # ETACE format: rembed.post.W[:, :, idx] where idx = (i-1)*NZ + j
+   # (post is the SelectLinL layer in EmbedDP)
    for i in 1:NZ, j in 1:NZ
       idx = (i-1)*NZ + j
-      et_ps.rembed.basis.linl.W[:, :, idx] .= ps.rbasis.Wnlq[:, :, i, j]
+      et_ps.rembed.post.W[:, :, idx] .= ps.rbasis.Wnlq[:, :, i, j]
    end
 
    # Copy readout (many-body) parameters
@@ -493,10 +494,11 @@ function _copy_pair_params!(et_ps, ps, model)
 
    # Copy pair radial basis parameters
    # ACE format: pairbasis.Wnlq[:, :, i, j] for species pair (i, j)
-   # ETACE format: rembed.basis.rbasis.linl.W[:, :, idx] where idx = (i-1)*NZ + j
+   # ETACE format: rembed.rbasis.post.W[:, :, idx] where idx = (i-1)*NZ + j
+   # (post is the SelectLinL layer in EmbedDP)
    for i in 1:NZ, j in 1:NZ
       idx = (i-1)*NZ + j
-      et_ps.rembed.basis.rbasis.linl.W[:, :, idx] .= ps.pairbasis.Wnlq[:, :, i, j]
+      et_ps.rembed.rbasis.post.W[:, :, idx] .= ps.pairbasis.Wnlq[:, :, i, j]
    end
 
    # Copy pair readout parameters
