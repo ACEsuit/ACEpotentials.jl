@@ -17,7 +17,7 @@ using ACEpotentials, Test, LazyArtifacts
     @testset "Weird bugs" begin include("test_bugs.jl") end
 
     # new ET backend tests
-    @testset "ET ACE" begin include("etmodels/test_etbackend.jl") end 
+    @testset "ET ACE" begin include("etmodels/test_etace.jl") end 
     @testset "ET OneBody" begin include("etmodels/test_etonebody.jl") end
     @testset "ET Pair" begin include("etmodels/test_etpair.jl") end
 

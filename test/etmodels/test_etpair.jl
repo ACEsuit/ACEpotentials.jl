@@ -76,6 +76,22 @@ et_ps.readout.W[1, :, 2] .= ps.Wpair[:, 2]
 
 ##
 #
+# make a splined version of the et_pair model 
+# 
+
+spl_50 = ETM.splinify(et_pair, et_ps, et_st; Nspl = 50)
+ps_50, st_50 = Lux.setup(rng, spl_50)
+
+spl_200 = ETM.splinify(et_pair, et_ps, et_st; Nspl = 200)
+ps_200, st_200 = Lux.setup(rng, spl_200)
+
+# many-body basis parameters for et_model_2
+ps_50.readout.W[:] = et_ps.readout.W
+ps_200.readout.W[:] = et_ps.readout.W
+
+
+##
+#
 # test energy evaluations 
 # 
 
@@ -88,21 +104,26 @@ function rand_struct()
    return sys 
 end 
 
-function energy_new(sys, et_model)
+function energy_new(sys, et_model, ps, st)
    G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-   Ei, _ = et_model(G, et_ps, et_st)
+   Ei, _ = et_model(G, ps, st)
    return sum(Ei) 
 end
 
 ##
 
+Random.seed!(1234)
 @info("Check total energies match")
 for ntest = 1:30 
    sys = rand_struct()
    G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
    E1 = AtomsCalculators.potential_energy(sys, calc_model)
-   E2 = energy_new(sys, et_pair)
+   E2 = energy_new(sys, et_pair, et_ps, et_st)
+   E_50 = energy_new(sys, spl_50, ps_50, st_50)
+   E_200 = energy_new(sys, spl_200, ps_200, st_200)
    print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-6 ) 
+   print_tf( @test abs(ustrip(E2) - ustrip(E_50)) < 1e-2 )
+   print_tf( @test abs(ustrip(E2) - ustrip(E_200)) < 1e-4 )
 end
 
 ##
@@ -116,21 +137,31 @@ iZ = et_pair.readout.selector.(G.node_data)
 WW = et_ps.readout.W
 
 # gradient of model w.r.t. positions 
-∂G = ETM.site_grads(et_pair, G, et_ps, et_st)  # test run
+∂G = ETM.site_grads(et_pair, G, et_ps, et_st) 
+∂G_200 = ETM.site_grads(spl_200, G, ps_200, st_200)
 
 # basis 
 𝔹1 = ETM.site_basis(et_pair, G, et_ps, et_st)
+𝔹1_200 = ETM.site_basis(spl_200, G, ps_200, st_200)
 
 # basis jacobian 
 𝔹2, ∂𝔹2 = ETM.site_basis_jacobian(et_pair, G, et_ps, et_st)
+𝔹2_200, ∂𝔹2_200 = ETM.site_basis_jacobian(spl_200, G, ps_200, st_200)
 
 println_slim(@test 𝔹1 ≈ 𝔹2)
+println_slim(@test 𝔹1_200 ≈ 𝔹2_200)
+println_slim(@test norm(𝔹1 - 𝔹1_200, Inf) < 1e-4)
 
 ∇Ei2 = reduce( hcat, ∂𝔹2[:, i, :] * WW[1, :, iZ[i]] 
                     for (i, iz) in enumerate(iZ) )
 ∇Ei3 = reshape(∇Ei2, size(∇Ei2)..., 1)
 ∇E_𝔹_edges = ET.rev_reshape_embedding(∇Ei3, G)[:]
 println_slim(@test all(∇E_𝔹_edges .≈ ∂G.edge_data))
+
+# check error in site energy gradients for splines 
+println_slim(@test maximum(norm.(∂G.edge_data - ∂G_200.edge_data)) < 1e-3)
+# check error in basis jacobian for splines 
+println_slim(@test maximum(norm.(∂𝔹2 - ∂𝔹2_200)) < 1e-3)
 
 ##
 
@@ -157,11 +188,27 @@ E2_dev, st_dev = et_pair(G_dev, ps_dev, st_dev)
 E2 = Array(E2_dev)
 println_slim(@test E1 ≈ E2)
 
+##
+
+@info(" .... with splines")
+ps_50_32 = ET.float32(ps_50)
+st_50_32 = ET.float32(st_50)
+ps_50_dev = dev(ET.float32(ps_50))
+st_50_dev = dev(ET.float32(st_50))
+E3a, _ = spl_50(G_32, ps_50_32, st_50_32)
+E3b_dev, _ = spl_50(G_dev, ps_50_dev, st_50_dev)
+E3b = Array(E3b_dev)
+println_slim(@test E3a ≈ E3b)
+
+## 
+
+@info(" .... gradients on GPU")
 g1 = ETM.site_grads(et_pair, G_32, ps_32, st_32)
 g2_dev = ETM.site_grads(et_pair, G_dev, ps_dev, st_dev)
 g2_edge = Array(g2_dev.edge_data)
 println_slim(@test all(g1.edge_data .≈ g2_edge))
 
+@info(" .... basis on GPU")
 b1 = ETM.site_basis(et_pair, G_32, ps_32, st_32)
 b2_dev = ETM.site_basis(et_pair, G_dev, ps_dev, st_dev)
 b2 = Array(b2_dev)
@@ -176,4 +223,5 @@ jacerr = norm.(∂db1 .- ∂db2) ./ (1 .+ norm.(∂db1) + norm.(∂db2))
 @show maximum(jacerr)
 println_slim( @test maximum(jacerr) < 1e-4 )
 
+##
 =#

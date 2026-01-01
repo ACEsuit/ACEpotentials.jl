@@ -14,5 +14,8 @@ include("et_pair.jl")
 # converstion utilities: convert from 0.8 style ACE models to ET based models
 include("convert.jl")
 
+# utilities to convert radial embeddings to splined versions 
+# for simplicity and performance and to freeze parameters 
+include("splinify.jl")
 
 end
