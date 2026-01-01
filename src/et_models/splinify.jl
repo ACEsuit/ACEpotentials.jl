@@ -19,14 +19,12 @@ function splinify(et_pair::ETPairModel, et_ps, et_st;
    splines = [ 
          P4ML.splinify( y -> WW[:, :, i] * polys_y(y), -1.0, 1.0, Nspl ) 
          for i in 1:size(WW, 3)  ]
-   # extract the spline parameters into an array of parameter sets          
-   states = [ P4ML._init_luxstate(spl) for spl in splines ]
    # selects the correct spline based on the (Zi, Zj) pair 
    selector2 = et_pair.rembed.layer.rbasis.post.selector
    # envelope multiplying the spline 
    envelope = et_pair.rembed.layer.envelope
 
-   spl_rbasis = ET.TransSelSplines(trans_y, envelope, selector2, splines[1], states)
+   spl_rbasis = ET.trans_splines(trans_y, splines, selector2, envelope)
 
    return ETPairModel( ET.EdgeEmbed(spl_rbasis), et_pair.readout )
 end
@@ -52,11 +50,8 @@ function splinify(et_model::ETACE, et_ps, et_st; Nspl = 50)
    splines = [ 
          P4ML.splinify( y -> WW[:, :, i] * polys_y(y), -1.0, 1.0, Nspl ) 
          for i in 1:size(WW, 3)  ]
-   # extract the spline parameters into an array of parameter sets          
-   states = [ P4ML._init_luxstate(spl) for spl in splines ]
 
-   rembed_spl = ET.TransSelSplines(trans, trans_yenv, selector2, 
-                                   splines[1], states)
+   rembed_spl = ET.trans_splines(trans, splines, selector2, trans_yenv)
    ace_spl = ETACE( ET.EdgeEmbed(rembed_spl), 
                     et_model.yembed, 
                     et_model.basis, 

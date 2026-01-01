@@ -1,6 +1,6 @@
 using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
 using TestEnv; TestEnv.activate();
-Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "DecoratedParticles"))
 
@@ -188,11 +188,27 @@ E2_dev, st_dev = et_pair(G_dev, ps_dev, st_dev)
 E2 = Array(E2_dev)
 println_slim(@test E1 ≈ E2)
 
+##
+
+@info(" .... with splines")
+ps_50_32 = ET.float32(ps_50)
+st_50_32 = ET.float32(st_50)
+ps_50_dev = dev(ET.float32(ps_50))
+st_50_dev = dev(ET.float32(st_50))
+E3a, _ = spl_50(G_32, ps_50_32, st_50_32)
+E3b_dev, _ = spl_50(G_dev, ps_50_dev, st_50_dev)
+E3b = Array(E3b_dev)
+println_slim(@test E3a ≈ E3b)
+
+## 
+
+@info(" .... gradients on GPU")
 g1 = ETM.site_grads(et_pair, G_32, ps_32, st_32)
 g2_dev = ETM.site_grads(et_pair, G_dev, ps_dev, st_dev)
 g2_edge = Array(g2_dev.edge_data)
 println_slim(@test all(g1.edge_data .≈ g2_edge))
 
+@info(" .... basis on GPU")
 b1 = ETM.site_basis(et_pair, G_32, ps_32, st_32)
 b2_dev = ETM.site_basis(et_pair, G_dev, ps_dev, st_dev)
 b2 = Array(b2_dev)
@@ -207,4 +223,5 @@ jacerr = norm.(∂db1 .- ∂db2) ./ (1 .+ norm.(∂db1) + norm.(∂db2))
 @show maximum(jacerr)
 println_slim( @test maximum(jacerr) < 1e-4 )
 
+##
 =#

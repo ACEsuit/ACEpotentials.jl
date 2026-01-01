@@ -1,6 +1,6 @@
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
-using TestEnv; TestEnv.activate();
-Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using TestEnv; TestEnv.activate();
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "Polynomials4ML.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "DecoratedParticles"))
 
@@ -271,6 +271,11 @@ E1 = ustrip(AtomsCalculators.potential_energy(sys, calc_model))
 E4 = sum(et_model(G_32_dev, ps_dev, st_dev)[1])
 println_slim( @test abs(E1 - E4) / (abs(E1) + abs(E4) + 1e-7) < 1e-5 ) 
 
+# Something still wrong evaluating the splines on GPU 
+# ps_50_dev = dev(ET.float32(ps_50))
+# st_50_dev = dev(ET.float32(st_50))
+# E5 = sum(spl_50(G_32_dev, ps_50_dev, st_50_dev)[1])
+
 ## 
 # gradients on GPU 
 
@@ -303,4 +308,4 @@ println_slim( @test maximum(err_jac) < 1e-4 )
 @show maximum(err_jac)
 @info("The jacobian error feels a bit large. This may need further investigation.")
 
-=#
+=# 
