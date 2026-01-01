@@ -1,7 +1,7 @@
-using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
-using TestEnv; TestEnv.activate();
-Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
-Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
+# using Pkg; Pkg.activate(joinpath(@__DIR__(), "..", ".."))
+# using TestEnv; TestEnv.activate();
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "EquivariantTensors.jl"))
+# Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "..", "Polynomials4ML.jl"))
 # Pkg.develop(url = joinpath(@__DIR__(), "..", "..", "DecoratedParticles"))
 
 ##
@@ -94,7 +94,7 @@ selector2 = et_pair.rembed.layer.rbasis.post.selector
 trans_y = et_pair.rembed.layer.rbasis.trans
 envelope = et_pair.rembed.layer.envelope
 
-spl_rbasis = ET.TransSelSplines(trans_y, envelope, selector2, splines[1], states)
+spl_rbasis = ET.trans_splines(trans_y, splines, selector2, envelope)
 ps_spl, st_spl = LuxCore.setup(rng, spl_rbasis)
 
 poly_rbasis = et_pair.rembed.layer
@@ -150,87 +150,3 @@ println_slim(@test df0 ≈ dp)
 
 
 ##
-
-
-#= 
-
-@info("Check total energies match")
-for ntest = 1:30 
-   sys = rand_struct()
-   G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-   E1 = AtomsCalculators.potential_energy(sys, calc_model)
-   E2 = energy_new(sys, et_pair)
-   print_tf( @test abs(ustrip(E1) - ustrip(E2)) < 1e-6 ) 
-end
-
-##
-
-@info("Check gradients and jacobians")
-
-sys = rand_struct()
-G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
-nnodes = length(G.node_data)
-iZ = et_pair.readout.selector.(G.node_data)
-WW = et_ps.readout.W
-
-# gradient of model w.r.t. positions 
-∂G = ETM.site_grads(et_pair, G, et_ps, et_st)  # test run
-
-# basis 
-𝔹1 = ETM.site_basis(et_pair, G, et_ps, et_st)
-
-# basis jacobian 
-𝔹2, ∂𝔹2 = ETM.site_basis_jacobian(et_pair, G, et_ps, et_st)
-
-println_slim(@test 𝔹1 ≈ 𝔹2)
-
-∇Ei2 = reduce( hcat, ∂𝔹2[:, i, :] * WW[1, :, iZ[i]] 
-                    for (i, iz) in enumerate(iZ) )
-∇Ei3 = reshape(∇Ei2, size(∇Ei2)..., 1)
-∇E_𝔹_edges = ET.rev_reshape_embedding(∇Ei3, G)[:]
-println_slim(@test all(∇E_𝔹_edges .≈ ∂G.edge_data))
-
-##
-
-
-# turn off during CI -- need to sort out CI for GPU tests 
-
-
-@info("Check GPU evaluation") 
-using Metal 
-dev = Metal.mtl
-ps_32 = ET.float32(et_ps)
-st_32 = ET.float32(et_st)
-ps_dev = dev(ps_32)
-st_dev = dev(st_32)
-
-sys = rand_struct()
-G = ET.Atoms.interaction_graph(sys, 5.0 * u"Å")
-G_32 = ET.float32(G)
-G_dev = dev(G_32)
-
-E1, st = et_pair(G_32, ps_32, st_32)
-E2_dev, st_dev = et_pair(G_dev, ps_dev, st_dev)
-E2 = Array(E2_dev)
-println_slim(@test E1 ≈ E2)
-
-g1 = ETM.site_grads(et_pair, G_32, ps_32, st_32)
-g2_dev = ETM.site_grads(et_pair, G_dev, ps_dev, st_dev)
-g2_edge = Array(g2_dev.edge_data)
-println_slim(@test all(g1.edge_data .≈ g2_edge))
-
-b1 = ETM.site_basis(et_pair, G_32, ps_32, st_32)
-b2_dev = ETM.site_basis(et_pair, G_dev, ps_dev, st_dev)
-b2 = Array(b2_dev)
-println_slim(@test b1 ≈ b2)
-
-b1, ∂db1 = ETM.site_basis_jacobian(et_pair, G_32, ps_32, st_32)
-b2_dev, ∂db2_dev = ETM.site_basis_jacobian(et_pair, G_dev, ps_dev, st_dev)
-b2 = Array(b2_dev)
-∂db2 = Array(∂db2_dev)
-println_slim(@test b1 ≈ b2)
-jacerr = norm.(∂db1 .- ∂db2) ./ (1 .+ norm.(∂db1) + norm.(∂db2))
-@show maximum(jacerr)
-println_slim( @test maximum(jacerr) < 1e-4 )
-
-=#
