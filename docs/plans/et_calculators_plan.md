@@ -4,9 +4,11 @@
 
 Create calculator wrappers and training assembly for the new ETACE backend, integrating with EquivariantTensors.jl.
 
-**Status**: ✅ Core implementation complete. GPU acceleration working.
+**Status**: ✅ Core implementation complete. GPU acceleration working. PR #313 under review.
 
 **Branch**: `jrk/etcalculators` (rebased on `acesuit/co/etback` including `co/etpair` merge)
+
+**PR**: https://github.com/ACEsuit/ACEpotentials.jl/pull/313
 
 ---
 
@@ -198,7 +200,7 @@ Moderator wants discussion before making changes.
 
 ## Dependencies
 
-- EquivariantTensors.jl >= 0.4.2
+- EquivariantTensors.jl >= 0.4.3
 - Polynomials4ML.jl >= 0.5.8 (for GPU forces)
 - LuxCUDA (for GPU support, test dependency)
 
@@ -206,7 +208,7 @@ Moderator wants discussion before making changes.
 
 ## Test Status
 
-All tests pass: **945 passed, 1 broken** (known Julia 1.12 hash ordering issue)
+All tests pass: **946 passed, 1 broken** (known Julia 1.12 hash ordering issue)
 
 ```bash
 # Run ET model tests
@@ -226,3 +228,4 @@ julia --project=test benchmark/gpu_benchmark.jl
 - StackedCalculator uses @generated functions for zero-overhead composition
 - Upstream `ETOneBody` stores E0s in state (`st.E0s`) for float type flexibility
 - All models use `VState` for edge gradients in `site_grads()` return
+- `ETOneBody.site_grads()` returns `fill(VState(), length(edges))` for type stability (empty VState acts as additive identity)
