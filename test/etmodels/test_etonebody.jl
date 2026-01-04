@@ -106,12 +106,11 @@ sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, 5.0 * u"Å")
 ∂G1 = ETM.site_grads(et_V0, G, ps, st)
 
-# ETOneBody returns NamedTuple with edge_data filled with empty VState() elements
-# Empty VState() acts as additive identity: VState(r=...) + VState() == VState(r=...)
+# ETOneBody returns NamedTuple with empty edge_data array since there are no
+# position-dependent gradients (energy only depends on atom types, not positions)
 println_slim(@test ∂G1 isa NamedTuple)
 println_slim(@test haskey(∂G1, :edge_data))
-println_slim(@test length(∂G1.edge_data) == length(G.edge_data))
-println_slim(@test all(v -> v == DP.VState(), ∂G1.edge_data))
+println_slim(@test isempty(∂G1.edge_data))
 
 ##
 

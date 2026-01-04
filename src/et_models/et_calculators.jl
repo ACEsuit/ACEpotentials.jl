@@ -712,13 +712,13 @@ function convert2et_full(model, ps, st; rng::AbstractRNG=default_rng())
    # 2. Convert pair potential to ETPairModel
    et_pair = convertpair(model)
    et_pair_ps, et_pair_st = setup(rng, et_pair)
-   _copy_pair_params!(et_pair_ps, ps, model)
+   copy_pair_params!(et_pair_ps, ps, model)
    pair_calc = WrappedSiteCalculator(et_pair, et_pair_ps, et_pair_st, rcut)
 
    # 3. Convert many-body to ETACE
    et_ace = convert2et(model)
    et_ace_ps, et_ace_st = setup(rng, et_ace)
-   _copy_ace_params!(et_ace_ps, ps, model)
+   copy_ace_params!(et_ace_ps, ps, model)
    ace_calc = WrappedSiteCalculator(et_ace, et_ace_ps, et_ace_st, rcut)
 
    # 4. Stack all components
@@ -731,11 +731,11 @@ end
 # ============================================================================
 
 """
-    _copy_ace_params!(et_ps, ps, model)
+    copy_ace_params!(et_ps, ps, model)
 
 Copy many-body (ACE) parameters from ACE model format to ETACE format.
 """
-function _copy_ace_params!(et_ps, ps, model)
+function copy_ace_params!(et_ps, ps, model)
    NZ = length(model.rbasis._i2z)
 
    # Copy radial basis parameters (Wnlq)
@@ -757,12 +757,12 @@ end
 
 
 """
-    _copy_pair_params!(et_ps, ps, model)
+    copy_pair_params!(et_ps, ps, model)
 
 Copy pair potential parameters from ACE model format to ETPairModel format.
 Based on parameter mapping from test/etmodels/test_etpair.jl.
 """
-function _copy_pair_params!(et_ps, ps, model)
+function copy_pair_params!(et_ps, ps, model)
    NZ = length(model.pairbasis._i2z)
 
    # Copy pair radial basis parameters

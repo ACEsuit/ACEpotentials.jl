@@ -52,14 +52,8 @@ end
 et_model = ETM.convert2et(model)
 et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
 
-# Match parameters
-et_ps.rembed.post.W[:, :, 1] = ps.rbasis.Wnlq[:, :, 1, 1]
-et_ps.rembed.post.W[:, :, 2] = ps.rbasis.Wnlq[:, :, 1, 2]
-et_ps.rembed.post.W[:, :, 3] = ps.rbasis.Wnlq[:, :, 2, 1]
-et_ps.rembed.post.W[:, :, 4] = ps.rbasis.Wnlq[:, :, 2, 2]
-
-et_ps.readout.W[1, :, 1] .= ps.WB[:, 1]
-et_ps.readout.W[1, :, 2] .= ps.WB[:, 2]
+# Match parameters using utility function
+ETM.copy_ace_params!(et_ps, ps, model)
 
 # Get cutoff radius
 rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
@@ -84,7 +78,6 @@ et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
 @test et_calc.model === et_model
 @test et_calc.rcut == rcut
 @test et_calc.co_ps === nothing
-println("ETACEPotential construction: OK")
 
 ##
 
@@ -176,8 +169,6 @@ V = AtomsCalculators.virial(sys, et_calc)
 @test eltype(F) <: StaticArrays.SVector
 @test V isa StaticArrays.SMatrix
 
-println("AtomsCalculators interface: OK")
-
 ##
 
 @info("Testing combined energy_forces_virial efficiency")
@@ -196,114 +187,11 @@ V = AtomsCalculators.virial(sys, et_calc)
 @test all(ustrip.(efv1.forces) .≈ ustrip.(F))
 @test ustrip.(efv1.virial) ≈ ustrip.(V)
 
-println("Combined evaluation consistency: OK")
-
 ##
 
 @info("Testing cutoff_radius function")
 
 @test ETM.cutoff_radius(et_calc) == rcut * u"Å"
-println("Cutoff radius: OK")
-
-##
-
-@info("Performance comparison: ETACE vs original ACE model")
-
-# Use a fixed test structure for benchmarking
-bench_sys = rand_struct()
-
-# Warm-up runs
-AtomsCalculators.energy_forces_virial(bench_sys, calc_model)
-AtomsCalculators.energy_forces_virial(bench_sys, et_calc)
-
-# Benchmark energy
-t_energy_old = @belapsed AtomsCalculators.potential_energy($bench_sys, $calc_model)
-t_energy_new = @belapsed AtomsCalculators.potential_energy($bench_sys, $et_calc)
-
-# Benchmark forces
-t_forces_old = @belapsed AtomsCalculators.forces($bench_sys, $calc_model)
-t_forces_new = @belapsed AtomsCalculators.forces($bench_sys, $et_calc)
-
-# Benchmark energy_forces_virial
-t_efv_old = @belapsed AtomsCalculators.energy_forces_virial($bench_sys, $calc_model)
-t_efv_new = @belapsed AtomsCalculators.energy_forces_virial($bench_sys, $et_calc)
-
-println("CPU Performance comparison (times in ms):")
-println("  Energy:              ACE = $(round(t_energy_old*1000, digits=3)), ETACE = $(round(t_energy_new*1000, digits=3)), ratio = $(round(t_energy_new/t_energy_old, digits=2))")
-println("  Forces:              ACE = $(round(t_forces_old*1000, digits=3)), ETACE = $(round(t_forces_new*1000, digits=3)), ratio = $(round(t_forces_new/t_forces_old, digits=2))")
-println("  Energy+Forces+Virial: ACE = $(round(t_efv_old*1000, digits=3)), ETACE = $(round(t_efv_new*1000, digits=3)), ratio = $(round(t_efv_new/t_efv_old, digits=2))")
-
-##
-
-# GPU benchmarks (if available)
-# Include GPU detection utils from EquivariantTensors
-et_test_utils = joinpath(dirname(dirname(pathof(ET))), "test", "test_utils")
-include(joinpath(et_test_utils, "utils_gpu.jl"))
-
-if dev !== identity
-   @info("GPU Performance comparison: ETACE on GPU vs CPU")
-
-   # NOTE: These benchmarks measure model evaluation time ONLY, with pre-constructed graphs.
-   # The neighborlist/graph construction currently runs on CPU (~7ms for 250 atoms) and is
-   # NOT included in the timings below. NeighbourLists.jl now has GPU support (PR #34, Dec 2025)
-   # but EquivariantTensors.jl doesn't use it yet. For end-to-end GPU acceleration, the
-   # neighborlist construction needs to be ported to GPU as well.
-
-   # Use a larger system for meaningful GPU benchmark (small systems are overhead-dominated)
-   # GPU kernel launch overhead is ~0.4ms, so need enough work to amortize this
-   gpu_bench_sys = AtomsBuilder.bulk(:Si) * (4, 4, 4)  # 128 atoms
-   rattle!(gpu_bench_sys, 0.1u"Å")
-   AtomsBuilder.randz!(gpu_bench_sys, [:Si => 0.5, :O => 0.5])
-
-   # Create graph and convert to Float32 for GPU
-   G = ET.Atoms.interaction_graph(gpu_bench_sys, rcut * u"Å")
-   G_32 = ET.float32(G)
-   G_gpu = dev(G_32)
-
-   et_ps_32 = ET.float32(et_ps)
-   et_st_32 = ET.float32(et_st)
-   et_ps_gpu = dev(et_ps_32)
-   et_st_gpu = dev(et_st_32)
-
-   # Warm-up GPU (forward pass)
-   et_model(G_gpu, et_ps_gpu, et_st_gpu)
-
-   # Benchmark GPU energy (forward pass only)
-   t_energy_gpu = @belapsed begin
-      Ei, _ = $et_model($G_gpu, $et_ps_gpu, $et_st_gpu)
-      sum(Ei)
-   end
-
-   # Compare to CPU Float32 for fair comparison
-   t_energy_cpu32 = @belapsed begin
-      Ei, _ = $et_model($G_32, $et_ps_32, $et_st_32)
-      sum(Ei)
-   end
-
-   println("GPU vs CPU Float32 comparison ($(length(gpu_bench_sys)) atoms, $(length(G.ii)) edges):")
-   println("  Energy:    CPU = $(round(t_energy_cpu32*1000, digits=3))ms, GPU = $(round(t_energy_gpu*1000, digits=3))ms, speedup = $(round(t_energy_cpu32/t_energy_gpu, digits=1))x")
-
-   # Try GPU gradients (may not be supported yet - gradients w.r.t. positions
-   # require Zygote through P4ML which has GPU compat issues; see ET test_ace_ka.jl:196-197)
-   gpu_grads_work = try
-      ETM.site_grads(et_model, G_gpu, et_ps_gpu, et_st_gpu)
-      true
-   catch e
-      @warn("GPU position gradients not yet supported (needed for forces): $(typeof(e).name.name)")
-      false
-   end
-
-   if gpu_grads_work
-      # Benchmark GPU gradients (for forces)
-      t_grads_gpu = @belapsed ETM.site_grads($et_model, $G_gpu, $et_ps_gpu, $et_st_gpu)
-      t_grads_cpu32 = @belapsed ETM.site_grads($et_model, $G_32, $et_ps_32, $et_st_32)
-      println("  Gradients: CPU = $(round(t_grads_cpu32*1000, digits=3)), GPU = $(round(t_grads_gpu*1000, digits=3)), speedup = $(round(t_grads_cpu32/t_grads_gpu, digits=2))x")
-   else
-      println("  Gradients: Skipped (GPU gradients not yet supported)")
-   end
-else
-   @info("No GPU available, skipping GPU benchmarks")
-end
 
 ##
 
@@ -339,13 +227,11 @@ expected_E0 = n_Si * E0_Si + n_O * E0_O
 
 @test length(Ei_E0) == length(sys)
 @test sum(Ei_E0) ≈ expected_E0
-println("ETOneBody site energies: OK")
 
 # Test site gradients (should be empty for constant energies)
 # Returns NamedTuple with empty edge_data, matching ETACE/ETPairModel interface
 ∂G_E0 = ETM.site_grads(et_onebody, G, nothing, onebody_st)
 @test isempty(∂G_E0.edge_data)
-println("ETOneBody site_grads (zero): OK")
 
 ##
 
@@ -354,7 +240,6 @@ println("ETOneBody site_grads (zero): OK")
 # Wrap ETOneBody in a calculator (using new unified interface)
 E0_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
 @test ustrip(u"Å", ETM.cutoff_radius(E0_calc)) == 3.0  # minimum cutoff
-println("WrappedSiteCalculator(ETOneBody) cutoff_radius: OK")
 
 # Test ETOneBody calculator energy
 sys = rand_struct()
@@ -364,12 +249,10 @@ n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
 n_O = count(node -> node.z == AtomsBase.ChemicalSpecies(:O), G.node_data)
 expected_E = (n_Si * E0_Si + n_O * E0_O) * u"eV"
 @test ustrip(E_E0_calc) ≈ ustrip(expected_E)
-println("WrappedSiteCalculator(ETOneBody) energy: OK")
 
 # Test ETOneBody calculator forces (should be zero)
 F_E0_calc = AtomsCalculators.forces(sys, E0_calc)
 @test all(norm(ustrip.(f)) < 1e-14 for f in F_E0_calc)
-println("WrappedSiteCalculator(ETOneBody) forces (zero): OK")
 
 ##
 
@@ -378,20 +261,17 @@ println("WrappedSiteCalculator(ETOneBody) forces (zero): OK")
 # Wrap ETACE model in a calculator (unified interface)
 ace_site_calc = ETM.WrappedSiteCalculator(et_model, et_ps, et_st, rcut)
 @test ustrip(u"Å", ETM.cutoff_radius(ace_site_calc)) == rcut
-println("WrappedSiteCalculator(ETACE) cutoff_radius: OK")
 
 # Test ETACE calculator matches ETACEPotential
 sys = rand_struct()
 E_ace_site = AtomsCalculators.potential_energy(sys, ace_site_calc)
 E_ace_pot = AtomsCalculators.potential_energy(sys, et_calc)
 @test ustrip(E_ace_site) ≈ ustrip(E_ace_pot)
-println("WrappedSiteCalculator(ETACE) energy matches ETACEPotential: OK")
 
 F_ace_site = AtomsCalculators.forces(sys, ace_site_calc)
 F_ace_pot = AtomsCalculators.forces(sys, et_calc)
 max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_ace_site, F_ace_pot))
 @test max_diff < 1e-10
-println("WrappedSiteCalculator(ETACE) forces match ETACEPotential: OK")
 
 ##
 
@@ -402,7 +282,6 @@ stacked = ETM.StackedCalculator((E0_calc, ace_site_calc))
 
 @test ustrip(u"Å", ETM.cutoff_radius(stacked)) == rcut
 @test length(stacked.calcs) == 2
-println("StackedCalculator construction: OK")
 
 ##
 
@@ -480,11 +359,9 @@ F = AtomsCalculators.forces(sys, E0_only_stacked)
 # Energy should match E0_calc
 E_direct = AtomsCalculators.potential_energy(sys, E0_calc)
 @test ustrip(E) ≈ ustrip(E_direct)
-println("StackedCalculator(ETOneBody only) energy: OK")
 
 # Forces should be zero
 @test all(norm(ustrip.(f)) < 1e-14 for f in F)
-println("StackedCalculator(ETOneBody only) forces (zero): OK")
 
 ##
 
@@ -503,7 +380,6 @@ nparams = ETM.length_basis(et_calc)
 nbasis = et_model.readout.in_dim
 nspecies = et_model.readout.ncat
 @test nparams == nbasis * nspecies
-println("length_basis: OK (nparams=$nparams, nbasis=$nbasis, nspecies=$nspecies)")
 
 ##
 
@@ -520,7 +396,6 @@ ETM.set_linear_parameters!(et_calc, θ_test)
 # Restore original
 ETM.set_linear_parameters!(et_calc, θ_orig)
 @test ETM.get_linear_parameters(et_calc) ≈ θ_orig
-println("get/set_linear_parameters round-trip: OK")
 
 ##
 
@@ -529,7 +404,6 @@ sys = rand_struct()
 E_basis = ETM.potential_energy_basis(sys, et_calc)
 @test length(E_basis) == nparams
 @test eltype(ustrip.(E_basis)) <: Real
-println("potential_energy_basis shape: OK")
 
 ##
 
@@ -540,7 +414,6 @@ natoms = length(sys)
 @test length(efv_basis.energy) == nparams
 @test size(efv_basis.forces) == (natoms, nparams)
 @test length(efv_basis.virial) == nparams
-println("energy_forces_virial_basis shapes: OK")
 
 ##
 
@@ -553,7 +426,6 @@ E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
 
 print_tf(@test E_from_basis ≈ E_direct rtol=1e-10)
 println()
-println("Energy from basis: OK")
 
 ##
 
@@ -566,7 +438,6 @@ F_direct = AtomsCalculators.forces(sys, et_calc)
 max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
 print_tf(@test max_diff < 1e-10)
 println()
-println("Forces from basis: OK (max_diff = $max_diff)")
 
 ##
 
@@ -579,13 +450,11 @@ V_direct = ustrip.(AtomsCalculators.virial(sys, et_calc))
 virial_diff = maximum(abs.(V_from_basis - V_direct))
 print_tf(@test virial_diff < 1e-10)
 println()
-println("Virial from basis: OK (max_diff = $virial_diff)")
 
 ##
 
 @info("Testing potential_energy_basis matches energy from efv_basis")
 @test ustrip.(E_basis) ≈ ustrip.(efv_basis.energy)
-println("potential_energy_basis consistency: OK")
 
 ##
 
@@ -602,7 +471,6 @@ println("potential_energy_basis consistency: OK")
 @info("Testing ACEfit.basis_size integration")
 import ACEfit
 @test ACEfit.basis_size(et_calc) == ETM.length_basis(et_calc)
-println("ACEfit.basis_size: OK")
 
 ##
 
@@ -645,7 +513,6 @@ for (i, sys) in enumerate(test_systems)
 end
 print_tf(@test all_ok)
 println()
-println("Multiple structures ($nstructs): OK")
 
 ##
 
@@ -700,7 +567,6 @@ for (label, sys) in zip(species_labels, species_test_systems)
 end
 print_tf(@test all_species_ok)
 println()
-println("Multi-species parameter ordering: OK")
 
 ##
 
@@ -734,8 +600,6 @@ si_params_for_o = E_basis_o[1:nbasis]
 # Pure O should have nonzero O parameters
 @test any(abs.(o_params) .> 1e-12)
 
-println("Species-specific basis contributions: OK")
-
 ##
 
 @info("All Phase 5b extended tests passed!")
@@ -760,7 +624,6 @@ onebody_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
 
 # Test length_basis returns 0
 @test ETM.length_basis(onebody_calc) == 0
-println("ETOneBodyPotential length_basis: OK (0 parameters)")
 
 # Test energy_forces_virial_basis returns empty arrays
 sys = rand_struct()
@@ -768,16 +631,13 @@ efv_onebody = ETM.energy_forces_virial_basis(sys, onebody_calc)
 @test length(efv_onebody.energy) == 0
 @test size(efv_onebody.forces, 2) == 0
 @test length(efv_onebody.virial) == 0
-println("ETOneBodyPotential energy_forces_virial_basis: OK (empty arrays)")
 
 # Test get/set_linear_parameters
 @test length(ETM.get_linear_parameters(onebody_calc)) == 0
 ETM.set_linear_parameters!(onebody_calc, Float64[])  # Should not error
-println("ETOneBodyPotential get/set_linear_parameters: OK")
 
 # Test ACEfit.basis_size
 @test ACEfit.basis_size(onebody_calc) == 0
-println("ETOneBodyPotential ACEfit.basis_size: OK")
 
 ##
 
@@ -806,15 +666,8 @@ ps_pair, st_pair = Lux.setup(rng, model_pair)
 et_pair = ETM.convertpair(model_pair)
 et_pair_ps, et_pair_st = Lux.setup(rng, et_pair)
 
-# Copy pair parameters
-NZ_pair = length(model_pair.pairbasis._i2z)
-for i in 1:NZ_pair, j in 1:NZ_pair
-   idx = (i-1)*NZ_pair + j
-   et_pair_ps.rembed.rbasis.post.W[:, :, idx] .= ps_pair.pairbasis.Wnlq[:, :, i, j]
-end
-for s in 1:NZ_pair
-   et_pair_ps.readout.W[1, :, s] .= ps_pair.Wpair[:, s]
-end
+# Copy pair parameters using utility function
+ETM.copy_pair_params!(et_pair_ps, ps_pair, model_pair)
 
 rcut_pair = maximum(a.rcut for a in model_pair.pairbasis.rin0cuts)
 pair_calc = ETM.ETPairPotential(et_pair, et_pair_ps, et_pair_st, rcut_pair)
@@ -823,7 +676,6 @@ pair_calc = ETM.ETPairPotential(et_pair, et_pair_ps, et_pair_st, rcut_pair)
 pair_nbasis = et_pair.readout.in_dim
 pair_nspecies = et_pair.readout.ncat
 @test ETM.length_basis(pair_calc) == pair_nbasis * pair_nspecies
-println("ETPairPotential length_basis: OK ($(pair_nbasis * pair_nspecies) parameters)")
 
 # Test energy_forces_virial_basis
 sys_pair = rand_struct()  # Uses Si/O system from earlier
@@ -834,7 +686,6 @@ nparams_pair = ETM.length_basis(pair_calc)
 @test length(efv_pair.energy) == nparams_pair
 @test size(efv_pair.forces) == (natoms_pair, nparams_pair)
 @test length(efv_pair.virial) == nparams_pair
-println("ETPairPotential energy_forces_virial_basis shapes: OK")
 
 # Test linear combination gives correct energy
 θ_pair = ETM.get_linear_parameters(pair_calc)
@@ -842,18 +693,15 @@ E_from_pair_basis = dot(ustrip.(efv_pair.energy), θ_pair)
 E_pair_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys_pair, pair_calc))
 print_tf(@test E_from_pair_basis ≈ E_pair_direct rtol=1e-10)
 println()
-println("ETPairPotential energy from basis: OK")
 
 # Test get/set round-trip
 θ_pair_test = randn(nparams_pair)
 ETM.set_linear_parameters!(pair_calc, θ_pair_test)
 @test ETM.get_linear_parameters(pair_calc) ≈ θ_pair_test
 ETM.set_linear_parameters!(pair_calc, θ_pair)  # Restore
-println("ETPairPotential get/set_linear_parameters: OK")
 
 # Test ACEfit.basis_size
 @test ACEfit.basis_size(pair_calc) == nparams_pair
-println("ETPairPotential ACEfit.basis_size: OK")
 
 ##
 
@@ -864,7 +712,6 @@ stacked_calc = ETM.convert2et_full(model_pair, ps_pair, st_pair)
 
 # Verify structure: 3 components (ETOneBody, ETPairModel, ETACE)
 @test length(stacked_calc.calcs) == 3
-println("StackedCalculator has $(length(stacked_calc.calcs)) components")
 
 # Test length_basis is sum of components
 n_onebody = ETM.length_basis(stacked_calc.calcs[1])
@@ -876,7 +723,6 @@ n_total = ETM.length_basis(stacked_calc)
 @test n_pair > 0
 @test n_ace > 0
 @test n_total == n_onebody + n_pair + n_ace
-println("StackedCalculator length_basis: OK (0 + $n_pair + $n_ace = $n_total)")
 
 # Test energy_forces_virial_basis
 sys_stacked = rand_struct()
@@ -886,7 +732,6 @@ natoms_stacked = length(sys_stacked)
 @test length(efv_stacked.energy) == n_total
 @test size(efv_stacked.forces) == (natoms_stacked, n_total)
 @test length(efv_stacked.virial) == n_total
-println("StackedCalculator energy_forces_virial_basis shapes: OK")
 
 # Test linear combination gives correct energy
 θ_stacked = ETM.get_linear_parameters(stacked_calc)
@@ -895,7 +740,6 @@ E_from_stacked_basis = dot(ustrip.(efv_stacked.energy), θ_stacked)
 E_stacked_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys_stacked, stacked_calc))
 print_tf(@test E_from_stacked_basis ≈ E_stacked_direct rtol=1e-10)
 println()
-println("StackedCalculator energy from basis: OK")
 
 # Test linear combination gives correct forces
 F_from_stacked_basis = efv_stacked.forces * θ_stacked
@@ -903,7 +747,6 @@ F_stacked_direct = AtomsCalculators.forces(sys_stacked, stacked_calc)
 max_diff_stacked_F = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_stacked_basis, F_stacked_direct))
 print_tf(@test max_diff_stacked_F < 1e-10)
 println()
-println("StackedCalculator forces from basis: OK (max_diff = $max_diff_stacked_F)")
 
 # Test linear combination gives correct virial
 V_from_stacked_basis = sum(θ_stacked[k] * ustrip.(efv_stacked.virial[k]) for k in 1:n_total)
@@ -911,7 +754,6 @@ V_stacked_direct = ustrip.(AtomsCalculators.virial(sys_stacked, stacked_calc))
 virial_diff_stacked = maximum(abs.(V_from_stacked_basis - V_stacked_direct))
 print_tf(@test virial_diff_stacked < 1e-10)
 println()
-println("StackedCalculator virial from basis: OK (max_diff = $virial_diff_stacked)")
 
 # Test get/set_linear_parameters round-trip
 θ_stacked_orig = copy(θ_stacked)
@@ -920,17 +762,14 @@ ETM.set_linear_parameters!(stacked_calc, θ_stacked_test)
 θ_stacked_check = ETM.get_linear_parameters(stacked_calc)
 @test θ_stacked_check ≈ θ_stacked_test
 ETM.set_linear_parameters!(stacked_calc, θ_stacked_orig)  # Restore
-println("StackedCalculator get/set_linear_parameters: OK")
 
 # Test potential_energy_basis consistency
 E_basis_stacked = ETM.potential_energy_basis(sys_stacked, stacked_calc)
 @test length(E_basis_stacked) == n_total
 @test ustrip.(E_basis_stacked) ≈ ustrip.(efv_stacked.energy) rtol=1e-10
-println("StackedCalculator potential_energy_basis consistency: OK")
 
 # Test ACEfit.basis_size
 @test ACEfit.basis_size(stacked_calc) == n_total
-println("StackedCalculator ACEfit.basis_size: OK")
 
 ##
 
