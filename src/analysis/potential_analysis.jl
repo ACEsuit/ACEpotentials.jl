@@ -90,7 +90,7 @@ function trimer_energy(IP, r1, r2, θ, z0, z1, z2)
             - atom_energy(IP, z2) )
 end
 
-# function copy_zz_sym!(D::Dict)
+# function copy_zz_sym!(D::AbstractDict)
 #    _zz = collect(keys(D))
 #    for z12 in _zz
 #       sym12 = Symbol.( ChemicalSpecies.(z12) ) 

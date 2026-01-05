@@ -155,7 +155,7 @@ function _get_all_rcut(kwargs; _rcut = kwargs[:rcut])
 end
 
 
-function _rin0cuts_rcut(zlist, cutoffs::Dict, kwargs = nothing)
+function _rin0cuts_rcut(zlist, cutoffs::AbstractDict, kwargs = nothing)
    function _get_r0(zi, zj) 
       if kwargs == nothing 
          return DefaultHypers.bond_len(zi, zj)

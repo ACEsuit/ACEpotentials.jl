@@ -5,6 +5,7 @@ using ACEpotentials.ACE1compat: ace1_model
 using ACEpotentials.Models: ACEPotential, potential_energy
 using AtomsBuilder
 using Unitful
+using ACEbase.Testing: println_slim 
 
 @info(" ============== Testing for ACEpotentials #208 ================")
 @info(" On Julia 1.9 some energy computations were inconsistent. ")
@@ -32,17 +33,22 @@ E_per_at = [ energy_per_at(model, i) for i = 1:10 ]
 maxdiff = maximum(abs(E_per_at[i] - E_per_at[j]) for i = 1:10, j = 1:10 )
 @show maxdiff
 
-# NOTE: Known failure on Julia 1.12 due to hash algorithm changes
+# NOTE: 
+# Known failure on Julia 1.12 due to hash algorithm changes
 # Julia 1.12 introduces a new hash algorithm that affects Dict iteration order.
 # This causes basis function ordering issues during model construction, resulting
 # in catastrophic energy errors (~28 eV instead of <1e-9 eV).
 # TODO: Requires investigation of upstream EquivariantTensors package and/or
-# comprehensive refactoring to use OrderedDict throughout the basis construction pipeline.
+# comprehensive refactoring to use OrderedDict throughout the basis construction 
+# pipeline.
+# The test does not fail on Julia 1.12, locally on Macbook, so make sure it 
+# passes CI on Linux before removing the exception here.
 if VERSION >= v"1.12"
     @test_broken ustrip(u"eV", maxdiff) < 1e-9
 else
     @test ustrip(u"eV", maxdiff) < 1e-9
 end
+
 
 @info(" ============================================================")
 @info(" ============== Testing for no Eref bug ====================")

@@ -6,7 +6,7 @@ using StaticArrays
 using AtomsBuilder 
 using LinearAlgebra: norm, dot 
 
-function copy_zz_sym!(D::Dict)
+function copy_zz_sym!(D::AbstractDict)
    _zz = collect(keys(D))
    for z12 in _zz
       sym12 = Symbol.( ChemicalSpecies.(z12) ) 

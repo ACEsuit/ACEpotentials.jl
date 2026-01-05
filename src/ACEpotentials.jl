@@ -12,6 +12,10 @@ include("defaults.jl")
 include("models/models.jl")
 include("ace1_compat.jl")
 
+# New ET backend based models 
+include("et_models/et_models.jl")
+
+
 # Fitting
 include("atoms_data.jl")
 include("fit_model.jl")
@@ -37,7 +41,6 @@ import ACEpotentials.Models: algebraic_smoothness_prior,
                              exp_smoothness_prior, 
                              gaussian_smoothness_prior, 
                              set_parameters!, 
-                             fast_evaluator, 
                              @committee, 
                              set_committee!
 import JSON 

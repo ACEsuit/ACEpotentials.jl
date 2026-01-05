@@ -102,9 +102,13 @@ end
 
 
 
-_convert_E0s(E0s::Union{Dict, NamedTuple}) = E0s 
+_convert_E0s(E0s::Union{AbstractDict, NamedTuple}) = E0s 
 _convert_E0s(E0s::Union{AbstractVector, Tuple}) = Dict(E0s...)
-_convert_E0s(E0s) = error("E0s must be nothing, a NamedTuple, Dict or list of pairs")
+_convert_E0s(E0s) = error(
+"""
+E0s must be nothing, a NamedTuple, Dict or list of pairs.
+Instead it is a $(typeof(E0s)).
+""")
 
 # E0s can be anything with (key, value) pairs 
 _make_Vref_E0s(elements, E0s) = OneBody(_convert_E0s(E0s))

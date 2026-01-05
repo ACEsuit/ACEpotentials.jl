@@ -10,7 +10,7 @@ using Optimisers: destructure
 
 recursive_dict2nt(x) = x
 
-recursive_dict2nt(D::Dict) = (;
+recursive_dict2nt(D::AbstractDict) = (;
       [ Symbol(key) => recursive_dict2nt(D[key]) for key in keys(D)]... )
  
 function _sanitize_arg(arg)
@@ -40,12 +40,12 @@ end
 # === make fits === 
 
 """ 
-      make_model(model_dict::Dict) 
+      make_model(model_dict::AbstractDict) 
 
 User-facing script to generate a model from a dictionary. See documentation 
 for details.       
 """
-function make_model(model_dict::Dict)
+function make_model(model_dict::AbstractDict)
    if model_dict["model_name"] == "ACE1"
       model_nt = _sanitize_dict(model_dict)
       return ACE1compat.ace1_model(; model_nt...)
@@ -55,7 +55,7 @@ function make_model(model_dict::Dict)
 end
 
 # chho: make this support other solvers
-function make_solver(model, solver_dict::Dict, prior_dict::Dict)
+function make_solver(model, solver_dict::AbstractDict, prior_dict::AbstractDict)
    
    # if no prior is specified, then use I as default, which is dumb
    if isempty(prior_dict)
@@ -81,7 +81,7 @@ function make_solver(model, solver_dict::Dict, prior_dict::Dict)
 end
 
 # calles into functions defined in ACEpotentials.Models
-function make_prior(model, prior_dict::Dict)
+function make_prior(model, prior_dict::AbstractDict)
    return ACEpotentials.Models.make_prior(model, namedtuple(prior_dict))
 end
 

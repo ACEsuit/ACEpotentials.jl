@@ -1,0 +1,776 @@
+# Tests for ETACEPotential calculator interface
+#
+# These tests verify:
+# 1. Energy consistency between ETACE model and ETACEPotential
+# 2. Force consistency against original ACE model
+# 3. Virial consistency against original ACE model
+# 4. AtomsCalculators interface compliance
+
+using Test, ACEbase, BenchmarkTools
+using Polynomials4ML.Testing: print_tf, println_slim
+
+using ACEpotentials
+M = ACEpotentials.Models
+ETM = ACEpotentials.ETModels
+
+import EquivariantTensors as ET
+import AtomsCalculators
+
+using AtomsBase, AtomsBuilder, Unitful
+using Random, LuxCore, StaticArrays, LinearAlgebra
+
+rng = Random.MersenneTwister(1234)
+Random.seed!(1234)
+
+##
+# Build an ETACE model for testing
+
+elements = (:Si, :O)
+level = M.TotalDegree()
+max_level = 10
+order = 3
+maxl = 6
+
+# Use same cutoff for all elements
+rin0cuts = M._default_rin0cuts(elements)
+rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts)
+
+model = M.ace_model(; elements = elements, order = order,
+                     Ytype = :solid, level = level, max_level = max_level,
+                     maxl = maxl, pair_maxn = max_level,
+                     rin0cuts = rin0cuts,
+                     init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+
+ps, st = LuxCore.setup(rng, model)
+
+# Kill pair basis for clarity (test only ACE part)
+for s in model.pairbasis.splines
+   s.itp.itp.coefs[:] *= 0
+end
+
+# Convert to ETACE model
+et_model = ETM.convert2et(model)
+et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
+
+# Match parameters using utility function
+ETM.copy_ace_params!(et_ps, ps, model)
+
+# Get cutoff radius
+rcut = maximum(a.rcut for a in model.pairbasis.rin0cuts)
+
+# Helper to generate random structures
+function rand_struct()
+   sys = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+   rattle!(sys, 0.2u"Å")
+   AtomsBuilder.randz!(sys, [:Si => 0.5, :O => 0.5])
+   return sys
+end
+
+##
+
+@info("Testing ETACEPotential construction")
+
+# Create calculator from ETACE model
+# ETACEPotential is now WrappedSiteCalculator{ETACE} (direct, no WrappedETACE)
+et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
+
+# Access underlying ETACE directly via calc.model
+@test et_calc.model === et_model
+@test et_calc.rcut == rcut
+@test et_calc.co_ps === nothing
+
+##
+
+@info("Testing energy consistency: ETACE model vs ETACEPotential")
+
+for ntest = 1:20
+   local sys, G, E_model, E_calc
+
+   sys = rand_struct()
+   G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+
+   # Energy from direct model evaluation
+   Ei_model, _ = et_model(G, et_ps, et_st)
+   E_model = sum(Ei_model)
+
+   # Energy from calculator
+   E_calc = AtomsCalculators.potential_energy(sys, et_calc)
+
+   print_tf(@test abs(E_model - ustrip(E_calc)) < 1e-10)
+end
+println()
+
+##
+
+@info("Testing energy consistency: ETACE vs original ACE model")
+
+# Wrap original ACE model into calculator
+calc_model = M.ACEPotential(model, ps, st)
+
+for ntest = 1:20
+   local sys, E_old, E_new
+
+   sys = rand_struct()
+   E_old = AtomsCalculators.potential_energy(sys, calc_model)
+   E_new = AtomsCalculators.potential_energy(sys, et_calc)
+
+   print_tf(@test abs(ustrip(E_old) - ustrip(E_new)) < 1e-6)
+end
+println()
+
+##
+
+@info("Testing forces consistency: ETACE vs original ACE model")
+
+for ntest = 1:20
+   local sys, F_old, F_new
+
+   sys = rand_struct()
+   F_old = AtomsCalculators.forces(sys, calc_model)
+   F_new = AtomsCalculators.forces(sys, et_calc)
+
+   # Compare force magnitudes (allow small numerical differences)
+   max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_old, F_new))
+   print_tf(@test max_diff < 1e-6)
+end
+println()
+
+##
+
+@info("Testing virial consistency: ETACE vs original ACE model")
+
+for ntest = 1:20
+   local sys, V_old, V_new
+
+   sys = rand_struct()
+   efv_old = AtomsCalculators.energy_forces_virial(sys, calc_model)
+   efv_new = AtomsCalculators.energy_forces_virial(sys, et_calc)
+
+   V_old = ustrip.(efv_old.virial)
+   V_new = ustrip.(efv_new.virial)
+
+   # Compare virial tensors
+   print_tf(@test norm(V_old - V_new) / (norm(V_old) + 1e-10) < 1e-6)
+end
+println()
+
+##
+
+@info("Testing AtomsCalculators interface compliance")
+
+sys = rand_struct()
+
+# Test individual methods
+E = AtomsCalculators.potential_energy(sys, et_calc)
+F = AtomsCalculators.forces(sys, et_calc)
+V = AtomsCalculators.virial(sys, et_calc)
+
+@test E isa typeof(1.0u"eV")
+@test eltype(F) <: StaticArrays.SVector
+@test V isa StaticArrays.SMatrix
+
+##
+
+@info("Testing combined energy_forces_virial efficiency")
+
+sys = rand_struct()
+
+# Combined evaluation
+efv1 = AtomsCalculators.energy_forces_virial(sys, et_calc)
+
+# Separate evaluations
+E = AtomsCalculators.potential_energy(sys, et_calc)
+F = AtomsCalculators.forces(sys, et_calc)
+V = AtomsCalculators.virial(sys, et_calc)
+
+@test ustrip(efv1.energy) ≈ ustrip(E)
+@test all(ustrip.(efv1.forces) .≈ ustrip.(F))
+@test ustrip.(efv1.virial) ≈ ustrip.(V)
+
+##
+
+@info("Testing cutoff_radius function")
+
+@test ETM.cutoff_radius(et_calc) == rcut * u"Å"
+
+##
+
+@info("All Phase 1 tests passed!")
+
+# ============================================================================
+#  Phase 2 Tests: WrappedSiteCalculator and StackedCalculator
+# ============================================================================
+
+@info("Testing Phase 2: WrappedSiteCalculator and StackedCalculator")
+
+##
+
+@info("Testing ETOneBody (upstream one-body model)")
+
+using Lux
+
+# Create ETOneBody model with reference energies (using upstream interface)
+E0_Si = -0.846
+E0_O = -2.15
+et_onebody = ETM.one_body(Dict(:Si => E0_Si, :O => E0_O), x -> x.z)
+_, onebody_st = Lux.setup(rng, et_onebody)
+
+# Test site energies via direct model call
+sys = rand_struct()
+G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
+Ei_E0, _ = et_onebody(G, nothing, onebody_st)
+
+# Count Si and O atoms
+n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
+n_O = count(node -> node.z == AtomsBase.ChemicalSpecies(:O), G.node_data)
+expected_E0 = n_Si * E0_Si + n_O * E0_O
+
+@test length(Ei_E0) == length(sys)
+@test sum(Ei_E0) ≈ expected_E0
+
+# Test site gradients (should be empty for constant energies)
+# Returns NamedTuple with empty edge_data, matching ETACE/ETPairModel interface
+∂G_E0 = ETM.site_grads(et_onebody, G, nothing, onebody_st)
+@test isempty(∂G_E0.edge_data)
+
+##
+
+@info("Testing WrappedSiteCalculator with ETOneBody")
+
+# Wrap ETOneBody in a calculator (using new unified interface)
+E0_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+@test ustrip(u"Å", ETM.cutoff_radius(E0_calc)) == 3.0  # minimum cutoff
+
+# Test ETOneBody calculator energy
+sys = rand_struct()
+E_E0_calc = AtomsCalculators.potential_energy(sys, E0_calc)
+G = ET.Atoms.interaction_graph(sys, 3.0 * u"Å")
+n_Si = count(node -> node.z == AtomsBase.ChemicalSpecies(:Si), G.node_data)
+n_O = count(node -> node.z == AtomsBase.ChemicalSpecies(:O), G.node_data)
+expected_E = (n_Si * E0_Si + n_O * E0_O) * u"eV"
+@test ustrip(E_E0_calc) ≈ ustrip(expected_E)
+
+# Test ETOneBody calculator forces (should be zero)
+F_E0_calc = AtomsCalculators.forces(sys, E0_calc)
+@test all(norm(ustrip.(f)) < 1e-14 for f in F_E0_calc)
+
+##
+
+@info("Testing WrappedSiteCalculator with ETACE")
+
+# Wrap ETACE model in a calculator (unified interface)
+ace_site_calc = ETM.WrappedSiteCalculator(et_model, et_ps, et_st, rcut)
+@test ustrip(u"Å", ETM.cutoff_radius(ace_site_calc)) == rcut
+
+# Test ETACE calculator matches ETACEPotential
+sys = rand_struct()
+E_ace_site = AtomsCalculators.potential_energy(sys, ace_site_calc)
+E_ace_pot = AtomsCalculators.potential_energy(sys, et_calc)
+@test ustrip(E_ace_site) ≈ ustrip(E_ace_pot)
+
+F_ace_site = AtomsCalculators.forces(sys, ace_site_calc)
+F_ace_pot = AtomsCalculators.forces(sys, et_calc)
+max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_ace_site, F_ace_pot))
+@test max_diff < 1e-10
+
+##
+
+@info("Testing StackedCalculator construction")
+
+# Create stacked calculator with E0 + ACE (both wrapped)
+stacked = ETM.StackedCalculator((E0_calc, ace_site_calc))
+
+@test ustrip(u"Å", ETM.cutoff_radius(stacked)) == rcut
+@test length(stacked.calcs) == 2
+
+##
+
+@info("Testing StackedCalculator energy consistency")
+
+for ntest = 1:10
+   local sys, E_stacked, E_separate
+
+   sys = rand_struct()
+
+   # Energy from stacked calculator
+   E_stacked = AtomsCalculators.potential_energy(sys, stacked)
+
+   # Energy from separate evaluations
+   E_E0 = AtomsCalculators.potential_energy(sys, E0_calc)
+   E_ace = AtomsCalculators.potential_energy(sys, ace_site_calc)
+   E_separate = E_E0 + E_ace
+
+   print_tf(@test ustrip(E_stacked) ≈ ustrip(E_separate))
+end
+println()
+
+##
+
+@info("Testing StackedCalculator forces consistency")
+
+for ntest = 1:10
+   local sys, F_stacked, F_ace_only, max_diff
+
+   sys = rand_struct()
+
+   # Forces from stacked calculator
+   F_stacked = AtomsCalculators.forces(sys, stacked)
+
+   # Forces from ACE-only (E0 has zero forces)
+   F_ace_only = AtomsCalculators.forces(sys, et_calc)
+
+   # Should be identical since E0 contributes zero forces
+   max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_stacked, F_ace_only))
+   print_tf(@test max_diff < 1e-10)
+end
+println()
+
+##
+
+@info("Testing StackedCalculator virial consistency")
+
+for ntest = 1:10
+   local sys, efv_stacked, efv_ace_only
+
+   sys = rand_struct()
+
+   efv_stacked = AtomsCalculators.energy_forces_virial(sys, stacked)
+   efv_ace_only = AtomsCalculators.energy_forces_virial(sys, et_calc)
+
+   # Virial should match (E0 has zero virial)
+   V_stacked = ustrip.(efv_stacked.virial)
+   V_ace_only = ustrip.(efv_ace_only.virial)
+
+   print_tf(@test norm(V_stacked - V_ace_only) / (norm(V_ace_only) + 1e-10) < 1e-10)
+end
+println()
+
+##
+
+@info("Testing StackedCalculator with ETOneBody only")
+
+# Create stacked calculator with just ETOneBody (E0_calc is WrappedSiteCalculator{ETOneBody})
+E0_only_stacked = ETM.StackedCalculator((E0_calc,))
+
+sys = rand_struct()
+E = AtomsCalculators.potential_energy(sys, E0_only_stacked)
+F = AtomsCalculators.forces(sys, E0_only_stacked)
+
+# Energy should match E0_calc
+E_direct = AtomsCalculators.potential_energy(sys, E0_calc)
+@test ustrip(E) ≈ ustrip(E_direct)
+
+# Forces should be zero
+@test all(norm(ustrip.(f)) < 1e-14 for f in F)
+
+##
+
+@info("All Phase 2 tests passed!")
+
+## ============================================================================
+##  Phase 5: Training Assembly Tests
+## ============================================================================
+
+@info("Testing Phase 5: Training assembly functions")
+
+##
+
+@info("Testing length_basis")
+nparams = ETM.length_basis(et_calc)
+nbasis = et_model.readout.in_dim
+nspecies = et_model.readout.ncat
+@test nparams == nbasis * nspecies
+
+##
+
+@info("Testing get/set_linear_parameters round-trip")
+θ_orig = ETM.get_linear_parameters(et_calc)
+@test length(θ_orig) == nparams
+
+# Modify and restore
+θ_test = randn(nparams)
+ETM.set_linear_parameters!(et_calc, θ_test)
+θ_check = ETM.get_linear_parameters(et_calc)
+@test θ_check ≈ θ_test
+
+# Restore original
+ETM.set_linear_parameters!(et_calc, θ_orig)
+@test ETM.get_linear_parameters(et_calc) ≈ θ_orig
+
+##
+
+@info("Testing potential_energy_basis")
+sys = rand_struct()
+E_basis = ETM.potential_energy_basis(sys, et_calc)
+@test length(E_basis) == nparams
+@test eltype(ustrip.(E_basis)) <: Real
+
+##
+
+@info("Testing energy_forces_virial_basis")
+efv_basis = ETM.energy_forces_virial_basis(sys, et_calc)
+natoms = length(sys)
+
+@test length(efv_basis.energy) == nparams
+@test size(efv_basis.forces) == (natoms, nparams)
+@test length(efv_basis.virial) == nparams
+
+##
+
+@info("Testing linear combination gives correct energy")
+
+# E = dot(E_basis, θ) should match potential_energy
+θ = ETM.get_linear_parameters(et_calc)
+E_from_basis = dot(ustrip.(efv_basis.energy), θ)
+E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
+
+print_tf(@test E_from_basis ≈ E_direct rtol=1e-10)
+println()
+
+##
+
+@info("Testing linear combination gives correct forces")
+
+# F = efv_basis.forces * θ should match forces
+F_from_basis = efv_basis.forces * θ
+F_direct = AtomsCalculators.forces(sys, et_calc)
+
+max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
+print_tf(@test max_diff < 1e-10)
+println()
+
+##
+
+@info("Testing linear combination gives correct virial")
+
+# V = sum(θ .* virial) should match virial
+V_from_basis = sum(θ[i] * ustrip.(efv_basis.virial[i]) for i in 1:nparams)
+V_direct = ustrip.(AtomsCalculators.virial(sys, et_calc))
+
+virial_diff = maximum(abs.(V_from_basis - V_direct))
+print_tf(@test virial_diff < 1e-10)
+println()
+
+##
+
+@info("Testing potential_energy_basis matches energy from efv_basis")
+@test ustrip.(E_basis) ≈ ustrip.(efv_basis.energy)
+
+##
+
+@info("All Phase 5 basic tests passed!")
+
+## ============================================================================
+##  Phase 5b: Extended Training Assembly Tests
+## ============================================================================
+
+@info("Testing Phase 5b: Extended training assembly tests")
+
+##
+
+@info("Testing ACEfit.basis_size integration")
+import ACEfit
+@test ACEfit.basis_size(et_calc) == ETM.length_basis(et_calc)
+
+##
+
+@info("Testing training assembly on multiple structures")
+
+# Generate multiple random structures
+nstructs = 5
+test_systems = [rand_struct() for _ in 1:nstructs]
+
+all_ok = true
+for (i, sys) in enumerate(test_systems)
+   local θ = ETM.get_linear_parameters(et_calc)
+   local efv_basis = ETM.energy_forces_virial_basis(sys, et_calc)
+
+   # Check energy
+   local E_from_basis = dot(ustrip.(efv_basis.energy), θ)
+   local E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
+   if !isapprox(E_from_basis, E_direct, rtol=1e-10)
+      @warn "Energy mismatch on structure $i"
+      all_ok = false
+   end
+
+   # Check forces
+   local F_from_basis = efv_basis.forces * θ
+   local F_direct = AtomsCalculators.forces(sys, et_calc)
+   local max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
+   if max_diff >= 1e-10
+      @warn "Force mismatch on structure $i: max_diff = $max_diff"
+      all_ok = false
+   end
+
+   # Check virial
+   local V_from_basis = sum(θ[k] * ustrip.(efv_basis.virial[k]) for k in 1:length(θ))
+   local V_direct = ustrip.(AtomsCalculators.virial(sys, et_calc))
+   local virial_diff = maximum(abs.(V_from_basis - V_direct))
+   if virial_diff >= 1e-10
+      @warn "Virial mismatch on structure $i: max_diff = $virial_diff"
+      all_ok = false
+   end
+end
+print_tf(@test all_ok)
+println()
+
+##
+
+@info("Testing multi-species parameter ordering")
+
+# Create structures with varying species compositions
+# Pure Si
+sys_si = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_si, 0.1u"Å")
+
+# Pure O (use Si lattice but with O atoms)
+sys_o = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_o, 0.1u"Å")
+AtomsBuilder.randz!(sys_o, [:O => 1.0])
+
+# Mixed 50/50
+sys_mixed = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_mixed, 0.1u"Å")
+AtomsBuilder.randz!(sys_mixed, [:Si => 0.5, :O => 0.5])
+
+# Mixed 25/75
+sys_mixed2 = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys_mixed2, 0.1u"Å")
+AtomsBuilder.randz!(sys_mixed2, [:Si => 0.25, :O => 0.75])
+
+species_test_systems = [sys_si, sys_o, sys_mixed, sys_mixed2]
+species_labels = ["Pure Si", "Pure O", "50/50 Si:O", "25/75 Si:O"]
+
+all_species_ok = true
+for (label, sys) in zip(species_labels, species_test_systems)
+   local θ = ETM.get_linear_parameters(et_calc)
+   local efv_basis = ETM.energy_forces_virial_basis(sys, et_calc)
+
+   # Check energy consistency
+   local E_from_basis = dot(ustrip.(efv_basis.energy), θ)
+   local E_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys, et_calc))
+
+   if !isapprox(E_from_basis, E_direct, rtol=1e-10)
+      @warn "Energy mismatch for $label: basis=$E_from_basis, direct=$E_direct"
+      all_species_ok = false
+   end
+
+   # Check forces
+   local F_from_basis = efv_basis.forces * θ
+   local F_direct = AtomsCalculators.forces(sys, et_calc)
+   local max_diff = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_basis, F_direct))
+
+   if max_diff >= 1e-10
+      @warn "Force mismatch for $label: max_diff=$max_diff"
+      all_species_ok = false
+   end
+end
+print_tf(@test all_species_ok)
+println()
+
+##
+
+@info("Testing species-specific basis contributions")
+
+# Verify that different species contribute to different parts of the basis
+nbasis = et_model.readout.in_dim
+nspecies = et_model.readout.ncat
+
+# For pure Si system, only Si basis should contribute
+efv_si = ETM.energy_forces_virial_basis(sys_si, et_calc)
+E_basis_si = ustrip.(efv_si.energy)
+
+# For pure O system, only O basis should contribute
+efv_o = ETM.energy_forces_virial_basis(sys_o, et_calc)
+E_basis_o = ustrip.(efv_o.energy)
+
+# Check that the patterns differ (different species activate different parameters)
+# Si uses parameters 1:nbasis, O uses parameters (nbasis+1):(2*nbasis)
+si_params = E_basis_si[1:nbasis]
+o_params_for_si = E_basis_si[(nbasis+1):end]
+o_params = E_basis_o[(nbasis+1):end]
+si_params_for_o = E_basis_o[1:nbasis]
+
+# Pure Si should have zero contribution from O parameters
+@test all(abs.(o_params_for_si) .< 1e-12)
+# Pure O should have zero contribution from Si parameters
+@test all(abs.(si_params_for_o) .< 1e-12)
+# Pure Si should have nonzero Si parameters
+@test any(abs.(si_params) .> 1e-12)
+# Pure O should have nonzero O parameters
+@test any(abs.(o_params) .> 1e-12)
+
+##
+
+@info("All Phase 5b extended tests passed!")
+
+## ============================================================================
+##  Phase 5c: Training Assembly for ETPairPotential, ETOneBodyPotential, StackedCalculator
+## ============================================================================
+
+@info("Testing Phase 5c: Training assembly for pair, onebody, and stacked calculators")
+
+##
+
+@info("Testing ETOneBodyPotential training assembly (empty - no learnable params)")
+
+# Create ETOneBody calculator
+E0s = model.Vref.E0
+zlist = ChemicalSpecies.(model.rbasis._i2z)
+E0_dict = Dict(z => E0s[z.atomic_number] for z in zlist)
+et_onebody = ETM.one_body(E0_dict, x -> x.z)
+_, onebody_st = Lux.setup(rng, et_onebody)
+onebody_calc = ETM.WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+
+# Test length_basis returns 0
+@test ETM.length_basis(onebody_calc) == 0
+
+# Test energy_forces_virial_basis returns empty arrays
+sys = rand_struct()
+efv_onebody = ETM.energy_forces_virial_basis(sys, onebody_calc)
+@test length(efv_onebody.energy) == 0
+@test size(efv_onebody.forces, 2) == 0
+@test length(efv_onebody.virial) == 0
+
+# Test get/set_linear_parameters
+@test length(ETM.get_linear_parameters(onebody_calc)) == 0
+ETM.set_linear_parameters!(onebody_calc, Float64[])  # Should not error
+
+# Test ACEfit.basis_size
+@test ACEfit.basis_size(onebody_calc) == 0
+
+##
+
+@info("Testing ETPairPotential training assembly")
+
+# Need a model with learnable pair basis for this test
+# Create a new model with pair_learnable=true
+elements_pair = (:Si, :O)
+level_pair = M.TotalDegree()
+max_level_pair = 10
+order_pair = 3
+maxl_pair = 4
+
+rin0cuts_pair = M._default_rin0cuts(elements_pair)
+rin0cuts_pair = (x -> (rin = x.rin, r0 = x.r0, rcut = 5.5)).(rin0cuts_pair)
+
+model_pair = M.ace_model(; elements = elements_pair, order = order_pair,
+            Ytype = :solid, level = level_pair, max_level = max_level_pair,
+            maxl = maxl_pair, pair_maxn = max_level_pair,
+            rin0cuts = rin0cuts_pair,
+            pair_learnable = true,
+            init_WB = :glorot_normal, init_Wpair = :glorot_normal)
+ps_pair, st_pair = Lux.setup(rng, model_pair)
+
+# Convert pair potential
+et_pair = ETM.convertpair(model_pair)
+et_pair_ps, et_pair_st = Lux.setup(rng, et_pair)
+
+# Copy pair parameters using utility function
+ETM.copy_pair_params!(et_pair_ps, ps_pair, model_pair)
+
+rcut_pair = maximum(a.rcut for a in model_pair.pairbasis.rin0cuts)
+pair_calc = ETM.ETPairPotential(et_pair, et_pair_ps, et_pair_st, rcut_pair)
+
+# Test length_basis
+pair_nbasis = et_pair.readout.in_dim
+pair_nspecies = et_pair.readout.ncat
+@test ETM.length_basis(pair_calc) == pair_nbasis * pair_nspecies
+
+# Test energy_forces_virial_basis
+sys_pair = rand_struct()  # Uses Si/O system from earlier
+efv_pair = ETM.energy_forces_virial_basis(sys_pair, pair_calc)
+natoms_pair = length(sys_pair)
+nparams_pair = ETM.length_basis(pair_calc)
+
+@test length(efv_pair.energy) == nparams_pair
+@test size(efv_pair.forces) == (natoms_pair, nparams_pair)
+@test length(efv_pair.virial) == nparams_pair
+
+# Test linear combination gives correct energy
+θ_pair = ETM.get_linear_parameters(pair_calc)
+E_from_pair_basis = dot(ustrip.(efv_pair.energy), θ_pair)
+E_pair_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys_pair, pair_calc))
+print_tf(@test E_from_pair_basis ≈ E_pair_direct rtol=1e-10)
+println()
+
+# Test get/set round-trip
+θ_pair_test = randn(nparams_pair)
+ETM.set_linear_parameters!(pair_calc, θ_pair_test)
+@test ETM.get_linear_parameters(pair_calc) ≈ θ_pair_test
+ETM.set_linear_parameters!(pair_calc, θ_pair)  # Restore
+
+# Test ACEfit.basis_size
+@test ACEfit.basis_size(pair_calc) == nparams_pair
+
+##
+
+@info("Testing StackedCalculator training assembly")
+
+# Create a StackedCalculator with E0 + Pair + ManyBody (using convert2et_full)
+stacked_calc = ETM.convert2et_full(model_pair, ps_pair, st_pair)
+
+# Verify structure: 3 components (ETOneBody, ETPairModel, ETACE)
+@test length(stacked_calc.calcs) == 3
+
+# Test length_basis is sum of components
+n_onebody = ETM.length_basis(stacked_calc.calcs[1])
+n_pair = ETM.length_basis(stacked_calc.calcs[2])
+n_ace = ETM.length_basis(stacked_calc.calcs[3])
+n_total = ETM.length_basis(stacked_calc)
+
+@test n_onebody == 0  # ETOneBody has no learnable params
+@test n_pair > 0
+@test n_ace > 0
+@test n_total == n_onebody + n_pair + n_ace
+
+# Test energy_forces_virial_basis
+sys_stacked = rand_struct()
+efv_stacked = ETM.energy_forces_virial_basis(sys_stacked, stacked_calc)
+natoms_stacked = length(sys_stacked)
+
+@test length(efv_stacked.energy) == n_total
+@test size(efv_stacked.forces) == (natoms_stacked, n_total)
+@test length(efv_stacked.virial) == n_total
+
+# Test linear combination gives correct energy
+θ_stacked = ETM.get_linear_parameters(stacked_calc)
+@test length(θ_stacked) == n_total
+E_from_stacked_basis = dot(ustrip.(efv_stacked.energy), θ_stacked)
+E_stacked_direct = ustrip(u"eV", AtomsCalculators.potential_energy(sys_stacked, stacked_calc))
+print_tf(@test E_from_stacked_basis ≈ E_stacked_direct rtol=1e-10)
+println()
+
+# Test linear combination gives correct forces
+F_from_stacked_basis = efv_stacked.forces * θ_stacked
+F_stacked_direct = AtomsCalculators.forces(sys_stacked, stacked_calc)
+max_diff_stacked_F = maximum(norm(ustrip.(f1) - ustrip.(f2)) for (f1, f2) in zip(F_from_stacked_basis, F_stacked_direct))
+print_tf(@test max_diff_stacked_F < 1e-10)
+println()
+
+# Test linear combination gives correct virial
+V_from_stacked_basis = sum(θ_stacked[k] * ustrip.(efv_stacked.virial[k]) for k in 1:n_total)
+V_stacked_direct = ustrip.(AtomsCalculators.virial(sys_stacked, stacked_calc))
+virial_diff_stacked = maximum(abs.(V_from_stacked_basis - V_stacked_direct))
+print_tf(@test virial_diff_stacked < 1e-10)
+println()
+
+# Test get/set_linear_parameters round-trip
+θ_stacked_orig = copy(θ_stacked)
+θ_stacked_test = randn(n_total)
+ETM.set_linear_parameters!(stacked_calc, θ_stacked_test)
+θ_stacked_check = ETM.get_linear_parameters(stacked_calc)
+@test θ_stacked_check ≈ θ_stacked_test
+ETM.set_linear_parameters!(stacked_calc, θ_stacked_orig)  # Restore
+
+# Test potential_energy_basis consistency
+E_basis_stacked = ETM.potential_energy_basis(sys_stacked, stacked_calc)
+@test length(E_basis_stacked) == n_total
+@test ustrip.(E_basis_stacked) ≈ ustrip.(efv_stacked.energy) rtol=1e-10
+
+# Test ACEfit.basis_size
+@test ACEfit.basis_size(stacked_calc) == n_total
+
+##
+
+@info("All Phase 5c tests passed!")
