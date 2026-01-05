@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>ETACE Models Tutorial · ACEpotentials.jl</title><meta name="title" content="ETACE Models Tutorial · ACEpotentials.jl"/><meta property="og:title" content="ETACE Models Tutorial · ACEpotentials.jl"/><meta property="twitter:title" content="ETACE Models Tutorial · ACEpotentials.jl"/><meta name="description" content="Documentation for ACEpotentials.jl."/><meta property="og:description" content="Documentation for ACEpotentials.jl."/><meta property="twitter:description" content="Documentation for ACEpotentials.jl."/><meta property="og:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/etace_tutorial/"/><meta property="twitter:url" content="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/etace_tutorial/"/><link rel="canonical" href="https://ACEsuit.github.io/ACEpotentials.jl/literate_tutorials/etace_tutorial/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ACEpotentials.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Getting Started</span><ul><li><a class="tocitem" href="../../gettingstarted/installation/">Installation</a></li><li><a class="tocitem" href="../../gettingstarted/saving-and-loading/">Saving and Loading Potentials</a></li></ul></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorials/">Tutorials Overview</a></li><li><a class="tocitem" href="../basic_julia_workflow/">Basic Workflow</a></li><li><a class="tocitem" href="../smoothness_priors/">Smoothness Priors</a></li><li><a class="tocitem" href="../dataset_analysis/">Basic Dataset Analysis</a></li><li><a class="tocitem" href="../../tutorials/scripting/">Basic Shell Workflow</a></li><li><a class="tocitem" href="../descriptor/">ACE Descriptors</a></li><li><a class="tocitem" href="../asp/">Sparse Solvers</a></li><li class="is-active"><a class="tocitem" href>ETACE Models Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Method-A:-Convert-full-model-(E0-Pair-Many-body)-to-StackedCalculator"><span>Method A: Convert full model (E0 + Pair + Many-body) to StackedCalculator</span></a></li><li><a class="tocitem" href="#Method-B:-Convert-only-the-many-body-ACE-component"><span>Method B: Convert only the many-body ACE component</span></a></li><li><a class="tocitem" href="#Method-C:-Convert-only-the-pair-potential"><span>Method C: Convert only the pair potential</span></a></li><li><a class="tocitem" href="#Build-the-radial-embedding-(Rnl)"><span>Build the radial embedding (Rnl)</span></a></li><li><a class="tocitem" href="#Build-the-angular-embedding-(Ylm)"><span>Build the angular embedding (Ylm)</span></a></li><li><a class="tocitem" href="#Build-the-many-body-basis-(sparse-ACE)"><span>Build the many-body basis (sparse ACE)</span></a></li><li><a class="tocitem" href="#Build-the-readout-layer"><span>Build the readout layer</span></a></li><li><a class="tocitem" href="#Assemble-the-ETACE-model"><span>Assemble the ETACE model</span></a></li><li><a class="tocitem" href="#ETOneBody:-Reference-energies"><span>ETOneBody: Reference energies</span></a></li></ul></li></ul></li><li><span class="tocitem">Additional Topics</span><ul><li><a class="tocitem" href="../../gettingstarted/parallel-fitting/">Parallel Fitting</a></li><li><a class="tocitem" href="../../gettingstarted/aceintro/">Introduction to ACE Models</a></li><li><a class="tocitem" href="../../gettingstarted/pkg/">Using the Julia Package Manager</a></li></ul></li><li><a class="tocitem" href="../../all_exported/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>ETACE Models Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>ETACE Models Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ACEsuit/ACEpotentials.jl/blob/main/examples/etmodels/etace_tutorial.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="ETACE-Models-Tutorial"><a class="docs-heading-anchor" href="#ETACE-Models-Tutorial">ETACE Models Tutorial</a><a id="ETACE-Models-Tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#ETACE-Models-Tutorial" title="Permalink"></a></h1><p>This tutorial demonstrates how to use the EquivariantTensors (ET) backend for ACE models in ACEpotentials.jl. The ET backend provides:</p><ul><li>Graph-based evaluation (edge-centric computation)</li><li>Automatic differentiation via Zygote</li><li>GPU-ready architecture via KernelAbstractions</li><li>Lux.jl layer integration</li></ul><p>We cover two approaches:</p><ol><li><strong>Converting from an existing ACE model</strong> - The recommended approach</li><li><strong>Creating an ETACE model from scratch</strong> - For advanced users</li></ol><pre><code class="language-julia hljs"># Load required packages
+using ACEpotentials, StaticArrays, Lux, AtomsBase, AtomsBuilder, Unitful
+using AtomsCalculators, Random, LinearAlgebra
+
+M = ACEpotentials.Models
+ETM = ACEpotentials.ETModels
+import EquivariantTensors as ET
+import Polynomials4ML as P4ML
+
+rng = Random.MersenneTwister(1234)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Random.MersenneTwister(1234)</code></pre><p>============================================================================= Part 1: Converting from an Existing ACE Model (Recommended) =============================================================================</p><p>The simplest way to get an ETACE model is to convert from a standard ACE model. This approach ensures consistency with the familiar ACE model construction API.</p><pre><code class="language-julia hljs"># Define model hyperparameters
+elements = (:Si, :O)
+order = 3          # correlation order (body-order = order + 1)
+max_level = 10     # total polynomial degree
+maxl = 6           # maximum angular momentum
+rcut = 5.5         # cutoff radius in Angstrom
+
+# Create the standard ACE model
+rin0cuts = M._default_rin0cuts(elements)
+rin0cuts = (x -&gt; (rin = x.rin, r0 = x.r0, rcut = rcut)).(rin0cuts)
+
+# Note: pair_learnable=true is required for ET conversion
+# (default uses splines which aren&#39;t yet supported by convert2et)
+model = M.ace_model(;
+   elements = elements,
+   order = order,
+   Ytype = :solid,
+   level = M.TotalDegree(),
+   max_level = max_level,
+   maxl = maxl,
+   pair_maxn = max_level,
+   rin0cuts = rin0cuts,
+   E0s = Dict(:Si =&gt; -0.846, :O =&gt; -1.023),  # reference energies
+   pair_learnable = true   # required for ET conversion
+)
+
+# Initialize parameters with Lux
+ps, st = Lux.setup(rng, model)
+
+@info &quot;Standard ACE model created&quot;
+@info &quot;  Number of basis functions: $(M.length_basis(model))&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Standard ACE model created
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Number of basis functions: 240</code></pre><hr/><h2 id="Method-A:-Convert-full-model-(E0-Pair-Many-body)-to-StackedCalculator"><a class="docs-heading-anchor" href="#Method-A:-Convert-full-model-(E0-Pair-Many-body)-to-StackedCalculator">Method A: Convert full model (E0 + Pair + Many-body) to StackedCalculator</a><a id="Method-A:-Convert-full-model-(E0-Pair-Many-body)-to-StackedCalculator-1"></a><a class="docs-heading-anchor-permalink" href="#Method-A:-Convert-full-model-(E0-Pair-Many-body)-to-StackedCalculator" title="Permalink"></a></h2><pre><code class="language-julia hljs"># convert2et_full creates a StackedCalculator combining:
+#   - ETOneBody (reference energies per species)
+#   - ETPairModel (pair potential)
+#   - ETACE (many-body ACE potential)
+
+et_calc_full = ETM.convert2et_full(model, ps, st; rng=rng)
+
+@info &quot;Full conversion to StackedCalculator&quot;
+@info &quot;  Contains: ETOneBody + ETPairPotential + ETACEPotential&quot;
+@info &quot;  Total linear parameters: $(ETM.length_basis(et_calc_full))&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Full conversion to StackedCalculator
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Contains: ETOneBody + ETPairPotential + ETACEPotential
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Total linear parameters: 240</code></pre><hr/><h2 id="Method-B:-Convert-only-the-many-body-ACE-component"><a class="docs-heading-anchor" href="#Method-B:-Convert-only-the-many-body-ACE-component">Method B: Convert only the many-body ACE component</a><a id="Method-B:-Convert-only-the-many-body-ACE-component-1"></a><a class="docs-heading-anchor-permalink" href="#Method-B:-Convert-only-the-many-body-ACE-component" title="Permalink"></a></h2><pre><code class="language-julia hljs"># convert2et creates just the ETACE model (many-body only, no E0 or pair)
+et_ace = ETM.convert2et(model)
+et_ace_ps, et_ace_st = Lux.setup(rng, et_ace)
+
+# Copy parameters from the original model
+ETM.copy_ace_params!(et_ace_ps, ps, model)
+
+# Wrap in calculator for AtomsCalculators interface
+et_ace_calc = ETM.ETACEPotential(et_ace, et_ace_ps, et_ace_st, rcut)
+
+@info &quot;Many-body only conversion&quot;
+@info &quot;  ETACE basis size: $(ETM.length_basis(et_ace_calc))&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Many-body only conversion
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  ETACE basis size: 220</code></pre><hr/><h2 id="Method-C:-Convert-only-the-pair-potential"><a class="docs-heading-anchor" href="#Method-C:-Convert-only-the-pair-potential">Method C: Convert only the pair potential</a><a id="Method-C:-Convert-only-the-pair-potential-1"></a><a class="docs-heading-anchor-permalink" href="#Method-C:-Convert-only-the-pair-potential" title="Permalink"></a></h2><pre><code class="language-julia hljs"># convertpair creates an ETPairModel
+et_pair = ETM.convertpair(model)
+et_pair_ps, et_pair_st = Lux.setup(rng, et_pair)
+
+# Copy parameters from the original model
+ETM.copy_pair_params!(et_pair_ps, ps, model)
+
+# Wrap in calculator
+et_pair_calc = ETM.ETPairPotential(et_pair, et_pair_ps, et_pair_st, rcut)
+
+@info &quot;Pair potential only conversion&quot;
+@info &quot;  ETPairModel basis size: $(ETM.length_basis(et_pair_calc))&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Pair potential only conversion
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  ETPairModel basis size: 20</code></pre><p>============================================================================= Part 2: Using ETACE Calculators =============================================================================</p><pre><code class="language-julia hljs"># Create a test system
+sys = AtomsBuilder.bulk(:Si) * (2, 2, 1)
+rattle!(sys, 0.1u&quot;Å&quot;)
+AtomsBuilder.randz!(sys, [:Si =&gt; 0.5, :O =&gt; 0.5])
+
+@info &quot;Test system: $(length(sys)) atoms&quot;
+
+# Evaluate energy, forces, virial using AtomsCalculators interface
+E = AtomsCalculators.potential_energy(sys, et_calc_full)
+F = AtomsCalculators.forces(sys, et_calc_full)
+V = AtomsCalculators.virial(sys, et_calc_full)
+
+@info &quot;Energy evaluation with full ETACE calculator&quot;
+@info &quot;  Energy: $E&quot;
+@info &quot;  Max force magnitude: $(maximum(norm.(F)))&quot;
+
+# Combined evaluation (more efficient)
+efv = AtomsCalculators.energy_forces_virial(sys, et_calc_full)
+@info &quot;  Combined EFV evaluation successful&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Test system: 8 atoms
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Energy evaluation with full ETACE calculator
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Energy: -7.652999999999999 eV
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Max force magnitude: 0.0 eV Å^-1
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Combined EFV evaluation successful</code></pre><p>============================================================================= Part 3: Training Assembly (for Linear Fitting) =============================================================================</p><p>The ETACE calculators support training assembly functions for ACEfit integration. These compute the design matrix rows for linear least squares fitting.</p><pre><code class="language-julia hljs"># Energy-only basis evaluation (fastest)
+E_basis = ETM.potential_energy_basis(sys, et_ace_calc)
+@info &quot;Energy basis: $(length(E_basis)) components&quot;
+
+# Full energy, forces, virial basis
+efv_basis = ETM.energy_forces_virial_basis(sys, et_ace_calc)
+@info &quot;EFV basis shapes:&quot;
+@info &quot;  Energy:  $(size(efv_basis.energy))&quot;
+@info &quot;  Forces:  $(size(efv_basis.forces))&quot;
+@info &quot;  Virial:  $(size(efv_basis.virial))&quot;
+
+# Get/set linear parameters
+params = ETM.get_linear_parameters(et_ace_calc)
+@info &quot;Linear parameters: $(length(params)) values&quot;
+
+# Parameters can be updated for fitting:
+# ETM.set_linear_parameters!(et_ace_calc, new_params)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Energy basis: 220 components
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>EFV basis shapes:
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Energy:  (220,)
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Forces:  (8, 220)
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Virial:  (220,)
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Linear parameters: 220 values</code></pre><p>============================================================================= Part 4: Creating an ETACE Model from Scratch (Advanced) =============================================================================</p><p>For advanced users who want direct control over the model architecture. This requires understanding the EquivariantTensors.jl API.</p><pre><code class="language-julia hljs"># Define model parameters
+scratch_elements = [:Si, :O]
+scratch_maxn = 6      # number of radial basis functions
+scratch_maxl = 4      # maximum angular momentum
+scratch_order = 2     # correlation order
+scratch_rcut = 5.5    # cutoff radius
+
+# Species information
+zlist = ChemicalSpecies.(scratch_elements)
+NZ = length(zlist)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2</code></pre><hr/><h2 id="Build-the-radial-embedding-(Rnl)"><a class="docs-heading-anchor" href="#Build-the-radial-embedding-(Rnl)">Build the radial embedding (Rnl)</a><a id="Build-the-radial-embedding-(Rnl)-1"></a><a class="docs-heading-anchor-permalink" href="#Build-the-radial-embedding-(Rnl)" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Radial specification (n, l pairs)
+Rnl_spec = [(n=n, l=l) for n in 1:scratch_maxn for l in 0:scratch_maxl]
+
+# Distance transform: r -&gt; transformed coordinate y
+# Using standard Agnesi transform parameters
+f_trans = let rcut = scratch_rcut
+   (x, st) -&gt; begin
+      r = norm(x.𝐫)
+      # Simple polynomial transform (normalized to [-1, 1])
+      y = 1 - 2 * r / rcut
+      return y
+   end
+end
+trans = ET.NTtransformST(f_trans, NamedTuple())
+
+# Envelope function: smooth cutoff
+f_env = y -&gt; (1 - y^2)^2  # quartic envelope
+
+# Polynomial basis (Chebyshev)
+polys = P4ML.ChebBasis(scratch_maxn)
+Penv = P4ML.wrapped_basis(Lux.BranchLayer(
+   polys,
+   Lux.WrappedFunction(y -&gt; f_env.(y)),
+   fusion = Lux.WrappedFunction(Pe -&gt; Pe[2] .* Pe[1])
+))
+
+# Species-pair selector for radial weights
+selector_ij = let zlist = tuple(zlist...)
+   xij -&gt; ET.catcat2idx(zlist, xij.z0, xij.z1)
+end
+
+# Linear layer: P(yij) -&gt; W[(Zi, Zj)] * P(yij)
+linl = ET.SelectLinL(scratch_maxn, length(Rnl_spec), NZ^2, selector_ij)
+
+# Complete radial embedding
+rbasis = ET.EmbedDP(trans, Penv, linl)
+rembed = ET.EdgeEmbed(rbasis)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">EdgeEmbed(
+    layer = EmbedDP(
+        trans = NTtransformST(),
+        basis = Polynomials4ML.WrappedBasis{Lux.BranchLayer{@NamedTuple{layer_1::Polynomials4ML.ChebBasis{6}, layer_2::Lux.WrappedFunction{Main.var&quot;#18#19&quot;}}, Lux.WrappedFunction{Main.var&quot;#20#21&quot;}, Nothing}}(Lux.BranchLayer{@NamedTuple{layer_1::Polynomials4ML.ChebBasis{6}, layer_2::Lux.WrappedFunction{Main.var&quot;#18#19&quot;}}, Lux.WrappedFunction{Main.var&quot;#20#21&quot;}, Nothing}((layer_1 = ChebBasis(6), layer_2 = WrappedFunction(#18)), WrappedFunction(#20), nothing), 6),
+        post = EquivariantTensors.SelectLinL{Main.var&quot;#23#24&quot;{Tuple{AtomsBase.ChemicalSpecies, AtomsBase.ChemicalSpecies}}}(6, 30, 4, Main.var&quot;#23#24&quot;{Tuple{AtomsBase.ChemicalSpecies, AtomsBase.ChemicalSpecies}}((Si, O))),  <span class="sgr90"># 720 parameters</span>
+    ),
+) <span class="sgr90">        # Total: </span>720 parameters,
+<span class="sgr90">          #        plus </span>0 states.</code></pre><hr/><h2 id="Build-the-angular-embedding-(Ylm)"><a class="docs-heading-anchor" href="#Build-the-angular-embedding-(Ylm)">Build the angular embedding (Ylm)</a><a id="Build-the-angular-embedding-(Ylm)-1"></a><a class="docs-heading-anchor-permalink" href="#Build-the-angular-embedding-(Ylm)" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Spherical harmonics basis
+ylm_basis = P4ML.real_sphericalharmonics(scratch_maxl)
+Ylm_spec = P4ML.natural_indices(ylm_basis)
+
+# Angular embedding: edge direction -&gt; spherical harmonics
+ybasis = ET.EmbedDP(
+   ET.NTtransformST((x, st) -&gt; x.𝐫, NamedTuple()),
+   ylm_basis
+)
+yembed = ET.EdgeEmbed(ybasis)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">EdgeEmbed(
+    layer = EmbedDP(
+        trans = NTtransformST(),
+        basis = SphericalHarmonics(ℝ, maxl=4),
+        post = EquivariantTensors.IDpost(),
+    ),
+) <span class="sgr90">        # Total: </span>0 parameters,
+<span class="sgr90">          #        plus </span>25 states.</code></pre><hr/><h2 id="Build-the-many-body-basis-(sparse-ACE)"><a class="docs-heading-anchor" href="#Build-the-many-body-basis-(sparse-ACE)">Build the many-body basis (sparse ACE)</a><a id="Build-the-many-body-basis-(sparse-ACE)-1"></a><a class="docs-heading-anchor-permalink" href="#Build-the-many-body-basis-(sparse-ACE)" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Define the many-body specification
+# This specifies which (n,l) combinations appear in each correlation
+# For simplicity, use all 1-correlations up to given degree
+mb_spec = [[(n=n, l=l)] for n in 1:scratch_maxn for l in 0:scratch_maxl]
+
+# Create sparse equivariant tensor (ACE basis)
+mb_basis = ET.sparse_equivariant_tensor(
+   L = 0,                # scalar (invariant) output
+   mb_spec = mb_spec,
+   Rnl_spec = Rnl_spec,
+   Ylm_spec = Ylm_spec,
+   basis = real          # real-valued basis
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SparseACEbasis(L = (0,))</code></pre><hr/><h2 id="Build-the-readout-layer"><a class="docs-heading-anchor" href="#Build-the-readout-layer">Build the readout layer</a><a id="Build-the-readout-layer-1"></a><a class="docs-heading-anchor-permalink" href="#Build-the-readout-layer" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Species selector for readout
+selector_i = let zlist = zlist
+   x -&gt; ET.cat2idx(zlist, x.z)
+end
+
+# Readout: basis values -&gt; site energies
+readout = ET.SelectLinL(
+   mb_basis.lens[1],     # input dimension (basis length)
+   1,                    # output dimension (site energy)
+   NZ,                   # number of species categories
+   selector_i
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">EquivariantTensors.SelectLinL{Main.var&quot;#35#36&quot;{Vector{AtomsBase.ChemicalSpecies}}}(6, 1, 2, Main.var&quot;#35#36&quot;{Vector{AtomsBase.ChemicalSpecies}}(AtomsBase.ChemicalSpecies[Si, O]))  <span class="sgr90"># 12 parameters</span></code></pre><hr/><h2 id="Assemble-the-ETACE-model"><a class="docs-heading-anchor" href="#Assemble-the-ETACE-model">Assemble the ETACE model</a><a id="Assemble-the-ETACE-model-1"></a><a class="docs-heading-anchor-permalink" href="#Assemble-the-ETACE-model" title="Permalink"></a></h2><pre><code class="language-julia hljs">scratch_etace = ETM.ETACE(rembed, yembed, mb_basis, readout)
+
+# Initialize with Lux
+scratch_ps, scratch_st = Lux.setup(rng, scratch_etace)
+
+@info &quot;ETACE model created from scratch&quot;
+@info &quot;  Radial basis size: $(length(Rnl_spec))&quot;
+@info &quot;  Angular basis size: $(length(Ylm_spec))&quot;
+@info &quot;  Many-body basis size: $(mb_basis.lens[1])&quot;
+
+# Wrap in calculator
+scratch_calc = ETM.ETACEPotential(scratch_etace, scratch_ps, scratch_st, scratch_rcut)
+
+# Test evaluation
+E_scratch = AtomsCalculators.potential_energy(sys, scratch_calc)
+@info &quot;Scratch model energy: $E_scratch&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>ETACE model created from scratch
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Radial basis size: 30
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Angular basis size: 25
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Many-body basis size: 6
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Scratch model energy: -8.846813624632732 eV</code></pre><p>============================================================================= Part 5: Creating One-Body and Pair Models from Scratch =============================================================================</p><hr/><h2 id="ETOneBody:-Reference-energies"><a class="docs-heading-anchor" href="#ETOneBody:-Reference-energies">ETOneBody: Reference energies</a><a id="ETOneBody:-Reference-energies-1"></a><a class="docs-heading-anchor-permalink" href="#ETOneBody:-Reference-energies" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Define reference energies per species
+E0_dict = Dict(ChemicalSpecies(:Si) =&gt; -0.846,
+               ChemicalSpecies(:O) =&gt; -1.023)
+
+# Category function extracts species from atom state
+catfun = x -&gt; x.z  # x.z is the ChemicalSpecies
+
+# Create one-body model
+et_onebody = ETM.one_body(E0_dict, catfun)
+_, onebody_st = Lux.setup(rng, et_onebody)
+
+# Wrap in calculator (uses small cutoff since no neighbors needed)
+onebody_calc = ETM.ETOneBodyPotential(et_onebody, nothing, onebody_st, 3.0)
+
+@info &quot;ETOneBody model created&quot;
+@info &quot;  Reference energies: $E0_dict&quot;
+
+E_onebody = AtomsCalculators.potential_energy(sys, onebody_calc)
+@info &quot;  One-body energy for test system: $E_onebody&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>ETOneBody model created
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Reference energies: Dict{AtomsBase.ChemicalSpecies, Float64}(Si =&gt; -0.846, O =&gt; -1.023)
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  One-body energy for test system: -7.652999999999999 eV</code></pre><p>============================================================================= Part 6: Combining Models with StackedCalculator =============================================================================</p><p>StackedCalculator combines multiple calculators by summing their contributions.</p><pre><code class="language-julia hljs"># Stack our from-scratch models
+combined_calc = ETM.StackedCalculator((onebody_calc, scratch_calc))
+
+@info &quot;StackedCalculator created&quot;
+@info &quot;  Components: ETOneBody + ETACE&quot;
+@info &quot;  Total basis size: $(ETM.length_basis(combined_calc))&quot;
+
+# Evaluate combined model
+E_combined = AtomsCalculators.potential_energy(sys, combined_calc)
+@info &quot;  Combined energy: $E_combined&quot;
+
+# Training assembly works on StackedCalculator too
+efv_combined = ETM.energy_forces_virial_basis(sys, combined_calc)
+@info &quot;  Combined EFV basis shapes: E=$(size(efv_combined.energy)), F=$(size(efv_combined.forces))&quot;
+
+@info &quot;Tutorial complete!&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr36"><span class="sgr1">[ Info: </span></span>StackedCalculator created
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Components: ETOneBody + ETACE
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Total basis size: 12
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Combined energy: -16.49981362463273 eV
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>  Combined EFV basis shapes: E=(12,), F=(8, 12)
+<span class="sgr36"><span class="sgr1">[ Info: </span></span>Tutorial complete!</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../asp/">« Sparse Solvers</a><a class="docs-footer-nextpage" href="../../gettingstarted/parallel-fitting/">Parallel Fitting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Monday 5 January 2026 18:56">Monday 5 January 2026</span>. Using Julia version 1.12.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
