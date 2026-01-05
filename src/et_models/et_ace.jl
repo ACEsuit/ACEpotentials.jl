@@ -69,9 +69,11 @@ function site_basis(l::ETACE, X::ET.ETGraph, ps, st)
 end
 
 
-function site_basis_jacobian(l::ETACE, X::ET.ETGraph, ps, st)    
+function site_basis_jacobian(l::ETACE, X::ET.ETGraph, ps, st)
    (R, ∂R), _ = ET.evaluate_ed(l.rembed, X, ps.rembed, st.rembed)
    (Y, ∂Y), _ = ET.evaluate_ed(l.yembed, X, ps.yembed, st.yembed)
+   # _jacobian_X for SparseACEbasis takes (basis, Rnl, Ylm, dRnl, dYlm, ps, st)
+   # Requires EquivariantTensors >= 0.4.2
    (𝔹,), (∂𝔹,) = ET._jacobian_X(l.basis, R, Y, ∂R, ∂Y, ps.basis, st.basis)
    return 𝔹, ∂𝔹
 end

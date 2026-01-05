@@ -58,8 +58,12 @@ ___apply_onebody(selector, X::AbstractVector, E0s) =
          map(x -> E0s[selector(x)], X)
 
 
-site_grads(l::ETOneBody, X::ET.ETGraph, ps, st) = 
-         fill(VState(), (ET.maxneigs(X), ET.nnodes(X), ))
+# ETOneBody energy only depends on atom types (categorical), not positions.
+# Gradient w.r.t. positions is always zero.
+# Return empty edge_data array since there are no position-dependent gradients.
+function site_grads(l::ETOneBody, X::ET.ETGraph, ps, st)
+   return (; edge_data = VState[])
+end
 
 site_basis(l::ETOneBody, X::ET.ETGraph, ps, st) = 
          fill(zero(eltype(st.E0s)), (ET.nnodes(X), 0))

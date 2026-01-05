@@ -28,8 +28,14 @@ Literate.markdown(_tutorial_src * "/dataset_analysis.jl",
 Literate.markdown(_tutorial_src * "/descriptor.jl",
                   _tutorial_out; documenter = true)
 
-Literate.markdown(_tutorial_src * "/asp.jl", 
+Literate.markdown(_tutorial_src * "/asp.jl",
                   _tutorial_out; documenter = true)
+
+# ETACE tutorial lives in examples/ to avoid duplication
+_examples_src = joinpath(@__DIR__(), "..", "examples", "etmodels")
+Literate.markdown(_examples_src * "/etace_tutorial.jl",
+                  _tutorial_out; documenter = true)
+
 # Literate.markdown(_tutorial_src * "/first_example_model.jl", 
 #                   _tutorial_out; documenter = true)
 
@@ -70,9 +76,10 @@ makedocs(;
                 "literate_tutorials/basic_julia_workflow.md",
                 "literate_tutorials/smoothness_priors.md",
                 "literate_tutorials/dataset_analysis.md",
-                "tutorials/scripting.md", 
+                "tutorials/scripting.md",
                 "literate_tutorials/descriptor.md",
                 "literate_tutorials/asp.md",
+                "literate_tutorials/etace_tutorial.md",
             ],
         "Additional Topics" => Any[
             "gettingstarted/parallel-fitting.md",

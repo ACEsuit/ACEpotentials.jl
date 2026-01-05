@@ -100,14 +100,17 @@ println()
 
 ##
 
-@info("Confirm correctness of gradient") 
+@info("Confirm correctness of gradient")
 
 sys = rand_struct()
 G = ET.Atoms.interaction_graph(sys, 5.0 * u"Å")
 ∂G1 = ETM.site_grads(et_V0, G, ps, st)
 
-println_slim(@test size(∂G1) == (G.maxneigs, length(sys))) 
-println_slim(@test all( norm.(∂G1) .== 0 ) )
+# ETOneBody returns NamedTuple with empty edge_data array since there are no
+# position-dependent gradients (energy only depends on atom types, not positions)
+println_slim(@test ∂G1 isa NamedTuple)
+println_slim(@test haskey(∂G1, :edge_data))
+println_slim(@test isempty(∂G1.edge_data))
 
 ##
 
