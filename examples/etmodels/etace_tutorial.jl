@@ -193,7 +193,7 @@ Rnl_spec = [(n=n, l=l) for n in 1:scratch_maxn for l in 0:scratch_maxl]
 f_trans = let rcut = scratch_rcut
    (x, st) -> begin
       r = norm(x.𝐫)
-      # Simple polynomial transform (normalized to [-1, 1])
+      ## Simple polynomial transform (normalized to [-1, 1])
       y = 1 - 2 * r / rcut
       return y
    end
