@@ -1,0 +1,22 @@
+[project]
+name = "ace-export-tests"
+version = "0.1.0"
+description = "Python dependencies for ACE export testing"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.20",
+    "ase>=3.22",
+    "matscipy>=1.0",
+    "pytest>=7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test/python"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

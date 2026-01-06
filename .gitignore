@@ -1,4 +1,5 @@
 *Manifest.toml
+!export/Manifest.toml
 /docs/Manifest.toml
 /docs/build/
 scratch
@@ -6,3 +7,27 @@ scratch
 .vscode
 .ipynb_checkpoints
 .CondaPkg
+
+# Export feature artifacts
+export/deployments/
+export/**/build/
+export/**/*.so
+export/**/*.log
+export/examples/**/deployments/
+
+# Benchmark build artifacts
+benchmark/deployments/**/build/
+benchmark/deployments/**/*.o
+benchmark/deployments/**/*.o.a
+benchmark/deployments/**/CMakeFiles/
+benchmark/deployments/**/CMakeCache.txt
+benchmark/deployments/**/Makefile
+benchmark/deployments/**/cmake_install.cmake
+benchmark/**/log.lammps
+benchmark/log.lammps
+log.lammps
+
+# Python
+__pycache__/
+*.pyc
+.venv/

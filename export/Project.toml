@@ -1,0 +1,28 @@
+[deps]
+ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
+ACEpotentials = "3b86ca6f-cc73-4e48-8974-ffc28a207858"
+AtomsBase = "a963bdd2-2df7-4f54-a1ee-49d51e6be12a"
+AtomsCalculators = "a3e0e189-c65a-42c1-833c-339540406eb1"
+ConcreteStructs = "2569d6c7-a4a2-43d3-a901-331e8e4be471"
+DecoratedParticles = "023d0394-cb16-4d2d-a5c7-724bed42bbb6"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+EquivariantTensors = "5e107534-7145-4f8f-b06f-47a52840c895"
+ExtXYZ = "352459e4-ddd7-4360-8937-99dcb397b478"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JuliaC = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+LuxCore = "bb33d45b-7691-41d6-9220-0943567d0623"
+Polynomials4ML = "03c4bcba-a943-47e9-bfa1-b1661fc2974f"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+SpheriCart = "5caf2b29-02d9-47a3-9434-5931c85ba645"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+
+[sources]
+ACEpotentials = {path = ".."}
+Polynomials4ML = {rev = "main", url = "https://github.com/ACEsuit/Polynomials4ML.jl"}
