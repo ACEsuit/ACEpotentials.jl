@@ -18,10 +18,9 @@ using EquivariantTensors
 const ET = EquivariantTensors
 using AtomsBase: ChemicalSpecies
 
-# Include spline utilities, code generators, and refactored radial basis
+# Include spline utilities and code generators
 include("splinify.jl")
 include("codegen.jl")
-include("radial_basis_v2.jl")  # Data-table approach for reduced code generation
 
 
 """
@@ -63,7 +62,7 @@ end
 
 
 """
-    export_ace_model(calc::ETACEPotential, filename::String; for_library=false, radial_basis=:polynomial, code_style=:compact)
+    export_ace_model(calc::ETACEPotential, filename::String; for_library=false, radial_basis=:polynomial)
 
 Export an ETACEPotential to a trim-compatible Julia file.
 
@@ -74,9 +73,6 @@ Arguments:
 - `radial_basis=:polynomial`: Radial basis evaluation method
   - `:polynomial` - Runtime polynomial evaluation (default, exact, works with any model)
   - `:hermite_spline` - Hermite cubic splines (fast, exact). Model must be pre-splinified.
-- `code_style=:compact`: Code generation style for radial basis
-  - `:compact` - Data-table approach (~80% less radial code, recommended)
-  - `:expanded` - Per-pair function generation (legacy, larger code)
 
 # Example 1: Standard polynomial export (no pre-processing needed)
 ```julia
@@ -108,7 +104,6 @@ export_ace_model(calc, "my_model.jl"; for_library=true, radial_basis=:hermite_sp
 function export_ace_model(calc::ETACEPotential, filename::String;
                           for_library::Bool=false,
                           radial_basis::Symbol=:polynomial,
-                          code_style::Symbol=:compact,
                           E0_dict::Union{Dict{Int,Float64},Nothing}=nothing)
 
     # Extract ETACE components from the calculator
@@ -204,11 +199,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
             print(io, spline_code)
             println(io)
         elseif radial_basis == :polynomial
-            if code_style == :compact
-                _write_etace_radial_basis_v2(io, etace, ps, agnesi_params, NZ, rcut)
-            else
-                _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
-            end
+            _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
         else
             error("Unknown radial_basis option: $radial_basis. Use :hermite_spline or :polynomial")
         end
@@ -223,7 +214,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
         end
     end
 
-    @info "Exported ETACE model to $filename (radial_basis=$radial_basis, code_style=$code_style)"
+    @info "Exported ETACE model to $filename (radial_basis=$radial_basis)"
     return filename
 end
 
@@ -336,10 +327,12 @@ function _write_tensor(io, tensor)
     println(io)
 end
 
+# Write ETACE radial basis using data-table approach for reduced code generation.
+# Uses parameter tables and generic kernel functions instead of per-pair code generation.
 function _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
     println(io, """
 # ============================================================================
-# RADIAL BASIS (ETACE: Agnesi transform + polynomial + linear weights)
+# RADIAL BASIS (ETACE: Data-table approach)
 # ============================================================================
 """)
 
@@ -347,10 +340,7 @@ function _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
     println(io, "const RCUT_MAX = $(rcut)")
     println(io)
 
-    # Note: Agnesi transform parameters are now written as individual constants
-    # in _write_etace_radial_basis (per-pair specialized functions)
-
-    # Write species pair index helper (symmetric)
+    # Write species pair index helper
     println(io, """
 # Symmetric species pair indexing: (iz, jz) -> pair index
 # For NZ=2: (1,1)->1, (1,2)->2, (2,2)->3
@@ -361,38 +351,26 @@ end
 """)
 
     # Extract polynomial basis info
-    # rembed_layer.basis is WrappedBasis{BranchLayer{layers=(layer_1=OrthPolyBasis, layer_2=...)}}
-    # WrappedBasis has fields: l (the inner layer), len
     rembed_layer = etace.rembed.layer
     poly_basis = rembed_layer.basis.l.layers.layer_1
     n_polys = length(poly_basis)
 
-    # Extract the actual polynomial coefficients (A, B, C for 3-term recurrence)
-    # The ETACE uses an orthonormalized basis, not standard Chebyshev!
+    # Extract polynomial coefficients
     poly_refstate = poly_basis.refstate
     poly_A = poly_refstate.A
     poly_B = poly_refstate.B
     poly_C = poly_refstate.C
 
     println(io, "# Polynomial basis (orthonormalized Chebyshev)")
-    println(io, "# Uses 3-term recurrence: P[n+1] = (A[n]*y + B[n])*P[n] + C[n]*P[n-1]")
     println(io, "const N_POLYS = $(n_polys)")
     println(io, "const POLY_A = SVector{$(n_polys), Float64}($(repr(collect(poly_A))))")
     println(io, "const POLY_B = SVector{$(n_polys), Float64}($(repr(collect(poly_B))))")
     println(io, "const POLY_C = SVector{$(n_polys), Float64}($(repr(collect(poly_C))))")
     println(io)
 
-    # Generate inline polynomial evaluation function (trim-safe, no P4ML dependency)
-    # Matches P4ML's OrthPolyBasis1D3T recurrence exactly:
-    #   P[1] = A[1]
-    #   P[2] = A[2] * y + B[2]
-    #   P[n] = (A[n] * y + B[n]) * P[n-1] + C[n] * P[n-2]  for n >= 3
+    # Write polynomial evaluation
     println(io, """
-# Inline polynomial evaluation (trim-safe, no P4ML dependency)
-# 3-term recurrence matching P4ML's OrthPolyBasis1D3T:
-#   P[1] = A[1]
-#   P[2] = A[2] * y + B[2]
-#   P[n] = (A[n] * y + B[n]) * P[n-1] + C[n] * P[n-2]  for n >= 3
+# Polynomial evaluation via 3-term recurrence
 @inline function eval_polys(y::T) where {T}
     P = MVector{N_POLYS, T}(undef)
     @inbounds begin
@@ -407,8 +385,6 @@ end
     return P
 end
 
-# Inline polynomial evaluation with derivatives (trim-safe)
-# d(P[n])/dy computed via differentiation of recurrence relation
 @inline function eval_polys_ed(y::T) where {T}
     P = MVector{N_POLYS, T}(undef)
     dP = MVector{N_POLYS, T}(undef)
@@ -428,202 +404,173 @@ end
 end
 """)
 
-    # Write radial weights: W[n_rnl, n_polys, n_pairs]
+    # Write radial weights
     W_radial = ps.rembed.post.W
     n_rnl = size(W_radial, 1)
+    n_pairs = size(W_radial, 3)
+
     println(io, "const N_RNL = $(n_rnl)")
     println(io)
 
-    # Write weights per species pair
-    n_pairs = size(W_radial, 3)
-    println(io, "# Radial basis weights: W[n_rnl, n_polys] for each species pair")
+    # Write weights as tuple for trim-safe indexing
+    println(io, "# Radial basis weights per species pair (tuple for trim-safe indexing)")
+    println(io, "const RBASIS_W = (")
     for pair_idx in 1:n_pairs
         W_pair = W_radial[:, :, pair_idx]
-        println(io, "const RBASIS_W_$(pair_idx) = $(repr(collect(W_pair)))")
+        W_vec = vec(W_pair)
+        println(io, "    SMatrix{$(n_rnl), $(n_polys), Float64, $(n_rnl * n_polys)}($(repr(collect(W_vec)))),")
     end
+    println(io, ")")
     println(io)
 
-    # Write Agnesi transform evaluation functions per pair
-    # Trim-safe: all parameters are baked in as constants
-    # This must match EquivariantTensors.eval_agnesi exactly:
-    #   s = (r - rin) / (req - rin)
-    #   x = 1 / (1 + a * s^pin / (1 + s^(pin - pcut)))
-    #   y = clamp(b1 * x + b0, -1, 1)
-    println(io, """
-# Envelope: (1 - y^2)^2 for y ∈ [-1, 1]
-@inline envelope(y::T) where {T} = (one(T) - y^2)^2
-@inline envelope_d(y::T) where {T} = (one(T) - y^2)^2, -4 * y * (one(T) - y^2)
-""")
+    # Write parameter table for all species pairs
+    println(io, "# ============================================================================")
+    println(io, "# TRANSFORM PARAMETERS (data table approach)")
+    println(io, "# ============================================================================")
+    println(io)
 
-    # Generate per-pair Agnesi functions with baked-in constants
-    # Note: W_radial uses asymmetric indexing (NZ*NZ pairs), but Agnesi params use symmetric indexing
-    # For NZ=2: asymmetric pairs (1,2,3,4) map to symmetric Agnesi params (1,2,2,3)
-    # Asymmetric pair idx = (iz-1)*NZ + jz: (1,1)->1, (1,2)->2, (2,1)->3, (2,2)->4
-    # Symmetric pair idx: (1,1)->1, (1,2)->2, (2,1)->2, (2,2)->3
-    println(io, "# Per-pair Agnesi transforms (trim-safe: all parameters are constants)")
+    println(io, "# Agnesi transform parameters per species pair")
+    println(io, "const TRANSFORM_PARAMS = (")
+
     for asym_pair_idx in 1:n_pairs
-        # Convert asymmetric pair index to (iz, jz)
         iz = (asym_pair_idx - 1) ÷ NZ + 1
         jz = (asym_pair_idx - 1) % NZ + 1
-        # Get symmetric pair index: min/max for symmetric indexing
         sym_i = min(iz, jz)
         sym_j = max(iz, jz)
         sym_pair_idx = (sym_i - 1) * NZ - (sym_i - 1) * (sym_i - 2) ÷ 2 + (sym_j - sym_i + 1)
         p = agnesi_params[sym_pair_idx]
-        pair_idx = asym_pair_idx
-        println(io, """
-# Agnesi transform for pair $(pair_idx): r -> y ∈ [-1, 1]
-const AGNESI_$(pair_idx)_RIN = $(Float64(p.rin))
-const AGNESI_$(pair_idx)_REQ = $(Float64(p.req))
-const AGNESI_$(pair_idx)_RCUT = $(Float64(rcut))
-const AGNESI_$(pair_idx)_PIN = $(Float64(p.pin))
-const AGNESI_$(pair_idx)_PCUT = $(Float64(p.pcut))
-const AGNESI_$(pair_idx)_A = $(Float64(p.a))
-const AGNESI_$(pair_idx)_B0 = $(Float64(p.b0))
-const AGNESI_$(pair_idx)_B1 = $(Float64(p.b1))
 
-@inline function eval_agnesi_$(pair_idx)(r::T) where {T}
-    if r <= AGNESI_$(pair_idx)_RIN
+        println(io, "    (rin=$(Float64(p.rin)), req=$(Float64(p.req)), rcut=$(Float64(rcut)), " *
+                    "pin=$(Float64(p.pin)), pcut=$(Float64(p.pcut)), a=$(Float64(p.a)), " *
+                    "b0=$(Float64(p.b0)), b1=$(Float64(p.b1))),  # pair $asym_pair_idx: ($iz, $jz)")
+    end
+    println(io, ")")
+    println(io)
+
+    # Write generic kernel functions
+    println(io, """
+# ============================================================================
+# GENERIC KERNEL FUNCTIONS
+# ============================================================================
+
+# Quartic envelope: (1 - y²)²
+@inline envelope_quartic(y::T) where {T} = max(zero(T), one(T) - y^2)^2
+@inline function envelope_quartic_d(y::T) where {T}
+    one_minus_y2 = max(zero(T), one(T) - y^2)
+    return one_minus_y2^2, -4 * y * one_minus_y2
+end
+
+# Generic Agnesi transform using parameter tuple
+@inline function agnesi_transform(r::T, p) where {T}
+    if r <= p.rin
         return one(T)
     end
-    if r >= AGNESI_$(pair_idx)_RCUT
+    if r >= p.rcut
         return -one(T)
     end
-    s = (r - AGNESI_$(pair_idx)_RIN) / (AGNESI_$(pair_idx)_REQ - AGNESI_$(pair_idx)_RIN)
-    x = one(T) / (one(T) + AGNESI_$(pair_idx)_A * s^AGNESI_$(pair_idx)_PIN / (one(T) + s^(AGNESI_$(pair_idx)_PIN - AGNESI_$(pair_idx)_PCUT)))
-    y = AGNESI_$(pair_idx)_B1 * x + AGNESI_$(pair_idx)_B0
+    s = (r - p.rin) / (p.req - p.rin)
+    s_pin = s^p.pin
+    s_diff = s^(p.pin - p.pcut)
+    denom = one(T) + s_diff
+    x = one(T) / (one(T) + p.a * s_pin / denom)
+    y = p.b1 * x + p.b0
     return clamp(y, -one(T), one(T))
 end
 
-@inline function eval_agnesi_d_$(pair_idx)(r::T) where {T}
-    if r <= AGNESI_$(pair_idx)_RIN
+# Agnesi transform with derivative
+@inline function agnesi_transform_d(r::T, p) where {T}
+    if r <= p.rin
         return one(T), zero(T)
     end
-    if r >= AGNESI_$(pair_idx)_RCUT
+    if r >= p.rcut
         return -one(T), zero(T)
     end
 
-    rin = AGNESI_$(pair_idx)_RIN
-    req = AGNESI_$(pair_idx)_REQ
-    pin = AGNESI_$(pair_idx)_PIN
-    pcut = AGNESI_$(pair_idx)_PCUT
-    a = AGNESI_$(pair_idx)_A
-    b0 = AGNESI_$(pair_idx)_B0
-    b1 = AGNESI_$(pair_idx)_B1
+    ds_dr = one(T) / (p.req - p.rin)
+    s = (r - p.rin) * ds_dr
 
-    s = (r - rin) / (req - rin)
-    ds_dr = one(T) / (req - rin)
-
-    # x = 1 / (1 + a * s^pin / (1 + s^(pin - pcut)))
-    s_pin = s^pin
-    s_diff = s^(pin - pcut)
-    denom_inner = one(T) + s_diff
-    denom = one(T) + a * s_pin / denom_inner
-    x = one(T) / denom
-
-    # y = b1 * x + b0
-    y = b1 * x + b0
-
-    # Derivative: dy/dr = b1 * dx/dr
-    if s > 1e-10  # Avoid division by zero near s=0
-        diff = pin - pcut
-        ds_pin = pin * s^(pin - 1)
-        ds_diff = diff > 0 ? diff * s^(diff - 1) : zero(T)
-        d_denom_ds = a * (ds_pin * denom_inner - s_pin * ds_diff) / (denom_inner^2)
-        dx_ds = -x^2 * d_denom_ds
-        dy_ds = b1 * dx_ds
-        dy_dr = dy_ds * ds_dr
-    else
-        dy_dr = zero(T)
+    if s <= T(1e-12)
+        return one(T), zero(T)
     end
 
-    if y <= -one(T) || y >= one(T)
-        return clamp(y, -one(T), one(T)), zero(T)
+    s_pin = s^p.pin
+    s_diff = s^(p.pin - p.pcut)
+    denom = one(T) + s_diff
+
+    x = one(T) / (one(T) + p.a * s_pin / denom)
+    y = p.b1 * x + p.b0
+
+    # Derivative via chain rule
+    dg_ds = p.a * s^(p.pin - 1) * (p.pin + p.pcut * s_diff) / (denom^2)
+    dx_ds = -x^2 * dg_ds
+    dy_ds = p.b1 * dx_ds
+    dy_dr = dy_ds * ds_dr
+
+    y_clamped = clamp(y, -one(T), one(T))
+    if y_clamped != y
+        return y_clamped, zero(T)
     end
     return y, dy_dr
 end
 """)
-    end
 
-    # Generate per-pair specialized radial basis functions (trim-safe, better inlining)
-    println(io, "# Per-pair specialized radial basis functions (trim-safe)")
-    for pair_idx in 1:n_pairs
-        println(io, """
-@inline function evaluate_Rnl_$(pair_idx)(r::T)::SVector{N_RNL, T} where {T}
-    # Transform distance to y ∈ [-1, 1] (using specialized Agnesi)
-    y = eval_agnesi_$(pair_idx)(r)
+    # Write generic radial basis functions
+    println(io, """
+# ============================================================================
+# RADIAL BASIS EVALUATION (generic, using parameter tables)
+# ============================================================================
 
-    # Evaluate envelope
-    env = envelope(y)
+# Generic radial basis evaluation for any pair
+@inline function _evaluate_Rnl_pair(r::T, pair_idx::Int)::SVector{N_RNL, T} where {T}
+    @inbounds p = TRANSFORM_PARAMS[pair_idx]
+    y = agnesi_transform(r, p)
+
+    env = envelope_quartic(y)
     if env <= zero(T)
         return zero(SVector{N_RNL, T})
     end
 
-    # Evaluate polynomials at y (inline, trim-safe)
     P = eval_polys(y)
-
-    # Apply envelope and linear layer
-    return RBASIS_W_$(pair_idx) * SVector{N_POLYS, T}(env .* P)
+    @inbounds W = RBASIS_W[pair_idx]
+    return W * SVector{N_POLYS, T}(env .* P)
 end
 
-@inline function evaluate_Rnl_d_$(pair_idx)(r::T)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    # Transform with derivative (using specialized Agnesi)
-    y, dy_dr = eval_agnesi_d_$(pair_idx)(r)
+# Generic radial basis with derivatives
+@inline function _evaluate_Rnl_d_pair(r::T, pair_idx::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
+    @inbounds p = TRANSFORM_PARAMS[pair_idx]
+    y, dy_dr = agnesi_transform_d(r, p)
 
-    # Envelope with derivative
-    env, denv_dy = envelope_d(y)
+    env, denv_dy = envelope_quartic_d(y)
     denv_dr = denv_dy * dy_dr
 
     if env <= zero(T)
         return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})
     end
 
-    # Evaluate polynomials with derivatives (inline, trim-safe)
     P, dP = eval_polys_ed(y)
     dP_dr = dP .* dy_dr
 
-    # P_env = env * P, d(P_env)/dr = denv/dr * P + env * dP/dr
     P_env = env .* P
     dP_env_dr = denv_dr .* P .+ env .* dP_dr
 
-    # Linear layer
-    Rnl = RBASIS_W_$(pair_idx) * SVector{N_POLYS, T}(P_env)
-    dRnl = RBASIS_W_$(pair_idx) * SVector{N_POLYS, T}(dP_env_dr)
+    @inbounds W = RBASIS_W[pair_idx]
+    Rnl = W * SVector{N_POLYS, T}(P_env)
+    dRnl = W * SVector{N_POLYS, T}(dP_env_dr)
 
     return Rnl, dRnl
 end
-""")
-    end
 
-    # Write dispatcher functions
-    println(io, """
-# Radial basis dispatch: r, iz, jz -> Rnl vector
+# Public API: dispatch by species indices
 @inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
-    pair_idx = zz2pair_sym(iz, jz)
-""")
-    for pair_idx in 1:n_pairs
-        cond = pair_idx == 1 ? "if" : "elseif"
-        println(io, "    $cond pair_idx == $pair_idx")
-        println(io, "        return evaluate_Rnl_$(pair_idx)(r)")
-    end
-    println(io, "    end")
-    println(io, "    return zero(SVector{N_RNL, T})  # fallback")
-    println(io, "end")
-    println(io)
+    pair_idx = (iz - 1) * NZ + jz  # Asymmetric indexing for weights
+    return _evaluate_Rnl_pair(r, pair_idx)
+end
 
-    println(io, """
-# Radial basis with derivatives dispatch
 @inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    pair_idx = zz2pair_sym(iz, jz)
+    pair_idx = (iz - 1) * NZ + jz
+    return _evaluate_Rnl_d_pair(r, pair_idx)
+end
 """)
-    for pair_idx in 1:n_pairs
-        cond = pair_idx == 1 ? "if" : "elseif"
-        println(io, "    $cond pair_idx == $pair_idx")
-        println(io, "        return evaluate_Rnl_d_$(pair_idx)(r)")
-    end
-    println(io, "    end")
-    println(io, "    return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})  # fallback")
-    println(io, "end")
 end
 
 # Keep the old function for backward compatibility error message
