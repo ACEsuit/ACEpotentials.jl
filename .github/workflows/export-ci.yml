@@ -115,6 +115,7 @@ jobs:
           julia --project=export export/test/runtests.jl etace hermite multispecies
 
       - name: Compile ETACE model to shared library
+        continue-on-error: true  # juliac is experimental and may not be available
         run: |
           # Use one of the exported models from the tests
           cd export/test/build
