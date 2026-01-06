@@ -22,6 +22,28 @@ using AtomsBase: ChemicalSpecies
 include("splinify.jl")
 include("codegen.jl")
 
+# Helper to emit species dispatch blocks (reduces code duplication)
+# Emits: if iz0 == 1; <body(1)> elseif iz0 == 2; <body(2)> ... end
+function _emit_species_dispatch(io, NZ::Int, indent::String, body::Function)
+    for iz in 1:NZ
+        cond = iz == 1 ? "if" : "elseif"
+        println(io, indent, cond, " iz0 == $iz; ", body(iz))
+    end
+    println(io, indent, "end")
+end
+
+# Multi-line version: body returns multiple lines as a vector of strings
+function _emit_species_dispatch_multi(io, NZ::Int, indent::String, body::Function)
+    for iz in 1:NZ
+        cond = iz == 1 ? "if" : "elseif"
+        println(io, indent, cond, " iz0 == $iz")
+        for line in body(iz)
+            println(io, indent, "    ", line)
+        end
+    end
+    println(io, indent, "end")
+end
+
 
 """
     export_ace_model(calc::StackedCalculator, filename::String; kwargs...)
@@ -1109,11 +1131,7 @@ function site_energy(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0:
 """)
 
     # Write E0 lookup
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "        $cond iz0 == $iz; return E0_$iz")
-    end
-    println(io, "        end")
+    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
 
     println(io, """
     end
@@ -1129,23 +1147,11 @@ function site_energy(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0:
 """)
 
     # Write weight contraction
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "    $cond iz0 == $iz")
-        println(io, "        val = dot(B, WB_$iz)")
-    end
-    println(io, "    end")
+    _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["val = dot(B, WB_$iz)"])
 
     # Add E0
-    println(io, """
-
-    # Add reference energy
-""")
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "    $cond iz0 == $iz; val += E0_$iz")
-    end
-    println(io, "    end")
+    println(io, "\n    # Add reference energy")
+    _emit_species_dispatch(io, NZ, "    ", iz -> "val += E0_$iz")
 
     println(io, """
 
@@ -1403,11 +1409,7 @@ function site_energy_forces(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Intege
 """)
 
     # Write E0 lookup for forces function
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "        $cond iz0 == $iz; return E0_$iz, SVector{3, Float64}[]")
-    end
-    println(io, "        end")
+    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz, SVector{3, Float64}[]")
 
     println(io, """
     end
@@ -1426,13 +1428,10 @@ function site_energy_forces(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Intege
 """)
 
     # Write weight contraction for forces
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "    $cond iz0 == $iz")
-        println(io, "        Ei = dot(B, WB_$iz)")
-        println(io, "        for k in 1:N_BASIS; WORK_∂B[k] = WB_$(iz)[k]; end  # ∂Ei/∂B = WB")
-    end
-    println(io, "    end")
+    _emit_species_dispatch_multi(io, NZ, "    ", iz -> [
+        "Ei = dot(B, WB_$iz)",
+        "for k in 1:N_BASIS; WORK_∂B[k] = WB_$(iz)[k]; end  # ∂Ei/∂B = WB"
+    ])
 
     println(io, """
 
@@ -1470,11 +1469,7 @@ function site_energy_forces(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Intege
 """)
 
     # Add E0
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "    $cond iz0 == $iz; Ei += E0_$iz")
-    end
-    println(io, "    end")
+    _emit_species_dispatch(io, NZ, "    ", iz -> "Ei += E0_$iz")
 
     println(io, """
 
@@ -1494,11 +1489,7 @@ function site_energy_forces_virial(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<
 """)
 
     # Write E0 lookup for virial function
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "        $cond iz0 == $iz; return E0_$iz, SVector{3, Float64}[], virial")
-    end
-    println(io, "        end")
+    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz, SVector{3, Float64}[], virial")
 
     println(io, """
     end
@@ -1517,13 +1508,10 @@ function site_energy_forces_virial(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<
 """)
 
     # Write weight contraction for virial
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "    $cond iz0 == $iz")
-        println(io, "        Ei = dot(B, WB_$iz)")
-        println(io, "        for k in 1:N_BASIS; WORK_∂B[k] = WB_$(iz)[k]; end  # ∂Ei/∂B = WB")
-    end
-    println(io, "    end")
+    _emit_species_dispatch_multi(io, NZ, "    ", iz -> [
+        "Ei = dot(B, WB_$iz)",
+        "for k in 1:N_BASIS; WORK_∂B[k] = WB_$(iz)[k]; end  # ∂Ei/∂B = WB"
+    ])
 
     println(io, """
 
@@ -1566,11 +1554,7 @@ function site_energy_forces_virial(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<
 """)
 
     # Add E0 for virial
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "    $cond iz0 == $iz; Ei += E0_$iz")
-    end
-    println(io, "    end")
+    _emit_species_dispatch(io, NZ, "    ", iz -> "Ei += E0_$iz")
 
     println(io, """
 
@@ -1729,11 +1713,7 @@ Base.@ccallable function ace_site_energy(
 """)
 
     # Generate E0 lookup for each species
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "        $cond iz0 == $iz; return E0_$iz")
-    end
-    println(io, "        end")
+    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
     println(io, "        return 0.0")
     println(io, "    end")
 
@@ -1756,11 +1736,7 @@ Base.@ccallable function ace_site_energy_forces(
         iz0 = z2i(z0)
 """)
 
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "        $cond iz0 == $iz; return E0_$iz")
-    end
-    println(io, "        end")
+    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
     println(io, "        return 0.0")
     println(io, "    end")
 
@@ -1793,11 +1769,7 @@ Base.@ccallable function ace_site_energy_forces_virial(
         end
 """)
 
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "        $cond iz0 == $iz; return E0_$iz")
-    end
-    println(io, "        end")
+    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
     println(io, "        return 0.0")
     println(io, "    end")
 
