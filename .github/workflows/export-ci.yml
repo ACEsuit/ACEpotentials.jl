@@ -168,11 +168,13 @@ jobs:
             using JuliaC
 
             # Create image recipe for shared library with ccallable exports
+            # Use cpu_target='generic' for portability across different CI runner CPUs
             img = ImageRecipe(;
                 file=\"$MODEL_FILE\",
                 output_type=\"sharedlib\",
                 trim_mode=\"safe\",
                 add_ccallables=true,
+                cpu_target=\"generic\",
                 verbose=true
             )
 
