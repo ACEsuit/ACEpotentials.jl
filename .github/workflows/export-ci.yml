@@ -157,18 +157,23 @@ jobs:
             '
             MODEL_FILE="test_etace_model.jl"
           fi
-          echo "Compiling $MODEL_FILE..."
+          echo "Compiling $MODEL_FILE using JuliaC.jl..."
 
-          # Verify juliac.jl exists (required for export functionality)
-          JULIAC_SCRIPT=$(julia -e 'print(joinpath(Sys.BINDIR, "..", "share", "julia", "juliac.jl"))')
-          if [ ! -f "$JULIAC_SCRIPT" ]; then
-            echo "::error::juliac.jl not found at $JULIAC_SCRIPT - Julia 1.12+ with juliac support is required"
-            exit 1
-          fi
+          # Use JuliaC.jl package for compilation (more portable than bundled juliac.jl)
+          julia --startup-file=no --project=../../ -e "
+            using Pkg
+            Pkg.add(\"JuliaC\")
+            using JuliaC
 
-          julia --startup-file=no -C generic --project=../../ "$JULIAC_SCRIPT" \
-            --experimental --compile-ccallable \
-            --output-lib libace_test.so --trim=safe "$MODEL_FILE"
+            recipe = ImageRecipe(;
+                file=\"$MODEL_FILE\",
+                output_type=\"sharedlib\",
+                trim_mode=\"safe\",
+                img_path=\"libace_test.so\",
+                add_ccallables=true
+            )
+            compile_products(recipe)
+          "
 
           if [ ! -f "libace_test.so" ]; then
             echo "::error::Failed to compile shared library"
