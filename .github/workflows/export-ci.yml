@@ -78,7 +78,8 @@ jobs:
             lammps/src/nlohmann/
           retention-days: 1
 
-  test-export:
+  test-etace-export:
+    name: ETACE Export Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -88,6 +89,10 @@ jobs:
         uses: julia-actions/setup-julia@v2
         with:
           version: '1.12'
+
+      - name: Add ACE registry
+        run: |
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
 
       - name: Cache Julia packages
         uses: actions/cache@v4
@@ -108,9 +113,59 @@ jobs:
             Pkg.precompile()
           '
 
-      - name: Run Julia export tests
+      - name: Run ETACE export tests (polynomial, hermite, multispecies)
         run: |
-          julia --project=export export/test/runtests.jl export
+          julia --project=export export/test/runtests.jl etace hermite multispecies
+
+      - name: Compile ETACE model to shared library
+        run: |
+          # Use one of the exported models from the tests
+          cd export/test/build
+          MODEL_FILE=$(ls test_etace_*.jl 2>/dev/null | head -1)
+          if [ -z "$MODEL_FILE" ]; then
+            echo "No exported model found, creating one..."
+            julia --project=../../ -e '
+              include("../../src/export_ace_model.jl")
+              using ACEpotentials
+              using ACEpotentials.Models
+              using ACEpotentials.ETModels
+              using Lux, LuxCore, Random
+
+              # Create minimal ETACE model for testing
+              elements = (:Si,)
+              rcut = 5.5
+              rin0cuts = Models._default_rin0cuts(elements)
+              rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = rcut)).(rin0cuts)
+
+              ace_model = Models.ace_model(;
+                  elements = elements, order = 2, Ytype = :solid,
+                  level = Models.TotalDegree(), max_level = 6, maxl = 2,
+                  pair_maxn = 6, rin0cuts = rin0cuts,
+                  init_WB = :glorot_normal, init_Wpair = :glorot_normal
+              )
+              ps, st = Lux.setup(Random.MersenneTwister(1234), ace_model)
+
+              et_model = ETModels.convert2et(ace_model)
+              et_ps, et_st = LuxCore.setup(Random.MersenneTwister(1234), et_model)
+
+              # Copy parameters
+              et_ps.rembed.post.W[:, :, 1] .= ps.rbasis.Wnlq[:, :, 1, 1]
+              et_ps.readout.W[1, :, 1] .= ps.WB[:, 1]
+
+              et_calc = ETModels.ETACEPotential(et_model, et_ps, et_st, rcut)
+              export_ace_model(et_calc, "test_etace_model.jl"; for_library=true)
+            '
+            MODEL_FILE="test_etace_model.jl"
+          fi
+          echo "Compiling $MODEL_FILE..."
+
+          # Use juliac to compile
+          JULIAC_SCRIPT=$(julia -e 'print(joinpath(Sys.BINDIR, "..", "share", "julia", "juliac.jl"))')
+          julia --startup-file=no -C generic --project=../../ "$JULIAC_SCRIPT" \
+            --experimental --compile-ccallable \
+            --output-lib libace_test.so --trim=safe "$MODEL_FILE"
+
+          ls -la libace_test.so
 
       - name: Upload compiled library
         uses: actions/upload-artifact@v4
@@ -121,7 +176,7 @@ jobs:
 
   test-python:
     runs-on: ubuntu-latest
-    needs: test-export
+    needs: test-etace-export
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -178,7 +233,7 @@ jobs:
 
   test-lammps-serial:
     runs-on: ubuntu-latest
-    needs: [build-lammps, test-export]
+    needs: [build-lammps, test-etace-export]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -340,7 +395,7 @@ jobs:
   test-ase-ace-library:
     name: ase-ace (library calculator)
     runs-on: ubuntu-latest
-    needs: test-export
+    needs: test-etace-export
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -399,7 +454,7 @@ jobs:
   test-ase-ace-julia:
     name: ase-ace (julia calculator)
     runs-on: ubuntu-latest
-    needs: test-export
+    needs: test-etace-export
     steps:
       - name: Checkout
         uses: actions/checkout@v4

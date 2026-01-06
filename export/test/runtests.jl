@@ -1,23 +1,22 @@
 #=
 Export Test Suite - Main Test Runner
 
-This file orchestrates all export-related tests:
-1. Julia export functionality (model export, compilation, evaluation)
-2. ETACE export functionality (ETACE model export with solid harmonics)
-3. Python calculator integration
-4. LAMMPS plugin integration (serial)
-5. Multi-species model tests
+This file orchestrates all export-related tests for ETACE models:
+1. ETACE export functionality (polynomial radial basis)
+2. Hermite spline export (machine-precision splined radial basis)
+3. Multi-species model tests
+4. Python calculator integration
+5. LAMMPS plugin integration (serial)
 6. MPI parallel tests
 
 Usage:
     julia --project=.. runtests.jl              # Run all available tests
-    julia --project=.. runtests.jl export       # Run only ACEModel export tests
-    julia --project=.. runtests.jl etace        # Run only ETACE export tests
-    julia --project=.. runtests.jl python       # Run only Python tests
-    julia --project=.. runtests.jl portable     # Run only portable Python tests
-    julia --project=.. runtests.jl lammps       # Run only LAMMPS tests
-    julia --project=.. runtests.jl multispecies # Run only multi-species tests
-    julia --project=.. runtests.jl mpi          # Run only MPI tests
+    julia --project=.. runtests.jl etace        # Run ETACE polynomial export tests
+    julia --project=.. runtests.jl hermite      # Run Hermite spline export tests
+    julia --project=.. runtests.jl multispecies # Run multi-species tests
+    julia --project=.. runtests.jl python       # Run Python tests
+    julia --project=.. runtests.jl lammps       # Run LAMMPS tests
+    julia --project=.. runtests.jl mpi          # Run MPI tests
 =#
 
 using Test
@@ -35,59 +34,6 @@ const PROJECT_DIR = dirname(EXPORT_DIR)
 
 # Global test artifacts (created once, reused across tests)
 const TEST_ARTIFACTS = Dict{String, Any}()
-
-"""
-    setup_test_model()
-
-Fit a small Si model for testing. Returns (potential, test_data).
-Caches the result for reuse across test files.
-"""
-function setup_test_model()
-    if haskey(TEST_ARTIFACTS, "potential")
-        return TEST_ARTIFACTS["potential"], TEST_ARTIFACTS["test_data"]
-    end
-
-    @info "Setting up test model (fitting Si potential)..."
-
-    # Load training data using example_dataset
-    dataset = ACEpotentials.example_dataset("Si_tiny")
-    data = dataset.train
-
-    # Create small model for fast testing
-    model = ACEpotentials.ace1_model(
-        elements = [:Si],
-        order = 2,
-        totaldegree = 6,
-        rcut = 5.5,
-    )
-
-    # Data keys matching Si_tiny dataset
-    data_keys = (
-        energy_key = "dft_energy",
-        force_key = "dft_force",
-        virial_key = "dft_virial",
-    )
-
-    weights = Dict("default" => Dict("E" => 30.0, "F" => 1.0, "V" => 1.0))
-
-    # Fit model
-    ACEpotentials.acefit!(data, model;
-        data_keys...,
-        weights = weights,
-        solver = ACEfit.BLR(),
-    )
-
-    # Get the fitted potential
-    potential = model
-
-    # Store for reuse
-    TEST_ARTIFACTS["potential"] = potential
-    TEST_ARTIFACTS["test_data"] = data
-
-    @info "Test model ready"
-
-    return potential, data
-end
 
 """
     get_test_structure()
@@ -160,58 +106,6 @@ function check_mpi_available()
     end
 end
 
-"""
-    get_compiled_library()
-
-Get path to compiled test library. Compiles if not exists.
-"""
-function get_compiled_library()
-    if haskey(TEST_ARTIFACTS, "lib_path")
-        return TEST_ARTIFACTS["lib_path"]
-    end
-
-    # Set up model first
-    potential, _ = setup_test_model()
-
-    # Export and compile
-    build_dir = joinpath(TEST_DIR, "build")
-    mkpath(build_dir)
-
-    @info "Exporting model to Julia code..."
-    include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
-    model_file = joinpath(build_dir, "test_ace_model.jl")
-    export_ace_model(potential, model_file; for_library=true)
-
-    @info "Compiling to shared library..."
-    lib_path = joinpath(build_dir, "libace_test.so")
-
-    # Run juliac
-    juliac_cmd = `julia --project=$(EXPORT_DIR) -e "
-        using PackageCompiler
-        PackageCompiler.juliac(
-            \"$(model_file)\",
-            \"$(lib_path)\";
-            compile_library=true,
-            trim=true,
-            verbose=true
-        )
-    "`
-
-    # Alternative: use juliac directly if available
-    # juliac_cmd = `juliac --output-lib $(lib_path) --trim=safe --project=$(EXPORT_DIR) $(model_file)`
-
-    run(juliac_cmd)
-
-    if !isfile(lib_path)
-        error("Compilation failed: $lib_path not created")
-    end
-
-    TEST_ARTIFACTS["lib_path"] = lib_path
-    TEST_ARTIFACTS["model_file"] = model_file
-
-    return lib_path
-end
-
 # Parse command line args for selective testing
 function get_test_selection()
     if length(ARGS) == 0
@@ -229,8 +123,8 @@ end
 function main()
     selection = get_test_selection()
 
-    @info "ACE Export Test Suite"
-    @info "====================="
+    @info "ACE Export Test Suite (ETACE)"
+    @info "=============================="
     @info "Test selection: $selection"
     @info "Python available: $(check_python_available())"
     @info "LAMMPS available: $(check_lammps_available())"
@@ -238,16 +132,22 @@ function main()
     @info ""
 
     @testset "ACE Export Tests" verbose=true begin
-        # Julia export tests (ACEModel)
-        if should_run_test(selection, :export) || should_run_test(selection, :all)
-            @info "Running Julia export tests (ACEModel)..."
-            include(joinpath(TEST_DIR, "test_export.jl"))
+        # ETACE export tests (polynomial radial basis)
+        if should_run_test(selection, :etace) || should_run_test(selection, :all)
+            @info "Running ETACE export tests (polynomial)..."
+            include(joinpath(TEST_DIR, "test_etace_export.jl"))
         end
 
-        # ETACE export tests
-        if should_run_test(selection, :etace) || should_run_test(selection, :all)
-            @info "Running ETACE export tests..."
-            include(joinpath(TEST_DIR, "test_etace_export.jl"))
+        # Hermite spline export tests
+        if should_run_test(selection, :hermite) || should_run_test(selection, :all)
+            @info "Running Hermite spline export tests..."
+            include(joinpath(TEST_DIR, "test_hermite_spline_export.jl"))
+        end
+
+        # Multi-species tests
+        if should_run_test(selection, :multispecies) || should_run_test(selection, :all)
+            @info "Running multi-species export tests..."
+            include(joinpath(TEST_DIR, "test_multispecies.jl"))
         end
 
         # Python tests
@@ -260,16 +160,6 @@ function main()
             end
         end
 
-        # Portable Python tests (validates relocatable deployment)
-        if should_run_test(selection, :portable) || should_run_test(selection, :all)
-            if check_python_available()
-                @info "Running portable Python tests..."
-                include(joinpath(TEST_DIR, "test_portable_python.jl"))
-            else
-                @warn "Skipping portable Python tests (Python/numpy/ase not available)"
-            end
-        end
-
         # LAMMPS tests (serial)
         if should_run_test(selection, :lammps) || should_run_test(selection, :all)
             if check_lammps_available()
@@ -278,12 +168,6 @@ function main()
             else
                 @warn "Skipping LAMMPS tests (lmp not found)"
             end
-        end
-
-        # Multi-species tests
-        if should_run_test(selection, :multispecies) || should_run_test(selection, :all)
-            @info "Running multi-species export tests..."
-            include(joinpath(TEST_DIR, "test_multispecies.jl"))
         end
 
         # MPI tests
