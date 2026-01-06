@@ -36,6 +36,11 @@ _examples_src = joinpath(@__DIR__(), "..", "examples", "etmodels")
 Literate.markdown(_examples_src * "/etace_tutorial.jl",
                   _tutorial_out; documenter = true)
 
+# LAMMPS export tutorial lives in export/examples/
+_export_examples = joinpath(@__DIR__(), "..", "export", "examples")
+Literate.markdown(_export_examples * "/etace_lammps_tutorial.jl",
+                  _tutorial_out; documenter = true)
+
 # Literate.markdown(_tutorial_src * "/first_example_model.jl", 
 #                   _tutorial_out; documenter = true)
 
@@ -80,6 +85,7 @@ makedocs(;
                 "literate_tutorials/descriptor.md",
                 "literate_tutorials/asp.md",
                 "literate_tutorials/etace_tutorial.md",
+                "literate_tutorials/etace_lammps_tutorial.md",
             ],
         "Additional Topics" => Any[
             "gettingstarted/parallel-fitting.md",

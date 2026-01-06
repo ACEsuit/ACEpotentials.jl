@@ -30,6 +30,66 @@ This creates a self-contained deployment in `deployments/silicon_ace/` containin
 - LAMMPS plugin and examples
 - Python/ASE calculator and examples
 
+## Choosing ACE vs ETACE
+
+ACEpotentials supports two evaluation backends. Choose based on your needs:
+
+| Feature | Standard ACE | ETACE |
+|---------|-------------|-------|
+| **Evaluation speed** | Baseline | ~2x faster |
+| **Export complexity** | Simple (`ace1_model`) | Requires conversion step |
+| **Use case** | Development, small MD | Production MD, HPC |
+
+### Standard ACE Export (Simpler)
+
+```julia
+# Fit model
+model = ace1_model(elements=[:Si], order=3, totaldegree=10)
+acefit!(data, model)
+
+# Export directly
+include("export/scripts/build_deployment.jl")
+build_deployment(model, "silicon_ace")
+```
+
+### ETACE Export (Faster, Recommended for Production)
+
+```julia
+using ACEpotentials.Models, ACEpotentials.ETModels
+
+# Create model with learnable radial basis (required for ETACE)
+ace_model = Models.ace_model(elements=(:Si,), order=3, ...)
+acefit!(data, ACEPotential(ace_model, ps, st))
+
+# Convert to ETACE and splinify (CRITICAL: before export)
+et_model = ETModels.convert2et(ace_model)
+et_model_splined = ETModels.splinify(et_model, et_ps, et_st; Nspl=50)
+
+# Export with Hermite splines
+export_ace_model(et_calc, "model.jl"; radial_basis=:hermite_spline)
+```
+
+See [`examples/etace_lammps_tutorial.jl`](examples/etace_lammps_tutorial.jl) for a complete walkthrough.
+
+## Radial Basis Export Options
+
+When exporting, choose the radial basis representation:
+
+| Mode | Accuracy | File Size | Speed | Use Case |
+|------|----------|-----------|-------|----------|
+| `:hermite_spline` | Machine precision | ~1 MB | Fast | **Recommended** |
+| `:polynomial` | Exact | ~100 KB | Medium | Debugging, verification |
+
+**Recommendation**: Use `:hermite_spline` for all production deployments.
+
+```julia
+# Hermite cubic splines (recommended)
+export_ace_model(calc, "model.jl"; radial_basis=:hermite_spline)
+
+# Polynomial (for debugging)
+export_ace_model(calc, "model.jl"; radial_basis=:polynomial)
+```
+
 ## Directory Structure
 
 ```
@@ -55,7 +115,9 @@ export/
 │   └── build_deployment.jl       # Export + compile + package
 │
 └── examples/                     # Complete example workflows
-    └── silicon/
+    ├── silicon/                  # Basic ACE workflow (simple)
+    │   └── fit_and_export.jl
+    └── etace_lammps_tutorial.jl  # ETACE workflow (production)
 ```
 
 ## LAMMPS Usage
