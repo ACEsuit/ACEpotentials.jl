@@ -374,18 +374,25 @@ end
     println(io)
 
     # Generate inline polynomial evaluation function (trim-safe, no P4ML dependency)
+    # Matches P4ML's OrthPolyBasis1D3T recurrence exactly:
+    #   P[1] = A[1]
+    #   P[2] = A[2] * y + B[2]
+    #   P[n] = (A[n] * y + B[n]) * P[n-1] + C[n] * P[n-2]  for n >= 3
     println(io, """
 # Inline polynomial evaluation (trim-safe, no P4ML dependency)
-# 3-term recurrence: P[n+1] = (A[n]*y + B[n])*P[n] + C[n]*P[n-1]
+# 3-term recurrence matching P4ML's OrthPolyBasis1D3T:
+#   P[1] = A[1]
+#   P[2] = A[2] * y + B[2]
+#   P[n] = (A[n] * y + B[n]) * P[n-1] + C[n] * P[n-2]  for n >= 3
 @inline function eval_polys(y::T) where {T}
     P = MVector{N_POLYS, T}(undef)
     @inbounds begin
-        P[1] = one(T)
+        P[1] = T(POLY_A[1])
         if N_POLYS >= 2
-            P[2] = (POLY_A[1] * y + POLY_B[1]) * P[1]
+            P[2] = POLY_A[2] * y + POLY_B[2]
         end
-        for n = 2:N_POLYS-1
-            P[n+1] = (POLY_A[n] * y + POLY_B[n]) * P[n] + POLY_C[n] * P[n-1]
+        for n = 3:N_POLYS
+            P[n] = (POLY_A[n] * y + POLY_B[n]) * P[n-1] + POLY_C[n] * P[n-2]
         end
     end
     return P
@@ -397,15 +404,15 @@ end
     P = MVector{N_POLYS, T}(undef)
     dP = MVector{N_POLYS, T}(undef)
     @inbounds begin
-        P[1] = one(T)
+        P[1] = T(POLY_A[1])
         dP[1] = zero(T)
         if N_POLYS >= 2
-            P[2] = (POLY_A[1] * y + POLY_B[1]) * P[1]
-            dP[2] = POLY_A[1] * P[1] + (POLY_A[1] * y + POLY_B[1]) * dP[1]
+            P[2] = POLY_A[2] * y + POLY_B[2]
+            dP[2] = T(POLY_A[2])
         end
-        for n = 2:N_POLYS-1
-            P[n+1] = (POLY_A[n] * y + POLY_B[n]) * P[n] + POLY_C[n] * P[n-1]
-            dP[n+1] = POLY_A[n] * P[n] + (POLY_A[n] * y + POLY_B[n]) * dP[n] + POLY_C[n] * dP[n-1]
+        for n = 3:N_POLYS
+            P[n] = (POLY_A[n] * y + POLY_B[n]) * P[n-1] + POLY_C[n] * P[n-2]
+            dP[n] = POLY_A[n] * P[n-1] + (POLY_A[n] * y + POLY_B[n]) * dP[n-1] + POLY_C[n] * dP[n-2]
         end
     end
     return P, dP
