@@ -1,8 +1,8 @@
 #=
-Multi-Species Model Tests
+Multi-Species ETACE Model Tests
 
 Tests for:
-1. Export and compilation of multi-species models (e.g., Si-O)
+1. Export of multi-species ETACE models (e.g., Ti-Al)
 2. Verification that RCUT_MAX is correctly computed
 3. Species indexing in exported code
 4. Cutoff handling for different species pairs
@@ -10,37 +10,75 @@ Tests for:
 
 using Test
 using ACEpotentials
-using ACEfit
+using ACEpotentials.Models
+using ACEpotentials.ETModels
 using StaticArrays
 using LinearAlgebra
+using Random
+using Lux
+using LuxCore
 
-@testset "Multi-Species Export" verbose=true begin
+const M = ACEpotentials.Models
+const ETM = ACEpotentials.ETModels
 
-    @testset "Multi-Species Model Creation" begin
-        # Create a simple Si-O model for testing multi-species export
-        @info "Creating multi-species Si-O model..."
+@testset "Multi-Species ETACE Export" verbose=true begin
 
-        model = ACEpotentials.ace1_model(
-            elements = [:Si, :O],
+    @testset "Multi-Species ETACE Model Creation" begin
+        # Create a simple Ti-Al ETACE model for testing multi-species export
+        @info "Creating multi-species Ti-Al ETACE model..."
+
+        elements = (:Ti, :Al)
+        rcut = 5.0
+
+        rin0cuts = M._default_rin0cuts(elements)
+        rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = rcut)).(rin0cuts)
+
+        rng = Random.MersenneTwister(1234)
+
+        ace_model = M.ace_model(;
+            elements = elements,
             order = 2,
-            totaldegree = 4,  # Keep small for fast testing
-            rcut = 5.0,
+            Ytype = :solid,
+            level = M.TotalDegree(),
+            max_level = 6,
+            maxl = 2,
+            pair_maxn = 6,
+            rin0cuts = rin0cuts,
+            init_WB = :glorot_normal,
+            init_Wpair = :glorot_normal
         )
 
-        @test model !== nothing
-        # Check number of species via the _i2z field (index to atomic number mapping)
-        num_species = length(model.model._i2z)
-        @test num_species == 2
-        @info "Multi-species model created with $num_species species"
+        ps, st = Lux.setup(rng, ace_model)
+
+        # Convert to ETACE
+        et_model = ETM.convert2et(ace_model)
+        et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
+
+        # Copy parameters
+        n_species = length(elements)
+        for iz in 1:n_species
+            for jz in 1:n_species
+                et_ps.rembed.post.W[:, :, (iz-1)*n_species + jz] .= ps.rbasis.Wnlq[:, :, iz, jz]
+            end
+        end
+        for iz in 1:n_species
+            et_ps.readout.W[1, :, iz] .= ps.WB[:, iz]
+        end
+
+        # Create ETACE calculator
+        et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
+
+        @test et_calc !== nothing
+        @info "Multi-species ETACE model created with $n_species species"
 
         # Store model for export test
-        TEST_ARTIFACTS["multispecies_model"] = model
+        TEST_ARTIFACTS["multispecies_etace_calc"] = et_calc
     end
 
     @testset "Multi-Species Export Code Generation" begin
-        model = get(TEST_ARTIFACTS, "multispecies_model", nothing)
-        if model === nothing
-            @test_skip "Multi-species model not created"
+        et_calc = get(TEST_ARTIFACTS, "multispecies_etace_calc", nothing)
+        if et_calc === nothing
+            @test_skip "Multi-species ETACE model not created"
             return
         end
 
@@ -49,10 +87,10 @@ using LinearAlgebra
         mkpath(build_dir)
 
         include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
-        model_file = joinpath(build_dir, "test_multispecies_model.jl")
+        model_file = joinpath(build_dir, "test_multispecies_etace.jl")
 
         # Export with library interface
-        export_ace_model(model, model_file; for_library=true)
+        export_ace_model(et_calc, model_file; for_library=true)
         @test isfile(model_file)
 
         # Verify file contents have expected multi-species components
@@ -61,64 +99,59 @@ using LinearAlgebra
         # Check for multiple species
         @test occursin("NZ = 2", content)  # Two species
 
-        # Check species mapping (Si=14, O=8)
-        @test occursin("14", content)  # Si atomic number
-        @test occursin("8", content)   # O atomic number
+        # Check species mapping (Ti=22, Al=13)
+        @test occursin("22", content)  # Ti atomic number
+        @test occursin("13", content)  # Al atomic number
 
-        # Check for RCUT_MAX constant (should exist for multi-species)
-        @test occursin("RCUT_MAX", content)
+        # Check for I2Z array
+        @test occursin("I2Z", content)
 
-        # Check for multiple RIN0CUT constants (one per species pair)
-        @test occursin("RIN0CUT_1_1", content)  # Si-Si
-        @test occursin("RIN0CUT_1_2", content)  # Si-O
-        @test occursin("RIN0CUT_2_1", content)  # O-Si
-        @test occursin("RIN0CUT_2_2", content)  # O-O
-
-        # Check ace_get_cutoff returns RCUT_MAX
-        @test occursin("ace_get_cutoff", content)
-        @test occursin("return RCUT_MAX", content)
-
-        @info "Multi-species export code generated successfully"
+        @info "Multi-species ETACE export code generated successfully"
     end
 
-    @testset "RCUT_MAX Computation" begin
-        # Test that RCUT_MAX is correctly computed as max over all species pairs
+    @testset "Multi-Species Evaluation" begin
         build_dir = joinpath(TEST_DIR, "build")
-        model_file = joinpath(build_dir, "test_multispecies_model.jl")
+        model_file = joinpath(build_dir, "test_multispecies_etace.jl")
 
         if !isfile(model_file)
             @test_skip "Multi-species model file not found"
             return
         end
 
-        content = read(model_file, String)
+        # Load exported model
+        exported = Module(:ExportedMultispecies)
+        Base.include(exported, model_file)
 
-        # Extract RCUT_MAX value
-        m = match(r"const RCUT_MAX = ([0-9.]+)", content)
-        if m !== nothing
-            rcut_max = parse(Float64, m.captures[1])
-            @test rcut_max > 0.0
+        # Test with Ti center and mixed Ti/Al neighbors
+        Z0 = 22  # Ti center
+        Rs = [
+            SVector(2.5, 0.0, 0.0),
+            SVector(0.0, 2.5, 0.0),
+            SVector(0.0, 0.0, 2.5),
+        ]
+        Zs = [22, 13, 22]  # Ti, Al, Ti neighbors
 
-            # Extract individual cutoffs and verify RCUT_MAX >= all of them
-            for iz in 1:2, jz in 1:2
-                pattern = Regex("RIN0CUT_$(iz)_$(jz).*rcut=([0-9.]+)")
-                m_ij = match(pattern, content)
-                if m_ij !== nothing
-                    rcut_ij = parse(Float64, m_ij.captures[1])
-                    @test rcut_max >= rcut_ij - 1e-10  # Allow small tolerance
-                end
-            end
+        # Energy should be finite
+        E = exported.site_energy(Rs, Zs, Z0)
+        @test isfinite(E)
 
-            @info "RCUT_MAX = $rcut_max (verified >= all species-pair cutoffs)"
-        else
-            @test_skip "Could not extract RCUT_MAX from generated code"
-        end
+        # Forces should be finite and correct length
+        E2, F = exported.site_energy_forces(Rs, Zs, Z0)
+        @test E2 ≈ E
+        @test length(F) == 3
+        @test all(isfinite, norm.(F))
+
+        # Test with Al center
+        Z0_Al = 13  # Al center
+        E_Al = exported.site_energy(Rs, Zs, Z0_Al)
+        @test isfinite(E_Al)
+
+        @info "Multi-species evaluation verified"
     end
 
     @testset "Species Index Mapping" begin
-        # Verify z2i function correctly maps atomic numbers to indices
         build_dir = joinpath(TEST_DIR, "build")
-        model_file = joinpath(build_dir, "test_multispecies_model.jl")
+        model_file = joinpath(build_dir, "test_multispecies_etace.jl")
 
         if !isfile(model_file)
             @test_skip "Multi-species model file not found"
@@ -130,11 +163,8 @@ using LinearAlgebra
         # Check I2Z mapping (index to atomic number)
         @test occursin("I2Z", content)
 
-        # The z2i function should handle both Si (Z=14) and O (Z=8)
+        # The z2i function should handle both Ti (Z=22) and Al (Z=13)
         @test occursin("z2i", content)
-
-        # Check that the function iterates over NZ species
-        @test occursin("for i in 1:NZ", content) || occursin("@inbounds for i in 1:NZ", content)
 
         @info "Species index mapping verified"
     end

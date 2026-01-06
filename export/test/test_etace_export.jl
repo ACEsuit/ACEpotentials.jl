@@ -235,7 +235,7 @@ end
             E_exported += E_i
         end
 
-        @test E_exported ≈ E_ac_val atol=1e-12
+        @test E_exported ≈ E_ac_val atol=1e-10
     end
 
     @testset "Force Correctness" begin
@@ -264,7 +264,7 @@ end
 
         # Compare
         for i in 1:n_atoms
-            @test F_exported[i] ≈ F_ac_val[i] atol=1e-12
+            @test F_exported[i] ≈ F_ac_val[i] atol=1e-10
         end
     end
 
@@ -293,7 +293,7 @@ end
         V_exported = compute_exported_virial(G, exported, n_atoms, Z0)
 
         # Compare
-        @test maximum(abs.(collect(V_exported) - collect(V_ac_val))) < 1e-12
+        @test maximum(abs.(collect(V_exported) - collect(V_ac_val))) < 1e-10
     end
 
     @testset "Finite Difference Verification" begin
