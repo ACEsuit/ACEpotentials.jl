@@ -90,10 +90,6 @@ jobs:
         with:
           version: '1.12'
 
-      - name: Add ACE registry
-        run: |
-          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))'
-
       - name: Cache Julia packages
         uses: actions/cache@v4
         with:
