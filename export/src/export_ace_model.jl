@@ -18,9 +18,10 @@ using EquivariantTensors
 const ET = EquivariantTensors
 using AtomsBase: ChemicalSpecies
 
-# Include spline utilities and code generators
+# Include spline utilities, code generators, and refactored radial basis
 include("splinify.jl")
 include("codegen.jl")
+include("radial_basis_v2.jl")  # Data-table approach for reduced code generation
 
 
 """
@@ -62,7 +63,7 @@ end
 
 
 """
-    export_ace_model(calc::ETACEPotential, filename::String; for_library=false, radial_basis=:polynomial)
+    export_ace_model(calc::ETACEPotential, filename::String; for_library=false, radial_basis=:polynomial, code_style=:compact)
 
 Export an ETACEPotential to a trim-compatible Julia file.
 
@@ -73,6 +74,9 @@ Arguments:
 - `radial_basis=:polynomial`: Radial basis evaluation method
   - `:polynomial` - Runtime polynomial evaluation (default, exact, works with any model)
   - `:hermite_spline` - Hermite cubic splines (fast, exact). Model must be pre-splinified.
+- `code_style=:compact`: Code generation style for radial basis
+  - `:compact` - Data-table approach (~80% less radial code, recommended)
+  - `:expanded` - Per-pair function generation (legacy, larger code)
 
 # Example 1: Standard polynomial export (no pre-processing needed)
 ```julia
@@ -104,6 +108,7 @@ export_ace_model(calc, "my_model.jl"; for_library=true, radial_basis=:hermite_sp
 function export_ace_model(calc::ETACEPotential, filename::String;
                           for_library::Bool=false,
                           radial_basis::Symbol=:polynomial,
+                          code_style::Symbol=:compact,
                           E0_dict::Union{Dict{Int,Float64},Nothing}=nothing)
 
     # Extract ETACE components from the calculator
@@ -199,7 +204,11 @@ function export_ace_model(calc::ETACEPotential, filename::String;
             print(io, spline_code)
             println(io)
         elseif radial_basis == :polynomial
-            _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
+            if code_style == :compact
+                _write_etace_radial_basis_v2(io, etace, ps, agnesi_params, NZ, rcut)
+            else
+                _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
+            end
         else
             error("Unknown radial_basis option: $radial_basis. Use :hermite_spline or :polynomial")
         end
@@ -214,7 +223,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
         end
     end
 
-    @info "Exported ETACE model to $filename (radial_basis=$radial_basis)"
+    @info "Exported ETACE model to $filename (radial_basis=$radial_basis, code_style=$code_style)"
     return filename
 end
 

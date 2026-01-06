@@ -21,6 +21,11 @@ using LuxCore
 const M = ACEpotentials.Models
 const ETM = ACEpotentials.ETModels
 
+# Test configuration
+const EXPORT_DIR = dirname(@__DIR__)
+const TEST_DIR = @__DIR__
+const TEST_ARTIFACTS = Dict{String, Any}()
+
 @testset "Multi-Species ETACE Export" verbose=true begin
 
     @testset "Multi-Species ETACE Model Creation" begin

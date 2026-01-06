@@ -218,34 +218,17 @@ println("\n" * "="^60)
 println("Export complete! Next steps:")
 println("="^60)
 println("""
-
 1. Compile the shared library:
-
    cd $deploy_dir
-   julia --project=. -e '
-       using Pkg; Pkg.instantiate()
-       using JuliaC
-       recipe = ImageRecipe(;
-           file="tial_etace_model.jl",
-           output_type="sharedlib",
-           trim_mode="safe",
-           project=".",
-           img_path="lib/libace_tial_etace.so",
-           add_ccallables=true
-       )
-       compile_products(recipe)
-   '
+   julia --project=. -e 'using Pkg; Pkg.instantiate(); using JuliaC; ...'
 
-2. Use in LAMMPS:
-
-   # In your LAMMPS input file:
+2. Use in LAMMPS (add to your input file):
    plugin load /path/to/aceplugin.so
    pair_style ace
    pair_coeff * * $deploy_dir/lib/libace_tial_etace.so Ti Al
 
 3. Run LAMMPS:
-
-   source $deploy_dir/setup_env.sh  # Set library paths
+   source $deploy_dir/setup_env.sh
    mpirun -np 4 lmp -in your_input.lmp
 """)
 
