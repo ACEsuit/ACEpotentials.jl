@@ -160,19 +160,30 @@ jobs:
           echo "Compiling $MODEL_FILE using JuliaC.jl..."
 
           # Use JuliaC.jl package for compilation (more portable than bundled juliac.jl)
+          # JuliaC requires: ImageRecipe -> LinkRecipe -> compile_products -> link_products
           julia --startup-file=no --project=../../ -e "
             using Pkg
             Pkg.add(\"JuliaC\")
             using JuliaC
 
-            recipe = ImageRecipe(;
+            # Create image recipe for shared library with ccallable exports
+            img = ImageRecipe(;
                 file=\"$MODEL_FILE\",
                 output_type=\"sharedlib\",
                 trim_mode=\"safe\",
-                img_path=\"libace_test.so\",
-                add_ccallables=true
+                add_ccallables=true,
+                verbose=true
             )
-            compile_products(recipe)
+
+            # Create link recipe to produce the final .so file
+            link = LinkRecipe(;
+                image_recipe=img,
+                outname=\"libace_test.so\"
+            )
+
+            # Compile and link
+            compile_products(img)
+            link_products(link)
           "
 
           if [ ! -f "libace_test.so" ]; then
