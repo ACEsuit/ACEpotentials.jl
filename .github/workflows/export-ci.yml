@@ -1,6 +1,7 @@
 name: Export CI
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'export/**'
