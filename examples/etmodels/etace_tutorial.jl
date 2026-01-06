@@ -23,9 +23,7 @@ import Polynomials4ML as P4ML
 
 rng = Random.MersenneTwister(1234)
 
-# =============================================================================
-# Part 1: Converting from an Existing ACE Model (Recommended)
-# =============================================================================
+# ## Part 1: Converting from an Existing ACE Model (Recommended)
 #
 # The simplest way to get an ETACE model is to convert from a standard ACE model.
 # This approach ensures consistency with the familiar ACE model construction API.
@@ -62,9 +60,7 @@ ps, st = Lux.setup(rng, model)
 @info "Standard ACE model created"
 @info "  Number of basis functions: $(M.length_basis(model))"
 
-# -----------------------------------------------------------------------------
-# Method A: Convert full model (E0 + Pair + Many-body) to StackedCalculator
-# -----------------------------------------------------------------------------
+# ### Method A: Convert full model (E0 + Pair + Many-body) to StackedCalculator
 
 ## convert2et_full creates a StackedCalculator combining:
 ##   - ETOneBody (reference energies per species)
@@ -77,9 +73,7 @@ et_calc_full = ETM.convert2et_full(model, ps, st; rng=rng)
 @info "  Contains: ETOneBody + ETPairPotential + ETACEPotential"
 @info "  Total linear parameters: $(ETM.length_basis(et_calc_full))"
 
-# -----------------------------------------------------------------------------
-# Method B: Convert only the many-body ACE component
-# -----------------------------------------------------------------------------
+# ### Method B: Convert only the many-body ACE component
 
 ## convert2et creates just the ETACE model (many-body only, no E0 or pair)
 et_ace = ETM.convert2et(model)
@@ -94,9 +88,7 @@ et_ace_calc = ETM.ETACEPotential(et_ace, et_ace_ps, et_ace_st, rcut)
 @info "Many-body only conversion"
 @info "  ETACE basis size: $(ETM.length_basis(et_ace_calc))"
 
-# -----------------------------------------------------------------------------
-# Method C: Convert only the pair potential
-# -----------------------------------------------------------------------------
+# ### Method C: Convert only the pair potential
 
 ## convertpair creates an ETPairModel
 et_pair = ETM.convertpair(model)
@@ -112,9 +104,7 @@ et_pair_calc = ETM.ETPairPotential(et_pair, et_pair_ps, et_pair_st, rcut)
 @info "  ETPairModel basis size: $(ETM.length_basis(et_pair_calc))"
 
 
-# =============================================================================
-# Part 2: Using ETACE Calculators
-# =============================================================================
+# ## Part 2: Using ETACE Calculators
 
 ## Create a test system
 sys = AtomsBuilder.bulk(:Si) * (2, 2, 1)
@@ -137,9 +127,7 @@ efv = AtomsCalculators.energy_forces_virial(sys, et_calc_full)
 @info "  Combined EFV evaluation successful"
 
 
-# =============================================================================
-# Part 3: Training Assembly (for Linear Fitting)
-# =============================================================================
+# ## Part 3: Training Assembly (for Linear Fitting)
 #
 # The ETACE calculators support training assembly functions for ACEfit integration.
 # These compute the design matrix rows for linear least squares fitting.
@@ -163,9 +151,7 @@ params = ETM.get_linear_parameters(et_ace_calc)
 ## ETM.set_linear_parameters!(et_ace_calc, new_params)
 
 
-# =============================================================================
-# Part 4: Creating an ETACE Model from Scratch (Advanced)
-# =============================================================================
+# ## Part 4: Creating an ETACE Model from Scratch (Advanced)
 #
 # For advanced users who want direct control over the model architecture.
 # This requires understanding the EquivariantTensors.jl API.
@@ -181,9 +167,7 @@ scratch_rcut = 5.5    # cutoff radius
 zlist = ChemicalSpecies.(scratch_elements)
 NZ = length(zlist)
 
-# -----------------------------------------------------------------------------
-# Build the radial embedding (Rnl)
-# -----------------------------------------------------------------------------
+# ### Build the radial embedding (Rnl)
 
 ## Radial specification (n, l pairs)
 Rnl_spec = [(n=n, l=l) for n in 1:scratch_maxn for l in 0:scratch_maxl]
@@ -223,9 +207,7 @@ linl = ET.SelectLinL(scratch_maxn, length(Rnl_spec), NZ^2, selector_ij)
 rbasis = ET.EmbedDP(trans, Penv, linl)
 rembed = ET.EdgeEmbed(rbasis)
 
-# -----------------------------------------------------------------------------
-# Build the angular embedding (Ylm)
-# -----------------------------------------------------------------------------
+# ### Build the angular embedding (Ylm)
 
 ## Spherical harmonics basis
 ylm_basis = P4ML.real_sphericalharmonics(scratch_maxl)
@@ -238,9 +220,7 @@ ybasis = ET.EmbedDP(
 )
 yembed = ET.EdgeEmbed(ybasis)
 
-# -----------------------------------------------------------------------------
-# Build the many-body basis (sparse ACE)
-# -----------------------------------------------------------------------------
+# ### Build the many-body basis (sparse ACE)
 
 ## Define the many-body specification
 ## This specifies which (n,l) combinations appear in each correlation
@@ -256,9 +236,7 @@ mb_basis = ET.sparse_equivariant_tensor(
    basis = real          # real-valued basis
 )
 
-# -----------------------------------------------------------------------------
-# Build the readout layer
-# -----------------------------------------------------------------------------
+# ### Build the readout layer
 
 ## Species selector for readout
 selector_i = let zlist = zlist
@@ -273,9 +251,7 @@ readout = ET.SelectLinL(
    selector_i
 )
 
-# -----------------------------------------------------------------------------
-# Assemble the ETACE model
-# -----------------------------------------------------------------------------
+# ### Assemble the ETACE model
 
 scratch_etace = ETM.ETACE(rembed, yembed, mb_basis, readout)
 
@@ -295,13 +271,9 @@ E_scratch = AtomsCalculators.potential_energy(sys, scratch_calc)
 @info "Scratch model energy: $E_scratch"
 
 
-# =============================================================================
-# Part 5: Creating One-Body and Pair Models from Scratch
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# ETOneBody: Reference energies
-# -----------------------------------------------------------------------------
+# ## Part 5: Creating One-Body and Pair Models from Scratch
+#
+# ### ETOneBody: Reference energies
 
 ## Define reference energies per species
 E0_dict = Dict(ChemicalSpecies(:Si) => -0.846,
@@ -324,9 +296,7 @@ E_onebody = AtomsCalculators.potential_energy(sys, onebody_calc)
 @info "  One-body energy for test system: $E_onebody"
 
 
-# =============================================================================
-# Part 6: Combining Models with StackedCalculator
-# =============================================================================
+# ## Part 6: Combining Models with StackedCalculator
 #
 # StackedCalculator combines multiple calculators by summing their contributions.
 
