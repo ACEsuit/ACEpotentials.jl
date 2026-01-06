@@ -119,10 +119,11 @@ jobs:
       - name: Compile ETACE model to shared library
         id: compile
         run: |
-          # Use one of the exported models from the tests
+          # Use test_etace_model.jl which has all C interface functions (energy, forces, virial)
+          # Other models like test_etace_energy.jl only have energy functions
           cd export/test/build
-          MODEL_FILE=$(ls test_etace_*.jl 2>/dev/null | head -1)
-          if [ -z "$MODEL_FILE" ]; then
+          MODEL_FILE="test_etace_model.jl"
+          if [ ! -f "$MODEL_FILE" ]; then
             echo "No exported model found, creating one..."
             julia --project=../../ -e '
               include("../../src/export_ace_model.jl")
