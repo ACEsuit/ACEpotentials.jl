@@ -118,7 +118,6 @@ jobs:
 
       - name: Compile ETACE model to shared library
         id: compile
-        continue-on-error: true  # juliac is experimental and may not be available
         run: |
           # Use one of the exported models from the tests
           cd export/test/build
@@ -160,24 +159,24 @@ jobs:
           fi
           echo "Compiling $MODEL_FILE..."
 
-          # Check if juliac.jl exists (experimental feature, may not be available)
+          # Verify juliac.jl exists (required for export functionality)
           JULIAC_SCRIPT=$(julia -e 'print(joinpath(Sys.BINDIR, "..", "share", "julia", "juliac.jl"))')
           if [ ! -f "$JULIAC_SCRIPT" ]; then
-            echo "::warning::juliac.jl not found at $JULIAC_SCRIPT - native compilation not available in this Julia build"
-            echo "library-built=false" >> $GITHUB_OUTPUT
-            exit 0
+            echo "::error::juliac.jl not found at $JULIAC_SCRIPT - Julia 1.12+ with juliac support is required"
+            exit 1
           fi
 
           julia --startup-file=no -C generic --project=../../ "$JULIAC_SCRIPT" \
             --experimental --compile-ccallable \
             --output-lib libace_test.so --trim=safe "$MODEL_FILE"
 
-          if [ -f "libace_test.so" ]; then
-            ls -la libace_test.so
-            echo "library-built=true" >> $GITHUB_OUTPUT
-          else
-            echo "library-built=false" >> $GITHUB_OUTPUT
+          if [ ! -f "libace_test.so" ]; then
+            echo "::error::Failed to compile shared library"
+            exit 1
           fi
+
+          ls -la libace_test.so
+          echo "library-built=true" >> $GITHUB_OUTPUT
 
       - name: Upload compiled library
         if: steps.compile.outputs.library-built == 'true'

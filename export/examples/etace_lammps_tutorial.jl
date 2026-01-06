@@ -204,33 +204,72 @@ println("File size: $(round(filesize(export_file)/1024, digits=1)) KB")
 
 # ## Step 8: Compile with JuliaC
 #
-# Create Project.toml and compile:
+# Create Project.toml and compile. The following code writes a Project.toml
+# and prints the next steps:
 
-project_toml = """
-[deps]
-JuliaC = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-"""
-write(joinpath(deploy_dir, "Project.toml"), project_toml)
+#jl project_toml = """
+#jl [deps]
+#jl JuliaC = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
+#jl LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+#jl StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+#jl """
+#jl write(joinpath(deploy_dir, "Project.toml"), project_toml)
 
-println("\n" * "="^60)
-println("Export complete! Next steps:")
-println("="^60)
-println("""
-1. Compile the shared library:
-   cd $deploy_dir
-   julia --project=. -e 'using Pkg; Pkg.instantiate(); using JuliaC; ...'
+#jl println("\n" * "="^60)
+#jl println("Export complete! Next steps:")
+#jl println("="^60)
+#jl println("""
+#jl 1. Compile the shared library:
+#jl    cd $deploy_dir
+#jl    julia --project=. -e 'using Pkg; Pkg.instantiate(); using JuliaC; ...'
+#jl
+#jl 2. Use in LAMMPS (add to your input file):
+#jl    plugin load /path/to/aceplugin.so
+#jl    pair_style ace
+#jl    pair_coeff * * $deploy_dir/lib/libace_tial_etace.so Ti Al
+#jl
+#jl 3. Run LAMMPS:
+#jl    source $deploy_dir/setup_env.sh
+#jl    mpirun -np 4 lmp -in your_input.lmp
+#jl """)
 
-2. Use in LAMMPS (add to your input file):
-   plugin load /path/to/aceplugin.so
-   pair_style ace
-   pair_coeff * * $deploy_dir/lib/libace_tial_etace.so Ti Al
-
-3. Run LAMMPS:
-   source $deploy_dir/setup_env.sh
-   mpirun -np 4 lmp -in your_input.lmp
-""")
+# ```julia
+# # Write Project.toml for compilation dependencies
+# project_toml = """
+# [deps]
+# JuliaC = "acedd4c2-ced6-4a15-accc-2607eb759ba2"
+# LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+# StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+# """
+# write(joinpath(deploy_dir, "Project.toml"), project_toml)
+# ```
+#
+# After export, compile and use in LAMMPS:
+#
+# ```bash
+# # 1. Compile the shared library
+# cd tial_etace_deployment
+# julia --project=. -e '
+#     using Pkg; Pkg.instantiate()
+#     using JuliaC
+#     recipe = ImageRecipe(;
+#         file="tial_etace_model.jl",
+#         output_type="sharedlib",
+#         trim_mode="safe",
+#         img_path="lib/libace_tial_etace.so",
+#         add_ccallables=true
+#     )
+#     compile_products(recipe)
+# '
+#
+# # 2. Use in LAMMPS input file
+# plugin load /path/to/aceplugin.so
+# pair_style ace
+# pair_coeff * * /path/to/lib/libace_tial_etace.so Ti Al
+#
+# # 3. Run LAMMPS
+# mpirun -np 4 lmp -in your_input.lmp
+# ```
 
 # ## Summary
 #
