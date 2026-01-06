@@ -1,0 +1,120 @@
+# CMake build system for ACE/Minimal LAMMPS plugin
+#
+# This builds the ACE/Minimal pair style plugin that uses the minimal
+# export approach from ACEpotentials.jl.
+#
+# Requirements:
+#   - LAMMPS source directory (set LAMMPS_SOURCE_DIR)
+#   - Julia installation (set JULIA_DIR or find automatically)
+#   - ACEpotentials.jl with minimal export
+#
+# Usage:
+#   mkdir build_minimal && cd build_minimal
+#   cmake -DLAMMPS_SOURCE_DIR=/path/to/lammps/src ..
+#   make
+#
+# This generates: libaceminimal.so (LAMMPS plugin)
+#
+# To use in LAMMPS:
+#   export ACE_C_INTERFACE_PATH=/path/to/ace_c_interface_minimal.jl
+#   lmp -in input.lammps
+#   pair_style ace/minimal
+#   pair_coeff * * /path/to/model/ Si O
+
+cmake_minimum_required(VERSION 3.16)
+project(ACEMinimalPlugin CXX)
+
+# C++11 required
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find LAMMPS source directory
+if(NOT DEFINED LAMMPS_SOURCE_DIR)
+    message(FATAL_ERROR "LAMMPS_SOURCE_DIR not set. Please specify with -DLAMMPS_SOURCE_DIR=/path/to/lammps/src")
+endif()
+
+if(NOT EXISTS "${LAMMPS_SOURCE_DIR}/lammps.h")
+    message(FATAL_ERROR "LAMMPS source not found in ${LAMMPS_SOURCE_DIR}")
+endif()
+
+message(STATUS "LAMMPS source: ${LAMMPS_SOURCE_DIR}")
+
+# Find Julia
+if(NOT DEFINED JULIA_DIR)
+    # Try to find Julia automatically
+    find_program(JULIA_EXECUTABLE julia DOC "Julia executable")
+    if(JULIA_EXECUTABLE)
+        execute_process(
+            COMMAND ${JULIA_EXECUTABLE} -e "print(joinpath(Sys.BINDIR, Base.DATAROOTDIR, \"julia\"))"
+            OUTPUT_VARIABLE JULIA_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+endif()
+
+if(NOT DEFINED JULIA_DIR OR NOT EXISTS "${JULIA_DIR}")
+    message(FATAL_ERROR "Julia not found. Please set JULIA_DIR or ensure julia is in PATH")
+endif()
+
+# Julia include and library directories
+execute_process(
+    COMMAND ${JULIA_EXECUTABLE} -e "print(joinpath(Sys.BINDIR, \"..\", \"include\", \"julia\"))"
+    OUTPUT_VARIABLE JULIA_INCLUDE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
+    COMMAND ${JULIA_EXECUTABLE} -e "print(joinpath(Sys.BINDIR, \"..\", \"lib\"))"
+    OUTPUT_VARIABLE JULIA_LIBRARY_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+message(STATUS "Julia executable: ${JULIA_EXECUTABLE}")
+message(STATUS "Julia include: ${JULIA_INCLUDE_DIR}")
+message(STATUS "Julia library: ${JULIA_LIBRARY_DIR}")
+
+# Plugin sources
+set(PLUGIN_SOURCES
+    src/pair_ace_minimal.cpp
+    src/aceplugin_minimal.cpp
+)
+
+# Build shared library (LAMMPS plugin)
+add_library(aceminimal SHARED ${PLUGIN_SOURCES})
+
+# Include directories
+target_include_directories(aceminimal PRIVATE
+    ${LAMMPS_SOURCE_DIR}
+    ${JULIA_INCLUDE_DIR}
+)
+
+# Link Julia library
+target_link_libraries(aceminimal
+    ${JULIA_LIBRARY_DIR}/libjulia.so
+)
+
+# Set RPATH so plugin can find libjulia.so
+set_target_properties(aceminimal PROPERTIES
+    BUILD_RPATH "${JULIA_LIBRARY_DIR}"
+    INSTALL_RPATH "${JULIA_LIBRARY_DIR}"
+)
+
+# Install target
+install(TARGETS aceminimal DESTINATION lib)
+
+# Print build summary
+message(STATUS "")
+message(STATUS "ACE/Minimal LAMMPS Plugin Configuration:")
+message(STATUS "  Plugin library: libaceminimal.so")
+message(STATUS "  LAMMPS source: ${LAMMPS_SOURCE_DIR}")
+message(STATUS "  Julia library: ${JULIA_LIBRARY_DIR}/libjulia.so")
+message(STATUS "")
+message(STATUS "After building, use in LAMMPS:")
+message(STATUS "  1. Set ACE_C_INTERFACE_PATH environment variable:")
+message(STATUS "     export ACE_C_INTERFACE_PATH=/path/to/ace_c_interface_minimal.jl")
+message(STATUS "  2. Load plugin in LAMMPS:")
+message(STATUS "     plugin load libaceminimal.so")
+message(STATUS "  3. Use ACE/Minimal pair style:")
+message(STATUS "     pair_style ace/minimal")
+message(STATUS "     pair_coeff * * /path/to/model/ Si O ...")
+message(STATUS "")

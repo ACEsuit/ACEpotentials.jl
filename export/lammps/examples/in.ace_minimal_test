@@ -1,0 +1,62 @@
+# LAMMPS input script for testing ACE/Minimal pair style
+#
+# This script tests the ACE/Minimal pair style with a simple
+# Si structure.
+#
+# Usage:
+#   export ACE_C_INTERFACE_PATH=/path/to/ace_c_interface_minimal.jl
+#   export ACE_MODEL_DIR=/path/to/exported/model
+#   lmp -in in.ace_minimal_test
+
+# Units and settings
+units           metal
+atom_style      atomic
+boundary        p p p
+
+# Read or create structure
+lattice         diamond 5.43
+region          box block 0 3 0 3 0 3
+create_box      1 box
+create_atoms    1 box
+
+# Set mass
+mass            1 28.0855  # Silicon
+
+# Load ACE/Minimal plugin
+variable plugin_path string "../plugin/lib/libaceminimal.so"
+plugin load ${plugin_path}
+
+# Define ACE potential
+pair_style      ace/minimal
+pair_coeff      * * ${ACE_MODEL_DIR} Si
+
+# Neighbor settings
+neighbor        2.0 bin
+neigh_modify    delay 10 every 1 check yes
+
+# Thermo output
+thermo_style    custom step temp pe ke etotal press vol
+thermo          10
+
+# Compute initial energy and forces
+run             0
+
+# Print energy
+variable pe equal pe
+print "Initial potential energy: ${pe} eV"
+
+# Run short MD to test forces
+timestep        0.001
+velocity        all create 300.0 12345
+fix             1 all nvt temp 300 300 0.1
+run             100
+
+# Final energy
+print "Final potential energy: ${pe} eV"
+
+# Output final configuration
+write_data      final_minimal.data
+
+print "=========================================="
+print "✓ ACE/Minimal test complete!"
+print "=========================================="

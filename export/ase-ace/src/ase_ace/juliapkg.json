@@ -1,0 +1,24 @@
+{
+    "julia": "=1.11.5",
+    "packages": {
+        "ACEpotentials": {
+            "uuid": "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53",
+            "version": "0.10"
+        },
+        "ACEfit": {
+            "uuid": "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
+        },
+        "AtomsBase": {
+            "uuid": "a963bdd2-2df7-4f54-a1ee-49d51e6be12a"
+        },
+        "AtomsCalculators": {
+            "uuid": "a3e0e189-c65a-42c1-833c-339540406eb1"
+        },
+        "Unitful": {
+            "uuid": "1986cc42-f94f-5a68-af5c-568840ba703d"
+        },
+        "StaticArrays": {
+            "uuid": "90137ffa-7385-5640-81b9-e52037218182"
+        }
+    }
+}

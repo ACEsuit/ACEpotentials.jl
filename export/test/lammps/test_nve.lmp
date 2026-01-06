@@ -1,0 +1,24 @@
+units metal
+atom_style atomic
+boundary p p p
+
+lattice diamond 5.43
+region box block 0 2 0 2 0 2
+create_box 1 box
+create_atoms 1 box
+mass 1 28.0855
+
+plugin load /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/lammps/plugin/build/aceplugin.so
+pair_style ace
+pair_coeff * * /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/libace_test.so Si
+
+velocity all create 100.0 42 dist gaussian
+velocity all zero linear
+
+fix nve all nve
+
+# Output total energy
+thermo_style custom step pe ke etotal
+thermo 10
+
+run 100
