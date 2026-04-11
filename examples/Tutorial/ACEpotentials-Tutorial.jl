@@ -493,7 +493,7 @@ e_table = hcat(
     [e_table_gap[element] for element in elements],
     [e_table_mtp[element] for element in elements])
 println("Energy Error")
-pretty_table(e_table; header = header)
+pretty_table(e_table; column_labels = header)
      
 
 ## create force table
@@ -509,7 +509,7 @@ f_table = hcat(
     [f_table_gap[element] for element in elements],
     [f_table_mtp[element] for element in elements])
 println("Force Error")
-pretty_table(f_table; header = header)
+pretty_table(f_table; column_labels = header)
 
 
 #   ## Part 7: Next steps
