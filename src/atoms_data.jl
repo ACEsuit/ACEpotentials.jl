@@ -366,11 +366,19 @@ function _print_err_tbl(D::AbstractDict)
         [D[c_t]["F"] for c_t in config_types],
         [1000*D[c_t]["V"] for c_t in config_types],
     )
-    pretty_table(
-        table; header=header,
-        body_hlines=[length(config_types)-1],
-        formatters=ft_printf("%5.3f"),
-        crop = :horizontal)
+    if pkgversion(PrettyTables) >= v"3"
+        pretty_table(
+            table; column_labels=header,
+            table_format=PrettyTables.TextTableFormat(
+                horizontal_lines_at_data_rows=[length(config_types)-1]),
+            formatters=PrettyTables.fmt__printf("%5.3f"))
+    else
+        pretty_table(
+            table; header=header,
+            body_hlines=[length(config_types)-1],
+            formatters=ft_printf("%5.3f"),
+            crop = :horizontal)
+    end
 
 end
 
@@ -432,7 +440,14 @@ function assess_dataset(data; kwargs...)
         "missing", 0, 0,
         tot[4]-tot[2], 3*tot[3]-tot[5], 6*tot[2]-tot[6]]
     table = vcat(table, permutedims(tot), permutedims(miss))
-    pretty_table(table; header=header, body_hlines=[length(n_configs)], crop = :horizontal)
+    if pkgversion(PrettyTables) >= v"3"
+        pretty_table(table;
+            column_labels=header,
+            table_format=PrettyTables.TextTableFormat(
+                horizontal_lines_at_data_rows=[length(n_configs)]))
+    else
+        pretty_table(table; header=header, body_hlines=[length(n_configs)], crop = :horizontal)
+    end
 
 end
 
