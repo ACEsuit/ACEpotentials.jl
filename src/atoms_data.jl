@@ -369,9 +369,8 @@ function _print_err_tbl(D::AbstractDict)
     if pkgversion(PrettyTables) >= v"3"
         pretty_table(
             table; column_labels=header,
-            table_format=PrettyTables.TextTableFormat(
-                horizontal_lines_at_data_rows=[length(config_types)-1]),
-            formatters=PrettyTables.fmt__printf("%5.3f"))
+            formatters=[PrettyTables.fmt__printf("%5.3f")],
+        )
     else
         pretty_table(
             table; header=header,
