@@ -42,12 +42,12 @@ Create a self-contained deployment package from a fitted ACE model.
 function build_deployment(
     model,
     name::String;
-    output_dir::String = "deployments",
-    include_lammps::Bool = true,
-    include_python::Bool = true,
-    lammps_header_dir::Union{String,Nothing} = nothing,
-    julia_path::String = joinpath(Sys.BINDIR, "julia"),
-    verbose::Bool = true
+    output_dir::String="deployments",
+    include_lammps::Bool=true,
+    include_python::Bool=true,
+    lammps_header_dir::Union{String,Nothing}=nothing,
+    julia_path::String=joinpath(Sys.BINDIR, "julia"),
+    verbose::Bool=true
 )
     # Resolve paths relative to this script's directory
     script_dir = @__DIR__
@@ -64,7 +64,7 @@ function build_deployment(
     export_script = joinpath(export_dir, "src", "export_ace_model.jl")
     include(export_script)
     # Use invokelatest to handle world-age issues when include() defines new methods
-    Base.invokelatest(export_ace_model, model, model_jl; splinify_first=true, for_library=true)
+    Base.invokelatest(export_ace_model, model, model_jl; for_library=true)
     verbose && println("  → Exported to: $model_jl")
 
     # Step 2: Compile with juliac --trim
@@ -138,41 +138,47 @@ function build_deployment(
         create_python_example!(python_dir, name, verbose)
 
         # Create requirements.txt pointing to ase-ace package
-        write(joinpath(python_dir, "requirements.txt"), """
-            ase-ace[library]
-            """)
+        write(
+            joinpath(python_dir, "requirements.txt"),
+            """
+ase-ace[library]
+"""
+        )
         verbose && println("  → Created: requirements.txt")
 
         # Create installation instructions
-        write(joinpath(python_dir, "README.md"), """
-            # Python/ASE Usage
+        write(
+            joinpath(python_dir, "README.md"),
+            """
+# Python/ASE Usage
 
-            ## Installation
+## Installation
 
-            Install the ase-ace package with library support:
+Install the ase-ace package with library support:
 
-            ```bash
-            pip install ase-ace[library]
-            ```
+```bash
+pip install ase-ace[library]
+```
 
-            ## Usage
+## Usage
 
-            ```python
-            from ase.build import bulk
-            from ase_ace import ACELibraryCalculator
+```python
+from ase.build import bulk
+from ase_ace import ACELibraryCalculator
 
-            # Point to the compiled library
-            calc = ACELibraryCalculator("../lib/libace_$(name).so")
+# Point to the compiled library
+calc = ACELibraryCalculator("../lib/libace_$(name).so")
 
-            atoms = bulk('Si', 'diamond', a=5.43)
-            atoms.calc = calc
+atoms = bulk('Si', 'diamond', a=5.43)
+atoms.calc = calc
 
-            energy = atoms.get_potential_energy()
-            print(f"Energy: {energy:.4f} eV")
-            ```
+energy = atoms.get_potential_energy()
+print(f"Energy: {energy:.4f} eV")
+```
 
-            See `example.py` for more examples.
-            """)
+See `example.py` for more examples.
+"""
+        )
         verbose && println("  → Created: README.md")
     else
         verbose && println("\n[5/6] Skipping Python wrapper (include_python=false)")
@@ -238,16 +244,19 @@ function bundle_julia_libs!(deploy_dir::String, lib_path::String, verbose::Bool)
 
     # Create wrapper script that sets LD_LIBRARY_PATH
     wrapper_script = joinpath(deploy_dir, "setup_env.sh")
-    write(wrapper_script, """
-        #!/bin/bash
-        # Source this file to set up the environment for using the ACE potential
-        # Usage: source setup_env.sh
+    write(
+        wrapper_script,
+        """
+#!/bin/bash
+# Source this file to set up the environment for using the ACE potential
+# Usage: source setup_env.sh
 
-        SCRIPT_DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
-        export LD_LIBRARY_PATH="\$SCRIPT_DIR/lib:\$LD_LIBRARY_PATH"
-        echo "ACE potential environment configured."
-        echo "Library path: \$SCRIPT_DIR/lib"
-        """)
+SCRIPT_DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+export LD_LIBRARY_PATH="\$SCRIPT_DIR/lib:\$LD_LIBRARY_PATH"
+echo "ACE potential environment configured."
+echo "Library path: \$SCRIPT_DIR/lib"
+"""
+    )
     chmod(wrapper_script, 0o755)
     verbose && println("  → Created: setup_env.sh")
 end
@@ -281,53 +290,56 @@ Create Python example script.
 """
 function create_python_example!(python_dir::String, name::String, verbose::Bool)
     example_path = joinpath(python_dir, "example.py")
-    write(example_path, """
-        #!/usr/bin/env python3
-        \"\"\"Example usage of ACE potential with ASE.
+    write(
+        example_path,
+        """
+#!/usr/bin/env python3
+\"\"\"Example usage of ACE potential with ASE.
 
-        Prerequisites:
-            pip install ase-ace[library]
+Prerequisites:
+    pip install ase-ace[library]
 
-        Usage:
-            source ../setup_env.sh  # Set LD_LIBRARY_PATH
-            python example.py
-        \"\"\"
+Usage:
+    source ../setup_env.sh  # Set LD_LIBRARY_PATH
+    python example.py
+\"\"\"
 
-        from ase.build import bulk
-        from ase_ace import ACELibraryCalculator
+from ase.build import bulk
+from ase_ace import ACELibraryCalculator
 
-        # Load the ACE potential
-        # Note: source setup_env.sh first, or set LD_LIBRARY_PATH
-        calc = ACELibraryCalculator("../lib/libace_$(name).so")
+# Load the ACE potential
+# Note: source setup_env.sh first, or set LD_LIBRARY_PATH
+calc = ACELibraryCalculator("../lib/libace_$(name).so")
 
-        # Create a simple structure
-        atoms = bulk('Si', 'diamond', a=5.43) * (2, 2, 2)
-        atoms.calc = calc
+# Create a simple structure
+atoms = bulk('Si', 'diamond', a=5.43) * (2, 2, 2)
+atoms.calc = calc
 
-        # Compute energy and forces
-        energy = atoms.get_potential_energy()
-        forces = atoms.get_forces()
-        stress = atoms.get_stress()
+# Compute energy and forces
+energy = atoms.get_potential_energy()
+forces = atoms.get_forces()
+stress = atoms.get_stress()
 
-        print(f"Number of atoms: {len(atoms)}")
-        print(f"Energy: {energy:.6f} eV")
-        print(f"Energy per atom: {energy/len(atoms):.6f} eV/atom")
-        print(f"Max force component: {abs(forces).max():.6f} eV/Å")
-        print(f"Pressure: {-stress[:3].mean() * 160.21766208:.2f} GPa")
+print(f"Number of atoms: {len(atoms)}")
+print(f"Energy: {energy:.6f} eV")
+print(f"Energy per atom: {energy/len(atoms):.6f} eV/atom")
+print(f"Max force component: {abs(forces).max():.6f} eV/Å")
+print(f"Pressure: {-stress[:3].mean() * 160.21766208:.2f} GPa")
 
-        # Optional: Run geometry optimization
-        # from ase.optimize import BFGS
-        # opt = BFGS(atoms)
-        # opt.run(fmax=0.01)
+# Optional: Run geometry optimization
+# from ase.optimize import BFGS
+# opt = BFGS(atoms)
+# opt.run(fmax=0.01)
 
-        # Optional: Run MD
-        # from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-        # from ase.md.verlet import VelocityVerlet
-        # from ase import units
-        # MaxwellBoltzmannDistribution(atoms, temperature_K=300)
-        # dyn = VelocityVerlet(atoms, timestep=1.0 * units.fs)
-        # dyn.run(100)
-        """)
+# Optional: Run MD
+# from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+# from ase.md.verlet import VelocityVerlet
+# from ase import units
+# MaxwellBoltzmannDistribution(atoms, temperature_K=300)
+# dyn = VelocityVerlet(atoms, timestep=1.0 * units.fs)
+# dyn.run(100)
+"""
+    )
     verbose && println("  → Created: example.py")
 end
 
