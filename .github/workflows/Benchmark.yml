@@ -37,16 +37,20 @@ jobs:
           using Pkg
           Pkg.Registry.add("General")
           Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/ACEsuit/ACEregistry"))
-          Pkg.add("PkgBenchmark")
         shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/cache@v2
+      - name: Instantiate benchmark env
+        run: julia --color=yes --project=benchmark -e 'using Pkg; Pkg.instantiate()'
       - name: Run benchmark suite
+        # Must run from the benchmark project: PkgBenchmark propagates the active
+        # project to the benchmark subprocess, so benchmark/Project.toml (which has
+        # ACEpotentials, BenchmarkTools, PkgBenchmark, …) must be active here.
         run: |
           using PkgBenchmark
           results = benchmarkpkg(".")          # uses benchmark/benchmarks.jl + benchmark/Project.toml
           export_markdown("benchmark_results.md", results)
           println(read("benchmark_results.md", String))
-        shell: bash -c "julia --color=yes {0}"
+        shell: bash -c "julia --color=yes --project=benchmark {0}"
       - name: Post results to job summary
         if: always()
         run: |
