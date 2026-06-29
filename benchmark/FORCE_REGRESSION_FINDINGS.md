@@ -63,6 +63,7 @@ All ACE model + calculator tests pass (finite-difference force checks included).
   fixed upstream in EquivariantTensors.jl; the function barrier is the robust
   in-repo workaround. `grad_params` (fitting path) already passes the pullback
   result through a function (`pb_Rnl`), so it is largely insulated.
-- Regression guard: `benchmark/benchmarks.jl` (PkgBenchmark) + the non-blocking
-  `.github/workflows/Benchmark.yml` job compare a PR against its base on the same
-  runner; see `benchmark/README.md`.
+- Regression guard: `benchmark/benchmarks.jl` (PkgBenchmark) run by the
+  non-blocking `.github/workflows/Benchmark.yml` job (results posted to the job
+  summary). Base-branch comparison (`judge`) can be enabled once the suite is on
+  `main`; see `benchmark/README.md`.

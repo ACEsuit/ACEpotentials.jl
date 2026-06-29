@@ -46,17 +46,24 @@ isolates the autograd contribution within the current codebase.
 
 ## Regression testing in CI
 
-`.github/workflows/Benchmark.yml` runs the PkgBenchmark suite via
-[BenchmarkCI.jl](https://github.com/tkf/BenchmarkCI.jl), judging the PR head
-against its merge base **on the same runner** (which cancels most hardware
-noise). It is **non-blocking** (`continue-on-error: true`) until the threshold
-is calibrated on real PRs; promote it to a required check once stable.
+`.github/workflows/Benchmark.yml` runs the PkgBenchmark suite
+(`benchmark/benchmarks.jl`) on the PR head and posts the results to the job
+summary. It is **non-blocking** (`continue-on-error: true`) and pins
+`JULIA_NUM_THREADS=1` for stable timings.
+
+Comparison against the base branch (PkgBenchmark `judge`) is **not** enabled yet:
+the suite does not exist on `main` until this work lands. Once merged, switch the
+run step to judge the PR against the base ref on the same runner (which cancels
+most hardware noise) — e.g. with
+[BenchmarkCI.jl](https://github.com/tkf/BenchmarkCI.jl) — for automatic
+regression detection, and promote it to a required check once the threshold is
+calibrated.
 
 Run the suite locally:
 
 ```julia
 using PkgBenchmark
-r = benchmarkpkg("ACEpotentials"; script="benchmark/benchmarks.jl")
+r = benchmarkpkg(".")          # uses benchmark/benchmarks.jl + benchmark/Project.toml
 export_markdown(stdout, r)
 ```
 
