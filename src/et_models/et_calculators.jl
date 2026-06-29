@@ -14,7 +14,7 @@
 # See also: stackedcalc.jl for StackedCalculator (combines multiple calculators)
 
 import AtomsCalculators
-import AtomsBase: AbstractSystem, ChemicalSpecies
+import AtomsBase: AbstractSystem, ChemicalSpecies, position, species
 import EquivariantTensors as ET
 using DecoratedParticles: PState
 using StaticArrays
@@ -23,6 +23,58 @@ using LinearAlgebra: norm
 
 # Import from parent Models module to extend these functions
 import ..Models: length_basis, energy_forces_virial_basis, potential_energy_basis
+
+
+# ============================================================================
+#  Analytic site gradients (used by ETPairModel)
+# ============================================================================
+#
+# Forces come from ∂E/∂𝐫ij. Since E = ∑_i ∑_k W[1,k,iZ[i]] · 𝔹[i,k] (a linear
+# readout of the basis), the edge gradient is the basis jacobian contracted once
+# with the readout weights:
+#     ∇E[j,i] = ∑_k W[1,k,iZ[i]] · ∂𝔹[j,i,k]
+# The same contraction is already used per-basis-function in
+# `energy_forces_virial_basis`; here it is done once with the actual weights.
+#
+# This is used for the PAIR model, where `site_basis_jacobian` returns ∂𝔹 == ∂R
+# directly (the pair basis is a linear sum over neighbours), so the jacobian is
+# exactly the per-edge gradient — no blow-up. The many-body ETACE model keeps the
+# Zygote `site_grads` (see et_ace.jl): there `site_basis_jacobian` would compute
+# the full `nbasis`× larger jacobian, and the leaner VJP alternative coupled too
+# tightly to EquivariantTensors internals for the modest gain.
+
+# The contraction runs in its own function so it acts as a FUNCTION BARRIER:
+# `site_basis_jacobian` → `ET._jacobian_X` is not type-stable (returns Any-typed
+# ∂𝔹), and doing the inner loop inline would dispatch every product dynamically
+# (cf. the classic-model fix in src/models/ace.jl and EquivariantTensors.jl#135).
+function _contract_readout!(∇E, ∂𝔹, W, iZ)
+   (isempty(∂𝔹) || isempty(iZ)) && return ∇E
+   z = zero(∂𝔹[1, 1, 1])
+   @inbounds for i in axes(∂𝔹, 2)
+      iz = iZ[i]
+      for j in axes(∂𝔹, 1)
+         s = z
+         for k in axes(∂𝔹, 3)
+            s = s + W[1, k, iz] * ∂𝔹[j, i, k]
+         end
+         ∇E[j, i] = s
+      end
+   end
+   return ∇E
+end
+
+# Analytic `site_grads` for any ETACE-pattern model with a SelectLinL readout
+# (ETACE, ETPairModel). Returns edge gradients in the same `(; edge_data = …)`
+# form as the former Zygote implementation, consumed by `_wrapped_forces` /
+# `_compute_virial`.
+function _site_grads_analytic(l, X::ET.ETGraph, ps, st)
+   _, ∂𝔹 = site_basis_jacobian(l, X, ps, st)       # (maxneigs, nnodes, nbasis)
+   iZ = l.readout.selector.(X.node_data)
+   ∇E = similar(∂𝔹, size(∂𝔹, 1), size(∂𝔹, 2))      # concrete eltype of ∂𝔹
+   _contract_readout!(∇E, ∂𝔹, ps.readout.W, iZ)
+   ∇E3 = reshape(∇E, size(∇E, 1), size(∇E, 2), 1)
+   return (; edge_data = ET.rev_reshape_embedding(∇E3, X)[:])
+end
 
 
 # ============================================================================
@@ -77,14 +129,26 @@ end
 
 cutoff_radius(calc::WrappedSiteCalculator) = calc.rcut * u"Å"
 
-function _wrapped_energy(calc::WrappedSiteCalculator, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+# Build the interaction graph for a calculator's own cutoff.
+_wrapped_graph(calc::WrappedSiteCalculator, sys::AbstractSystem) =
+      ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+
+# Each `_wrapped_*` has a method that accepts a prebuilt graph `G`, so the graph
+# can be shared across stacked components that use the same cutoff (see
+# stackedcalc.jl). The no-`G` methods just build the graph and delegate.
+
+_wrapped_energy(calc::WrappedSiteCalculator, sys::AbstractSystem) =
+      _wrapped_energy(calc, sys, _wrapped_graph(calc, sys))
+
+function _wrapped_energy(calc::WrappedSiteCalculator, sys::AbstractSystem, G)
    Ei, _ = calc.model(G, calc.ps, calc.st)
    return sum(Ei)
 end
 
-function _wrapped_forces(calc::WrappedSiteCalculator, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+_wrapped_forces(calc::WrappedSiteCalculator, sys::AbstractSystem) =
+      _wrapped_forces(calc, sys, _wrapped_graph(calc, sys))
+
+function _wrapped_forces(calc::WrappedSiteCalculator, sys::AbstractSystem, G)
    ∂G = site_grads(calc.model, G, calc.ps, calc.st)
    # Handle empty edge case (e.g., ETOneBody with small cutoff)
    if isempty(∂G.edge_data)
@@ -104,8 +168,10 @@ function _compute_virial(G::ET.ETGraph, ∂G)
    return V
 end
 
-function _wrapped_virial(calc::WrappedSiteCalculator, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+_wrapped_virial(calc::WrappedSiteCalculator, sys::AbstractSystem) =
+      _wrapped_virial(calc, sys, _wrapped_graph(calc, sys))
+
+function _wrapped_virial(calc::WrappedSiteCalculator, sys::AbstractSystem, G)
    ∂G = site_grads(calc.model, G, calc.ps, calc.st)
    # Handle empty edge case
    if isempty(∂G.edge_data)
@@ -114,9 +180,10 @@ function _wrapped_virial(calc::WrappedSiteCalculator, sys::AbstractSystem)
    return _compute_virial(G, ∂G)
 end
 
-function _wrapped_energy_forces_virial(calc::WrappedSiteCalculator, sys::AbstractSystem)
-   G = ET.Atoms.interaction_graph(sys, calc.rcut * u"Å")
+_wrapped_energy_forces_virial(calc::WrappedSiteCalculator, sys::AbstractSystem) =
+      _wrapped_energy_forces_virial(calc, sys, _wrapped_graph(calc, sys))
 
+function _wrapped_energy_forces_virial(calc::WrappedSiteCalculator, sys::AbstractSystem, G)
    # Energy from site energies (call model directly - ETACE interface)
    Ei, _ = calc.model(G, calc.ps, calc.st)
    E = sum(Ei)
@@ -134,6 +201,35 @@ function _wrapped_energy_forces_virial(calc::WrappedSiteCalculator, sys::Abstrac
    end
 
    return (energy=E, forces=F, virial=V)
+end
+
+# ----------------------------------------------------------------------------
+#  Graph-cached dispatch used by StackedCalculator (see stackedcalc.jl).
+#  Components that share a cutoff (e.g. pair + many-body) reuse one interaction
+#  graph per force/energy call instead of each rebuilding its own. The cache is
+#  keyed on each calculator's own `rcut`, so per-component cutoffs are preserved.
+#  Non-WrappedSiteCalculator components fall back to the plain AtomsCalculators
+#  interface (cache ignored), keeping StackedCalculator generic.
+# ----------------------------------------------------------------------------
+_cached_graph!(gcache, calc::WrappedSiteCalculator, sys) =
+      get!(() -> ET.Atoms.interaction_graph(sys, calc.rcut * u"Å"), gcache, calc.rcut)
+
+_cached_energy(c, sys, gcache) = AtomsCalculators.potential_energy(sys, c)
+_cached_forces(c, sys, gcache) = AtomsCalculators.forces(sys, c)
+_cached_virial(c, sys, gcache) = AtomsCalculators.virial(sys, c)
+_cached_efv(c, sys, gcache)    = AtomsCalculators.energy_forces_virial(sys, c)
+
+_cached_energy(c::WrappedSiteCalculator, sys, gcache) =
+      _wrapped_energy(c, sys, _cached_graph!(gcache, c, sys)) * u"eV"
+_cached_forces(c::WrappedSiteCalculator, sys, gcache) =
+      _wrapped_forces(c, sys, _cached_graph!(gcache, c, sys)) .* u"eV/Å"
+_cached_virial(c::WrappedSiteCalculator, sys, gcache) =
+      _wrapped_virial(c, sys, _cached_graph!(gcache, c, sys)) * u"eV"
+function _cached_efv(c::WrappedSiteCalculator, sys, gcache)
+   efv = _wrapped_energy_forces_virial(c, sys, _cached_graph!(gcache, c, sys))
+   return (energy = efv.energy * u"eV",
+           forces = efv.forces .* u"eV/Å",
+           virial = efv.virial * u"eV")
 end
 
 # AtomsCalculators interface for WrappedSiteCalculator
@@ -603,6 +699,41 @@ function ETOneBodyPotential(model::ETOneBody, ps, st, rcut::Real)
    return WrappedSiteCalculator(model, ps, st, Float64(rcut))
 end
 
+# ----------------------------------------------------------------------------
+#  ETOneBody is a pure one-body model: energy depends only on atom species
+#  (node_data), never on neighbours, and forces/virial are identically zero.
+#  We therefore SKIP the interaction-graph / neighbour search entirely and build
+#  the node states directly. `node_data` is rcut-independent (it loops over all
+#  atoms regardless of edges), so this matches the graph path exactly — and these
+#  methods also bypass the StackedCalculator graph cache (no graph is needed).
+# ----------------------------------------------------------------------------
+_onebody_nodes(sys::AbstractSystem) =
+   [ PState(𝐫 = ustrip.(position(sys, i)), z = species(sys, i)) for i in 1:length(sys) ]
+
+function _wrapped_energy(calc::ETOneBodyPotential, sys::AbstractSystem)
+   Ei, _ = calc.model(_onebody_nodes(sys), calc.ps, calc.st)
+   return sum(Ei)
+end
+_wrapped_forces(calc::ETOneBodyPotential, sys::AbstractSystem) =
+   zeros(SVector{3, Float64}, length(sys))
+_wrapped_virial(calc::ETOneBodyPotential, sys::AbstractSystem) =
+   zero(SMatrix{3, 3, Float64, 9})
+_wrapped_energy_forces_virial(calc::ETOneBodyPotential, sys::AbstractSystem) =
+   (energy = _wrapped_energy(calc, sys),
+    forces = zeros(SVector{3, Float64}, length(sys)),
+    virial = zero(SMatrix{3, 3, Float64, 9}))
+
+# StackedCalculator dispatch: onebody needs no graph, so ignore the cache.
+_cached_energy(c::ETOneBodyPotential, sys, gcache) = _wrapped_energy(c, sys) * u"eV"
+_cached_forces(c::ETOneBodyPotential, sys, gcache) = _wrapped_forces(c, sys) .* u"eV/Å"
+_cached_virial(c::ETOneBodyPotential, sys, gcache) = _wrapped_virial(c, sys) * u"eV"
+function _cached_efv(c::ETOneBodyPotential, sys, gcache)
+   efv = _wrapped_energy_forces_virial(c, sys)
+   return (energy = efv.energy * u"eV",
+           forces = efv.forces .* u"eV/Å",
+           virial = efv.virial * u"eV")
+end
+
 # ============================================================================
 #  ETOneBodyPotential Training Assembly (empty - no learnable parameters)
 # ============================================================================
@@ -706,8 +837,9 @@ function convert2et_full(model, ps, st; rng::AbstractRNG=default_rng())
    E0_dict = Dict(z => E0s[z.atomic_number] for z in zlist)
    et_onebody = one_body(E0_dict, x -> x.z)
    _, onebody_st = setup(rng, et_onebody)
-   # Use minimum cutoff for graph construction (ETOneBody needs no neighbors)
-   onebody_calc = WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+   # ETOneBody needs no neighbour graph (energy depends only on species), so its
+   # cutoff is irrelevant — pass 0.0 to make that explicit.
+   onebody_calc = WrappedSiteCalculator(et_onebody, nothing, onebody_st, 0.0)
 
    # 2. Convert pair potential to ETPairModel
    et_pair = convertpair(model)

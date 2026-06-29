@@ -37,16 +37,22 @@ function _apply_etace(l::ETACE, X::ET.ETGraph, ps, st)
    return φ
 end
 
-# ----------------------------------------------------------- 
+# -----------------------------------------------------------
 
-import Zygote 
+import Zygote
 
 #
-# At first glance this looks like we are computing ∂E / ∂ri but this is not 
-# actually true. Because E = ∑ Ei and by interpreting G as a list of edges 
-# we are differentiating E w.r.t. 𝐫ij which is the same is Ei w.r.t. 𝐫ij.
+# At first glance this looks like we are computing ∂E / ∂ri but this is not
+# actually true. Because E = ∑ Ei and by interpreting G as a list of edges
+# we are differentiating E w.r.t. 𝐫ij which is the same as Ei w.r.t. 𝐫ij.
 #
-
+# NB: an analytic VJP (via ET._ka_pullback) was prototyped but only ~10-15%
+# faster here — ET's many-body kernel intermediates dominate the cost, not
+# Zygote's overhead — and it coupled ACEpotentials tightly to ET internals.
+# We therefore keep the Zygote gradient for the many-body model. The pair model
+# (et_pair.jl) does use the analytic gradient, since there it is a trivial,
+# low-coupling contraction.
+#
 function site_grads(l::ETACE, X::ET.ETGraph, ps, st)
    ∂X = Zygote.gradient( X -> sum(_apply_etace(l, X, ps, st)), X)[1]
    return ∂X

@@ -35,10 +35,9 @@ end
 # ----------------------------------------------------------- 
 
 
-function site_grads(l::ETPairModel, X::ET.ETGraph, ps, st)
-   ∂X = Zygote.gradient( X -> sum(_apply_etpairmodel(l, X, ps, st)), X)[1]
-   return ∂X
-end
+# analytic edge gradients (see _site_grads_analytic in et_calculators.jl);
+# replaces the previous allocation-heavy Zygote.gradient implementation.
+site_grads(l::ETPairModel, X::ET.ETGraph, ps, st) = _site_grads_analytic(l, X, ps, st)
 
 
 # ----------------------------------------------------------- 
