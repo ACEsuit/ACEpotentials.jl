@@ -14,7 +14,7 @@
 # See also: stackedcalc.jl for StackedCalculator (combines multiple calculators)
 
 import AtomsCalculators
-import AtomsBase: AbstractSystem, ChemicalSpecies
+import AtomsBase: AbstractSystem, ChemicalSpecies, position, species
 import EquivariantTensors as ET
 using DecoratedParticles: PState
 using StaticArrays
@@ -699,6 +699,41 @@ function ETOneBodyPotential(model::ETOneBody, ps, st, rcut::Real)
    return WrappedSiteCalculator(model, ps, st, Float64(rcut))
 end
 
+# ----------------------------------------------------------------------------
+#  ETOneBody is a pure one-body model: energy depends only on atom species
+#  (node_data), never on neighbours, and forces/virial are identically zero.
+#  We therefore SKIP the interaction-graph / neighbour search entirely and build
+#  the node states directly. `node_data` is rcut-independent (it loops over all
+#  atoms regardless of edges), so this matches the graph path exactly — and these
+#  methods also bypass the StackedCalculator graph cache (no graph is needed).
+# ----------------------------------------------------------------------------
+_onebody_nodes(sys::AbstractSystem) =
+   [ PState(𝐫 = ustrip.(position(sys, i)), z = species(sys, i)) for i in 1:length(sys) ]
+
+function _wrapped_energy(calc::ETOneBodyPotential, sys::AbstractSystem)
+   Ei, _ = calc.model(_onebody_nodes(sys), calc.ps, calc.st)
+   return sum(Ei)
+end
+_wrapped_forces(calc::ETOneBodyPotential, sys::AbstractSystem) =
+   zeros(SVector{3, Float64}, length(sys))
+_wrapped_virial(calc::ETOneBodyPotential, sys::AbstractSystem) =
+   zero(SMatrix{3, 3, Float64, 9})
+_wrapped_energy_forces_virial(calc::ETOneBodyPotential, sys::AbstractSystem) =
+   (energy = _wrapped_energy(calc, sys),
+    forces = zeros(SVector{3, Float64}, length(sys)),
+    virial = zero(SMatrix{3, 3, Float64, 9}))
+
+# StackedCalculator dispatch: onebody needs no graph, so ignore the cache.
+_cached_energy(c::ETOneBodyPotential, sys, gcache) = _wrapped_energy(c, sys) * u"eV"
+_cached_forces(c::ETOneBodyPotential, sys, gcache) = _wrapped_forces(c, sys) .* u"eV/Å"
+_cached_virial(c::ETOneBodyPotential, sys, gcache) = _wrapped_virial(c, sys) * u"eV"
+function _cached_efv(c::ETOneBodyPotential, sys, gcache)
+   efv = _wrapped_energy_forces_virial(c, sys)
+   return (energy = efv.energy * u"eV",
+           forces = efv.forces .* u"eV/Å",
+           virial = efv.virial * u"eV")
+end
+
 # ============================================================================
 #  ETOneBodyPotential Training Assembly (empty - no learnable parameters)
 # ============================================================================
@@ -802,8 +837,9 @@ function convert2et_full(model, ps, st; rng::AbstractRNG=default_rng())
    E0_dict = Dict(z => E0s[z.atomic_number] for z in zlist)
    et_onebody = one_body(E0_dict, x -> x.z)
    _, onebody_st = setup(rng, et_onebody)
-   # Use minimum cutoff for graph construction (ETOneBody needs no neighbors)
-   onebody_calc = WrappedSiteCalculator(et_onebody, nothing, onebody_st, 3.0)
+   # ETOneBody needs no neighbour graph (energy depends only on species), so its
+   # cutoff is irrelevant — pass 0.0 to make that explicit.
+   onebody_calc = WrappedSiteCalculator(et_onebody, nothing, onebody_st, 0.0)
 
    # 2. Convert pair potential to ETPairModel
    et_pair = convertpair(model)
