@@ -212,6 +212,7 @@ function bundle_julia_libs!(deploy_dir::String, lib_path::String, verbose::Bool)
 
     # Libraries to bundle (from Julia installation)
     required_libs = String[]
+    required_juliafolder_libs = String[]
     for line in split(ldd_output, '\n')
         if contains(line, julia_lib_dir)
             # Extract library path
@@ -221,18 +222,47 @@ function bundle_julia_libs!(deploy_dir::String, lib_path::String, verbose::Bool)
             end
         end
     end
-
     # Also include libjulia.so explicitly
-    libjulia = joinpath(julia_lib_dir, "libjulia.so")
-    if isfile(libjulia) && !(libjulia in required_libs)
-        push!(required_libs, libjulia)
+    # Get the necessary libraries from the Julia installation
+    function add_lib_files!(lib_list::AbstractVector, lib_dir::String, lib_name::String)
+        for file in readdir(lib_dir)
+            if occursin(lib_name, file)
+                push!(lib_list, joinpath(lib_dir, file))
+            end
+        end
     end
-
+    # All of these libraries are linked. When moving to a system without a Julia install, not bundling any of these will lead to errors.
+    add_lib_files!(required_libs, julia_lib_dir, "libjulia")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libopenlibm")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libatomic")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libblastrampoline")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libopenblas")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libmpfr")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libamd")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libsuitesparseconfig")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libccolamd")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libcolamd")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libcholmod")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libumfpack")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libspqr")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libbtf")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libklu")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "libldl")
+    add_lib_files!(required_juliafolder_libs, julia_lib_julia_dir, "librbio")
     # Copy libraries
     copied = 0
     for lib in required_libs
         if isfile(lib)
             dst = joinpath(lib_dir, basename(lib))
+            if !isfile(dst)
+                cp(lib, dst; follow_symlinks=true)
+                copied += 1
+            end
+        end
+    end
+    for lib in required_juliafolder_libs
+        if isfile(lib)
+            dst = joinpath(lib_dir, basename(lib), "julia")
             if !isfile(dst)
                 cp(lib, dst; follow_symlinks=true)
                 copied += 1
