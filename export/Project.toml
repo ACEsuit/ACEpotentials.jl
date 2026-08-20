@@ -26,4 +26,4 @@ YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [sources]
 ACEpotentials = {path = ".."}
-Polynomials4ML = {rev = "main", url = "https://github.com/ACEsuit/Polynomials4ML.jl"}
+Polynomials4ML = {rev = "v0.5.8", url = "https://github.com/ACEsuit/Polynomials4ML.jl"}
