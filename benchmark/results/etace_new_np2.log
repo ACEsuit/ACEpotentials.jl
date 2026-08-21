@@ -1,0 +1,120 @@
+LAMMPS (22 Jul 2025 - Update 1)
+  using 1 OpenMP thread(s) per MPI task
+Loading plugin: ACE potential loader for ACEpotentials.jl compiled models by ACEsuit developers
+Lattice spacing in x,y,z = 3.19 3.19 3.19
+Created orthogonal box = (0 0 0) to (31.9 31.9 31.9)
+  1 by 1 by 2 MPI processor grid
+Created 2000 atoms
+  using lattice units in orthogonal box = (0 0 0) to (31.9 31.9 31.9)
+  create_atoms CPU = 0.000 seconds
+ACE: Loaded model from /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/benchmark/deployments/tial_etace/lib/libace_tial_etace.so
+ACE: Cutoff = 5.5 Angstrom
+ACE: Number of species = 2
+ACE: Supported elements (Z): 22 13
+ACE: Element mapping:
+ACE:   Type 1 -> Ti (Z=22)
+ACE:   Type 2 -> Al (Z=13)
+Created B2 TiAl structure (ETACE)
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.5
+  ghost atom cutoff = 7.5
+  binsize = 3.75, bins = 9 9 9
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair ace, perpetual
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+Setting up cg style minimization ...
+  Unit style    : metal
+  Current step  : 0
+Per MPI rank memory allocation (min/avg/max) = 4.734 | 4.734 | 4.734 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+         0   0              656.64092      0              656.64092      889003.89    
+         1   0              656.64092      0              656.64092      889003.89    
+Loop time of 0.642571 on 2 procs for 1 steps with 2000 atoms
+
+99.6% CPU use with 2 MPI tasks x 1 OpenMP threads
+
+Minimization stats:
+  Stopping criterion = linesearch alpha is zero
+  Energy initial, next-to-last, final = 
+      656.640920048976   656.640920048976   656.640920048976
+  Force two-norm initial, final = 2.0086783e-11 2.0086783e-11
+  Force max component initial, final = 8.8817842e-13 8.8817842e-13
+  Final line search alpha, max atom move = 0.5 4.4408921e-13
+  Iterations, force evaluations = 1 2
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.55723    | 0.59973    | 0.64223    |   5.5 | 93.33
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 0.00020175 | 0.042699   | 0.085197   |  20.6 |  6.65
+Output  | 0          | 0          | 0          |   0.0 |  0.00
+Modify  | 0          | 0          | 0          |   0.0 |  0.00
+Other   |            | 0.0001368  |            |       |  0.02
+
+Nlocal:           1000 ave        1000 max        1000 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+Nghost:           3014 ave        3014 max        3014 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+Neighs:              0 ave           0 max           0 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+FullNghs:       112000 ave      112000 max      112000 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 224000
+Ave neighs/atom = 112
+Neighbor list builds = 0
+Dangerous builds = 0
+New timer settings: style=full  mode=nosync  timeout=off
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 0
+  Time step     : 0.001
+Per MPI rank memory allocation (min/avg/max) = 3.609 | 3.609 | 3.609 Mbytes
+   Step         PotEng         KinEng         TotEng         Press           Temp     
+         0   656.64092      77.517309      734.15823      891554.51      300          
+        10  -76317.684      109408.51      33090.824     -862778.46      423422.24    
+        20  -79987.135      394822.84      314835.71      6903305.9      1528005.2    
+        30  -78734.525      858683.81      779949.28      22833219       3323195.1    
+        40  -76652.098      1406231.3      1329579.2      39986178       5442260.3    
+        50  -78792.461      1891077.8      1812285.4      56779399       7318666.8    
+        60  -77076.757      2457693.4      2380616.6      75378495       9511527.6    
+        70  -78783.4        2971683.7      2892900.3      92074232       11500723     
+        80  -74089.549      3469484.7      3395395.2      1.0854884e+08  13427265     
+        90  -76495.008      3943516.7      3867021.7      1.2400913e+08  15261817     
+       100  -78973.029      4449103.4      4370130.3      1.4153071e+08  17218490     
+Loop time of 19.422 on 2 procs for 100 steps with 2000 atoms
+
+Performance: 0.445 ns/day, 53.950 hours/ns, 5.149 timesteps/s, 10.298 katom-step/s
+99.5% CPU use with 2 MPI tasks x 1 OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg|  %CPU | %total
+-----------------------------------------------------------------------
+Pair    | 17.549     | 17.971     | 18.393     |  10.0 |  99.5 | 92.53
+Neigh   | 0.4139     | 0.42317    | 0.43244    |   1.4 |  99.0 |  2.18
+Comm    | 0.5924     | 1.0237     | 1.4551     |  42.6 |  99.7 |  5.27
+Output  | 0.0003424  | 0.00041265 | 0.00048289 |   0.0 | 100.0 |  0.00
+Modify  | 0.0014809  | 0.0015106  | 0.0015403  |   0.1 | 100.0 |  0.01
+Other   |            | 0.002479   |            |       |       |  0.01
+
+Nlocal:           1000 ave        1008 max         992 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Nghost:           3162 ave        3201 max        3123 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Neighs:              0 ave           0 max           0 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+FullNghs:       109155 ave      109574 max      108736 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+
+Total # of neighbors = 218310
+Ave neighs/atom = 109.155
+Neighbor list builds = 89
+Dangerous builds = 84
+Final potential energy: -78973.0287608076 eV
+Total wall time: 0:00:22

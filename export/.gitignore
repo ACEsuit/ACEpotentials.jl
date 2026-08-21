@@ -1,0 +1,16 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# uv lock file (generated)
+uv.lock
+
+# Test artifacts
+test/build/
+test/lammps/*.dump
+test/lammps/*.log
+test/lammps/log.lammps
+
+# LAMMPS plugin build
+lammps/plugin/build/

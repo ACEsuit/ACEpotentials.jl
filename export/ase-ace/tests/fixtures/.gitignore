@@ -1,0 +1,4 @@
+# Generated test fixtures - not tracked in git
+test_model.json
+*.so
+

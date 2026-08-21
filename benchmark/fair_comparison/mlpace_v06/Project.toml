@@ -1,0 +1,14 @@
+[deps]
+ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
+ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
+ACEpotentials = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
+ExtXYZ = "352459e4-ddd7-4360-8937-99dcb397b478"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+
+[compat]
+ACEpotentials = "0.6"
