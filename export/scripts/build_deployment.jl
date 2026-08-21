@@ -262,7 +262,7 @@ function bundle_julia_libs!(deploy_dir::String, lib_path::String, verbose::Bool)
     end
     for lib in required_juliafolder_libs
         if isfile(lib)
-            dst = joinpath(lib_dir, basename(lib), "julia")
+            dst = joinpath(lib_dir, "julia", basename(lib))
             if !isfile(dst)
                 cp(lib, dst; follow_symlinks=true)
                 copied += 1
