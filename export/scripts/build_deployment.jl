@@ -203,7 +203,12 @@ end
 Bundle required Julia runtime libraries into the deployment.
 """
 function bundle_julia_libs!(deploy_dir::String, lib_path::String, verbose::Bool)
+    # Ensure we have a lib and lib/julia in the deployment. These are the paths libraries will be copied to.
     lib_dir = joinpath(deploy_dir, "lib")
+    if !isdir(joinpath(lib_dir, "julia"))
+        mkpath(joinpath(lib_dir, "julia"))
+    end
+    # These are the paths where we take the libraries from.
     julia_lib_dir = joinpath(dirname(Sys.BINDIR), "lib")
     julia_lib_julia_dir = joinpath(julia_lib_dir, "julia")
 
