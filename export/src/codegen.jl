@@ -385,7 +385,7 @@ end
 
 # Radial basis dispatch (values only)
 @inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
-    pair_idx = zz2pair_sym(iz, jz)""")
+    pair_idx = (iz - 1) * NZ + jz  # asymmetric indexing: tables are written in (iz-1)*NZ+jz order (fix: zz2pair_sym was wrong for NZ>1)""")
 
     for pair_idx in 1:n_pairs
         cond = pair_idx == 1 ? "if" : "elseif"
@@ -400,7 +400,7 @@ end
     println(io, """
 # Radial basis dispatch (with derivatives)
 @inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    pair_idx = zz2pair_sym(iz, jz)""")
+    pair_idx = (iz - 1) * NZ + jz  # asymmetric indexing: tables are written in (iz-1)*NZ+jz order (fix: zz2pair_sym was wrong for NZ>1)""")
 
     for pair_idx in 1:n_pairs
         cond = pair_idx == 1 ? "if" : "elseif"
