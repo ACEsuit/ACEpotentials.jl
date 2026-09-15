@@ -1,10 +1,18 @@
 # Evaluation functions writing
 # Split from export_ace_model.jl for maintainability
 
+# The emitted evaluation functions always call `pair_energy` / `pair_energy_d`; when the
+# exported model has no ETPairModel those are the zero stubs from `_write_no_pair_basis`,
+# which makes every pair contribution an exact no-op.  `has_pair` therefore only records
+# which of the two is in force, for the reader of the generated file.
 function _write_evaluation_functions(io, tensor, NZ, has_pair)
     # Get dimensions for pre-allocation
     nA = length(tensor.abasis)
     nAA = length(tensor.aabasis)
+
+    println(io, "# Pair potential term in the site energy: " *
+                (has_pair ? "ACTIVE (ETPairModel exported above)" :
+                            "ABSENT (pair_energy* are zero stubs)"))
 
     println(io, """
 # ============================================================================
@@ -157,6 +165,17 @@ function site_energy(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0:
 
     # Write weight contraction
     _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["val = dot(B, WB_$iz)"])
+
+    # Pair potential term. `pair_energy_d` is always defined; without an ETPairModel in the
+    # stack it returns (0.0, 0.0), which leaves `val` bit-identical.
+    println(io, """
+    # Pair potential (ordered pair: centre species first)
+    @inbounds for j in 1:length(Rs)
+        r = norm(Rs[j])
+        if r > 1e-10
+            val += pair_energy(r, iz0, z2i(Zs[j]))
+        end
+    end""")
 
     # Add E0
     println(io, "\n    # Add reference energy")
@@ -470,6 +489,10 @@ function site_energy_forces(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Intege
             for t in 1:N_YLM
                 f = f + ∂Ylm[j, t] * dYlm[j, t]
             end
+            # Pair potential (ordered pair: centre species first)
+            ep, dep = pair_energy_d(r, iz0, z2i(Zs[j]))
+            Ei += ep
+            f = f + dep * rhat
         end
         forces[j] = -f  # Force is negative gradient
     end
@@ -555,6 +578,12 @@ function site_energy_forces_virial(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<
                 f = f + df
                 virial = virial - Rj * df'
             end
+            # Pair potential (ordered pair: centre species first)
+            ep, dep = pair_energy_d(r, iz0, z2i(Zs[j]))
+            Ei += ep
+            dfp = dep * rhat
+            f = f + dfp
+            virial = virial - Rj * dfp'
         end
         forces[j] = -f
     end

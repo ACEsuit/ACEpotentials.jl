@@ -264,6 +264,187 @@ end
 """)
 end
 
+# ============================================================================
+# PAIR POTENTIAL (ETPairModel)
+# ============================================================================
+#
+# Model (src/et_models/et_pair.jl + src/et_models/convert.jl:`convertpair`):
+#
+#   rembed  = EdgeEmbed( EnvRBranchL(envelope, EmbedDP(agnesi, polys, SelectLinL)) )
+#   readout = SelectLinL(n_pairbasis -> 1, NZ, selector = centre species)
+#
+#   Rnl_pair[edge, n] = env(r_ij) * Σ_q W[n, q, (iz0,jz)] * P_q(y_ij)
+#   𝔹[i, n]           = Σ_{j ∈ N(i)} Rnl_pair[edge, n]          (et_pair.jl:48-57)
+#   E_pair(i)         = Σ_n Wread[1, n, iz0] * 𝔹[i, n]          (et_pair.jl:25-33)
+#
+# so, folding the readout into the polynomial coefficients at export time,
+#
+#   E_pair(i) = Σ_{j ∈ N(i)} env(r_ij) * dot( PAIR_C[(iz0,jz)], P(y_ij) )
+#   PAIR_C[(iz0,jz)][q] = Σ_n Wread[1, n, iz0] * W[n, q, (iz0,jz)]
+#
+# Index conventions, all verified against the sources rather than guessed:
+#  * `ET.catcat2idx` (utils/selector.jl) = (i1-1)*NZ + i2 with i1 the *centre* species
+#    (the graph stores z0 = species(i), z1 = species(j); EquivariantTensors
+#    ext/NeighbourListsExt.jl:19-21), so the SelectLinL weights W and PAIR_C are indexed by
+#    the ORDERED pair (iz0, jz) -- same convention as the many-body RBASIS_W above.
+#  * the Agnesi transform parameters are stored per SYMMETRIC pair
+#    (`_convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and the selector is
+#    `catcat2idx_sym`), i.e. NZ*(NZ+1)/2 entries addressed by `symidx`.  The ordered ->
+#    symmetric mapping below is the same one `_write_etace_radial_basis` uses for
+#    TRANSFORM_PARAMS (lines ~126-136).
+#  * the readout weight Wread is per CENTRE species only (shape (1, n_pairbasis, NZ)).
+#
+# Numerics:
+#  * the polynomials are the raw P4ML `OrthPolyBasis1D3T` -- unlike the many-body radial
+#    basis the pair basis has NO quartic envelope wrapped around them; the envelope is the
+#    separate `PolyEnvelope1sR` branch.
+#  * the envelope is `_eval_env_1sr` (src/et_models/convert.jl:233-237):
+#        env(r) = (s^-p - 1) * (1 - s) * (s < 1),  s = r / rcut
+#  * the transform is `ET.eval_agnesi` (EquivariantTensors src/transforms/agnesi.jl:53-61).
+#    A dedicated `_pair_transform_d` is emitted rather than reusing `agnesi_transform_d`
+#    because the latter carries `r <= rin -> +1` / `r >= rcut -> -1` shortcuts that
+#    `eval_agnesi` does not have (it only clamps), and because the stored parameter tuple
+#    has no `rcut` field of its own.  `pin`/`pcut` are kept as `Int` so that `s^pin` is the
+#    same integer power `eval_agnesi` evaluates, bit for bit.
+function _write_pair_basis(io, pair_calc, NZ)
+    pm, ps = pair_calc.model, pair_calc.ps
+
+    branch = pm.rembed.layer            # EnvRBranchL(envelope, rbasis)
+    rb     = branch.rbasis              # EmbedDP(trans, basis, post)
+    polys  = rb.basis                   # Polynomials4ML.OrthPolyBasis1D3T
+    pA, pB, pC = polys.refstate.A, polys.refstate.B, polys.refstate.C
+    nq = length(pA)
+
+    W     = ps.rembed.rbasis.post.W     # (n_pairbasis, n_pairpolys, NZ^2)
+    Wr    = ps.readout.W                # (1, n_pairbasis, NZ)
+    env   = branch.envelope.refstate    # (rcut, p) of the PolyEnvelope1sR branch
+    trans = rb.trans.refstate.params    # SVector{NZ(NZ+1)/2} of Agnesi parameters
+
+    n_pairbasis = size(W, 1)
+    @assert size(W, 2) == nq "pair SelectLinL in_dim $(size(W,2)) != n polys $nq"
+    @assert size(W, 3) == NZ^2 "pair SelectLinL has $(size(W,3)) categories, expected NZ^2 = $(NZ^2)"
+    @assert size(Wr) == (1, n_pairbasis, NZ) "pair readout W has size $(size(Wr)), expected (1, $n_pairbasis, $NZ)"
+    @assert length(trans) == (NZ * (NZ + 1)) ÷ 2 "pair transform params: $(length(trans)) entries, expected $((NZ*(NZ+1))÷2) (per symmetric pair)"
+
+    println(io, """
+# ============================================================================
+# PAIR POTENTIAL (ETPairModel; readout folded into per-ordered-pair coefficients)
+# ============================================================================
+""")
+
+    println(io, "# Orthogonal polynomial basis of the pair term (3-term recurrence)")
+    println(io, "const N_PAIRPOLYS = $(nq)")
+    println(io, "const PAIRPOLY_A = SVector{$(nq), Float64}($(repr(collect(pA))))")
+    println(io, "const PAIRPOLY_B = SVector{$(nq), Float64}($(repr(collect(pB))))")
+    println(io, "const PAIRPOLY_C = SVector{$(nq), Float64}($(repr(collect(pC))))")
+    println(io)
+
+    println(io, "# PolyEnvelope1sR:  env(r) = (s^-p - 1) * (1 - s) * (s < 1),  s = r / rcut")
+    println(io, "const PAIR_ENV_RCUT = $(Float64(env.rcut))")
+    println(io, "const PAIR_ENV_P = $(Int(env.p))")
+    println(io)
+
+    println(io, "# Readout-folded polynomial coefficients, one entry per ORDERED pair (iz0, jz)")
+    println(io, "const PAIR_C = (")
+    for iz0 in 1:NZ, jz in 1:NZ
+        k = (iz0 - 1) * NZ + jz
+        c = vec(transpose(Wr[1, :, iz0]) * W[:, :, k])
+        @assert length(c) == nq
+        println(io, "    SVector{$(nq), Float64}($(repr(collect(c)))),  # pair $k: ($iz0, $jz)")
+    end
+    println(io, ")")
+    println(io)
+
+    println(io, "# Agnesi transform parameters, expanded from the symmetric-pair storage")
+    println(io, "# to one entry per ORDERED pair (iz0, jz) so no runtime mapping is needed.")
+    println(io, "const PAIR_TRANSFORM_PARAMS = (")
+    for iz0 in 1:NZ, jz in 1:NZ
+        k = (iz0 - 1) * NZ + jz
+        sym_i, sym_j = min(iz0, jz), max(iz0, jz)
+        sym_idx = (sym_i - 1) * NZ - (sym_i - 1) * (sym_i - 2) ÷ 2 + (sym_j - sym_i + 1)
+        p = trans[sym_idx]
+        println(io, "    (pin=$(Int(p.pin)), pcut=$(Int(p.pcut)), a=$(Float64(p.a)), " *
+                    "b0=$(Float64(p.b0)), b1=$(Float64(p.b1)), rin=$(Float64(p.rin)), " *
+                    "req=$(Float64(p.req))),  # pair $k: ($iz0, $jz) -> sym $sym_idx")
+    end
+    println(io, ")")
+    println(io)
+
+    println(io, raw"""
+# Pair envelope with derivative d/dr
+@inline function _pair_env_d(r::Float64)
+    s = r / PAIR_ENV_RCUT
+    s >= 1.0 && return 0.0, 0.0
+    sp = s^(-PAIR_ENV_P)
+    e = (sp - 1.0) * (1.0 - s)
+    de = (-PAIR_ENV_P * sp / s) * (1.0 - s) - (sp - 1.0)
+    return e, de / PAIR_ENV_RCUT
+end
+
+# Generalized Agnesi transform of the pair term, with derivative d/dr.
+# Mirrors ET.eval_agnesi exactly: no rin/rcut shortcuts, clamp to [-1, 1] only.
+@inline function _pair_transform_d(r::Float64, p)
+    ds_dr = 1.0 / (p.req - p.rin)
+    s = (r - p.rin) * ds_dr
+    s_pin = s^p.pin
+    s_diff = s^(p.pin - p.pcut)
+    denom = 1.0 + s_diff
+    x = 1.0 / (1.0 + p.a * s_pin / denom)
+    y = p.b1 * x + p.b0
+    dg_ds = p.a * s^(p.pin - 1) * (p.pin + p.pcut * s_diff) / (denom * denom)
+    dy_dr = p.b1 * (-x * x * dg_ds) * ds_dr
+    y_clamped = clamp(y, -1.0, 1.0)
+    y_clamped != y && return y_clamped, 0.0
+    return y, dy_dr
+end
+
+# Pair site-energy contribution of one neighbour, and its derivative w.r.t. r.
+#   (iz0, jz) is the ORDERED pair: centre species first.
+@inline function pair_energy_d(r::Float64, iz0::Int, jz::Int)
+    e, de = _pair_env_d(r)
+    e == 0.0 && return 0.0, 0.0
+    k = (iz0 - 1) * NZ + jz
+    @inbounds p = PAIR_TRANSFORM_PARAMS[k]
+    y, dy_dr = _pair_transform_d(r, p)
+    @inbounds c = PAIR_C[k]
+    @inbounds begin
+        P1 = PAIRPOLY_A[1]
+        dP1 = 0.0
+        P2 = PAIRPOLY_A[2] * y + PAIRPOLY_B[2]
+        dP2 = PAIRPOLY_A[2]
+        v = c[1] * P1 + c[2] * P2
+        dv = c[2] * dP2
+        for n = 3:N_PAIRPOLYS
+            Pn = (PAIRPOLY_A[n] * y + PAIRPOLY_B[n]) * P2 + PAIRPOLY_C[n] * P1
+            dPn = PAIRPOLY_A[n] * P2 + (PAIRPOLY_A[n] * y + PAIRPOLY_B[n]) * dP2 +
+                  PAIRPOLY_C[n] * dP1
+            v += c[n] * Pn
+            dv += c[n] * dPn
+            P1, P2, dP1, dP2 = P2, Pn, dP2, dPn
+        end
+    end
+    return e * v, de * v + e * dv * dy_dr
+end
+
+@inline pair_energy(r::Float64, iz0::Int, jz::Int) = pair_energy_d(r, iz0, jz)[1]
+""")
+end
+
+# Stub emitted when the exported model has no ETPairModel term, so that the generated
+# evaluation functions are identical in both cases.  Returning literal zeros makes every
+# pair contribution an exact no-op (x + 0.0 == x, x + 0.0 * r̂ == x).
+function _write_no_pair_basis(io)
+    println(io, """
+# ============================================================================
+# PAIR POTENTIAL: none in this model (many-body + E0 only)
+# ============================================================================
+
+@inline pair_energy_d(r::Float64, iz0::Int, jz::Int) = (0.0, 0.0)
+@inline pair_energy(r::Float64, iz0::Int, jz::Int) = 0.0
+""")
+end
+
+
 function _write_radial_basis(io, rbasis::ACEpotentials.Models.SplineRnlrzzBasis, NZ)
     println(io, """
 # ============================================================================

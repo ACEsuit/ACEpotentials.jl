@@ -5,15 +5,17 @@ This file orchestrates all export-related tests for ETACE models:
 1. ETACE export functionality (polynomial radial basis)
 2. Hermite spline export (machine-precision splined radial basis)
 3. Multi-species model tests
-4. Python calculator integration
-5. LAMMPS plugin integration (serial)
-6. MPI parallel tests
+4. Pair-potential export (ETOneBody + ETPairModel + ETACE, Cantor fixture)
+5. Python calculator integration
+6. LAMMPS plugin integration (serial)
+7. MPI parallel tests
 
 Usage:
     julia --project=.. runtests.jl              # Run all available tests
     julia --project=.. runtests.jl etace        # Run ETACE polynomial export tests
     julia --project=.. runtests.jl hermite      # Run Hermite spline export tests
     julia --project=.. runtests.jl multispecies # Run multi-species tests
+    julia --project=.. runtests.jl pair         # Run pair-potential export tests (Cantor fixture)
     julia --project=.. runtests.jl python       # Run Python tests
     julia --project=.. runtests.jl lammps       # Run LAMMPS tests
     julia --project=.. runtests.jl mpi          # Run MPI tests
@@ -61,6 +63,21 @@ function get_test_structure()
     pbc = [true, true, true]
 
     return (positions=positions, cell=cell, species=species, pbc=pbc)
+end
+
+"""
+    check_cantor_fixture_available()
+
+The pair-export test checks against the fitted Cantor model, whose saved parameters
+(`verify_cantor/cantor_v010_params.jld2`) and held-out LAMMPS geometries
+(`~/si-ace/spike_yace/cantor/cantor_{1..10}.data`) are host-local data, not part of the
+repository. Skip the test — loudly — where they are absent, exactly as the Python and
+LAMMPS groups do for their external tools.
+"""
+function check_cantor_fixture_available()
+    params = joinpath(PROJECT_DIR, "verify_cantor", "cantor_v010_params.jld2")
+    held = expanduser(joinpath("~", "si-ace", "spike_yace", "cantor", "cantor_1.data"))
+    return isfile(params) && isfile(held)
 end
 
 """
@@ -126,6 +143,7 @@ function main()
     @info "ACE Export Test Suite (ETACE)"
     @info "=============================="
     @info "Test selection: $selection"
+    @info "Cantor fixture available: $(check_cantor_fixture_available())"
     @info "Python available: $(check_python_available())"
     @info "LAMMPS available: $(check_lammps_available())"
     @info "MPI available: $(check_mpi_available())"
@@ -148,6 +166,16 @@ function main()
         if should_run_test(selection, :multispecies) || should_run_test(selection, :all)
             @info "Running multi-species export tests..."
             include(joinpath(TEST_DIR, "test_multispecies.jl"))
+        end
+
+        # Pair-potential export tests (ETOneBody + ETPairModel + ETACE stack)
+        if should_run_test(selection, :pair) || should_run_test(selection, :all)
+            if check_cantor_fixture_available()
+                @info "Running pair-potential export tests..."
+                include(joinpath(TEST_DIR, "test_pair_export.jl"))
+            else
+                @warn "Skipping pair export tests (Cantor fixture data not available)"
+            end
         end
 
         # Python tests

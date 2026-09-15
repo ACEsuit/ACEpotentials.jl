@@ -8,7 +8,7 @@
 #   juliac --output-lib libace.so --trim=safe model.jl
 
 using ACEpotentials
-using ACEpotentials.ETModels: ETACEPotential, ETACE, StackedCalculator, ETOneBody
+using ACEpotentials.ETModels: ETACEPotential, ETACE, StackedCalculator, ETOneBody, ETPairModel
 using StaticArrays
 using SparseArrays
 using LinearAlgebra
@@ -53,20 +53,33 @@ end
 """
     export_ace_model(calc::StackedCalculator, filename::String; kwargs...)
 
-Export a StackedCalculator (e.g., ETOneBody + ETACE) to a trim-compatible Julia file.
+Export a StackedCalculator (e.g., ETOneBody + ETPairModel + ETACE) to a trim-compatible
+Julia file.
 
-Automatically extracts E0 values from any ETOneBody calculators and the main ETACE model.
+Automatically extracts E0 values from any ETOneBody calculator, the pair term from any
+ETPairModel calculator, and the main ETACE model.
+
+Any other calculator in the stack raises: silently dropping a term produces a library whose
+energies and forces are wrong with no indication that anything is missing.
 """
 function export_ace_model(calc::StackedCalculator, filename::String; kwargs...)
-    # Find ETOneBody and ETACE calculators in the stack
+    # Find ETOneBody, ETPairModel and ETACE calculators in the stack.
+    # Anything else is a hard error: an unexported term is an incorrect potential.
     e0_calc = nothing
+    pair_calc = nothing
     etace_calc = nothing
 
     for subcalc in calc.calcs
-        if isa(subcalc.model, ETOneBody)
+        m = subcalc.model
+        if isa(m, ETOneBody)
             e0_calc = subcalc
-        elseif isa(subcalc.model, ETACE)
+        elseif isa(m, ETPairModel)
+            pair_calc = subcalc
+        elseif isa(m, ETACE)
             etace_calc = subcalc
+        else
+            error("export_ace_model: cannot export a $(typeof(m)) calculator " *
+                  "(only ETOneBody, ETPairModel and ETACE are supported)")
         end
     end
 
@@ -83,8 +96,9 @@ function export_ace_model(calc::StackedCalculator, filename::String; kwargs...)
         @info "Extracted E0 values from ETOneBody" E0_dict
     end
 
-    # Call the main export function with E0 values
-    return export_ace_model(etace_calc, filename; E0_dict=E0_dict, kwargs...)
+    # Call the main export function with E0 values and the pair term
+    return export_ace_model(etace_calc, filename;
+                            E0_dict=E0_dict, pair_calc=pair_calc, kwargs...)
 end
 
 
@@ -131,7 +145,8 @@ export_ace_model(calc, "my_model.jl"; for_library=true, radial_basis=:hermite_sp
 function export_ace_model(calc::ETACEPotential, filename::String;
                           for_library::Bool=false,
                           radial_basis::Symbol=:polynomial,
-                          E0_dict::Union{Dict{Int,Float64},Nothing}=nothing)
+                          E0_dict::Union{Dict{Int,Float64},Nothing}=nothing,
+                          pair_calc=nothing)
 
     # Extract ETACE components from the calculator
     # WrappedSiteCalculator has fields: model, ps, st, rcut
@@ -231,9 +246,18 @@ function export_ace_model(calc::ETACEPotential, filename::String;
             error("Unknown radial_basis option: $radial_basis. Use :hermite_spline or :polynomial")
         end
 
+        # Pair potential term (from the ETPairModel of a StackedCalculator, if present).
+        # Always emits `pair_energy` / `pair_energy_d` so the evaluation functions below
+        # are identical with and without a pair term.
+        if pair_calc !== nothing
+            _write_pair_basis(io, pair_calc, NZ)
+        else
+            _write_no_pair_basis(io)
+        end
+
         _write_spherical_harmonics(io, maxl)
         _write_etace_weights(io, W_readout, NZ, E0_dict, _i2z)
-        _write_evaluation_functions(io, tensor, NZ, false)  # No pair potential in ETACE
+        _write_evaluation_functions(io, tensor, NZ, pair_calc !== nothing)
         if for_library
             _write_c_interface(io, NZ)
         else
