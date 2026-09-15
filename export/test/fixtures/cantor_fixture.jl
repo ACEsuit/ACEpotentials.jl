@@ -8,6 +8,9 @@
 #
 # Exports:
 #   load_cantor_fixture()        -> (; model, ps, st, E0s, stacked, held, held_xyz, rcut, elements)
+#   cantor_substacks(fx)         -> (onebody_calc, pair_calc, ace_calc)   [by model type name]
+#   cantor_mb_stack(fx)          -> StackedCalculator (E0 + many-body)
+#   cantor_spline_stack(fx;Nspl) -> StackedCalculator (E0 + splinified ETACE)
 #   load_cantor_reference(k)     -> (; natoms, E_a, E_amb, E_bmb, E_c50, E_c200, F_a, ...)
 #   read_cantor_lammps_data(fn)  -> periodic_system
 #
@@ -141,20 +144,43 @@ function load_cantor_fixture(; refresh::Bool = false)
 end
 
 """
+    cantor_substacks(fx) -> (onebody_calc, pair_calc, ace_calc)
+
+Locate the three sub-calculators of `fx.stacked` **by the name of their wrapped model type**
+rather than by position, so that an upstream reordering of `StackedCalculator.calcs` fails
+here with a readable message instead of surfacing as an opaque `nothing`-indexing error (or,
+worse, as a silently wrong reference stack) inside a caller.
+
+Single source of truth for this lookup: every helper that needs a sub-calculator goes through
+it.  As of ACEpotentials v0.10 `ETModels.convert2et_full` returns them in the order
+`(ETOneBody, ETPairModel, ETACE)`, each wrapped in a `WrappedSiteCalculator`.
+"""
+function cantor_substacks(fx)
+    calcs = fx.stacked.calcs
+    names = [string(nameof(typeof(c.model))) for c in calcs]
+    @assert length(calcs) == 3 "expected 3 stacked components from convert2et_full, got $(length(calcs)): $names"
+    i1   = findfirst(n -> occursin("OneBody", n), names)
+    ipr  = findfirst(n -> occursin("Pair", n), names)
+    iace = findfirst(n -> n == "ETACE", names)
+    @assert i1 !== nothing && ipr !== nothing && iace !== nothing """
+        could not identify the (OneBody, Pair, ACE) sub-calculators of fx.stacked.
+        Wrapped model types were: $names
+        (found OneBody at $i1, Pair at $ipr, ACE at $iace).
+        ETModels.convert2et_full has probably changed its component set or naming --
+        update cantor_substacks in export/test/fixtures/cantor_fixture.jl."""
+    return (calcs[i1], calcs[ipr], calcs[iace])
+end
+
+"""
     cantor_mb_stack(fx) -> StackedCalculator
 
 The `E0 + many-body` stack (`ETOneBody` + `ETACE`, pair term dropped): the reference the
 current `:polynomial` export actually reproduces, and the `b_mb` column of `ref_k.txt`.
-The component order of `fx.stacked.calcs` is checked rather than assumed.
+Components are located with [`cantor_substacks`](@ref), never by index.
 """
 function cantor_mb_stack(fx)
-    calcs = fx.stacked.calcs
-    @assert length(calcs) == 3 "expected 3 stacked components, got $(length(calcs))"
-    names = [string(nameof(typeof(c.model))) for c in calcs]
-    i1 = findfirst(n -> occursin("OneBody", n), names)
-    iace = findfirst(n -> n == "ETACE", names)
-    @assert i1 !== nothing && iace !== nothing "could not identify (OneBody, ACE) in $names"
-    return ETM.StackedCalculator((calcs[i1], calcs[iace]))
+    onebody_calc, _, ace_calc = cantor_substacks(fx)
+    return ETM.StackedCalculator((onebody_calc, ace_calc))
 end
 
 """
@@ -162,15 +188,12 @@ end
 
 `E0 + splinified ETACE`, built exactly as `chain_cantor.jl:129-136` builds it (this is the
 reference for `:hermite_spline` exports; `Nspl = 50` -> `c50`, `Nspl = 200` -> `c200`).
+Components are located with [`cantor_substacks`](@ref), never by index.
 """
 function cantor_spline_stack(fx; Nspl::Integer)
-    calcs = fx.stacked.calcs
-    names = [string(nameof(typeof(c.model))) for c in calcs]
-    i1 = findfirst(n -> occursin("OneBody", n), names)
-    iace = findfirst(n -> n == "ETACE", names)
-    ace_calc = calcs[iace]
+    onebody_calc, _, ace_calc = cantor_substacks(fx)
     m = ETM.splinify(ace_calc.model, ace_calc.ps, ace_calc.st; Nspl = Nspl)
     p, s = LuxCore.setup(MersenneTwister(1), m)
     p.readout.W .= ace_calc.ps.readout.W
-    return ETM.StackedCalculator((calcs[i1], ETM.ETACEPotential(m, p, s, fx.rcut)))
+    return ETM.StackedCalculator((onebody_calc, ETM.ETACEPotential(m, p, s, fx.rcut)))
 end

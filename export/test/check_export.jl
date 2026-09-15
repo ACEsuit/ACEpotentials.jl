@@ -8,15 +8,17 @@
 #   check_export_report(model_file, calc, held, rcut; label) -> (maxdE, maxdF, maxdV)   [no assert]
 #   check_export(model_file, calc, held, rcut; tol = 1e-12, label) -> (maxdE, maxdF, maxdV) [asserts]
 #
-# METRICS.  Energy and virial are extensive, forces are not, so the three maxima are
-#   maxdE = max |E - Eref| / natoms          [eV / atom]
-#   maxdF = max_i |F_i - Fref_i|             [eV / Å]
-#   maxdV = max |V - Vref|_inf / natoms      [eV / atom]
-# The per-atom normalisation of the virial is NOT a loosened tolerance: the Cantor virial is
-# ~1.7e3 eV summed over ~4300 edges, so pure double-precision summation roundoff is ~3e-12
-# absolute (= 3e-15 relative, ~10 ulp) even when every component matches bit-for-bit in intent.
-# Per atom that is <= 1.3e-13, comfortably inside 1e-12.  The absolute figure is printed
-# alongside so nothing is hidden.
+# METRICS -- READ THIS BEFORE CHOOSING A `tol`.  The three maxima are NOT normalised the same
+# way, so one `tol` value means three different things:
+#   maxdE = max |E - Eref| / natoms          [eV / atom]   PER ATOM  (energy is extensive)
+#   maxdF = max_i |F_i - Fref_i|             [eV / Å]      ABSOLUTE  (a force is intensive)
+#   maxdV = max |V - Vref|_inf / natoms      [eV / atom]   PER ATOM  (virial is extensive)
+# The per-atom virial DELIBERATELY departs from a raw `maximum(abs.(V .- Vref))`: the Cantor
+# virial is ~1.8e3 eV summed over ~4300 edges, so an absolute 1e-12 eV gate on it is ~4 ulp of
+# double precision -- below the resolution of the arithmetic, hence no gate at all.  The full
+# rationale, the measured headroom (1.23e-13 per atom vs tol 1e-12; 8e-16..3.6e-15 relative to
+# |V|) and the residual risk this leaves are in the `check_export_report` docstring below.
+# Both virial figures are printed on every call, each labelled with whether it is gated.
 #
 # The neighbour-set construction follows verify_cantor/chain_cantor.jl:117-123 / 179-194, which
 # is the code that produced verify_cantor/ref_{1..10}.txt -- that script, not any sketch, is the
@@ -96,15 +98,45 @@ end
     check_export_report(model_file, calc, held, rcut; label = model_file) -> (maxdE, maxdF, maxdV)
 
 Non-asserting variant of [`check_export`](@ref): evaluates the exported model on every
-configuration of `held`, compares to `calc`, prints and returns the maxima
+configuration of `held`, compares to the Julia calculator `calc`, prints and returns three
+maxima taken over all configurations.
 
-* `maxdE` -- max |ΔE| **per atom** (eV/atom)
-* `maxdF` -- max over atoms and configs of `norm(F - Fref)` (eV/Å)
-* `maxdV` -- max over components of `|V - Vref|` **per atom** (eV/atom); see the METRICS note
-  at the top of this file.  The un-normalised maximum is printed as `max|dV|abs`.
+# What the three returned numbers are
 
-Use this when the deviation is the measurement (e.g. Hermite-vs-fitted error); use
-`check_export` when the deviation must be inside a tolerance.
+| return value | definition | unit | normalisation |
+|---|---|---|---|
+| `maxdE` | `max \\|E - Eref\\| / natoms` | eV / atom | **per atom** |
+| `maxdF` | `max_i \\|\\|F_i - Fref_i\\|\\|` | eV / Å | **absolute** |
+| `maxdV` | `max \\|V - Vref\\|_inf / natoms` | eV / atom | **per atom** |
+
+`maxdE` and `maxdV` are per atom because energy and virial are **extensive**: for the Cantor
+reference system the total virial is ~1.8e3 eV accumulated over ~4300 edges, so an absolute
+1e-12 eV gate on it sits at ~4 ulp of double precision — below the resolution of the arithmetic
+and therefore not a gate at all; per atom (~38 eV) is the direct analogue of the per-atom energy
+the plan already uses. `maxdF` is absolute because a force is **intensive**: it does not grow
+with system size, so dividing by `natoms` would make the gate weaker on larger cells.
+
+# Headroom — the per-atom gate is real, not vacuous
+
+The exported `:polynomial` model against the `E0 + many-body` ET stack deviates by
+`1.23e-13` eV/atom in the virial, against a `tol = 1e-12` — a factor ~8 of margin. The same
+deviation is `8e-16 .. 3.6e-15` **relative** to `\\|V\\|_inf`, i.e. 4-16 ulp, which is what pure
+summation roundoff looks like. A dropped pair term, by contrast, reads `3.8e+01` eV/atom.
+
+# Residual risk
+
+An absolute virial error smaller than `tol * natoms` eV (up to ~4.8e-11 eV for the 48-atom
+configurations here) passes this gate. Nothing else re-checks it: downstream call sites that
+inspect only the returned force component never look at the virial, so the internal `@assert`
+in [`check_export`](@ref) is the only thing gating it. Use `check_export`, not
+`check_export_report`, whenever the virial must actually be constrained.
+
+Every call prints all four figures with unambiguous labels, each tagged `[per atom]` or
+`[absolute]`, and the raw `max|dV|` is tagged `[absolute; reported only, never gated]` so it
+cannot be mistaken for the number `check_export` tests.
+
+Use `check_export_report` when the deviation *is* the measurement (e.g. the Hermite-spline
+error against the fitted model); use `check_export` when it must be inside a tolerance.
 """
 function check_export_report(model_file, calc, held, rcut; label = model_file)
     ex = load_exported(model_file)
@@ -121,7 +153,10 @@ function check_export_report(model_file, calc, held, rcut; label = model_file)
         maxdV = max(maxdV, dV / N)
         maxdVabs = max(maxdVabs, dV)
     end
-    println("$label: max|dE|/atom = $maxdE  max|dF| = $maxdF  max|dV|/atom = $maxdV  (max|dV|abs = $maxdVabs)")
+    println("$label:\n    max|dE|/atom = $maxdE eV/atom   [per atom; returned as maxdE]" *
+            "\n    max|dF|      = $maxdF eV/Å   [absolute; returned as maxdF]" *
+            "\n    max|dV|/atom = $maxdV eV/atom   [per atom; returned as maxdV]" *
+            "\n    max|dV|      = $maxdVabs eV   [absolute; reported only, never gated]")
     flush(stdout)
     return (maxdE, maxdF, maxdV)
 end
@@ -130,11 +165,26 @@ end
     check_export(model_file, calc, held, rcut; tol = 1e-12, label = model_file)
 
 As [`check_export_report`](@ref), but asserts that all three maxima are `<= tol`.
-Returns `(maxdE, maxdF, maxdV)`.  Never loosen `tol` to make a call pass.
+Returns `(maxdE, maxdF, maxdV)`.  **Never loosen `tol` to make a call pass.**
+
+The three numbers are *not* normalised the same way, and `tol` therefore means three different
+things — read the table in [`check_export_report`](@ref) before choosing one:
+
+| gated quantity | normalisation | `tol = 1e-12` means |
+|---|---|---|
+| `maxdE` | per atom | 1e-12 eV/atom |
+| `maxdF` | absolute | 1e-12 eV/Å |
+| `maxdV` | per atom | 1e-12 eV/atom, i.e. up to `1e-12 * natoms` eV in total |
+
+That last row is deliberate (energy and virial are extensive; see
+[`check_export_report`](@ref) for why an absolute virial gate at this magnitude is below
+double-precision resolution) and it is the residual risk of this harness: a total virial error
+under `tol * natoms` eV is not caught here, and this `@assert` is the only place the virial is
+checked at all.
 """
 function check_export(model_file, calc, held, rcut; tol = 1e-12, label = model_file)
     maxdE, maxdF, maxdV = check_export_report(model_file, calc, held, rcut; label = label)
-    println("    (tol $tol)")
+    println("    (tol = $tol, applied to max|dE|/atom, max|dF| absolute, max|dV|/atom)")
     @assert maxdE <= tol && maxdF <= tol && maxdV <= tol "$label exceeds tol=$tol: dE=$maxdE dF=$maxdF dV=$maxdV"
     return (maxdE, maxdF, maxdV)
 end
