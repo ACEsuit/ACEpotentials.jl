@@ -42,17 +42,89 @@ struct NotAnExportableModel end
     @test occursin("const PAIR_C", src)
     @test occursin("const PAIR_TRANSFORM_PARAMS", src)
     @test occursin("function pair_energy_d", src)
-    @test occursin("pair_energy_d(r, iz0, jz)", src)   # actually called from the site loops
 
     # E0 + pair + many-body reproduced to 1e-12 against the full stack
+    # (the pair-less generator sat at max|dF| = 6.878706238581598 eV/Å here)
     dE, dF, dV = Base.invokelatest(check_export, f, fx.stacked, fx.held, fx.rcut;
                                    tol = 1e-12, label = "task-1 :polynomial + pair vs full stack")
     @test dE <= 1e-12
     @test dF <= 1e-12
     @test dV <= 1e-12
+end
 
-    # and it must be a genuine improvement on the pair-less generator, which sat at 6.88 eV/Å
-    @test dF < 1e-6
+# check_export only ever calls `site_energy_forces_virial`, so without this testset the pair
+# term emitted into `site_energy` and into `site_energy_forces` would be exercised in this
+# task only through the zero stubs -- yet both are @ccallable C entry points
+# (write_c_interface.jl) that the Python and LAMMPS paths call.  Transposing the species
+# arguments in one of them, or dropping its `Ei += ep`, would leave the rest of this suite
+# green at 1e-12 and only surface in Task 4's library comparison.
+#
+# `site_energy_forces` and `site_energy_forces_virial` share their whole evaluation route, so
+# they are compared BITWISE and must stay that way -- do not relax those to `≈`.
+#
+# `site_energy` takes the value-only route (`compute_embeddings` -> `evaluate_Rnl`) while the
+# other two take the derivative route (`compute_embeddings_ed` -> `evaluate_Rnl_d`), and those
+# two form the transform variable differently: `agnesi_transform` computes
+# `s = (r - rin) / (req - rin)` whereas `agnesi_transform_d` computes
+# `s = (r - rin) * (1 / (req - rin))`, which is a 1-ulp difference that the 45-term recurrence
+# amplifies.  That is PRE-EXISTING many-body behaviour, not the pair term: the run below
+# measures the same divergence on a pair-less export of the same model.  It is recorded as
+# `@test_broken` (visible in the summary, and it flips to a failure the day someone makes the
+# two agree) and gated absolutely at 1e-12 per site, which is ~20x the measured divergence and
+# orders of magnitude below either failure mode this testset exists to catch.
+#
+# Call this through `Base.invokelatest` (as check_export.jl does with `exported_efv`): the
+# `ex.site_energy*` bindings do not exist in the world this file was compiled in.
+function _site_function_spread(ex, fx)
+    d_se = d_sef = d_F = 0.0
+    nsites = 0
+    for sys in fx.held
+        for (Rs, Zs, Z0, _js) in site_sets(sys, fx.rcut)
+            Ev, Fv, _Vv = ex.site_energy_forces_virial(Rs, Zs, Z0)
+            Ef, Ff = ex.site_energy_forces(Rs, Zs, Z0)
+            Es = ex.site_energy(Rs, Zs, Z0)
+            d_se = max(d_se, abs(Es - Ev))
+            d_sef = max(d_sef, abs(Ef - Ev))
+            d_F = max(d_F, maximum(norm.(Ff .- Fv)))
+            nsites += 1
+        end
+    end
+    return (; d_se, d_sef, d_F, nsites)
+end
+
+@testset "site_energy / _forces / _forces_virial agree, with a live pair term" begin
+    fx = load_cantor_fixture()
+    f = joinpath(@__DIR__, "build", "cantor_pair_poly.jl")
+    @test isfile(f)   # produced by the testset above
+    s = Base.invokelatest(_site_function_spread, Base.invokelatest(load_exported, f), fx)
+
+    # same sweep on a pair-less export of the same model, to attribute the site_energy spread
+    fnp = joinpath(@__DIR__, "build", "cantor_nopair_poly.jl")
+    Base.invokelatest(export_ace_model, cantor_mb_stack(fx), fnp;
+                      for_library = false, radial_basis = :polynomial)
+    snp = Base.invokelatest(_site_function_spread, Base.invokelatest(load_exported, fnp), fx)
+
+    println("site-function cross-check over $(s.nsites) sites " *
+            "(pair export / pair-less export of the same model):" *
+            "\n    max|site_energy        - site_energy_forces_virial[1]| = $(s.d_se) / $(snp.d_se)" *
+            "\n    max|site_energy_forces[1] - site_energy_forces_virial[1]| = $(s.d_sef) / $(snp.d_sef)" *
+            "\n    max|site_energy_forces[2] - site_energy_forces_virial[2]| = $(s.d_F) / $(snp.d_F)")
+    flush(stdout)
+
+    @test s.nsites == sum(length.(fx.held))
+
+    # bitwise, and required to stay so
+    @test s.d_sef == 0.0
+    @test s.d_F == 0.0
+    @test snp.d_sef == 0.0
+    @test snp.d_F == 0.0
+
+    # site_energy: known pre-existing spread, gated absolutely
+    @test_broken s.d_se == 0.0
+    @test s.d_se <= 1e-12
+    # and it is not the pair term's doing: the pair-less export shows the same magnitude
+    @test snp.d_se > 0.0
+    @test s.d_se <= 10 * max(snp.d_se, eps())
 end
 
 @testset "Unknown calculator in the stack is refused" begin

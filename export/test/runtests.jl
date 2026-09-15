@@ -66,18 +66,31 @@ function get_test_structure()
 end
 
 """
+    cantor_fixture_paths()
+
+The two host-local inputs the Cantor fixture needs: the fitted parameters and the first of
+the held-out LAMMPS geometries. Neither is part of the repository.
+"""
+function cantor_fixture_paths()
+    return (params = joinpath(PROJECT_DIR, "verify_cantor", "cantor_v010_params.jld2"),
+            held = expanduser(joinpath("~", "si-ace", "spike_yace", "cantor", "cantor_1.data")))
+end
+
+"""
     check_cantor_fixture_available()
 
-The pair-export test checks against the fitted Cantor model, whose saved parameters
-(`verify_cantor/cantor_v010_params.jld2`) and held-out LAMMPS geometries
-(`~/si-ace/spike_yace/cantor/cantor_{1..10}.data`) are host-local data, not part of the
-repository. Skip the test — loudly — where they are absent, exactly as the Python and
-LAMMPS groups do for their external tools.
+Whether the pair-export test can run here. The test checks the exported model against the
+fitted Cantor model, whose saved parameters and held-out geometries are host-local data.
+
+Where they are absent the group is skipped — but NOT silently: it still emits a testset
+containing a `@test_skip`, so the summary carries a non-zero broken/skipped count and the
+run is visibly distinguishable from one where the pair-parity gate actually executed. A
+warning alone would make an absent gate look exactly like a passing gate, which is the CI
+blindness this plan exists to remove.
 """
 function check_cantor_fixture_available()
-    params = joinpath(PROJECT_DIR, "verify_cantor", "cantor_v010_params.jld2")
-    held = expanduser(joinpath("~", "si-ace", "spike_yace", "cantor", "cantor_1.data"))
-    return isfile(params) && isfile(held)
+    p = cantor_fixture_paths()
+    return isfile(p.params) && isfile(p.held)
 end
 
 """
@@ -174,7 +187,12 @@ function main()
                 @info "Running pair-potential export tests..."
                 include(joinpath(TEST_DIR, "test_pair_export.jl"))
             else
-                @warn "Skipping pair export tests (Cantor fixture data not available)"
+                missing_paths = [f for f in values(cantor_fixture_paths()) if !isfile(f)]
+                @warn "Skipping pair export tests: Cantor fixture data not found" missing_paths
+                # Deliberately not silent -- see check_cantor_fixture_available.
+                @testset "Pair potential export (SKIPPED: Cantor fixture data missing)" begin
+                    @test_skip check_cantor_fixture_available()
+                end
             end
         end
 

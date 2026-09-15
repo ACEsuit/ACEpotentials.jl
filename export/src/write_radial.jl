@@ -305,8 +305,14 @@ end
 #    because the latter carries `r <= rin -> +1` / `r >= rcut -> -1` shortcuts that
 #    `eval_agnesi` does not have (it only clamps), and because the stored parameter tuple
 #    has no `rcut` field of its own.  `pin`/`pcut` are kept as `Int` so that `s^pin` is the
-#    same integer power `eval_agnesi` evaluates, bit for bit.
-function _write_pair_basis(io, pair_calc, NZ)
+#    same *integer* power `eval_agnesi` evaluates (`s^4` by squaring, not `pow(s, 4.0)`).
+#    That is not full bit-exactness: `_pair_transform_d` forms `s` by reciprocal-multiply
+#    (it needs `ds/dr` anyway) where `eval_agnesi` divides, which can differ by 1 ulp.
+#
+# `etace_zlist` and `rcut` come from the ETACE model -- they are what the generated `NZ`,
+# `z2i` and `RCUT_MAX` are built from -- and are passed in only so they can be checked
+# against the pair model's own species ordering and cutoff.
+function _write_pair_basis(io, pair_calc, NZ, etace_zlist, rcut)
     pm, ps = pair_calc.model, pair_calc.ps
 
     branch = pm.rembed.layer            # EnvRBranchL(envelope, rbasis)
@@ -320,11 +326,29 @@ function _write_pair_basis(io, pair_calc, NZ)
     env   = branch.envelope.refstate    # (rcut, p) of the PolyEnvelope1sR branch
     trans = rb.trans.refstate.params    # SVector{NZ(NZ+1)/2} of Agnesi parameters
 
+    # The generated NZ / z2i / RCUT_MAX are built from the *ETACE* model, while W, Wr and
+    # `trans` are indexed by the *pair* model's own species ordering.  Size checks alone pass
+    # under any permutation of the species, so compare the orderings themselves: a pair basis
+    # whose `_i2z` differs from the many-body one would otherwise export a silently permuted
+    # PAIR_C / PAIR_TRANSFORM_PARAMS.
+    pair_zs  = [Int(z.atomic_number) for z in rb.trans.refstate.zlist]
+    etace_zs = [Int(z.atomic_number) for z in etace_zlist]
+    @assert pair_zs == etace_zs """
+        pair and many-body species orderings differ -- the exported pair weights would be
+        permuted relative to the generated z2i.
+          ETACE zlist (defines NZ and z2i) : $etace_zs
+          pair  zlist (indexes W and trans): $pair_zs"""
+
     n_pairbasis = size(W, 1)
     @assert size(W, 2) == nq "pair SelectLinL in_dim $(size(W,2)) != n polys $nq"
     @assert size(W, 3) == NZ^2 "pair SelectLinL has $(size(W,3)) categories, expected NZ^2 = $(NZ^2)"
     @assert size(Wr) == (1, n_pairbasis, NZ) "pair readout W has size $(size(Wr)), expected (1, $n_pairbasis, $NZ)"
     @assert length(trans) == (NZ * (NZ + 1)) ÷ 2 "pair transform params: $(length(trans)) entries, expected $((NZ*(NZ+1))÷2) (per symmetric pair)"
+    # The neighbour lists the generated code is driven with are built at RCUT_MAX, so a pair
+    # envelope reaching further would be silently truncated.
+    @assert env.rcut <= rcut """
+        pair envelope cutoff $(env.rcut) Å exceeds the exported RCUT_MAX $(rcut) Å; the pair
+        term would be silently truncated by the neighbour list."""
 
     println(io, """
 # ============================================================================

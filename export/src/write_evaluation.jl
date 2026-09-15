@@ -3,8 +3,12 @@
 
 # The emitted evaluation functions always call `pair_energy` / `pair_energy_d`; when the
 # exported model has no ETPairModel those are the zero stubs from `_write_no_pair_basis`,
-# which makes every pair contribution an exact no-op.  `has_pair` therefore only records
-# which of the two is in force, for the reader of the generated file.
+# which makes every pair contribution an exact no-op.
+#
+# `has_pair` therefore has NO semantic effect: it gates nothing, it selects only the wording
+# of one comment line in the generated file.  The pair call sites are emitted either way.
+# Do not add logic behind it without also removing that guarantee from
+# `_write_no_pair_basis`'s contract.
 function _write_evaluation_functions(io, tensor, NZ, has_pair)
     # Get dimensions for pre-allocation
     nA = length(tensor.abasis)

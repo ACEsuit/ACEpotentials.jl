@@ -250,7 +250,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
         # Always emits `pair_energy` / `pair_energy_d` so the evaluation functions below
         # are identical with and without a pair term.
         if pair_calc !== nothing
-            _write_pair_basis(io, pair_calc, NZ)
+            _write_pair_basis(io, pair_calc, NZ, zlist, rcut)
         else
             _write_no_pair_basis(io)
         end
