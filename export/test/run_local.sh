@@ -11,8 +11,14 @@
 #   ./run_local.sh mpi          # Run only MPI tests
 #
 # Environment variables:
-#   LAMMPS_SRC    - Path to LAMMPS source (for building plugin)
-#   JULIA_THREADS - Number of Julia threads (default: 4)
+#   LAMMPS_SRC               - Path to LAMMPS source (for building plugin)
+#   JULIA_THREADS            - Number of Julia threads (default: 4)
+#   ACE_REQUIRE_GROUPS       - `all`, or a comma-separated list of groups that MUST execute;
+#                              the suite fails for any of them that was skipped.  Use this
+#                              whenever a run is meant to prove something.
+#   ACE_LMP                  - LAMMPS executable to use (otherwise candidates are probed)
+#   ACE_MPIRUN               - mpirun to use (otherwise derived from `ldd <lmp>`)
+#   ACE_TEST_LD_LIBRARY_PATH - extra library directories for the external processes
 #
 
 set -e
@@ -90,8 +96,11 @@ echo "=============================================="
 export JULIA_NUM_THREADS=$JULIA_THREADS
 
 # Add Julia libraries to LD_LIBRARY_PATH
+# K1: <julia>/lib carries libjulia.so, <julia>/lib/julia carries the libstdc++ a
+# juliac-compiled library was built against.  Both are needed; the runner adds them too
+# (export/test/lammps_harness.jl), this is belt and braces for anything invoked directly.
 JULIA_LIB_DIR=$(julia -e 'print(joinpath(Sys.BINDIR, "..", "lib"))')
-export LD_LIBRARY_PATH="$JULIA_LIB_DIR:${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$JULIA_LIB_DIR:$JULIA_LIB_DIR/julia:${LD_LIBRARY_PATH:-}"
 
 # Build LAMMPS plugin if needed and LAMMPS is available
 if [[ "$HAS_LAMMPS" == "1" ]] && [[ "$TEST_SELECTION" == "all" || "$TEST_SELECTION" == "lammps" || "$TEST_SELECTION" == "mpi" ]]; then
