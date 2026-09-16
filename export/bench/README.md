@@ -102,8 +102,9 @@ Common to every row below: 1 MPI rank, `taskset -c 31`, `OMP_NUM_THREADS=1`,
 core, `/proc/loadavg` between 0.06 and 1.16 (the ~1.0 is this benchmark's own single pinned
 process).
 
-**Every row was gated at 1e-12 before it was timed** (`export/bench/verify_bench_models.jl`,
-full output in `bench_parity/verify.log`):
+**Every row's generated SOURCE was gated at 1e-12 before it was timed**
+(`export/bench/verify_bench_models.jl`, finished 14:43:05; the libraries were compiled
+14:44-14:45 and the rows taken 14:54-15:11; full output in `bench_parity/verify.log`):
 
 | tag | accuracy reference | max&#124;dE&#124;/atom | max&#124;dF&#124; | max&#124;dV&#124;/atom | gate |
 |---|---|---|---|---|---|
@@ -116,7 +117,15 @@ The Hermite rows' error against the **fitted** stack is reported, never asserted
 error, not export error): Cantor `max|dF| = 2.68e-04` eV/Å, TiAl `max|dF| = 1.65e-02` eV/Å.
 
 **The LIBRARY-level gates** (`export/bench/gate_bench_libs.jl`, full output in
-`bench_parity/gate_libs.log`; recorded per tag in `bench_parity/<tag>.gated`). The source gate
+`bench_parity/gate_libs.log`; recorded per tag in `bench_parity/<tag>.gated`).
+
+*Ordering, stated exactly:* these three were run at **17:08**, i.e. **after** the 14:54-15:11
+timing block — the script did not exist until it was added in response to a review finding that
+they had never been run at all. The guarantee still holds for the four rows above because the
+`.so` files were not rebuilt in between: their mtimes are the 14:44-14:45 compile times and
+each sha256 matches its manifest, so the binaries that were timed are bit-for-bit the binaries
+that were gated. For every row taken from that point on the ordering is *enforced*:
+`bench_parity.sh` refuses a library whose manifest is missing, stale or failing. The source gate
 above says nothing about the compiled `.so` that is actually timed: a juliac or `cpu_target`
 miscompilation would change what the library computes, and therefore what it costs, without
 touching the generated `.jl`. All three run on the benchmark's own box at `-var cells 5`

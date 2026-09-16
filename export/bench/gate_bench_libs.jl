@@ -90,7 +90,30 @@ const SPEC = Dict(
                  species = "Cr Mn Fe Co Ni", typemap = "1:24,2:25,3:26,4:27,5:28"),
     "tial"   => (box = "box_tial.lmp", elements = (:Ti, :Al),
                  species = "Ti Al", typemap = "1:22,2:13"))
-model_of(tag) = startswith(tag, "cantor") ? "cantor" : "tial"
+"""
+    model_of(tag) -> "cantor" | "tial"
+
+Which reference model a tag belongs to.  ERRORS on anything unrecognised rather than falling
+through to a default: the `SPEC` entry it selects carries the box file, the element tuple, the
+`pair_coeff` species list and the LAMMPS-type-to-Z map, so a silent default would gate a new
+library against the wrong geometry, the wrong species and the wrong Z map, and every number it
+printed would look perfectly healthy.  `bench_parity.sh` (BOX inference) and
+`verify_bench_models.jl` (fixture selection) both already error on exactly this condition; this
+was the one of the three that did not.
+
+This is not hypothetical.  README records that neither benchmark model exercises a dense
+`RBASIS_W_k` (both are `init_Wradial = :onehot`), so Task 5 has to introduce a tag of its own --
+and it would have hit the silent fallthrough.
+"""
+function model_of(tag)
+    startswith(tag, "cantor") && return "cantor"
+    startswith(tag, "tial") && return "tial"
+    error("""unknown tag '$tag': cannot tell which reference model it belongs to.
+          Tags must start with "cantor" or "tial" so that the box file, element tuple,
+          pair_coeff species list and LAMMPS-type -> Z map can be selected.
+          To add a model, add a SPEC entry here and a prefix to this function --
+          do NOT let a new tag fall through to an existing model's geometry.""")
+end
 
 const PLUGIN = get(ENV, "PLUGIN", joinpath(REPO, "verify_cantor", "plugin_build", "aceplugin.so"))
 const MPIRUN = let c = get(ENV, "ACE_MPIRUN", "")
