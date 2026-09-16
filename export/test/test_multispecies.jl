@@ -216,9 +216,9 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
 
     @testset ":hermite_spline (uniform cutoff) vs the SPLINIFIED stack, 1e-12" begin
         spl = ms3_spline_stack(stacked_u; Nspl = 50)
-        # the SPLINIFIED stack is what gets exported -- export_ace_model refuses to emit
-        # Hermite tables for an unsplinified model (it warns and silently falls back to
-        # :polynomial), which would turn this gate into a comparison of two different models
+        # the SPLINIFIED stack is what gets exported -- export_ace_model will not emit
+        # Hermite tables for an unsplinified model (it warns and demotes to :polynomial),
+        # which would turn this gate into a comparison of two different models
         Base.invokelatest(export_ace_model, spl, f_herm; radial_basis = :hermite_spline)
         @test isfile(f_herm)
         # export_ace_model auto-detects splinification; the file must really be the spline one
@@ -252,11 +252,16 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         # ... and because that reference cannot be evaluated, the exporter must REFUSE to emit
         # such a model rather than produce an artefact no gate can ever check.
         #
-        # BOTH keywords must be refused for a SPLINIFIED per-pair-cutoff model, and this is
-        # the point of the second case below: export_ace_model promotes :polynomial to
-        # :hermite_spline whenever the model is splinified, so a user who reaches this error
-        # cannot escape it by passing :polynomial.  The message must therefore not offer that
-        # as the remedy -- asserted explicitly.
+        # BOTH keywords must be refused for a SPLINIFIED per-pair-cutoff model, but for two
+        # DIFFERENT reasons, and the tests below pin each one:
+        #
+        #   :hermite_spline -> the per-pair-cutoff refusal (this model cannot be verified);
+        #   :polynomial     -> the splinification refusal (Task 3 / K4: a splinified model has
+        #                      no polynomial recurrence left to emit, and this used to be
+        #                      silently promoted to :hermite_spline behind a @warn).
+        #
+        # Either way no file is produced, and neither message may offer :polynomial as the
+        # remedy for THIS model -- asserted explicitly below.
         function _refusal(calc, tag, kw)
             f = joinpath(build, "ms3_hermite_refused_$tag.jl")
             isfile(f) && rm(f)
@@ -269,16 +274,41 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
             return (; err, msg = err === nothing ? "" : sprint(showerror, err), f)
         end
 
-        for (tag, kw) in (("hermite", :hermite_spline), ("promoted", :polynomial))
-            r = _refusal(spl_a, tag, kw)
-            @test r.err isa ErrorException
-            @test occursin("radial_basis=:hermite_spline requires every species pair", r.msg)
-            @test occursin("pair 1 = (iz=1, jz=1)", r.msg)   # 5.1 Å, short of RCUT_MAX = 6.1
-            @test isfile(r.f) == false                        # refused before any file opened
-            # the advice must be reachable for a caller who is already splinified
-            @test occursin("passing radial_basis=:polynomial is NOT one of them", r.msg)
-            @test occursin("BEFORE splinify()", r.msg)
+        # (a) :hermite_spline -- refused because the pairs do not share one cutoff.
+        r = _refusal(spl_a, "hermite", :hermite_spline)
+        @test r.err isa ErrorException
+        @test occursin("radial_basis=:hermite_spline requires every species pair", r.msg)
+        @test occursin("pair 1 = (iz=1, jz=1)", r.msg)   # 5.1 Å, short of RCUT_MAX = 6.1
+        @test isfile(r.f) == false                        # refused before any file opened
+        # the advice must be reachable for a caller who is already splinified
+        @test occursin("passing radial_basis=:polynomial is NOT one of them", r.msg)
+        @test occursin("BEFORE splinify()", r.msg)
+
+        # (b) :polynomial -- refused because the model is splinified.  This is the K4 change:
+        # it used to be PROMOTED to :hermite_spline behind a @warn, so a caller who asked for
+        # the exact mode (or simply took the default) received the approximate one.
+        r = _refusal(spl_a, "splinified_poly", :polynomial)
+        @test r.err isa ErrorException
+        @test occursin("radial_basis=:polynomial cannot export this model", r.msg)
+        @test occursin("already been splinified", r.msg)
+        @test occursin(":polynomial is the DEFAULT", r.msg)          # fires with no keyword too
+        @test occursin("BEFORE splinify()", r.msg)                   # remedy 1
+        @test occursin("radial_basis=:hermite_spline explicitly", r.msg)  # remedy 2, the opt-in
+        @test isfile(r.f) == false                                   # no partial file
+
+        # and the default keyword -- no radial_basis at all -- must hit the same refusal.
+        f_def = joinpath(build, "ms3_default_refused.jl")
+        isfile(f_def) && rm(f_def)
+        err_def = try
+            Base.invokelatest(export_ace_model, spl_a, f_def)
+            nothing
+        catch e
+            e
         end
+        @test err_def isa ErrorException
+        @test occursin("radial_basis=:polynomial cannot export this model",
+                       err_def === nothing ? "" : sprint(showerror, err_def))
+        @test isfile(f_def) == false
 
         # The reachable remedy actually works: the SAME model, exported as it was before
         # splinify() was applied, in the default mode.  (That export is gated at 1e-12

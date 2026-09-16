@@ -52,11 +52,12 @@ unverifiable artefact silently is the same class of defect as silently dropping 
 
 WHAT THE MESSAGE MAY AND MAY NOT SUGGEST.  Reaching this function implies the model IS
 splinified: `export_ace_model` demotes `:hermite_spline` to `:polynomial` for an unsplinified
-model, and PROMOTES `:polynomial` to `:hermite_spline` for a splinified one, so
+model, and REFUSES `:polynomial` outright for a splinified one, so
 `radial_basis == :hermite_spline` at the call site can only mean "splinified".  Telling such a
-caller to "use `radial_basis = :polynomial`" would therefore be useless advice -- the promotion
-would route them straight back here whichever keyword they pass.  The two remedies below are
-the ones that actually work for a caller who can reach this error.
+caller to "use `radial_basis = :polynomial`" would therefore be useless advice on THIS model
+-- that keyword now raises a different error, about the splinification, and still produces no
+file.  The two remedies below are the ones that actually work for a caller who can reach this
+error.
 """
 function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
     short = Tuple{Int,Int,Int,Float64}[]        # (k, iz, jz, this pair's cutoff)
@@ -79,8 +80,8 @@ function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
         is unverifiable by construction.
 
         Two things fix this; passing radial_basis=:polynomial is NOT one of them, because
-        this model is already splinified and export_ace_model promotes :polynomial back to
-        :hermite_spline for a splinified model:
+        this model is already splinified and export_ace_model refuses :polynomial for a
+        splinified model (splinify() left no polynomial recurrence to emit):
 
           1. Export the model as it was BEFORE splinify() was applied, with
              radial_basis=:polynomial (the default).  That mode handles per-pair cutoffs

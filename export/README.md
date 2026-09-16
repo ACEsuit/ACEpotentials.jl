@@ -104,8 +104,17 @@ constraints:
 * never compare a `:hermite_spline` export against the fitted model and call the difference
   an export error.
 
+`:hermite_spline` is an **explicit opt-in**.  Exporting a model that has already been
+splinified without asking for it is an error, not a substitution: `splinify()` leaves no
+polynomial recurrence to emit, so the exporter cannot honour `:polynomial` — and because
+`:polynomial` is the default, silently substituting the spline mode would hand a caller who
+never chose it an approximate model.  Either export the model as it was *before* `splinify()`
+(exact, gated at 1e-12), or pass `radial_basis=:hermite_spline` to say that the approximate
+mode is what you want.  The reverse mismatch, `:hermite_spline` on an unsplinified model, is
+only warned about: substituting the exact mode there cannot make a result wrong.
+
 ```julia
-# Polynomial (default, exact)
+# Polynomial (default, exact) — the model must NOT be splinified
 export_ace_model(calc, "model.jl")
 
 # Hermite cubic splines (opt-in; the model must already be splinified)

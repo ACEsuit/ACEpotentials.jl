@@ -122,7 +122,13 @@ Arguments:
 
 `:polynomial` re-evaluates the orthogonal polynomial recurrence at runtime and reproduces the
 model it was exported from to double-precision roundoff.  It is the default and the mode every
-verification step of this project gates at 1e-12.
+verification step of this project gates at 1e-12.  It requires a model that has **not** been
+splinified: on a splinified model the export is REFUSED rather than quietly switched to
+`:hermite_spline`, because `:polynomial` is the default and a silent switch would hand a
+caller who never chose the approximate mode an approximate model (see the validation block in
+the method body for the full reasoning).  The reverse mismatch -- `:hermite_spline` on an
+unsplinified model -- is demoted to `:polynomial` with a warning, since substituting the exact
+mode cannot make a result wrong.
 
 `:hermite_spline` emits the knot tables of a model that has ALREADY been splinified with
 `ETModels.splinify` and evaluates a piecewise cubic.  It reproduces *that splinified model* to
@@ -180,14 +186,59 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # Auto-detect if model is splinified
     is_splinified = isa(rembed_layer, ET.TransSelSplines)
 
-    # Validate radial_basis choice against model state
+    # Validate radial_basis choice against model state.
+    #
+    # The two mismatches are NOT symmetric, and are therefore not handled symmetrically.
+    #
+    #   :hermite_spline on an UNSPLINIFIED model  -> demoted to :polynomial, with a warning.
+    #       The caller asked for the approximate mode and gets the EXACT one.  No result can
+    #       be wrong because of that substitution; at worst the library is slower than the
+    #       caller expected.  A warning is proportionate.
+    #
+    #   :polynomial on a SPLINIFIED model         -> REFUSED.
+    #       This used to be silently promoted to :hermite_spline behind a @warn, which meant
+    #       a caller who asked for the exact mode -- or, far more often, simply took the
+    #       DEFAULT, since :polynomial is the default -- received an APPROXIMATE model and a
+    #       line of log output.  The substitution changes the model class: the exported file
+    #       reproduces the splinified model, not the fitted one, and on the fitted Cantor
+    #       model those differ by ~2.3e-4 eV/A at Nspl=50.  Inside this very repository the
+    #       promotion had produced `export/test/build/test_poly_etace_only.jl`, a file named
+    #       "poly" whose first section is `HERMITE CUBIC SPLINE RADIAL BASIS`.
+    #
+    #       There is no way to honour :polynomial here -- splinify() replaced the recurrence
+    #       with knot tables, so there is no polynomial left to emit -- so the choice is
+    #       between substituting silently and refusing.  It refuses, and names the two ways
+    #       forward.  Passing radial_basis=:hermite_spline is the one-word opt-in that says
+    #       the approximate mode is what the caller actually wants.
     if radial_basis == :hermite_spline && !is_splinified
-        @warn "Model is not splinified, but radial_basis=:hermite_spline requires splinification. Falling back to :polynomial evaluation."
+        @warn "Model is not splinified, but radial_basis=:hermite_spline requires splinification. " *
+              "Falling back to :polynomial, which is exact for this model."
         radial_basis = :polynomial
     elseif radial_basis == :polynomial && is_splinified
-        @warn "Model is splinified, but radial_basis=:polynomial requires original polynomial structure. " *
-              "Splinification replaces polynomials with splines. Using :hermite_spline instead."
-        radial_basis = :hermite_spline
+        error("""
+        radial_basis=:polynomial cannot export this model: it has already been splinified.
+
+        splinify() replaced the radial polynomial recurrence with cubic-spline knot tables,
+        so there is no polynomial basis left for the exporter to emit.  Note that
+        :polynomial is the DEFAULT, so this also fires when no radial_basis was passed at
+        all -- that is deliberate.  Earlier versions substituted :hermite_spline here behind
+        a warning, which handed callers who wanted (or defaulted to) the EXACT mode an
+        APPROXIMATE model instead; on the fitted Cantor model that substitution costs
+        ~2.3e-4 eV/A at Nspl=50.
+
+        Two ways forward:
+
+          1. Export the model as it was BEFORE splinify() was applied, with
+             radial_basis=:polynomial (the default).  That export is exact and is gated at
+             1e-12 against the fitted model throughout this project's test suite.  This is
+             the right answer unless you specifically need the spline tables.
+
+          2. Pass radial_basis=:hermite_spline explicitly.  That is the opt-in to the
+             approximate mode: the exported file reproduces the SPLINIFIED model to 1e-12,
+             and its difference from the FITTED model is the splinification error, which
+             must be reported and never gated.  If you take this route, splinify BEFORE
+             fitting so that the fit sees the representation the library will evaluate.
+        """)
     end
 
     # Extract species information from radial embedding state
@@ -203,11 +254,12 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # :hermite_spline is only valid when every species pair shares the neighbour-list cutoff.
     # Checked BEFORE the output file is opened, so a refused export leaves no partial file.
     #
-    # By the promotion/demotion block above, `radial_basis == :hermite_spline` here implies
-    # `is_splinified` (an unsplinified model is demoted to :polynomial; a splinified one is
-    # promoted to :hermite_spline whatever the caller passed).  The refusal message relies on
-    # that invariant when it says :polynomial is NOT a usable remedy, so assert it rather
-    # than leave it as a reading of the branch above.
+    # By the validation block above, `radial_basis == :hermite_spline` here implies
+    # `is_splinified`: an unsplinified model is demoted to :polynomial, and a splinified one
+    # reaches this line only because the caller passed :hermite_spline explicitly (:polynomial
+    # on a splinified model is refused outright).  The refusal message relies on that
+    # invariant when it says :polynomial is NOT a usable remedy, so assert it rather than
+    # leave it as a reading of the branch above.
     if radial_basis == :hermite_spline
         @assert is_splinified "internal: :hermite_spline selected for an unsplinified model"
         _check_hermite_uniform_cutoffs(agnesi_params, NZ, rcut)

@@ -145,14 +145,27 @@ include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
     build_dir = joinpath(TEST_DIR, "build")
     mkpath(build_dir)
 
-    # Test: Export ETACE only first (without StackedCalculator)
-    # Try polynomial first to see if export works at all
-    println("[6a] Testing ETACE-only export with polynomial radial basis...")
+    # [6a] `etace_calc` here is SPLINIFIED (see step [3]), so :polynomial cannot be honoured:
+    # splinify() left no polynomial recurrence to emit.  This used to be silently promoted to
+    # :hermite_spline behind a @warn, and the artefact the promotion produced was this very
+    # file -- `test_poly_etace_only.jl`, named "poly", whose first section reads
+    # `HERMITE CUBIC SPLINE RADIAL BASIS`.  Task 3 / K4 made it a refusal, and the step that
+    # used to depend on the promotion now pins the refusal instead.
+    println("[6a] :polynomial on a splinified model must be REFUSED, not promoted...")
     model_file_poly = joinpath(build_dir, "test_poly_etace_only.jl")
-    export_ace_model(etace_calc, model_file_poly;
-                     for_library=false,
-                     radial_basis=:polynomial)
-    println("   ✓ Polynomial export complete")
+    isfile(model_file_poly) && rm(model_file_poly)
+    poly_err = try
+        export_ace_model(etace_calc, model_file_poly;
+                         for_library=false,
+                         radial_basis=:polynomial)
+        nothing
+    catch e
+        e
+    end
+    @test poly_err isa ErrorException
+    @test occursin("already been splinified", sprint(showerror, poly_err))
+    @test isfile(model_file_poly) == false     # refused before any file was opened
+    println("   ✓ :polynomial refused for the splinified model, no file written")
 
     println("[6b] Testing ETACE-only export with Hermite splines...")
     model_file_etace = joinpath(build_dir, "test_hermite_etace_only.jl")
@@ -176,31 +189,14 @@ include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
     @test occursin("HERMITE", content) || occursin("hermite", content) || occursin("PAIR_", content)
     println("   ✓ Hermite spline code detected")
 
-    # Test polynomial export first
-    println("[7a] Testing polynomial exported model...")
-    exported_poly = Module(:ExportedPoly)
-    Base.include(exported_poly, model_file_poly)
-
+    # [7a] used to load `model_file_poly` and print its energy without asserting anything.
+    # That file no longer exists (step [6a] now refuses to write it), and the block it fed was
+    # in any case a duplicate of [7b]: both exported the same splinified `etace_calc`, one of
+    # them through the silent promotion.  The interaction graph the Hermite check below needs
+    # is built here instead.
     G = ET.Atoms.interaction_graph(sys, rcut * u"Å")
     n_atoms = length(sys)
     Z0 = 14
-
-    E_poly_exported = 0.0
-    for i in 1:n_atoms
-        neighbor_Rs = SVector{3, Float64}[]
-        neighbor_Zs = Int[]
-        for (edge_idx, edge) in enumerate(G.edge_data)
-            if G.ii[edge_idx] == i
-                push!(neighbor_Rs, SVector{3, Float64}(edge.𝐫))
-                push!(neighbor_Zs, Int(edge.z1.atomic_number))
-            end
-        end
-        E_i = exported_poly.site_energy(neighbor_Rs, neighbor_Zs, Z0)
-        E_poly_exported += E_i
-    end
-    println("   Polynomial exported energy: $E_poly_exported eV")
-    println("   ETACE calculator energy: $E_etace_only_val eV")
-    println("   Polynomial difference: $(abs(E_poly_exported - E_etace_only_val)) eV")
 
     # Load ETACE-only Hermite spline exported model
     println("[7b] Testing Hermite spline exported model...")
