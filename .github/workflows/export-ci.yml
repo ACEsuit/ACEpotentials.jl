@@ -720,7 +720,7 @@ jobs:
   # Point the repository variable ACE_PAIR_GATE_RUNNER at a self-hosted runner that has that
   # data and this job runs there with ACE_REQUIRE_GROUPS set, so a missing fixture FAILS
   # rather than warns.  With the variable unset the job does not run at all, and the
-  # "Check the pair-parity gate executed" step of the hosted job annotates the gap.
+  # "Check the fixture-guarded gates executed" step of the hosted job annotates the gap.
   # ---------------------------------------------------------------------------------------
   pair-parity:
     name: Pair-parity gate (Cantor fixture; self-hosted)
