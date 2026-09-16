@@ -243,10 +243,26 @@ include(joinpath(@__DIR__, "check_export.jl"))
         # `required_check` makes an unavailable prerequisite a FAILURE, not a skip, whenever
         # ACE_REQUIRE_GROUPS names `lammps`.  Without that, a CI job that never installed
         # `ase` would report `lammps=ran` with this attribution gate silently absent.
-        if required_check(check_python_available(), "lammps",
-                          "python3 with numpy/ase/ase-ace is needed for the 1e-12 " *
-                          "library-vs-Julia attribution gate") &&
-           required_check(natoms[] > 0, "lammps", "the parity geometry was not produced")
+        #
+        # The reason string names only what `check_python_available()` (runtests.jl) actually
+        # imports: `numpy` and `ase`.  It does NOT import `ase_ace`, which `eval_library.py`
+        # needs (`from ase_ace import ACELibraryCalculator`).  A host with `ase` but no
+        # `ase-ace` therefore passes this guard and fails a few lines below instead, inside
+        # the `catch` that reports "python library evaluation failed" -- attributed correctly
+        # there, just not by this string.  `ase_ace` is deliberately NOT added to
+        # `check_python_available()` itself: that function also gates the whole `python`
+        # group, most of whose testsets need `ase_ace`, but two (`Library Loading`,
+        # `Utility Functions`) do not, and folding `ase_ace` into the shared guard would skip
+        # those on a host that could still run them. Both `required_check`s below are called
+        # unconditionally (not short-circuited with `&&`), so a host missing BOTH
+        # prerequisites gets BOTH reasons registered instead of only the first; `&&` on the
+        # two resulting booleans is what decides whether to proceed.
+        python_ok = required_check(check_python_available(), "lammps",
+                          "python3 with numpy and ase is needed for the 1e-12 " *
+                          "library-vs-Julia attribution gate (ase_ace's own absence " *
+                          "surfaces below, as an eval_library.py failure, not here)")
+        geom_ok = required_check(natoms[] > 0, "lammps", "the parity geometry was not produced")
+        if python_ok && geom_ok
             penv = ace_runtime_env(dirname(lib_path))
             penv["ACE_LIB_PATH"] = lib_path
             penv["ACE_GEOM"] = geom_file
