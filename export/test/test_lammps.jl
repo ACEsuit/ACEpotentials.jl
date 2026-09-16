@@ -1,379 +1,329 @@
 #=
-LAMMPS Plugin Tests (Serial)
+LAMMPS Plugin Tests (serial, plus a two-rank parity run)
 
-Tests for LAMMPS pair_style ace plugin:
-1. Plugin loading
-2. Energy consistency with Python
-3. Force consistency
-4. Virial/stress consistency
-5. NVE energy conservation
+The gate this file exists for, and WHICH REFERENCE EACH CHECK USES:
+
+  1. `pair_style ace` in LAMMPS  vs  the exported model evaluated in Julia   **1e-10**
+     (`exported_efv` from check_export.jl, on the geometry LAMMPS itself wrote out with
+     `write_data`).  This is the plan's LAMMPS gate.  It replaced a comparison to Python at
+     1e-6 that, on top of being 4 orders of magnitude loose, was DEAD: it ran only
+     `if haskey(TEST_ARTIFACTS, "python_energy_8atom")` and nothing ever set that key.
+
+  2. the compiled library through the Python C API  vs  the same Julia numbers   **1e-12**
+     Kept as a second, independent check so that a failure of (1) is attributable: if (2)
+     also fails, the exported model and the library disagree; if only (1) fails, the fault
+     is on the LAMMPS side (neighbour list, pair style, MPI).
+
+  3. two MPI ranks  vs  one rank, same geometry, same library   **1e-12**
+     Delegated to `export/lammps/test/run_two_ranks.sh` so CI can run it standalone.
+
+Both sides of (1) and (2) evaluate the *same* coordinates: LAMMPS builds the cell, perturbs
+it and writes `geom.data`; Julia and Python read that file back.  The test additionally
+asserts that the coordinates in `geom.data` are bit-identical to the ones in the 17-digit
+dump, so "identical coordinates" is checked rather than assumed.
+
+Everything else here (plugin loading, stress symmetry, NVE) is a smoke test of the plugin
+and is labelled as such -- the CI model has random parameters, so its energy conservation
+carries no physics.
 =#
 
 using Test
 using DelimitedFiles
 using Statistics: std, mean
+using LinearAlgebra: norm
+using Printf: @sprintf
+
+include(joinpath(@__DIR__, "check_export.jl"))
 
 @testset "LAMMPS Plugin" verbose=true begin
-    build_dir = joinpath(TEST_DIR, "build")
-    lib_path = joinpath(build_dir, "libace_test.so")
+    setup = lammps_setup()
+    lib_path = setup.lib_path
+    plugin_path = setup.plugin_path
+    lmp_exe = setup.exe
+    env = setup.env
     lammps_test_dir = joinpath(TEST_DIR, "lammps")
+    model_file = joinpath(TEST_DIR, "build", "test_etace_model.jl")
+    mkpath(lammps_test_dir)
 
     if !isfile(lib_path)
         @test_skip "ACE library not compiled - skipping LAMMPS tests"
         return
     end
-
-    # Find LAMMPS source directory first (needed for plugin build and library path)
-    lammps_src = get(ENV, "LAMMPS_SRC", "")
-
-    # Find LAMMPS executable (prefer build directory if LAMMPS_SRC is set)
-    lmp_exe = ""
-    if !isempty(lammps_src) && isdir(lammps_src)
-        build_lmp = joinpath(dirname(lammps_src), "build", "lmp")
-        if isfile(build_lmp)
-            lmp_exe = build_lmp
-        end
-    end
-    # Fall back to system lmp
     if isempty(lmp_exe)
-        lmp_exe = try
-            strip(read(`which lmp`, String))
-        catch
-            ""
-        end
-    end
-
-    if isempty(lmp_exe) || !isfile(lmp_exe)
         @test_skip "LAMMPS not found - skipping tests"
         return
     end
-
     @info "Using LAMMPS: $lmp_exe"
 
-    # Find ACE plugin
-    plugin_dir = joinpath(EXPORT_DIR, "lammps", "plugin", "build")
-    plugin_path = joinpath(plugin_dir, "aceplugin.so")
-
+    # Build the plugin if it is not there yet.
     if !isfile(plugin_path)
-        # Try to build plugin
         @info "Building LAMMPS ACE plugin..."
         cmake_dir = joinpath(EXPORT_DIR, "lammps", "plugin", "cmake")
-
-        # Need LAMMPS headers - use lammps_src from above or try to find
+        lammps_src = get(ENV, "LAMMPS_SRC", "")
         if isempty(lammps_src) || !isdir(lammps_src)
-            # Try to find from lmp executable
-            lmp_dir = dirname(dirname(lmp_exe))
-            possible_srcs = [
-                joinpath(lmp_dir, "src"),
-                joinpath(dirname(lmp_exe), "..", "src"),
-                "/usr/local/include/lammps",
-                "/usr/include/lammps",
-            ]
-            for src in possible_srcs
+            for src in [joinpath(dirname(dirname(lmp_exe)), "src"),
+                        joinpath(dirname(lmp_exe), "..", "src"),
+                        "/usr/local/include/lammps", "/usr/include/lammps"]
                 if isdir(src)
                     lammps_src = src
                     break
                 end
             end
         end
-
         if isempty(lammps_src) || !isdir(lammps_src)
             @test_skip "LAMMPS source not found - cannot build plugin"
             return
         end
-
         @info "Using LAMMPS source: $lammps_src"
-        mkpath(plugin_dir)
-        cd(plugin_dir) do
+        mkpath(dirname(plugin_path))
+        cd(dirname(plugin_path)) do
             run(`cmake $(cmake_dir) -DLAMMPS_HEADER_DIR=$(lammps_src)`)
             run(`make -j4`)
         end
-
         if !isfile(plugin_path)
             @test_skip "Plugin build failed"
             return
         end
     end
 
-    # Set up environment
-    env = copy(ENV)
-    julia_lib_dir = joinpath(Sys.BINDIR, "..", "lib")
-
-    # Find LAMMPS library directory (sibling to src or at build)
-    lammps_lib_dir = ""
-    if !isempty(lammps_src) && isdir(lammps_src)
-        # Check for build directory sibling to src
-        lammps_build = joinpath(dirname(lammps_src), "build")
-        if isdir(lammps_build) && isfile(joinpath(lammps_build, "liblammps.so"))
-            lammps_lib_dir = lammps_build
+    """
+    Run a LAMMPS input under the environment `find_lammps_exe` proved the executable runs in,
+    and return stdout+stderr combined.  A non-zero exit appends `LAMMPS_EXIT_NONZERO` instead
+    of throwing, so a failing run shows up as a test failure with LAMMPS's own message in the
+    log rather than as a bare `failed process` error.
+    """
+    function run_lmp(input::AbstractString, name::AbstractString)
+        input_file = joinpath(lammps_test_dir, name)
+        write(input_file, input)
+        buf = IOBuffer()
+        ok = try
+            success(pipeline(setenv(`$(lmp_exe) -in $(input_file)`, env);
+                             stdout = buf, stderr = buf))
+        catch e
+            @error "LAMMPS run failed to start" input_file exception = e
+            false
         end
-    end
-    # Also try to get it from lmp executable location
-    if isempty(lammps_lib_dir) && !isempty(lmp_exe)
-        lmp_dir = dirname(lmp_exe)
-        if isfile(joinpath(lmp_dir, "liblammps.so"))
-            lammps_lib_dir = lmp_dir
-        end
-    end
-
-    # Find GCC library directory (for C++ ABI compatibility)
-    # Check common EasyBuild locations for GCCcore
-    gcc_lib_dir = ""
-    for gcc_version in ["14.3.0", "13.3.0", "13.2.0", "12.3.0", "12.2.0", "11.3.0"]
-        gcc_path = "/software/easybuild/software/GCCcore/$gcc_version/lib64"
-        if isdir(gcc_path) && isfile(joinpath(gcc_path, "libstdc++.so.6"))
-            gcc_lib_dir = gcc_path
-            break
-        end
+        out = String(take!(buf))
+        ok || (out *= "\nLAMMPS_EXIT_NONZERO\n")
+        return out
     end
 
-    env["LD_LIBRARY_PATH"] = join(filter(!isempty, [
-        gcc_lib_dir,  # GCC libs first for C++ ABI
-        julia_lib_dir,
-        dirname(lib_path),
-        lammps_lib_dir,
-        get(ENV, "LD_LIBRARY_PATH", "")
-    ]), ":")
+    "The `ACE_ENERGY` line every input below prints at 17 significant digits."
+    function parse_ace_energy(output)
+        m = match(r"ACE_ENERGY\s+(\S+)", output)
+        return m === nothing ? nothing : parse(Float64, m.captures[1])
+    end
 
     @testset "Plugin Loading" begin
-        # Create simple test input
-        test_input = """
+        out = run_lmp("""
         units metal
         atom_style atomic
         boundary p p p
-
         lattice diamond 5.43
         region box block 0 1 0 1 0 1
         create_box 1 box
         create_atoms 1 box
         mass 1 28.0855
-
         plugin load $(plugin_path)
         pair_style ace
         pair_coeff * * $(lib_path) Si
-
         run 0
-        """
-
-        input_file = joinpath(lammps_test_dir, "test_load.lmp")
-        mkpath(lammps_test_dir)
-        write(input_file, test_input)
-
-        # Run LAMMPS
-        result = try
-            read(setenv(`$(lmp_exe) -in $(input_file)`, env), String)
-        catch e
-            "error: $e"
-        end
-
-        @test !occursin("ERROR", result)
-        @test occursin("Loop time", result) || occursin("Total wall time", result)
+        """, "test_load.lmp")
+        @test !occursin("ERROR", out)
+        @test occursin("Loop time", out) || occursin("Total wall time", out)
     end
 
-    @testset "Energy Consistency" begin
-        # Create 8-atom Si cell and compute energy
-        test_input = """
+    # =====================================================================================
+    # THE GATE: LAMMPS vs the exported model evaluated in Julia, 1e-10
+    # =====================================================================================
+    geom_file = joinpath(lammps_test_dir, "geom.data")
+    dump_file = joinpath(lammps_test_dir, "forces.dump")
+    E_lmp = Ref{Union{Nothing,Float64}}(nothing)
+    E_jl = Ref(0.0); F_jl = Ref(SVector{3,Float64}[]); natoms = Ref(0)
+
+    @testset "LAMMPS vs Julia (reference: exported model in Julia, tol 1e-10)" begin
+        out = run_lmp("""
         units metal
         atom_style atomic
         boundary p p p
-
         lattice diamond 5.43
         region box block 0 1 0 1 0 1
         create_box 1 box
         create_atoms 1 box
         mass 1 28.0855
 
-        plugin load $(plugin_path)
-        pair_style ace
-        pair_coeff * * $(lib_path) Si
-
-        thermo_style custom step pe
-        run 0
-        """
-
-        input_file = joinpath(lammps_test_dir, "test_energy.lmp")
-        write(input_file, test_input)
-
-        output = read(setenv(`$(lmp_exe) -in $(input_file)`, env), String)
-
-        # Extract energy from output
-        # Look for line with "Step PotEng" header then the value
-        lines = split(output, "\n")
-        energy = nothing
-        for (i, line) in enumerate(lines)
-            if occursin("Step", line) && occursin("PotEng", line)
-                # Next line has the values
-                if i < length(lines)
-                    parts = split(strip(lines[i+1]))
-                    if length(parts) >= 2
-                        energy = parse(Float64, parts[2])
-                    end
-                end
-                break
-            end
-        end
-
-        @test energy !== nothing
-        @test isfinite(energy)
-
-        # Compare with Python energy if available
-        if haskey(TEST_ARTIFACTS, "python_energy_8atom")
-            python_E = TEST_ARTIFACTS["python_energy_8atom"]
-            # Use absolute difference since energy can be near zero
-            abs_diff = abs(energy - python_E)
-            @test abs_diff < 1e-6  # Should be nearly identical
-        end
-
-        TEST_ARTIFACTS["lammps_energy_8atom"] = energy
-    end
-
-    @testset "Force Consistency" begin
-        # Compute forces and compare with Python
-        test_input = """
-        units metal
-        atom_style atomic
-        boundary p p p
-
-        lattice diamond 5.43
-        region box block 0 1 0 1 0 1
-        create_box 1 box
-        create_atoms 1 box
-        mass 1 28.0855
-
-        # Add small random displacements
+        # Perturb, then hand the exact geometry to the Julia side through a file rather than
+        # rebuilding it there: two builders agreeing is an assumption, a file is not.
         displace_atoms all random 0.01 0.01 0.01 42
+        write_data $(geom_file)
 
         plugin load $(plugin_path)
         pair_style ace
         pair_coeff * * $(lib_path) Si
 
-        # Dump forces
-        dump forces all custom 1 $(joinpath(lammps_test_dir, "forces.dump")) id type x y z fx fy fz
-        dump_modify forces sort id format float %20.12e
-
+        variable e equal pe
+        dump d all custom 1 $(dump_file) id type x y z fx fy fz
+        dump_modify d sort id format float %.17g
         run 0
-        """
+        print "ACE_ENERGY \$(v_e:%.17g)"
+        """, "test_parity.lmp")
 
-        input_file = joinpath(lammps_test_dir, "test_forces.lmp")
-        write(input_file, test_input)
-
-        run(setenv(`$(lmp_exe) -in $(input_file)`, env))
-
-        # Read forces from dump file
-        dump_file = joinpath(lammps_test_dir, "forces.dump")
+        @test !occursin("ERROR", out)
+        @test isfile(geom_file)
         @test isfile(dump_file)
 
-        lines = readlines(dump_file)
-        natoms = parse(Int, lines[4])
-        @test natoms == 8
+        E_lmp[] = parse_ace_energy(out)
+        @test E_lmp[] !== nothing
+        @test isfinite(E_lmp[])
 
-        forces = zeros(natoms, 3)
-        for i in 1:natoms
-            # Data starts at line 10 (after 9 header lines)
-            line = lines[9 + i]
-            parts = split(strip(line))
-            forces[i, 1] = parse(Float64, parts[6])
-            forces[i, 2] = parse(Float64, parts[7])
-            forces[i, 3] = parse(Float64, parts[8])
-        end
+        dump = read_lammps_dump(dump_file)
+        sys = read_lammps_data(geom_file, (:Si,))
+        natoms[] = length(sys)
+        @test natoms[] == 8
 
-        # Forces should be finite and non-zero (perturbed structure)
-        @test all(isfinite.(forces))
-        @test maximum(abs.(forces)) > 1e-6
+        # Both sides evaluate identical coordinates -- checked, not assumed.  `write_data`
+        # and the %.17g dump must round-trip to the same doubles.
+        Xdata = [SVector{3,Float64}(ustrip.(u"Å", p)) for p in position(sys, :)]
+        maxdx = maximum(maximum(abs.(a .- b)) for (a, b) in zip(Xdata, dump.X))
+        @info "geometry round-trip: max|x_data - x_dump| = $maxdx Å"
+        @test maxdx == 0.0
+
+        ex = load_exported(model_file)
+        @test ex.I2Z == [14]        # the `(:Si,)` type map above is only valid for a Si model
+        rcut = ex.RCUT_MAX
+        E, F, _ = Base.invokelatest(exported_efv, ex, sys, rcut)
+        E_jl[] = E; F_jl[] = F
+
+        dE_atom = abs(E - E_lmp[]) / natoms[]
+        dF = maximum(norm.(F .- dump.F))
+        @info @sprintf("LAMMPS vs Julia: |dE|/atom = %.3e eV/atom, max|dF| = %.3e eV/Å (tol 1e-10)",
+                       dE_atom, dF)
+        @test dE_atom <= 1e-10
+        @test dF <= 1e-10
+
+        TEST_ARTIFACTS["lammps_energy_8atom"] = E_lmp[]
+        TEST_ARTIFACTS["julia_energy_8atom"] = E
     end
 
-    @testset "Stress/Virial" begin
-        # Compute stress tensor
-        test_input = """
+    # =====================================================================================
+    # Attribution check: the compiled library through the Python C API vs the same Julia
+    # numbers, 1e-12.  Same geometry file, so a discrepancy here is the library, not LAMMPS.
+    # =====================================================================================
+    @testset "Python library vs Julia (reference: exported model in Julia, tol 1e-12)" begin
+        if !check_python_available()
+            @test_skip "python3 with numpy/ase not available"
+        elseif natoms[] == 0
+            @test_skip "parity geometry was not produced"
+        else
+            penv = ace_runtime_env(dirname(lib_path))
+            penv["ACE_LIB_PATH"] = lib_path
+            penv["ACE_GEOM"] = geom_file
+            penv["ACE_TYPE_MAP"] = "1:14"
+            script = joinpath(TEST_DIR, "python", "eval_library.py")
+            out = try
+                read(setenv(`python3 $script`, penv), String)
+            catch e
+                @error "python library evaluation failed" exception = e
+                ""
+            end
+            @test !isempty(out)
+            if !isempty(out)
+                rows = filter(!isempty, strip.(split(out, '\n')))
+                E_py = parse(Float64, rows[1])
+                F_py = [SVector{3,Float64}(parse.(Float64, split(r))...) for r in rows[2:end]]
+                @test length(F_py) == natoms[]
+                dE_atom = abs(E_py - E_jl[]) / natoms[]
+                dF = maximum(norm.(F_py .- F_jl[]))
+                @info @sprintf("library vs Julia: |dE|/atom = %.3e eV/atom, max|dF| = %.3e eV/Å (tol 1e-12)",
+                               dE_atom, dF)
+                @test dE_atom <= 1e-12
+                @test dF <= 1e-12
+            end
+        end
+    end
+
+    # =====================================================================================
+    # Two MPI ranks vs one rank, 1e-12.  The comparison itself lives in
+    # export/lammps/test/run_two_ranks.sh (+ compare_dump.py) so that CI, Task 6 and Task 8
+    # can run it without Julia.
+    # =====================================================================================
+    @testset "two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)" begin
+        script = joinpath(EXPORT_DIR, "lammps", "test", "run_two_ranks.sh")
+        if isempty(setup.mpirun)
+            @test_skip "no mpirun matching this LAMMPS executable"
+        else
+            workdir = joinpath(lammps_test_dir, "two_ranks")
+            cmd = `bash $script --lmp $(lmp_exe) --mpirun $(setup.mpirun) --plugin $(plugin_path) --lib $(lib_path) --workdir $workdir --tol 1e-12`
+            buf = IOBuffer()
+            try
+                run(pipeline(setenv(cmd, env); stdout = buf, stderr = buf))
+            catch e
+                @error "run_two_ranks.sh failed" exception = e
+            end
+            out = String(take!(buf))
+            println(out)
+            @test occursin("TWO_RANK_PARITY PASS", out)
+        end
+    end
+
+    @testset "Stress/Virial (smoke: cubic symmetry only)" begin
+        out = run_lmp("""
         units metal
         atom_style atomic
         boundary p p p
-
         lattice diamond 5.43
         region box block 0 1 0 1 0 1
         create_box 1 box
         create_atoms 1 box
         mass 1 28.0855
-
         plugin load $(plugin_path)
         pair_style ace
         pair_coeff * * $(lib_path) Si
-
-        # Output stress in bar
+        variable e equal pe
         thermo_style custom step pe pxx pyy pzz pxy pxz pyz
         run 0
-        """
+        print "ACE_ENERGY \$(v_e:%.17g)"
+        """, "test_stress.lmp")
 
-        input_file = joinpath(lammps_test_dir, "test_stress.lmp")
-        write(input_file, test_input)
-
-        output = read(setenv(`$(lmp_exe) -in $(input_file)`, env), String)
-
-        # Extract stress values
-        lines = split(output, "\n")
+        lines = split(out, "\n")
         stress = nothing
         for (i, line) in enumerate(lines)
-            if occursin("Step", line) && occursin("PotEng", line)
-                if i < length(lines)
-                    parts = split(strip(lines[i+1]))
-                    if length(parts) >= 8
-                        # pxx, pyy, pzz, pxy, pxz, pyz
-                        stress = [parse(Float64, parts[j]) for j in 3:8]
-                    end
-                end
+            if occursin("Step", line) && occursin("PotEng", line) && i < length(lines)
+                parts = split(strip(lines[i+1]))
+                length(parts) >= 8 && (stress = [parse(Float64, parts[j]) for j in 3:8])
                 break
             end
         end
-
         @test stress !== nothing
         @test all(isfinite.(stress))
-
-        # Cubic symmetry: pxx ≈ pyy ≈ pzz
-        diag = stress[1:3]
-        rel_std = std(diag) / abs(mean(diag))
+        rel_std = std(stress[1:3]) / abs(mean(stress[1:3]))
         @test rel_std < 0.01
     end
 
-    @testset "NVE Energy Conservation" begin
-        # Run short NVE MD
-        test_input = """
+    @testset "NVE runs (smoke: the CI model has random parameters)" begin
+        out = run_lmp("""
         units metal
         atom_style atomic
         boundary p p p
-
         lattice diamond 5.43
         region box block 0 2 0 2 0 2
         create_box 1 box
         create_atoms 1 box
         mass 1 28.0855
-
         plugin load $(plugin_path)
         pair_style ace
         pair_coeff * * $(lib_path) Si
-
         velocity all create 100.0 42 dist gaussian
         velocity all zero linear
-
         fix nve all nve
-
-        # Output total energy
         thermo_style custom step pe ke etotal
         thermo 10
-
         run 100
-        """
+        """, "test_nve.lmp")
 
-        input_file = joinpath(lammps_test_dir, "test_nve.lmp")
-        write(input_file, test_input)
-
-        output = read(setenv(`$(lmp_exe) -in $(input_file)`, env), String)
-
-        # Extract total energies from thermo output
-        lines = split(output, "\n")
         energies = Float64[]
-
         in_thermo = false
-        for line in lines
+        for line in split(out, "\n")
             if occursin("Step", line) && occursin("TotEng", line)
                 in_thermo = true
                 continue
@@ -381,8 +331,7 @@ using Statistics: std, mean
             if in_thermo
                 parts = split(strip(line))
                 if length(parts) >= 4 && tryparse(Int, parts[1]) !== nothing
-                    etotal = parse(Float64, parts[4])
-                    push!(energies, etotal)
+                    push!(energies, parse(Float64, parts[4]))
                 elseif occursin("Loop", line) || occursin("---", line)
                     break
                 end
@@ -390,16 +339,9 @@ using Statistics: std, mean
         end
 
         @test length(energies) >= 10
-
-        # Check energy conservation
-        drift = abs(energies[end] - energies[1])
-        std_E = std(energies)
-
-        # Note: The CI test model has RANDOM parameters, not a trained potential.
-        # Energy conservation is not expected to be good with random coefficients.
-        # We just verify the integration runs without crashing.
-        # Production models should have much better energy conservation.
-        @test drift < 10.0  # Very lenient for random model
-        @test std_E < 5.0   # Very lenient for random model
+        # NOT a physics gate: the CI model's coefficients are random, so conservation is not
+        # expected.  These two only assert the integrator ran without blowing up.
+        @test abs(energies[end] - energies[1]) < 10.0
+        @test std(energies) < 5.0
     end
 end

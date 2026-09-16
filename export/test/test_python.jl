@@ -21,17 +21,15 @@ using Test
 
     python_test_dir = joinpath(TEST_DIR, "python")
 
-    # Set environment for Python tests
-    env = copy(ENV)
+    # Set environment for Python tests.
+    #
+    # K1: this used to add only `<julia>/lib`.  The juliac-compiled library also needs the
+    # libstdc++ that Julia bundles in `<julia>/lib/julia` -- the system one on an EL9 host
+    # provides only GLIBCXX_3.4.30 while Julia 1.12 emits references to GLIBCXX_3.4.33, so
+    # 8 of the 13 tests below errored with a GLIBCXX_3.4.30 message.  `ace_runtime_env`
+    # (lammps_harness.jl) adds both directories; see its header.
+    env = ace_runtime_env(dirname(lib_path))
     env["ACE_LIB_PATH"] = lib_path
-
-    # Find Julia runtime libraries for LD_LIBRARY_PATH
-    julia_lib_dir = joinpath(Sys.BINDIR, "..", "lib")
-    if haskey(env, "LD_LIBRARY_PATH")
-        env["LD_LIBRARY_PATH"] = julia_lib_dir * ":" * env["LD_LIBRARY_PATH"]
-    else
-        env["LD_LIBRARY_PATH"] = julia_lib_dir
-    end
 
     @testset "Library Loading" begin
         # Test that Python can load the library

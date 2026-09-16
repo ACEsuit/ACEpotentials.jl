@@ -10,97 +10,35 @@ Tests for LAMMPS MPI parallel execution:
 using Test
 
 @testset "MPI Parallelization" verbose=true begin
-    build_dir = joinpath(TEST_DIR, "build")
-    lib_path = joinpath(build_dir, "libace_test.so")
+    # Discovery is shared with the serial LAMMPS group: the executable has been PROVEN to
+    # run, the environment is the one it ran under, and `mpirun` belongs to the same MPI
+    # installation the executable is linked against (see lammps_harness.jl, K2).
+    setup = lammps_setup()
+    lib_path = setup.lib_path
+    plugin_path = setup.plugin_path
+    lmp_exe = setup.exe
+    mpirun_exe = setup.mpirun
+    env = setup.env
     lammps_test_dir = joinpath(TEST_DIR, "lammps")
-    plugin_path = joinpath(EXPORT_DIR, "lammps", "plugin", "build", "aceplugin.so")
 
     if !isfile(lib_path)
         @test_skip "ACE library not compiled"
         return
     end
-
     if !isfile(plugin_path)
         @test_skip "LAMMPS plugin not built"
         return
     end
-
-    # Check for MPI
-    mpirun_exe = try
-        strip(read(`which mpirun`, String))
-    catch
-        ""
+    if isempty(lmp_exe)
+        @test_skip "LAMMPS not found"
+        return
     end
-
     if isempty(mpirun_exe)
         @test_skip "MPI not available"
         return
     end
 
-    # Find LAMMPS source directory (needed for executable and library path)
-    lammps_src = get(ENV, "LAMMPS_SRC", "")
-
-    # Find LAMMPS executable (prefer build directory if LAMMPS_SRC is set)
-    lmp_exe = ""
-    if !isempty(lammps_src) && isdir(lammps_src)
-        build_lmp = joinpath(dirname(lammps_src), "build", "lmp")
-        if isfile(build_lmp)
-            lmp_exe = build_lmp
-        end
-    end
-    # Fall back to system lmp
-    if isempty(lmp_exe)
-        lmp_exe = try
-            strip(read(`which lmp`, String))
-        catch
-            ""
-        end
-    end
-
-    if isempty(lmp_exe) || !isfile(lmp_exe)
-        @test_skip "LAMMPS not found"
-        return
-    end
-
-    @info "Using LAMMPS: $lmp_exe"
-
-    # Set up environment
-    env = copy(ENV)
-    julia_lib_dir = joinpath(Sys.BINDIR, "..", "lib")
-
-    # Find LAMMPS library directory
-    lammps_lib_dir = ""
-    if !isempty(lammps_src) && isdir(lammps_src)
-        lammps_build = joinpath(dirname(lammps_src), "build")
-        if isdir(lammps_build) && isfile(joinpath(lammps_build, "liblammps.so"))
-            lammps_lib_dir = lammps_build
-        end
-    end
-    if isempty(lammps_lib_dir) && !isempty(lmp_exe)
-        lmp_dir = dirname(lmp_exe)
-        if isfile(joinpath(lmp_dir, "liblammps.so"))
-            lammps_lib_dir = lmp_dir
-        end
-    end
-
-    # Find GCC library directory (for C++ ABI compatibility)
-    gcc_lib_dir = ""
-    for gcc_version in ["14.3.0", "13.3.0", "13.2.0", "12.3.0", "12.2.0", "11.3.0"]
-        gcc_path = "/software/easybuild/software/GCCcore/$gcc_version/lib64"
-        if isdir(gcc_path) && isfile(joinpath(gcc_path, "libstdc++.so.6"))
-            gcc_lib_dir = gcc_path
-            break
-        end
-    end
-
-    env["LD_LIBRARY_PATH"] = join(filter(!isempty, [
-        gcc_lib_dir,
-        julia_lib_dir,
-        dirname(lib_path),
-        lammps_lib_dir,
-        get(ENV, "LD_LIBRARY_PATH", "")
-    ]), ":")
-
+    @info "Using LAMMPS: $lmp_exe with $mpirun_exe"
     mkpath(lammps_test_dir)
 
     @testset "MPI Energy Consistency" begin
@@ -132,10 +70,10 @@ using Test
 
         # Run with 4 MPI ranks
         output_mpi = try
-            read(setenv(`mpirun -np 4 --oversubscribe $(lmp_exe) -in $(input_file)`, env), String)
+            read(setenv(`$(mpirun_exe) -np 4 --oversubscribe $(lmp_exe) -in $(input_file)`, env), String)
         catch
             # Try without --oversubscribe
-            read(setenv(`mpirun -np 4 $(lmp_exe) -in $(input_file)`, env), String)
+            read(setenv(`$(mpirun_exe) -np 4 $(lmp_exe) -in $(input_file)`, env), String)
         end
 
         # Extract energies
@@ -199,9 +137,9 @@ using Test
         input_mpi = replace(test_input, "DUMPFILE" => joinpath(lammps_test_dir, "forces_mpi.dump"))
         write(joinpath(lammps_test_dir, "test_mpi_forces_mpi.lmp"), input_mpi)
         try
-            run(setenv(`mpirun -np 4 --oversubscribe $(lmp_exe) -in $(joinpath(lammps_test_dir, "test_mpi_forces_mpi.lmp"))`, env))
+            run(setenv(`$(mpirun_exe) -np 4 --oversubscribe $(lmp_exe) -in $(joinpath(lammps_test_dir, "test_mpi_forces_mpi.lmp"))`, env))
         catch
-            run(setenv(`mpirun -np 4 $(lmp_exe) -in $(joinpath(lammps_test_dir, "test_mpi_forces_mpi.lmp"))`, env))
+            run(setenv(`$(mpirun_exe) -np 4 $(lmp_exe) -in $(joinpath(lammps_test_dir, "test_mpi_forces_mpi.lmp"))`, env))
         end
 
         # Read and compare forces
@@ -258,13 +196,13 @@ using Test
 
         # Run with 8 MPI ranks (2x2x2 decomposition)
         output = try
-            read(setenv(`mpirun -np 8 --oversubscribe $(lmp_exe) -in $(input_file)`, env), String)
+            read(setenv(`$(mpirun_exe) -np 8 --oversubscribe $(lmp_exe) -in $(input_file)`, env), String)
         catch
             try
-                read(setenv(`mpirun -np 8 $(lmp_exe) -in $(input_file)`, env), String)
+                read(setenv(`$(mpirun_exe) -np 8 $(lmp_exe) -in $(input_file)`, env), String)
             catch
                 # Fall back to 4 ranks
-                read(setenv(`mpirun -np 4 $(lmp_exe) -in $(input_file)`, env), String)
+                read(setenv(`$(mpirun_exe) -np 4 $(lmp_exe) -in $(input_file)`, env), String)
             end
         end
 
@@ -331,9 +269,9 @@ using Test
         write(input_file, test_input)
 
         output = try
-            read(setenv(`mpirun -np 4 --oversubscribe $(lmp_exe) -in $(input_file)`, env), String)
+            read(setenv(`$(mpirun_exe) -np 4 --oversubscribe $(lmp_exe) -in $(input_file)`, env), String)
         catch
-            read(setenv(`mpirun -np 4 $(lmp_exe) -in $(input_file)`, env), String)
+            read(setenv(`$(mpirun_exe) -np 4 $(lmp_exe) -in $(input_file)`, env), String)
         end
 
         @test !occursin("ERROR", output)
