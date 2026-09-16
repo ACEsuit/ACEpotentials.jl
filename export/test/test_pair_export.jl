@@ -77,13 +77,15 @@ end
 #     of the two routes are identical to the last bit.  Do not reintroduce a
 #     reciprocal-multiply in one route only.
 #
-#   SPHERICAL HARMONICS -- NOT fixed, and not fixable inside export/.  `eval_ylm` is emitted
-#     from `SpheriCart._codegen_Zlm` and `eval_ylm_ed` from `SpheriCart._codegen_Zlm_grads`
-#     (codegen.jl:57,93): two independently generated expression trees for the same Zlm, which
-#     agree only to roundoff.  Measured 3.552713678800501e-15 on the Ylm entries, and it is
-#     the whole of the remaining 2.842170943040401e-14 eV/site energy spread.  That residual
-#     is therefore recorded as `@test_broken` with an absolute 1e-12 gate, NOT asserted to
-#     zero, and NOT papered over by relaxing anything to `≈`.
+#   SPHERICAL HARMONICS -- still not fixable inside export/, but since Task 6 it no longer
+#     reaches the energy.  `eval_ylm` is emitted from `SpheriCart._codegen_Zlm` and
+#     `eval_ylm_ed` from `SpheriCart._codegen_Zlm_grads` (codegen.jl): two independently
+#     generated expression trees for the same Zlm, which agree only to roundoff (measured
+#     3.552713678800501e-15 on the Ylm entries, and `d_Ylm` below still measures it).  Until
+#     B2 that was the whole of a 2.842170943040401e-14 eV/site energy spread between the two
+#     routes, recorded as `@test_broken`.  B2's kernel accumulates `A` from the VALUE
+#     embeddings on both routes -- the derivative route re-evaluates the edge only for the
+#     forces -- so the energies are now bitwise equal and the spread is gated at 0.0.
 #
 # Call this through `Base.invokelatest` (as check_export.jl does with `exported_efv`): the
 # `ex.site_energy*` bindings do not exist in the world this file was compiled in.
@@ -148,26 +150,31 @@ end
     @test s.d_Rnl == 0.0
     @test snp.d_Rnl == 0.0
 
-    # site_energy: still not bitwise, and the ONLY remaining cause is the spherical harmonics
-    # (see the header).  Recorded rather than asserted away: it shows in the summary as Broken
-    # and flips to a failure the day the two SpheriCart expression trees are unified.
-    @test_broken s.d_se == 0.0
-    @test s.d_se <= 1e-12
-    @test snp.d_se <= 1e-12
+    # site_energy is now BITWISE equal to site_energy_forces_virial's energy, and this is a
+    # hard gate.  It was a `@test_broken` at 2.842170943040401e-14 until Task 6, with the
+    # residual attributed to SpheriCart: `eval_ylm` and `eval_ylm_ed` are two independently
+    # generated expression trees for the same Zlm, so the value route and the derivative
+    # route saw Ylm values differing by ~3.6e-15 and the energies inherited it.
+    #
+    # B2 removed the cause rather than the symptom.  The per-neighbour kernel accumulates `A`
+    # in ONE pass (`_embed_val!`, values only) on BOTH routes -- the derivative route
+    # re-evaluates the edge in pass 2 for the forces, and the energy never sees `eval_ylm_ed`
+    # at all.  So the two routes now contract identical `A`, `AA` and `B`.
+    #
+    # The Ylm discrepancy itself has NOT gone away: `d_Ylm` below is still nonzero, and it is
+    # checked to be so, precisely so that this testset keeps measuring the thing it names
+    # instead of quietly passing because the diagnostic stopped working.
+    @test s.d_se == 0.0
+    @test snp.d_se == 0.0
 
-    # ATTRIBUTION -- the load-bearing part.  The residual must not be the pair term, and the
-    # direct evidence for that is the pair-less export of the SAME model measured in the same
-    # sweep: it shows the same spread, to the last bit (measured 2.842170943040401e-14 for
-    # both).  If a future change made the pair term contribute to the site_energy route, s
-    # would move away from snp and this would fail.
-    @test snp.d_se > 0.0
+    # ATTRIBUTION -- the load-bearing part.  The pair-less export of the SAME model, measured
+    # in the same sweep, must agree exactly: if a future change made the pair term contribute
+    # asymmetrically to the two routes, `s` would move away from `snp` and this would fail.
     @test s.d_se == snp.d_se
 
-    # Secondary, weaker: the Ylm spread is nonzero and of the same order.  This is a
-    # plausibility bound on the SpheriCart attribution, not proof of it -- the pair-less
-    # cross-check above is what actually pins the residual's origin.
+    # The value/derivative Ylm routes still disagree (SpheriCart, upstream) -- so the equality
+    # above is a property of the KERNEL, not an artefact of the diagnostic having gone quiet.
     @test s.d_Ylm > 0.0
-    @test s.d_se <= 100 * s.d_Ylm
 end
 
 @testset "Unknown calculator in the stack is refused" begin
