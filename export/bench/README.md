@@ -4,8 +4,8 @@ This directory holds the timing harness and the recorded results for the exporte
 `pair_style ace` code path.
 
 The *measurement protocol* below was fixed by Task 0 and must not be rewritten. The
-Results section at the bottom holds Task 4's baseline rows, all taken on this host.
-Do not add numbers here that were not measured.
+Results section at the bottom holds Task 4's baseline rows and Task 5's B1 rows, all taken
+on this host. Do not add numbers here that were not measured.
 
 ## Measurement protocol
 
@@ -314,3 +314,98 @@ libraries pass every gate, so neither hatch is needed for any row in this file; 
 generator versions wants; re-run the `pace` half in the same block on the same core whenever a
 ratio is quoted. `BOX` (cantor|tial|path), `CORE`, `PLUGIN`, `OUT`, `LMP_ACE` and `LMP_PACE`
 are the environment knobs.
+
+### Task 5 rows (B1: radial mixing from `W`'s sparsity, pruning, integer powers) — 2026-09-16, core 31
+
+Raw rows: `bench_parity/rows_task5.txt` (the four `*_b1` rows with their `pace` comparator) and
+`bench_parity/rows_task5_repeat.txt` (the ACE-vs-ACE repeat blocks, `pace=none`). Conditions
+are the ones above: 1 MPI rank, `taskset -c 31`, `OMP_NUM_THREADS=1`, `timestep 0.0`, 100 steps,
+`/proc/loadavg` in the row, `pace recursive` re-run in the same block on the same core. Every
+LAMMPS screen log shows `Pair | … | 99.98 %` of the loop and `Neighbor list builds = 0`, so the
+numbers are pair-style cost, and `Ave neighs/atom` is identical to the baseline blocks
+(201.33789 Cantor, 112.13 TiAl) — the same geometry is being timed.
+
+The libraries are `bench_parity/libace_<tag>_b1.so`, exported by
+`verify_bench_models.jl cantor_poly_b1 cantor_h50_b1 tial_poly_b1 tial_h50_b1`
+(source gate, `bench_parity/verify_b1.log`) and gated by
+`gate_bench_libs.jl` on the same tags (library gates, `bench_parity/gate_libs_b1.log`),
+**both before any of them was timed** — `bench_parity.sh`'s interlock enforces it and every row
+below reads `gate=OK[src,lib,lammps,mpi2]`.
+
+Every gate figure is **identical to the Task 4 baseline to every printed digit**, which is what
+`export/test/test_generator_parity.jl` predicts: on these four models the B1 generator's output
+is bit-identical to `3570eb8e`'s.
+
+| tag | source gate max&#124;dE&#124;/at / max&#124;dF&#124; / max&#124;dV&#124;/at | A LAMMPS vs Julia | B lib vs Julia | C 2-vs-1 rank (rel E / abs F) | verdict |
+|---|---|---|---|---|---|
+| `cantor_poly_b1` | 1.599e-14 / 1.867e-14 / 1.614e-13 | 9.10e-15, 1.73e-14 | 0.00e+00, 4.20e-14 | 1.478e-15 / 2.70e-15 | **PASS** |
+| `cantor_h50_b1`  | 1.421e-14 / 1.982e-14 / 1.800e-13 | 3.64e-15, 1.72e-14 | 9.10e-15, 3.89e-14 | 0.000e+00 / 3.62e-15 | **PASS** |
+| `tial_poly_b1`   | 2.695e-13 / 5.511e-13 / 6.626e-13 | 1.63e-12, 5.24e-13 | 5.82e-13, 5.27e-13 | 4.581e-15 / 7.63e-14 | **PASS** |
+| `tial_h50_b1`    | 2.695e-13 / 6.240e-13 / 8.600e-13 | 1.86e-12, 6.52e-13 | 1.16e-13, 5.25e-13 | 0.000e+00 / 4.52e-14 | **PASS** |
+
+#### The rows
+
+`pace recursive` was re-run in each of the four blocks below: 129.98 / 131.01 ms/step (Cantor)
+and 369.65 / 370.52 ms/step (TiAl), i.e. within 0.8 % of Task 4's 130.55 / 131.09 / 371.31 /
+369.88. The comparator has not moved, so the ratio column is comparable with the baseline table.
+
+| tag | box | ace ms/step (median) | runs (exec order) | spread | µs/site | pace recursive | **ratio** | baseline ratio |
+|---|---|---|---|---|---|---|---|---|
+| `cantor_poly_b1` | 2048-atom fcc CrMnFeCoNi | **456.21** | 455.96 / 456.47 | 0.1 % | 222.8 | 129.98 | **3.51** | 8.15 |
+| `cantor_h50_b1`  | 2048-atom fcc CrMnFeCoNi | **421.90** | 417.74 / 426.05 | 2.0 % | 206.0 | 131.01 | **3.22** | 3.20 |
+| `tial_poly_b1`   | 2000-atom bcc TiAl       | **567.96**† | see below (n = 7) | 4.5 % | 284.0 | 369.65 | **1.54** | 2.27 |
+| `tial_h50_b1`    | 2000-atom bcc TiAl       | **528.89** | 533.09 / 524.69 | 1.6 % | 264.4 | 370.52 | **1.43** | 1.43 |
+
+† `tial_poly` has the ±7 % block-to-block scatter Task 4 established, so the B1 figure is the
+median of **7** runs taken in three separate blocks, in execution order:
+569.06 / 546.73 / 565.10 (18:39), 569.92 / 567.96 (18:52), 571.06 / 557.02 (18:57).
+
+#### Same-session re-measurement of the PREVIOUS libraries
+
+Because `tial_poly` scatters by ±7 % block to block, a cross-day comparison of medians is not
+enough to claim a speed-up on it. The Task 4 libraries were therefore re-timed on the same core
+in the same session, interleaved with the new ones, with `pace=none`:
+
+| library | Task 4 row | re-measured 2026-09-16 19:0x | runs (exec order) | agreement |
+|---|---|---|---|---|
+| `libace_cantor_poly.so` | 1064.3 | **1039.91** (n = 3) | 1055.68 / 985.57 / 1039.91 | 2.3 % |
+| `libace_cantor_h50.so`  | 419.1  | **415.83** (n = 2) | 414.38 / 417.27 | 0.8 % |
+| `libace_tial_poly.so`   | 841.4 (868.3 over 14 runs) | **861.66** (n = 5) | 855.14 / 888.00 / 884.40 (18:47), 860.13 / 861.66 (18:54) | 0.8 % of the 14-run median |
+| `libace_tial_h50.so`    | 530.7  | **528.89** (n = 3) | 551.15 / 518.55 / 528.89 | 0.3 % |
+
+The baselines reproduce. The honest same-day, same-core, same-session speed-ups are therefore
+
+| model | previous generator | B1 | speed-up |
+|---|---|---|---|
+| Cantor `:polynomial` | 1039.91 | 456.21 | **2.28x** |
+| Cantor `:hermite_spline` | 415.83 | 421.90 | 0.99x (**no change**) |
+| TiAl `:polynomial` | 861.66 (n = 5) | 567.96 (n = 7) | **1.52x** |
+| TiAl `:hermite_spline` | 528.89 | 528.89 | 1.00x (**no change**) |
+
+#### What the numbers say, including what they do not
+
+* **B1 is a `:polynomial`-mode change and the rows say exactly that.** It closes essentially the
+  whole gap between the polynomial and the Hermite path: on Cantor that gap was
+  1039.91 − 415.83 = **624 ms/step** and is now 456.21 − 421.90 = **34 ms/step**; on TiAl it was
+  861.66 − 528.89 = **333 ms** and is now 567.96 − 528.89 = **39 ms**. 94 % and 88 % of it is
+  gone. It shows on **both** boxes, which is what Task 4 required of any optimisation.
+* **The Hermite rows do not move at all**, even though the B1 knot tables are 4.5x smaller
+  (`cantor_h50` 4.72 → 1.05 MB) and the cubic is evaluated 8x narrower (9 rows instead of 74).
+  That is not a failed change, it is a measurement of where the Hermite cost is *not*: a Hermite
+  edge touches only **4 knots**, i.e. 4 × 74 × 8 = 2368 bytes before and 288 after, so neither
+  the table size nor the SIMD-wide cubic was ever the bottleneck. What B1 removed from the
+  polynomial path — per edge, **two 74x45 dense matrix-vector products reading 26 KB of weights
+  out of a 666 KB table** — has no counterpart in the Hermite path.
+* **The plan's ~150 µs/site target for Cantor `:polynomial` is not reached: the row is 222.8**
+  (from 507.8 today / 519.7 at the baseline). It cannot be reached by any further work on the
+  radial basis, and the Hermite row is the evidence: `cantor_h50_b1` runs at **206.0 µs/site**
+  with a 9-wide radial evaluation, so ~206 µs/site is the cost of everything that is *not* the
+  radial basis — neighbour handling, the `N_RNL`-wide embedding copies, `abasis`/`aabasis`, the
+  A2B contraction, and the force/virial assembly, which still loops `for t in 1:N_RNL` (74) per
+  edge and applies a rank-1 virial update inside that loop. The polynomial row now sits 8 %
+  above that floor. Getting to 150 µs/site is a Task 6/7 problem, not a B1 one.
+* **The largest remaining per-edge item that B1 deliberately did not touch** is the polynomial
+  recurrence itself. `eval_polys_ed` evaluates `N_POLYS` terms — 45 on Cantor, 33 on TiAl — but
+  the emitted `RBASIS_SEL_k` tables show that **only polynomials 1..6 are ever read on Cantor and
+  1..11 on TiAl**. The brief scopes the width change to Task 6's kernel, so this was left alone
+  and is recorded here as the next lever.

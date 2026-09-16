@@ -53,7 +53,10 @@ function do_tag(tag)
     else
         error("unknown tag $tag")
     end
-    hermite = endswith(tag, "_h50")
+    # `occursin`, not `endswith`: Tasks 5-7 add suffixed tags of their own (cantor_h50_b1),
+    # and an `endswith("_h50")` test would silently export those as :polynomial and then gate
+    # them against the WRONG reference -- an exact export compared to a splinified stack.
+    hermite = occursin("_h50", tag)
     calc = hermite ? spline(50) : fx.stacked
     mode = hermite ? :hermite_spline : :polynomial
     file = joinpath(OUT, "$(tag)_model.jl")
