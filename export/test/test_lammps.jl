@@ -22,6 +22,22 @@ it and writes `geom.data`; Julia and Python read that file back.  The test addit
 asserts that the coordinates in `geom.data` are bit-identical to the ones in the 17-digit
 dump, so "identical coordinates" is checked rather than assumed.
 
+WHAT MODEL THESE GATES RUN ON, AND WHY IT MATTERS.  `build/test_etace_model.jl` (and the
+`libace_test.so` compiled from it) is exported from a FULL `StackedCalculator` --
+`ETOneBody + ETPairModel + ETACE` -- built by `setup_stacked_model` in
+`test_etace_export.jl`.  It used to be exported from a bare `ETACEPotential`, whose
+generated file said `# PAIR POTENTIAL: none in this model` and whose `pair_energy_d`
+returned a hard `(0.0, 0.0)`.  All three gates above therefore ran on a many-body-only
+model: a sign error or a wrong per-pair cutoff in the generated pair code would have left
+every LAMMPS-side check green, and the only thing that would have caught it
+(`test_pair_export.jl`) is Julia-only and guarded on host-local fixture data, so it never
+runs on a hosted CI runner.  The gate below asserts `PAIR_C`, `E0_1` and a non-zero
+`pair_energy_d` so that this cannot silently regress.
+
+The pair coefficients here are random, not fitted -- that is fine, and is the point: the
+pair *code path* is what these gates are covering.  Quantitative pair parity against a
+fitted model remains `test_pair_export.jl`'s job.
+
 Everything else here (plugin loading, stress symmetry, NVE) is a smoke test of the plugin
 and is labelled as such -- the CI model has random parameters, so its energy conservation
 carries no physics.
@@ -191,6 +207,20 @@ include(joinpath(@__DIR__, "check_export.jl"))
         ex = load_exported(model_file)
         @test ex.I2Z == [14]        # the `(:Si,)` type map above is only valid for a Si model
         rcut = ex.RCUT_MAX
+
+        # The library model must actually CONTAIN a pair term and an E0, or all three gates
+        # in this file quietly degrade into many-body-only checks.  That is not hypothetical:
+        # until Task 3's fix round the library was exported from a bare ETACEPotential, whose
+        # generated `pair_energy_d` returned a hard `(0.0, 0.0)`.  Asserted here, at the gate,
+        # as well as at the export site in test_etace_export.jl, because it is here that a
+        # regression would go unnoticed.
+        @test isdefined(ex, :PAIR_C)
+        @test isdefined(ex, :E0_1)
+        Vpair, dVpair = Base.invokelatest(ex.pair_energy_d, 2.35, 1, 1)
+        @info @sprintf("library pair term at r = 2.35 Å: V = %.6e eV, dV/dr = %.6e eV/Å",
+                       Vpair, dVpair)
+        @test abs(Vpair) > 1e-8     # a live pair term, not the (0.0, 0.0) stub
+        @test abs(dVpair) > 1e-8
         E, F, _ = Base.invokelatest(exported_efv, ex, sys, rcut)
         E_jl[] = E; F_jl[] = F
 
@@ -210,11 +240,13 @@ include(joinpath(@__DIR__, "check_export.jl"))
     # numbers, 1e-12.  Same geometry file, so a discrepancy here is the library, not LAMMPS.
     # =====================================================================================
     @testset "Python library vs Julia (reference: exported model in Julia, tol 1e-12)" begin
-        if !check_python_available()
-            @test_skip "python3 with numpy/ase not available"
-        elseif natoms[] == 0
-            @test_skip "parity geometry was not produced"
-        else
+        # `required_check` makes an unavailable prerequisite a FAILURE, not a skip, whenever
+        # ACE_REQUIRE_GROUPS names `lammps`.  Without that, a CI job that never installed
+        # `ase` would report `lammps=ran` with this attribution gate silently absent.
+        if required_check(check_python_available(), "lammps",
+                          "python3 with numpy/ase/ase-ace is needed for the 1e-12 " *
+                          "library-vs-Julia attribution gate") &&
+           required_check(natoms[] > 0, "lammps", "the parity geometry was not produced")
             penv = ace_runtime_env(dirname(lib_path))
             penv["ACE_LIB_PATH"] = lib_path
             penv["ACE_GEOM"] = geom_file
@@ -249,9 +281,9 @@ include(joinpath(@__DIR__, "check_export.jl"))
     # =====================================================================================
     @testset "two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)" begin
         script = joinpath(EXPORT_DIR, "lammps", "test", "run_two_ranks.sh")
-        if isempty(setup.mpirun)
-            @test_skip "no mpirun matching this LAMMPS executable"
-        else
+        if required_check(!isempty(setup.mpirun), "lammps",
+                          "no mpirun matching this LAMMPS executable, so the 1-rank vs " *
+                          "2-rank gate cannot run")
             workdir = joinpath(lammps_test_dir, "two_ranks")
             cmd = `bash $script --lmp $(lmp_exe) --mpirun $(setup.mpirun) --plugin $(plugin_path) --lib $(lib_path) --workdir $workdir --tol 1e-12`
             buf = IOBuffer()

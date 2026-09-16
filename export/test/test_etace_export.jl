@@ -82,6 +82,53 @@ function setup_etace_model(; elements=(:Si,), order=2, max_level=8, maxl=4, rcut
 end
 
 """
+    setup_stacked_model(; kwargs...) -> (stacked, rcut)
+
+The model the **compiled library** (`build/test_etace_model.jl` -> `libace_test.so`) is
+exported from: a full `StackedCalculator` of `ETOneBody + ETPairModel + ETACE`, built with
+`ETModels.convert2et_full`.
+
+WHY THIS EXISTS, AND WHY THE LIBRARY MODEL IS NOT `setup_etace_model`'s BARE ETACE.
+Until Task 3's fix round the library was exported from a bare `ETACEPotential`, so the
+generated file carried `# PAIR POTENTIAL: none in this model` and a `pair_energy_d` that
+returned a hard `(0.0, 0.0)`.  Every downstream gate that runs against that library --
+the 1e-10 LAMMPS gate, the 1e-12 Python-C-API gate, the two-rank gate, the whole
+`test_python.jl` group and the ase-ace jobs -- therefore exercised a many-body-only model.
+A sign error or a wrong per-pair cutoff in the generated pair code would have left all of
+them green, and the only check that would have caught it (`test_pair_export.jl`) is
+Julia-only AND guarded on host-local fixture data, so it never runs on a hosted CI runner.
+
+Nothing about the pair term needs fitted data, so the fix costs nothing: random parameters
+and a hard-coded `E0s` are enough to put the pair path under every one of those gates.
+
+`E0s` is not decoration either -- `convert2et_full` reads `model.Vref.E0` to build the
+`ETOneBody` term, and the exported site energy includes E0 of the central atom.
+"""
+function setup_stacked_model(; elements=(:Si,), order=2, max_level=8, maxl=4, rcut=5.5,
+                               E0s=Dict(:Si => -5.0))
+    rin0cuts = M._default_rin0cuts(elements)
+    rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = rcut)).(rin0cuts)
+
+    ace_model = M.ace_model(;
+        elements = elements,
+        order = order,
+        Ytype = :solid,
+        level = M.TotalDegree(),
+        max_level = max_level,
+        maxl = maxl,
+        pair_maxn = max_level,
+        rin0cuts = rin0cuts,
+        init_WB = :glorot_normal,
+        init_Wpair = :glorot_normal,
+        pair_learnable = true,
+        E0s = E0s,
+    )
+    ps, st = Lux.setup(Random.MersenneTwister(1234), ace_model)
+    stacked = ETM.convert2et_full(ace_model, ps, st; rng = Random.MersenneTwister(1234))
+    return stacked, rcut
+end
+
+"""
     create_test_system(a0=5.43)
 
 Create a periodic silicon test system.
@@ -179,8 +226,13 @@ end
         include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
         model_file = joinpath(build_dir, "test_etace_model.jl")
 
-        # Export with library interface
-        export_ace_model(et_calc, model_file; for_library=true)
+        # Export with library interface.  This is the file juliac compiles into
+        # libace_test.so, i.e. the model behind EVERY gate that goes through the compiled
+        # library: the 1e-10 LAMMPS gate, the 1e-12 Python-C-API gate, the two-rank gate,
+        # test_python.jl and the ase-ace jobs.  It is therefore exported from the FULL stack
+        # (E0 + pair + many-body), not from the bare ETACE -- see setup_stacked_model.
+        stacked, _ = setup_stacked_model()
+        export_ace_model(stacked, model_file; for_library=true)
         @test isfile(model_file)
 
         # Verify file contents
@@ -190,6 +242,13 @@ end
         @test occursin("eval_ylm", content)  # Inline solid harmonics (replaces SpheriCart import)
         @test occursin("POLY_A", content)  # Orthonormalized poly coefficients
         @test occursin("ace_site_energy", content)
+
+        # The pair term and E0 must really be in the library model.  Without these three the
+        # gates listed above silently degrade to many-body-only checks, which is exactly what
+        # they had been doing.
+        @test occursin("const PAIR_C", content)
+        @test occursin("PAIR POTENTIAL: none in this model", content) == false
+        @test occursin("const E0_1", content)
 
         # Also test standalone export
         exe_file = joinpath(build_dir, "test_etace_exe.jl")

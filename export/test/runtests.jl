@@ -185,6 +185,44 @@ function run_group(f, name::AbstractString)
     f()
 end
 
+"""
+    group_required(name) -> Bool
+
+Whether `ACE_REQUIRE_GROUPS` demands that group `name` executes (`all`, or an explicit
+mention). A group being *required* is stronger than the group merely running: it also means
+that a CHECK INSIDE the group must not quietly `@test_skip` itself away.
+
+`required_check(cond, name, reason)` is the form to use for that. A `lammps` run on a
+machine without `ase` used to emit a `@test_skip` for the 1e-12 library-vs-Julia attribution
+gate while the group as a whole reported `ran`, so `ACE_REQUIRE_GROUPS=lammps` passed and
+nothing said the attribution check had not happened -- the same defect, one level down, as
+the dead 1e-6 comparison this task removed.
+"""
+function group_required(name::AbstractString)
+    spec = strip(get(ENV, "ACE_REQUIRE_GROUPS", ""))
+    isempty(spec) && return false
+    spec == "all" && return true
+    return String(name) in strip.(split(spec, ','; keepempty = false))
+end
+
+"""
+    required_check(cond::Bool, group, reason) -> Bool
+
+`true` if the guarded check can run. Otherwise it registers the absence: a plain
+`@test_skip` when the group is not required, and a **failing** `@test` naming the reason when
+`ACE_REQUIRE_GROUPS` names the group.
+"""
+function required_check(cond::Bool, group::AbstractString, reason::AbstractString)
+    cond && return true
+    if group_required(group)
+        @error "required check unavailable in a REQUIRED group" group reason
+        @test (reason, :available) == (reason, :unavailable_but_required)
+    else
+        @test_skip "$group: $reason"
+    end
+    return false
+end
+
 # Parse command line args for selective testing
 function get_test_selection()
     if length(ARGS) == 0

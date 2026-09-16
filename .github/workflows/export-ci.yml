@@ -130,39 +130,53 @@ jobs:
 
       # K3: a gate that did not execute must never be reported as a gate that passed.
       #
-      # test_pair_export.jl checks the exported pair term against the FITTED Cantor model,
-      # whose parameters (verify_cantor/cantor_v010_params.jld2) and held-out geometries are
-      # host-local data that is not in this repository.  A GitHub-hosted runner therefore
-      # CANNOT run the plan's only pair-parity gate, and this step says so in the job summary
-      # and as a workflow annotation rather than letting a green tick imply otherwise.
+      # EVERY fixture-guarded group is checked here, not just `pair`.  Both of them compare an
+      # exported model against the FITTED Cantor model and need
+      # verify_cantor/cantor_v010_params.jld2 plus the held-out geometries, which are
+      # host-local data that is not in this repository:
+      #
+      #   pair            test_pair_export.jl     -- the plan's only pair-parity gate
+      #   hermite_cantor  test_hermite_cantor.jl  -- Hermite vs the SPLINIFIED stack at 1e-12
+      #
+      # A GitHub-hosted runner cannot run either, so this step says so in the job summary and
+      # as a workflow annotation rather than letting a green tick imply otherwise.  If a
+      # future group is fixture-guarded, add its name to FIXTURE_GATES below -- forgetting to
+      # is how hermite_cantor went uncovered in the first place.
       #
       # Set the repository variable ACE_PAIR_GATE_REQUIRED to `true` on a runner that does
-      # have the fixture (see the pair-parity job below) and the missing gate becomes a hard
+      # have the fixture (see the pair-parity job below) and a missing gate becomes a hard
       # failure instead of an annotation.
-      - name: Check the pair-parity gate executed
+      - name: Check the fixture-guarded gates executed
         if: always()
         env:
           PAIR_GATE_REQUIRED: ${{ vars.ACE_PAIR_GATE_REQUIRED || 'false' }}
+          FIXTURE_GATES: "pair hermite_cantor"
         run: |
-          status=$(grep -o 'ACE_GROUP_STATUS pair=[a-z]*' export-tests.log | tail -1 | cut -d= -f2)
-          echo "pair group status: ${status:-absent}"
-          if [ "$status" = "ran" ]; then
-            echo "- pair-parity gate: **executed**" >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
+          missing=""
+          for g in $FIXTURE_GATES; do
+            status=$(grep -o "ACE_GROUP_STATUS $g=[a-z]*" export-tests.log | tail -1 | cut -d= -f2)
+            echo "$g group status: ${status:-absent}"
+            if [ "$status" = "ran" ]; then
+              echo "- fixture-guarded gate \`$g\`: **executed**" >> $GITHUB_STEP_SUMMARY
+            else
+              missing="$missing $g"
+            fi
+          done
+          [ -z "$missing" ] && exit 0
           {
-            echo "### :warning: the pair-parity gate did NOT run on this runner"
+            echo "### :warning: fixture-guarded gates did NOT run on this runner:$missing"
             echo ""
-            echo "\`export/test/test_pair_export.jl\` is the only check in this repository that"
-            echo "compares an exported model *including its pair term* against the fitted Cantor"
-            echo "model. It needs \`verify_cantor/cantor_v010_params.jld2\` and the held-out"
-            echo "geometries, neither of which is in the repository, so it cannot run on a"
-            echo "GitHub-hosted runner. **A green tick on this job does not mean pair parity was"
-            echo "checked.**"
+            echo "\`test_pair_export.jl\` (group \`pair\`) is the only check in this repository"
+            echo "that compares an exported model *including its pair term* against the fitted"
+            echo "Cantor model; \`test_hermite_cantor.jl\` (group \`hermite_cantor\`) is the only"
+            echo "one that gates a Hermite export against the splinified Cantor stack at 1e-12."
+            echo "Both need \`verify_cantor/cantor_v010_params.jld2\` and the held-out geometries,"
+            echo "neither of which is in the repository, so neither can run on a GitHub-hosted"
+            echo "runner. **A green tick on this job does not mean those gates were checked.**"
           } >> $GITHUB_STEP_SUMMARY
-          echo "::warning title=pair-parity gate skipped::test_pair_export.jl did not run (Cantor fixture absent); pair parity was NOT checked by this job"
+          echo "::warning title=fixture-guarded gates skipped::$missing did not run (Cantor fixture absent); those gates were NOT checked by this job"
           if [ "$PAIR_GATE_REQUIRED" = "true" ]; then
-            echo "::error title=pair-parity gate skipped::ACE_PAIR_GATE_REQUIRED=true but the gate did not run"
+            echo "::error title=fixture-guarded gates skipped::ACE_PAIR_GATE_REQUIRED=true but$missing did not run"
             exit 1
           fi
 
@@ -188,23 +202,23 @@ jobs:
               rin0cuts = Models._default_rin0cuts(elements)
               rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = rcut)).(rin0cuts)
 
+              # The library model MUST carry the pair term and E0: every gate that goes
+              # through libace_test.so (LAMMPS at 1e-10, the Python C API at 1e-12, the
+              # two-rank run, test_python.jl, the ase-ace jobs) evaluates this model, and a
+              # bare ETACEPotential would turn all of them into many-body-only checks.
+              # Mirrors setup_stacked_model in export/test/test_etace_export.jl.
               ace_model = Models.ace_model(;
                   elements = elements, order = 2, Ytype = :solid,
                   level = Models.TotalDegree(), max_level = 6, maxl = 2,
                   pair_maxn = 6, rin0cuts = rin0cuts,
-                  init_WB = :glorot_normal, init_Wpair = :glorot_normal
+                  init_WB = :glorot_normal, init_Wpair = :glorot_normal,
+                  pair_learnable = true, E0s = Dict(:Si => -5.0)
               )
               ps, st = Lux.setup(Random.MersenneTwister(1234), ace_model)
 
-              et_model = ETModels.convert2et(ace_model)
-              et_ps, et_st = LuxCore.setup(Random.MersenneTwister(1234), et_model)
-
-              # Copy parameters
-              et_ps.rembed.post.W[:, :, 1] .= ps.rbasis.Wnlq[:, :, 1, 1]
-              et_ps.readout.W[1, :, 1] .= ps.WB[:, 1]
-
-              et_calc = ETModels.ETACEPotential(et_model, et_ps, et_st, rcut)
-              export_ace_model(et_calc, "test_etace_model.jl"; for_library=true)
+              stacked = ETModels.convert2et_full(ace_model, ps, st;
+                                                 rng = Random.MersenneTwister(1234))
+              export_ace_model(stacked, "test_etace_model.jl"; for_library=true)
             '
             MODEL_FILE="test_etace_model.jl"
           fi
@@ -383,15 +397,34 @@ jobs:
           cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src -DBUILD_OMP=OFF
           make -j $(nproc)
 
+      # The 1e-12 library-vs-Julia attribution gate inside the `lammps` group goes through
+      # ase / ase-ace.  Without them installed here that gate reported a `@test_skip` while
+      # the group as a whole reported `ran`, so ACE_REQUIRE_GROUPS=lammps passed with the
+      # attribution check silently absent.  `required_check` now turns that into a FAILURE;
+      # this step is what makes it unnecessary to hit it.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies (needed by the 1e-12 attribution gate)
+        run: |
+          cd export
+          uv sync
+          uv pip install -e ase-ace
+
       # The `lammps` group gates `pair_style ace` against the exported model evaluated in
       # Julia at 1e-10 (energy/atom and forces), the compiled library through the Python C
       # API against the same Julia numbers at 1e-12, and 2 MPI ranks against 1 at 1e-12.
-      # ACE_REQUIRE_GROUPS makes a skipped group a failure rather than a warning.
+      # ACE_REQUIRE_GROUPS makes a skipped group -- and now a skipped check WITHIN the group
+      # -- a failure rather than a warning.
       - name: Run LAMMPS tests (serial, 1e-10 vs Julia)
         env:
           LAMMPS_SRC: ${{ github.workspace }}/lammps/src
           ACE_REQUIRE_GROUPS: lammps
+          OMPI_ALLOW_RUN_AS_ROOT: 1
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
         run: |
+          export PATH="${{ github.workspace }}/export/.venv/bin:$PATH"
+          export VIRTUAL_ENV="${{ github.workspace }}/export/.venv"
           julia --project=export export/test/runtests.jl lammps
 
       # Run the two-rank comparison a second time, standalone.  The Julia group above already
@@ -409,7 +442,7 @@ jobs:
           python3 -m pip install --quiet numpy
           bash export/lammps/test/run_two_ranks.sh \
             --lmp $GITHUB_WORKSPACE/lammps/build/lmp \
-            --mpirun $(command -v mpirun) \
+            --mpirun "$(command -v mpirun)" \
             --plugin export/lammps/plugin/build/aceplugin.so \
             --lib export/test/build/libace_test.so \
             --workdir $RUNNER_TEMP/two_ranks \
