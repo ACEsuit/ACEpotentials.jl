@@ -28,6 +28,15 @@ not evaluate the same geometry, which the caller should treat as a setup error.
 tolerance (energy is extensive, hence per atom -- the same convention as
 ``export/test/check_export.jl``).
 
+A NON-TRIVIALITY GATE IS ON BY DEFAULT.  Most uses of this script compare two runs of the
+SAME library, where an all-zero-force regression would make both sides agree perfectly and
+pass.  That is not hypothetical: ``export/test/test_mpi.jl`` used to compare a rigidly
+translated perfect crystal, max|F| = 2.3e-14 eV/A, against a 1e-10 tolerance -- the noise
+already exceeded the signal, and a ghost-atom bug would have produced identical zeros on both
+sides.  ``--min-force`` (default 1e-3 eV/A) fails when the largest force in ``<dump>`` is
+below it.  Pass ``--min-force 0`` only for a configuration whose forces are genuinely zero by
+construction, and say so at the call site.
+
 Exit status 0 = PASS, 1 = FAIL, 2 = could not compare.  The last line is always
 ``<label> PASS`` or ``<label> FAIL``, greppable by a caller that only wants the verdict.
 """
@@ -90,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="1-based column of fx in a plain-table dump (default 2)")
     p.add_argument("--energy", nargs=2, type=float, metavar=("E", "EREF"),
                    help="also gate |E - EREF| / natoms at the same tolerance")
+    p.add_argument("--min-force", type=float, default=1e-3,
+                   help="fail if max|F| in <dump> is below this (eV/A); 0 disables. "
+                        "Default 1e-3: comparing two all-zero force sets proves nothing.")
     p.add_argument("--label", default="COMPARE_DUMP", help="prefix of the verdict line")
     args = p.parse_args(argv)
 
@@ -105,7 +117,11 @@ def main(argv: list[str] | None = None) -> int:
     fmax = float(np.max(np.linalg.norm(F_a, axis=1)))
     ok = bool(d.max() <= args.tol)
 
-    print(f"{args.label}: {ids_a.size} atoms   max|F| = {fmax:.6e} eV/A")
+    trivial = args.min_force > 0 and fmax < args.min_force
+    print(f"{args.label}: {ids_a.size} atoms   max|F| = {fmax:.6e} eV/A   "
+          f"min-force gate = {args.min_force:.1e}"
+          f"{'  <-- TOO SMALL: this comparison proves nothing' if trivial else ''}")
+    ok = ok and not trivial
     print(f"{args.label}: max|dF| = {d.max():.6e} eV/A   mean|dF| = {d.mean():.6e}   "
           f"tol = {args.tol:.1e}   [absolute, per atom vector norm]")
     if X_a is not None and X_b is not None:
