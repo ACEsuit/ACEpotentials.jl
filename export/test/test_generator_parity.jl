@@ -58,41 +58,49 @@ const PARITY_BUILD = mkpath(joinpath(@__DIR__, "build", "parity"))
 const PARITY_TOL   = 1e-13      # generator vs generator, RELATIVE
 
 """
-    VIRIAL_ILLCONDITIONED
+    virial_tol(case) -> Float64
 
-Cases whose VIRIAL parity against the previous generator is recorded as `@test_broken`
-instead of asserted at `PARITY_TOL`, because 1e-13 relative to `|V|_inf` is a tolerance no
-correct implementation of this model can meet.  The energy and the FORCE gates -- the
-quantity the plan's constraint actually names ("any force differing by more than 1e-13
-relative is a bug, not a speed-up") -- stay hard for every case, including these.
+The generator-to-generator VIRIAL tolerance for one case.  `PARITY_TOL` (1e-13) everywhere
+except the TiAl model, where it is **3e-13 in BOTH radial modes**.
 
-MEASURED, not assumed (`export/test/diag_virial_conditioning.jl`, TiAl held-out set):
+THIS IS A CORRECTION OF THE METRIC, NOT A LOOSENING, and the arithmetic is the whole
+justification, so it lives here rather than in a report:
 
-  * the virial is a sum of signed rank-1 terms that very nearly cancels.  Its cancellation
-    condition number `κ = Σ_sites Σ_j |R_j ⊗ f_j|_inf / |V|_inf` is **428 … 970** on these
-    configurations -- a property of the model and the cell, not of any generator.  With
-    `κ = 970`, double precision determines `V` to about `κ · eps ≈ 2.1e-13` relative at best.
-  * both generators sit at that limit **against an independent reference**: measured against
-    the ETACE/`StackedCalculator` virial (computed by EquivariantTensors' own pullbacks, a
-    completely different route), the OLD generator is 2.407e-13 away and the NEW one
-    2.368e-13.  Neither is inside 1e-13, and the NEW one is the CLOSER of the two -- so the
-    generator-to-generator figure of 1.796e-13 is the distance between two answers that are
-    each ~2.4e-13 from the truth, not a defect introduced by the new kernel.
-  * the observed 1.796e-13 is in fact **156x smaller** than `κ ×` the measured force change
-    (`970 × 2.891e-14 = 2.8e-11`), i.e. far better than the conditioning permits.
+  * The virial is a sum of signed rank-1 terms that very nearly cancels.  Its cancellation
+    condition number `κ = Σ_sites Σ_j |R_j ⊗ f_j|_∞ / |V|_∞` is **428 … 970** on the TiAl
+    held-out configurations (measured: `export/test/diag_virial_conditioning.jl`).  It is a
+    property of the MODEL AND THE CELL and does not depend on which generator produced the
+    forces, so it governs `tial_poly` and `tial_h50` identically.
+  * With `κ = 970`, double precision determines `V` to about `κ · eps = 970 × 2.22e-16 =
+    2.15e-13` relative AT BEST.  A 1e-13 gate on this quantity is below the resolution of the
+    arithmetic -- the same defect the plan already corrected twice, in Task 0 (the absolute
+    virial metric) and Task 4 (the absolute rank-to-rank energy gate).
+  * Both generators sit at that floor against an INDEPENDENT reference: measured against the
+    ETACE/`StackedCalculator` virial (EquivariantTensors' own pullbacks, a completely
+    different route), the Task 5 generator is **2.407e-13** away and the Task 6 one
+    **2.368e-13**.  Neither is inside 1e-13; the newer is the closer.
+  * 3e-13 is **1.39 × the κ·eps floor**, and the two measured Task-6 values are
+    `tial_poly` **1.796e-13** (1.67x inside) and `tial_h50` **9.893e-14** (3.03x inside).
 
-WHAT STILL GATES THE VIRIAL HERE.  `check_export_report` below compares the NEW file's virial
-against the Julia calculator at an absolute 1e-12 per atom and that assertion is untouched
-(TiAl measures 6.519e-13, slightly BETTER than the previous generator's 6.626e-13).  The
-virial is therefore gated against the MODEL, which is the stronger of the two checks; what is
-recorded as Broken is only the generator-to-generator comparison of two roundoff-level
-answers.
+WHY NOT A NAME-KEYED EXEMPTION.  The first version of this file exempted `tial_poly` by case
+name with no ceiling at all.  That is indefensible twice over: it would have applied to every
+later task rather than to the change that measured it, and with no upper bound a genuine
+regression -- Task 7 mis-associating a species block and moving the TiAl virial by 1e-9
+relative -- would still have printed "38 pass / 1 broken".  A real assertion with a derived
+ceiling catches that; an exemption does not.  `tial_h50` was simultaneously asserted at 1e-13
+with 1 % of margin on a quantity whose κ is the same.  One rule now governs both.
 
-`tial_h50` is the same model and the same conditioning and measures 8.333e-14 -- inside 1e-13
-by 17 %, i.e. it passes on the luck of the draw rather than on a difference in kind.  It is
-deliberately NOT listed: a case that passes must be asserted, not excused.
+WHAT STAYS AT 1e-13.  The FORCES, on every case without exception -- they are what the plan's
+constraint names, and Task 6 measures 3.9e-14 (`tial_poly`) and 2.6e-14 (`tial_h50`).  The
+energies, on every case.  The CANTOR and DENSE virials: their conditioning is two orders of
+magnitude smaller (Cantor measures 1.75e-14) and no argument applies to them.
+
+RESIDUAL RISK, stated rather than discovered later: a TiAl virial regression between 1e-13 and
+3e-13 relative now passes this gate.  Nothing else here would catch it.  What does still catch
+a larger one is `check_export_report` below, which compares the NEW file's virial against the
+Julia calculator at an absolute 1e-12 per atom on every case (TiAl measures 6.928e-13).
 """
-const VIRIAL_ILLCONDITIONED = ("tial_poly",)
+virial_tol(case::AbstractString) = startswith(case, "tial") ? 3e-13 : PARITY_TOL
 const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolute
 
 # Every source file the generator is made of.  `export_ace_model.jl` `include`s the other
@@ -341,22 +349,15 @@ end
 
             p = relative_parity(fold, fnew, held, rcut)
             println("[$name] generator parity vs $ref_sha")
-            @printf("    relative:  dE %.3e   dF %.3e   dV %.3e   (tol %.0e)\n",
-                    p.dE_rel, p.dF_rel, p.dV_rel, PARITY_TOL)
+            @printf("    relative:  dE %.3e   dF %.3e   dV %.3e   (tol %.0e; virial tol %.0e)\n",
+                    p.dE_rel, p.dF_rel, p.dV_rel, PARITY_TOL, virial_tol(name))
             @printf("    absolute:  dE %.3e eV   dF %.3e eV/Å   dV %.3e eV\n",
                     p.dE_abs, p.dF_abs, p.dV_abs)
             println("    bit-identical on every configuration: $(p.bitwise)")
             flush(stdout)
             @test p.dE_rel <= PARITY_TOL
             @test p.dF_rel <= PARITY_TOL
-            if name in VIRIAL_ILLCONDITIONED
-                # See VIRIAL_ILLCONDITIONED below.  Recorded as Broken, never relaxed: it
-                # flips to a FAILURE the day this configuration's virial parity comes inside
-                # 1e-13, which would be a real improvement worth noticing.
-                @test_broken p.dV_rel <= PARITY_TOL
-            else
-                @test p.dV_rel <= PARITY_TOL
-            end
+            @test p.dV_rel <= virial_tol(name)
 
             # Agreeing with the old generator is not enough: both could be wrong together.
             dE, dF, dV = check_export_report(fnew, refcalc, held, rcut;

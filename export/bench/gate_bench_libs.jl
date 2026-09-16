@@ -250,6 +250,55 @@ for tag in TAGS
     dE_lmp = abs(E_jl - E_lmp) / N
     dF_lmp = maximum(norm.(F_jl .- d1.F))
 
+    # ---------------- L. LIVENESS: 100 NVE steps, big enough to reach a GC ---------------
+    #
+    # Gates A, B and C all evaluate the library ONCE (`run 0`).  So does every accuracy check
+    # in this plan.  That is a real hole and Task 6 fell into it: a workspace that the
+    # library's own garbage collector reclaimed passed every one of them and then died after
+    # roughly one step of a 2048-atom, 100-step run.
+    #
+    # The arithmetic that sizes this check.  Each site call allocates `Zs` (8n bytes), `Rs`
+    # (24n) and the force buffer (24n) = 56n for n neighbours.  The run that exposed the crash
+    # was 2048 atoms at n = 201 -- 23 MB per step -- and reached `GC: 1` inside the first step,
+    # so the library's first collection lands at roughly 20 MB allocated.  Here the cell is
+    # `-var cells 5`, the same one gates A-C use: 500 atoms at n ~ 201 on Cantor is 5.6 MB per
+    # step, i.e. **563 MB over 100 steps, about 28x the first-collection threshold**.  Dozens
+    # of collections happen with a live workspace in hand.
+    #
+    # It asserts only that the run COMPLETES and that the energies stay finite: the models here
+    # are real fits, but `timestep 0.0` is not used -- the atoms move -- so nothing about the
+    # trajectory is a physics gate.  What it catches is the class of fault that has no other
+    # detector: a buffer whose lifetime does not survive real use.
+    live_input = """
+    units metal
+    atom_style atomic
+    boundary p p p
+    read_data $geom
+    plugin load $PLUGIN
+    pair_style ace
+    pair_coeff * * $lib $(sp.species)
+    velocity all create 300.0 4928459
+    fix nve all nve
+    thermo_style custom step pe etotal
+    thermo 20
+    run 100
+    """
+    outL = run_lmp(exe, env, live_input, joinpath(work, "liveness.lmp"))
+    # Word-bounded, and that matters: a bare `inf` matches "Neighbor list **inf**o ...", which
+    # LAMMPS prints on every run -- the first version of this check failed every library for
+    # that reason alone.
+    live_nonfinite = match(r"(?<![A-Za-z])(nan|inf)(?![A-Za-z])"i, outL)
+    live_ok = !occursin("ERROR", outL) && !occursin("LAMMPS_EXIT_NONZERO", outL) &&
+              occursin("Loop time of", outL) && live_nonfinite === nothing
+    if !live_ok
+        error("""[$tag] LIVENESS FAILED -- the library did not survive 100 NVE steps on the
+              $(CELLS)^3 cell (~563 MB allocated, ~28x its first-GC threshold).  Gates A/B/C
+              evaluate it ONCE and cannot see this; see task-6-report.md section 3.
+              LAMMPS output:
+              $outL""")
+    end
+    @printf("[%s] L liveness           : 100 NVE steps completed, energies finite\n", tag)
+
     # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------
     penv = copy(env)
     penv["ACE_LIB_PATH"] = lib
@@ -340,13 +389,14 @@ for tag in TAGS
         @printf(io, "# reported only, never gated: mpi2 |dE| = %.6e eV total = %.0f ulp of E = %.6g eV; |dE|/atom = %.6e eV/atom\n",
                 abs_mpi, ulp_mpi, E_lmp, dE_mpi)
         @printf(io, "geometry_roundtrip_max_dx=%.1e\n", maxdx)
+        println(io, "liveness_100_nve_steps=PASS   # ~563 MB allocated, ~28x the library's first-GC threshold")
         println(io, "library_gates=", pass ? "PASS" : "FAIL")
         # bench_parity.sh reads `gates=` and `lib_sha256=` from the manifest, and nothing else.
         # `lib_sha256` is an IDENTITY, not a verdict, so it is written either way -- the
         # verdict travels in `gates=`, which bench_parity.sh prints into every row.  A library
         # whose gates did not all pass is refused unless the caller sets ALLOW_PARTIAL_GATE,
         # and the row then says so.
-        println(io, "gates=", pass ? "src,lib,lammps,mpi2" : "src,lib,lammps,$(failed_detail)")
+        println(io, "gates=", pass ? "src,lib,lammps,mpi2,live" : "src,lib,lammps,$(failed_detail)")
         println(io, "lib_sha256=$libsha")
     end
     pass || @error "[$tag] library gates FAILED -- bench_parity.sh will refuse to time it unless ALLOW_PARTIAL_GATE is set"

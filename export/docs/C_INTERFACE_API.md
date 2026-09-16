@@ -22,25 +22,43 @@ no Julia runtime call is needed beyond loading the library.
 
 ## Workspaces and re-entrancy
 
-Since the per-neighbour kernel (B2) the library holds **no mutable global state**. All
-scratch lives in an opaque *workspace*, which the caller allocates and passes to every
-evaluation entry point as its **first argument**:
+Since the per-neighbour kernel (B2) the library holds **no mutable global state**. All scratch
+lives in a *workspace*, which the caller obtains and passes to every evaluation entry point as
+its **first argument**:
 
 ```c
-void  *ace_workspace_new(void);
+void  *ace_workspace_new(void);   /* NULL when the pool is exhausted */
 void   ace_workspace_free(void *ws);
+int    ace_max_workspaces(void);  /* size of the pool, fixed when the library was built */
 ```
 
 * The library is **re-entrant given one workspace per concurrent caller**. It is **not**
-  thread-safe with a shared workspace, and there is no internal locking that would make it
-  so: two threads in one workspace corrupt each other's `A`, `∂A` and neighbour cache.
-* `ace_workspace_new` / `ace_workspace_free` take a lock internally (they touch the list that
-  keeps live workspaces rooted against the Julia GC), so they may be called from anywhere,
-  including inside a parallel region. The evaluation entries take **no** lock.
-* A workspace grows to fit the largest site it has seen and is then reused. There is **no
-  maximum neighbour count**; the pre-B2 `MAX_NEIGHBORS = 256` cap is gone.
-* Free every workspace **before** `dlclose()`ing the library: they are Julia objects owned by
-  it.
+  thread-safe with a shared workspace, and there is no internal locking that would make it so:
+  two threads in one workspace corrupt each other's `A`, `AA` and `∂A`.
+* **The pool is FIXED SIZE and is built into the library.** `ace_max_workspaces()` returns it
+  (currently 32 for a model exported by this generator). `ace_workspace_new` returns **NULL**
+  once that many are outstanding — check the return value, and size your thread pool with
+  `ace_max_workspaces()`. It is not a bound on anything physical; to raise it, change
+  `MAX_WORKSPACES` in `export/src/write_c_interface.jl` and re-export the model.
+* A workspace is **sized from the MODEL** (`N_A`, `N_AA`, `N_BASIS`) and never from the
+  neighbour count. It does not grow, and it is never reallocated. There is consequently **no
+  maximum neighbour count**: the pre-B2 `MAX_NEIGHBORS = 256` cap is gone, and a site of any
+  size uses the same buffers.
+* `ace_workspace_new` / `ace_workspace_free` take an internal lock (they flip a slot's
+  *taken* flag in the shared pool), so they may be called from anywhere, including inside a
+  parallel region. The evaluation entries take **no** lock. Allocate every workspace *before*
+  concurrent use all the same.
+* Handles are **tagged opaque integers**, not pointers into the library's heap, and they are
+  validated on every call: passing something that is not a handle is rejected rather than
+  served. Freeing is not required before `dlclose()` (the pool is part of the image), but it
+  is good practice and it returns the slot.
+
+WHY THE POOL IS IN THE IMAGE, in case a future change is tempted to allocate workspaces
+lazily: a runtime-allocated Julia object held across C calls is **not reliably rooted** in a
+`juliac --trim` library. Measured, twice — `pointer_from_objref` gives a `TypeError` on the
+first garbage collection, and an index into a runtime-populated global instead gives a smashed
+malloc arena. Both survive a single force evaluation and die in a real run. See the comment
+block at the top of the workspace section in `export/src/write_c_interface.jl`.
 
 The LAMMPS plugin allocates `workspaces[t]` for `t < omp_get_max_threads()` in `init_style()`
 and passes `workspaces[omp_get_thread_num()]`; `ase_ace.ACELibrary` owns exactly one per
@@ -90,15 +108,25 @@ double ace_get_cutoff(void);      /* Å */
 int    ace_get_n_species(void);
 int    ace_get_species(int idx);  /* 1-based; atomic number, or -1 out of range */
 int    ace_get_n_basis(void);
+unsigned long long ace_build_id(void);   /* provenance; see below */
 ```
 
-## Version check
+## Version and provenance checks
 
 A model compiled before the workspace API exports `ace_site_*` **without** the handle
-argument. Calling such a library through the signatures above reads `z0` out of the pointer
-slot and returns a plausible wrong number rather than crashing, so both the LAMMPS plugin and
-`ACELibrary` resolve `ace_workspace_new` first and **refuse to load** a library that does not
-export it. Do not paper over that: re-export and re-compile the model.
+argument. Calling such a library through the signatures above passes `z0` where the handle
+belongs; the handle is tagged and validated, so the call is *rejected* rather than served, but
+you still get no result. Both the LAMMPS plugin and `ACELibrary` therefore resolve
+`ace_workspace_new` first and **refuse to load** a library that does not export it. Do not
+paper over that: re-export and re-compile the model.
+
+`ace_build_id()` returns a 64-bit hash of the generated source the library was compiled from
+(everything above the `ACE EXPORT BUILD STAMP` marker line in the `.jl`). Nothing else about a
+`.so` records its source, so this is the only way to answer "was this library built from that
+model file?" — `export_build_id(<file>)` in `export/src/build_stamp.jl` recomputes it, and
+`export/test/runtests.jl` refuses to run the library test groups on a mismatch. Read it out of
+process (ctypes, or any C caller): `ccall`ing into a `juliac --trim` library from a host Julia
+process aborts that process.
 
 ---
 

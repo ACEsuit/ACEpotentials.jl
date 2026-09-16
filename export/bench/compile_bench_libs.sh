@@ -20,7 +20,11 @@ for tag in $TAGS; do
     echo "compile_bench_libs.sh: $src missing -- run verify_bench_models.jl $tag first" >&2
     rc=1; continue
   fi
-  echo "### $tag: $(du -h "$src" | cut -f1) -> $(basename "$lib")"
+  # `stat -c%s`, NOT `du -h`.  This tree lives on a compressing filesystem where `du` reports
+  # the compressed block count: it printed "140K" for both a 311 680 B and a 380 237 B file,
+  # and a size read off that line reached a task report as a 2.2x SHRINK where the source had
+  # in fact GROWN 1.22x.  Never quote `du` for a generated-source size here.
+  echo "### $tag: $(stat -c%s "$src") B -> $(basename "$lib")"
   if julia --project="$REPO/export" "$REPO/verify_cantor/compile_lib.jl" \
            "$src" "$lib" "$CPU_TARGET" > "$OUT/juliac_${tag}.log" 2>&1; then
     tail -2 "$OUT/juliac_${tag}.log"

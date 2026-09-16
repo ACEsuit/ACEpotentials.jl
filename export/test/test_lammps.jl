@@ -348,13 +348,31 @@ include(joinpath(@__DIR__, "check_export.jl"))
         @test rel_std < 0.01
     end
 
-    @testset "NVE runs (smoke: the CI model has random parameters)" begin
+    # LIVENESS, and the cell size is the gate.  This testset already ran 100 NVE steps before
+    # Task 6 and still missed the Task 6 crash (a workspace collected by the library's first
+    # garbage collection), for one measurable reason: at `0 2` it is a **64-atom** cell.
+    #
+    # The arithmetic.  Each site call allocates `Zs` (8n bytes), `Rs` (24n) and the force
+    # buffer (24n) = 56n for n neighbours.  The run that exposed the crash was 2048 atoms at
+    # n = 201, i.e. 56 x 201 x 2048 = 23 MB per step, and it reached `GC: 1` inside the first
+    # step -- so the library's first collection lands at roughly 20 MB allocated.  At `0 2`
+    # with n ~ 40 this testset allocated 56 x 40 x 64 x 100 = **14 MB over the whole run**,
+    # just under that threshold, so it never collected anything and could not see the bug.
+    #
+    # `0 4` is 512 atoms: 1.15 MB per step, **115 MB over the run**, about 5.8x the measured
+    # first-collection threshold, so several collections happen with a live workspace in hand.
+    # The drift bounds below are per-atom for that reason -- the quantity is extensive and the
+    # old absolute bounds were tuned to 64 atoms.
+    #
+    # The benchmark libraries get a bigger version of the same check in
+    # `export/bench/gate_bench_libs.jl` (500 atoms at n ~ 201 -> 563 MB, ~28x).
+    @testset "NVE runs (liveness: 512 atoms, ~115 MB allocated, several library GCs)" begin
         out = run_lmp("""
         units metal
         atom_style atomic
         boundary p p p
         lattice diamond 5.43
-        region box block 0 2 0 2 0 2
+        region box block 0 4 0 4 0 4
         create_box 1 box
         create_atoms 1 box
         mass 1 28.0855
@@ -388,8 +406,13 @@ include(joinpath(@__DIR__, "check_export.jl"))
 
         @test length(energies) >= 10
         # NOT a physics gate: the CI model's coefficients are random, so conservation is not
-        # expected.  These two only assert the integrator ran without blowing up.
-        @test abs(energies[end] - energies[1]) < 10.0
-        @test std(energies) < 5.0
+        # expected.  These two only assert the integrator ran without blowing up -- and, since
+        # Task 6, that the library survived several garbage collections while doing so.  Both
+        # are PER ATOM: the energy is extensive and the cell grew 8x (64 -> 512 atoms), so the
+        # pre-Task-6 absolute bounds of 10.0 and 5.0 eV would have become 8x looser in the
+        # only terms that mean anything.
+        natoms = 8 * 4^3
+        @test abs(energies[end] - energies[1]) / natoms < 10.0 / 64
+        @test std(energies) / natoms < 5.0 / 64
     end
 end

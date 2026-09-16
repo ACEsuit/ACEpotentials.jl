@@ -403,10 +403,12 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         end
     end
 
-    # Task 6 removed the neighbour cap: there is no MAX_NEIGHBORS constant any more and the
-    # scratch arrays live in a per-call Workspace that is resize!d to the site.  What is
-    # asserted here is therefore stronger than before: a 300-neighbour site must EVALUATE,
-    # and the emitted source must not carry the constant or the old global work arrays.
+    # Task 6 removed the neighbour cap: there is no MAX_NEIGHBORS constant any more, and the
+    # scratch lives in a Workspace every one of whose buffers is sized from the MODEL (N_A,
+    # N_AA, N_BASIS) rather than from the neighbour count -- nothing is resized per site, which
+    # is why there is no cap left to hit.  What is asserted here is therefore stronger than
+    # before: a 300-neighbour site must EVALUATE, and the emitted source must not carry the
+    # constant or the old global work arrays.
     #
     # It is still not proof of the absence of a silent cap -- a build that quietly truncated
     # the neighbour list would return a plausible finite number and pass.  The gate that

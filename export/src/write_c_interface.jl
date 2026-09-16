@@ -134,13 +134,23 @@ function _write_c_interface(io, NZ)
 #     bound on anything physical.  `ace_workspace_new` returns NULL when the pool is
 #     exhausted, and both callers check for it.
 #
-# A freed slot is marked free and reused; the handle IS the index, so slots never move.
+# THE HANDLE IS TAGGED.  It is `WORKSPACE_TAG | idx`, not a bare index.  A bare index would
+# have been strictly WORSE than the raw pointer it replaced at catching caller error: every
+# value in 1:MAX_WORKSPACES is a valid slot, so a caller that passes `z0` (14, say) where the
+# handle belongs -- exactly what a library compiled before this ABI does -- gets a VALID
+# workspace and a plausible wrong answer.  With the tag, 14 is rejected.  The check costs one
+# AND and two compares ONCE PER SITE, against ~57 us of evaluation.
+#
+# A freed slot is marked free and reused; the handle carries the index, so slots never move.
 # Handle 0 (NULL) is never valid, which matches the C convention that `ace_workspace_new`
 # returns non-NULL on success.
 #
 # new/free take a lock (they mutate the shared free list); the HOT entries take none.
 
 const MAX_WORKSPACES = 32
+# High bits of every handle.  Chosen so that a small integer (a species number, a neighbour
+# count, 0, -1) can never be mistaken for one.
+const WORKSPACE_TAG = UInt(0x0ace0000)
 const WORKSPACES = Workspace[new_workspace() for _ in 1:MAX_WORKSPACES]
 const WORKSPACE_TAKEN = fill(false, MAX_WORKSPACES)
 const WORKSPACES_LOCK = ReentrantLock()
@@ -159,12 +169,13 @@ Base.@ccallable function ace_workspace_new()::Ptr{Cvoid}
     finally
         unlock(WORKSPACES_LOCK)
     end
-    return Ptr{Cvoid}(UInt(idx))     # 0 == NULL == pool exhausted
+    idx == 0 && return Ptr{Cvoid}(UInt(0))       # NULL == pool exhausted
+    return Ptr{Cvoid}(WORKSPACE_TAG | UInt(idx))
 end
 
 Base.@ccallable function ace_workspace_free(p::Ptr{Cvoid})::Cvoid
-    idx = Int(UInt(p))
-    if 1 <= idx <= MAX_WORKSPACES
+    idx = _ws_index(p)
+    if idx != 0
         lock(WORKSPACES_LOCK)
         try
             @inbounds WORKSPACE_TAKEN[idx] = false
@@ -183,16 +194,28 @@ end
 # HELPER FUNCTIONS FOR C INTERFACE
 # ============================================================================
 
-# Handle -> workspace.  The range check is NOT decoration: a caller that passes 0 (a NULL
-# handle, or an `ace_workspace_new` return it never checked) or a stale index would otherwise
-# index the vector out of bounds.  It is one compare against a loaded length on a path that
-# costs ~200 us per site.
-@inline function _ws(p::Ptr{Cvoid})
-    idx = Int(UInt(p))
-    if idx < 1 || idx > MAX_WORKSPACES
-        error("ace: invalid workspace handle \$idx; obtain one from ace_workspace_new()")
-    end
-    return @inbounds WORKSPACES[idx]
+# Handle -> slot index, or 0 if this is not one of our handles.  See the WORKSPACE_TAG note.
+@inline function _ws_index(p::Ptr{Cvoid})
+    u = UInt(p)
+    (u & ~UInt(0xffff)) == WORKSPACE_TAG || return 0
+    idx = Int(u & UInt(0xffff))
+    (idx < 1 || idx > MAX_WORKSPACES) && return 0
+    return idx
+end
+
+@inline _ws(idx::Int) = @inbounds WORKSPACES[idx]
+
+# Reported once per bad call, to stderr, and then the entry point returns a sentinel.  It does
+# NOT `throw`: a Julia exception unwinding out of a `Base.@ccallable` in a --trim image and
+# into LAMMPS' C++ frames is undefined behaviour, and this is only reachable from a caller bug
+# (a handle that was never `ace_workspace_new`ed, or an argument list off by one).  A NaN
+# energy propagates visibly through LAMMPS' thermo output; a longjmp through a foreign stack
+# does not.
+@inline function _bad_handle()
+    println(Core.stderr,
+            "ace: invalid workspace handle -- obtain one from ace_workspace_new() and pass ",
+            "it as the FIRST argument of every ace_site_*/ace_batch_* call")
+    return nothing
 end
 
 @inline function c_read_Rij(ptr::Ptr{Cdouble}, nneigh::Int)::Vector{SVector{3, Float64}}
@@ -259,6 +282,8 @@ Base.@ccallable function ace_site_energy(
     neighbor_z::Ptr{Cint},
     neighbor_Rij::Ptr{Cdouble}
 )::Cdouble
+    wi = _ws_index(ws)
+    wi == 0 && (_bad_handle(); return NaN)
     if nneigh == 0
         return E0_of(z2i(z0))
     end
@@ -266,7 +291,7 @@ Base.@ccallable function ace_site_energy(
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
 
-    return site_energy!(_ws(ws), Rs, Zs, Int(z0))
+    return site_energy!(_ws(wi), Rs, Zs, Int(z0))
 end
 
 Base.@ccallable function ace_site_energy_forces(
@@ -277,6 +302,8 @@ Base.@ccallable function ace_site_energy_forces(
     neighbor_Rij::Ptr{Cdouble},
     forces::Ptr{Cdouble}
 )::Cdouble
+    wi = _ws_index(ws)
+    wi == 0 && (_bad_handle(); return NaN)
     if nneigh == 0
         return E0_of(z2i(z0))
     end
@@ -284,7 +311,7 @@ Base.@ccallable function ace_site_energy_forces(
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
     F = _force_buffer(Int(nneigh))
-    Ei = site_energy_forces!(_ws(ws), Rs, Zs, Int(z0), F)
+    Ei = site_energy_forces!(_ws(wi), Rs, Zs, Int(z0), F)
     c_write_forces!(forces, F)
 
     return Ei
@@ -299,6 +326,8 @@ Base.@ccallable function ace_site_energy_forces_virial(
     forces::Ptr{Cdouble},
     virial::Ptr{Cdouble}
 )::Cdouble
+    wi = _ws_index(ws)
+    wi == 0 && (_bad_handle(); return NaN)
     if nneigh == 0
         for k in 1:6
             unsafe_store!(virial, 0.0, k)
@@ -309,7 +338,7 @@ Base.@ccallable function ace_site_energy_forces_virial(
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
     F = _force_buffer(Int(nneigh))
-    Ei, Vi = site_energy_forces_virial!(_ws(ws), Rs, Zs, Int(z0), F)
+    Ei, Vi = site_energy_forces_virial!(_ws(wi), Rs, Zs, Int(z0), F)
     c_write_forces!(forces, F)
     c_write_virial!(virial, Vi)
 
@@ -351,6 +380,8 @@ Base.@ccallable function ace_site_basis(
     neighbor_Rij::Ptr{Cdouble},
     basis_out::Ptr{Cdouble}
 )::Cint
+    wi = _ws_index(ws)
+    wi == 0 && (_bad_handle(); return Cint(-1))
     if nneigh == 0
         # Return zeros for isolated atom
         for k in 1:N_BASIS
@@ -362,7 +393,7 @@ Base.@ccallable function ace_site_basis(
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
 
-    B = site_basis!(_ws(ws), Rs, Zs, Int(z0))
+    B = site_basis!(_ws(wi), Rs, Zs, Int(z0))
 
     for k in 1:N_BASIS
         unsafe_store!(basis_out, B[k], k)
@@ -390,7 +421,9 @@ Base.@ccallable function ace_batch_energy_forces_virial(
     forces::Ptr{Cdouble},
     virials::Ptr{Cdouble}
 )::Cvoid
-    w = _ws(ws)
+    wi = _ws_index(ws)
+    wi == 0 && (_bad_handle(); return nothing)
+    w = _ws(wi)
     for i in 1:Int(natoms)
         z0 = unsafe_load(z, i)
         nneigh = Int(unsafe_load(neighbor_counts, i))

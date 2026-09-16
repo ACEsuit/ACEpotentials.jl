@@ -87,9 +87,10 @@ lib_path = os.environ['ACE_LIB_PATH']
 lib = ctypes.CDLL(lib_path)
 
 # Set up function signature for site energy
-# Since Task 6 every ace_site_* entry takes an opaque WORKSPACE handle FIRST.  It is not
-# optional and it is not checked at the ABI boundary: omitting it makes ctypes pass z0 where
-# the handle belongs, and the library then dereferences 14 as a pointer.
+# Since Task 6 every ace_site_* entry takes an opaque WORKSPACE handle FIRST.  Omitting it
+# makes ctypes pass z0 (14) where the handle belongs.  The handle is TAGGED, so the library
+# rejects that on the spot and returns NaN with a message on stderr rather than serving a
+# workspace and a plausible wrong number -- but it is still a wrong call, so pass the handle.
 lib.ace_workspace_new.restype = ctypes.c_void_p
 lib.ace_workspace_new.argtypes = []
 lib.ace_workspace_free.restype = None

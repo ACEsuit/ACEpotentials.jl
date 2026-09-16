@@ -51,7 +51,10 @@
 # WORKSPACE.  All scratch lives in a caller-supplied `Workspace`, so the library is re-entrant:
 # the LAMMPS plugin holds one per OpenMP thread and the ASE calculator one per instance.  Every
 # buffer in it is sized from the MODEL (N_A, N_AA, N_BASIS) and never from the neighbour count,
-# so there is no `MAX_NEIGHBORS` and nothing is ever reallocated.
+# so nothing is ever reallocated and there is no maximum neighbour count -- the 256-neighbour
+# cap this export used to carry is gone.  In a compiled library the workspaces are a fixed
+# pool built into the image and handed out by index; see write_c_interface.jl for why that is
+# the only construction that survives `juliac --trim`.
 #
 # ============================================================================================
 #

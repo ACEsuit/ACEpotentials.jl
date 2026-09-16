@@ -528,9 +528,9 @@ void PairACE::compute(int eflag, int vflag)
     double *thread_forces = all_thread_forces[tid];
     // omp_get_thread_num() is stable for the whole parallel region, so this is a private
     // workspace for the duration.  n_workspaces was set from omp_get_max_threads() in
-    // init_style; if a nested/changed team ever made tid exceed it, the modulo keeps the
-    // index in range -- two threads would then share a workspace, so it must not happen
-    // silently: assert it instead.
+    // init_style; a nested or resized team could in principle make tid exceed it, and two
+    // threads sharing one workspace is exactly the corruption this API exists to prevent --
+    // so this ERRORS rather than wrapping the index into range.
     if (tid >= n_workspaces)
       error->one(FLERR, "Pair style ace: more OpenMP threads than ACE workspaces");
     void *ace_ws = workspaces[tid];
