@@ -4,7 +4,7 @@
 
 | | exported/compiled library | minimal export |
 |---|---|---|
-| produced by | `export_ace_model(...; for_library = true)` + `juliac --trim=safe` | `export/src/ace_c_interface.jl` |
+| produced by | `export_ace_model(...; for_library = true)` + `juliac --trim=safe` | *no longer in the tree* -- see the note below |
 | one model per | shared library (`libace_<model>.so`) | `model_id`, several per process |
 | consumed by | the LAMMPS `pair_style ace` plugin, `ase_ace.ACELibraryCalculator` | in-process Julia embedding |
 | documented in | **[the section immediately below](#compiled-library-abi-ccallable)** | the rest of this file |
@@ -12,6 +12,15 @@
 Everything from "C Interface API for Minimal Export" onward describes the SECOND one. If you
 are writing a LAMMPS pair style or a ctypes wrapper against a `.so`, the first is what you
 want.
+
+**The minimal export's implementation was deleted in Task 6 and its documentation is kept for
+reference only.** `export/src/ace_c_interface.jl` was `include`d by nothing, and the minimal
+plugin (`pair_ace_minimal.cpp`) looks for a differently-named `ace_c_interface_minimal.jl`
+that has never existed in this tree. What it carried was a copy of the `ace_site_*` entry
+points **without the workspace handle** -- precisely the stale ABI that the tagged handles in
+the compiled library now exist to reject -- so leaving it there was a standing invitation to
+copy the wrong signatures. If the minimal path is revived, write it against the ABI documented
+above.
 
 ---
 

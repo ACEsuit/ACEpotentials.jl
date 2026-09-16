@@ -334,7 +334,9 @@ end
     ref_sha, ref_subj = _resolved_ref()
     println("\n" * "="^100)
     println("generator parity reference: EXPORT_REF_SHA=$REF_SHA  ->  $ref_sha  \"$ref_subj\"")
-    println("relative tolerance $(PARITY_TOL) (energy/forces/virial), export gate $(EXPORT_TOL)")
+    println("relative tolerance $(PARITY_TOL) (energy and forces, every case; the virial too " *
+            "except on TiAl, where its conditioning sets 3e-13 -- see virial_tol), " *
+            "export gate $(EXPORT_TOL)")
     println("="^100); flush(stdout)
     for (name, calc, refcalc, held, rcut, mode) in parity_cases()
         @testset "$name ($mode)" begin

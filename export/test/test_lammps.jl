@@ -348,25 +348,31 @@ include(joinpath(@__DIR__, "check_export.jl"))
         @test rel_std < 0.01
     end
 
-    # LIVENESS, and the cell size is the gate.  This testset already ran 100 NVE steps before
-    # Task 6 and still missed the Task 6 crash (a workspace collected by the library's first
-    # garbage collection), for one measurable reason: at `0 2` it is a **64-atom** cell.
+    # LIVENESS.  This testset already ran 100 NVE steps before Task 6 and still missed the
+    # Task 6 crash (a workspace collected by the library's first garbage collection).  The
+    # reason is size, and the numbers below are MEASURED -- through `ace_gc_count()` and
+    # `ace_alloc_bytes()`, which exist precisely because two attempts to derive them were
+    # wrong (once from LAMMPS' `Ave neighs/atom`, which is the UNFILTERED list including the
+    # 2 A skin; once from the abort banner's allocation counter):
     #
-    # The arithmetic.  Each site call allocates `Zs` (8n bytes), `Rs` (24n) and the force
-    # buffer (24n) = 56n for n neighbours.  The run that exposed the crash was 2048 atoms at
-    # n = 201, i.e. 56 x 201 x 2048 = 23 MB per step, and it reached `GC: 1` inside the first
-    # step -- so the library's first collection lands at roughly 20 MB allocated.  At `0 2`
-    # with n ~ 40 this testset allocated 56 x 40 x 64 x 100 = **14 MB over the whole run**,
-    # just under that threshold, so it never collected anything and could not see the bug.
+    #   * a site call allocates about 56n + 208 bytes for n neighbours (measured 5136 B at
+    #     n = 88 against the 4928 the formula's leading term predicts);
+    #   * the library's FIRST collection lands at **43.1 MB** allocated -- measured directly
+    #     on libace_cantor_poly_b2.so, 8 796 site calls, 0.6 s;
+    #   * the plugin filters to rcut before building its arrays, so the n that matters is the
+    #     FILTERED count: 34 for this diamond-Si cell at rcut 5.5 (82.5 for the Cantor
+    #     benchmark box, where LAMMPS reports 201).
     #
-    # `0 4` is 512 atoms: 1.15 MB per step, **115 MB over the run**, about 5.8x the measured
-    # first-collection threshold, so several collections happen with a live workspace in hand.
-    # The drift bounds below are per-atom for that reason -- the quantity is extensive and the
-    # old absolute bounds were tuned to 64 atoms.
+    # So at `0 2` (64 atoms) this testset allocated 2112 B x 64 x 100 = **12.9 MB over the
+    # whole run, 0.30x the first-collection point** -- it never collected, and could not have
+    # seen the fault.  At `0 4` (512 atoms) it allocates **103 MB, 2.4x**, i.e. two or three
+    # collections with a live workspace in hand.
     #
-    # The benchmark libraries get a bigger version of the same check in
-    # `export/bench/gate_bench_libs.jl` (500 atoms at n ~ 201 -> 563 MB, ~28x).
-    @testset "NVE runs (liveness: 512 atoms, ~115 MB allocated, several library GCs)" begin
+    # 2.4x is adequate but not generous, which is why the DECISIVE check is the separate
+    # `liveness_gc.py` testset below: it drives the library until `ace_gc_count()` reports
+    # three collections and fails if they do not happen, so it cannot pass vacuously at any
+    # cell size.  This NVE run is the one that exercises the real `pair_style ace` path.
+    @testset "NVE runs (liveness: 512 atoms, ~103 MB allocated, 2.4x the first-GC point)" begin
         out = run_lmp("""
         units metal
         atom_style atomic
@@ -406,13 +412,41 @@ include(joinpath(@__DIR__, "check_export.jl"))
 
         @test length(energies) >= 10
         # NOT a physics gate: the CI model's coefficients are random, so conservation is not
-        # expected.  These two only assert the integrator ran without blowing up -- and, since
-        # Task 6, that the library survived several garbage collections while doing so.  Both
-        # are PER ATOM: the energy is extensive and the cell grew 8x (64 -> 512 atoms), so the
-        # pre-Task-6 absolute bounds of 10.0 and 5.0 eV would have become 8x looser in the
-        # only terms that mean anything.
+        # expected.  These only assert the integrator ran without blowing up.
+        #
+        # The bounds are PER ATOM because the energy is EXTENSIVE.  Keeping the old absolute
+        # 10.0 / 5.0 eV on a cell 8x larger would have made them 8x TIGHTER per atom -- the
+        # test would have been asserting something stricter than it ever did, for no reason
+        # connected to the change.  Per atom they assert exactly what they asserted at 64
+        # atoms, which is the point; in absolute terms that is 80 eV rather than 10, and that
+        # is the correct consequence of measuring an extensive quantity per atom, not a
+        # relaxation aimed at getting a larger cell to pass.
         natoms = 8 * 4^3
         @test abs(energies[end] - energies[1]) / natoms < 10.0 / 64
         @test std(energies) / natoms < 5.0 / 64
+    end
+
+    # THE DECISIVE liveness check, and the one that cannot pass vacuously.  The NVE run above
+    # is sized so that a collection is LIKELY; this one drives the library until
+    # `ace_gc_count()` says three have HAPPENED, requires every result to stay bitwise equal
+    # to the first, and FAILS if the collections never occur.  That non-triviality condition
+    # is the whole point: a liveness check that silently never collected is what let the Task
+    # 6 fault through every gate in this plan.  ~1.7 s.
+    @testset "library survives its own garbage collector (bitwise, >= 3 collections)" begin
+        script = joinpath(TEST_DIR, "python", "liveness_gc.py")
+        @test isfile(script)
+        s = lammps_setup()
+        out = try
+            read(setenv(`python3 $script $(s.lib_path) --gcs 3`, s.env), String)
+        catch e
+            "LIVENESS_GC FAIL (could not run: $e)"
+        end
+        for line in split(strip(out), '\n')
+            startswith(line, "LIVENESS_GC") && println(line)
+        end
+        @test occursin("LIVENESS_GC PASS", out)
+        # The run must SAY it collected; a `0 collection(s)` line that still printed PASS
+        # would mean the script's own gate had been removed.
+        @test !occursin("0 collection(s)", out)
     end
 end

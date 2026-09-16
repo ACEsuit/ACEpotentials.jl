@@ -127,7 +127,6 @@ export_ace_model(calc, "model.jl"; radial_basis=:hermite_spline)
 export/
 ├── src/                          # Core export functionality
 │   ├── export_ace_model.jl       # Model → trim-compatible code
-│   └── ace_c_interface.jl        # C API implementation
 │
 ├── lammps/                       # LAMMPS integration
 │   ├── plugin/                   # pair_style ace plugin source

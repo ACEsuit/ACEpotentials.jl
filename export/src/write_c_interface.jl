@@ -103,9 +103,10 @@ function _write_c_interface(io, NZ)
 # WORKSPACE POOL AND HANDLES
 # ============================================================================
 #
-# The pool is built WHEN THE IMAGE IS BUILT and the handle is a 1-BASED INDEX into it, cast to
-# a pointer.  Both halves of that are load-bearing, and both were arrived at by measurement
-# rather than by taste:
+# The pool is built WHEN THE IMAGE IS BUILT, and the handle is a TAGGED slot number
+# (`WORKSPACE_TAG | idx`, see below) cast to a pointer -- never the address of a Julia object.
+# Both halves of that are load-bearing, and both were arrived at by measurement rather than by
+# taste:
 #
 #  1. NO JULIA OBJECT ADDRESS CROSSES THE C BOUNDARY.  `pointer_from_objref(ws)` +
 #     `unsafe_pointer_to_objref(p)::Workspace` is the obvious implementation.  In a juliac
@@ -175,13 +176,17 @@ end
 
 Base.@ccallable function ace_workspace_free(p::Ptr{Cvoid})::Cvoid
     idx = _ws_index(p)
-    if idx != 0
-        lock(WORKSPACES_LOCK)
-        try
-            @inbounds WORKSPACE_TAKEN[idx] = false
-        finally
-            unlock(WORKSPACES_LOCK)
-        end
+    if idx == 0
+        # Same report as every other entry point.  A double free, or a free of something that
+        # was never a handle, is a caller bug and should not be silent.
+        _bad_handle()
+        return nothing
+    end
+    lock(WORKSPACES_LOCK)
+    try
+        @inbounds WORKSPACE_TAKEN[idx] = false
+    finally
+        unlock(WORKSPACES_LOCK)
     end
     return nothing
 end
@@ -190,16 +195,38 @@ Base.@ccallable function ace_max_workspaces()::Cint
     return Cint(MAX_WORKSPACES)
 end
 
+# The number of garbage collections this library's runtime has performed, and the bytes it has
+# allocated.  DIAGNOSTIC, and the reason it exists is specific: the Task 6 fault was a
+# workspace reclaimed by the library's own collector, so "has this test driven the library
+# hard enough to collect at all?" is the question a liveness check has to answer, and no
+# amount of arithmetic about bytes-per-site answers it reliably (that arithmetic was wrong
+# twice: once from LAMMPS' skin-inflated `Ave neighs/atom`, once from misreading the abort
+# banner's allocation counter).  A caller reads it before and after the workload and requires
+# it to have moved; see export/test/python/liveness_gc.py.
+Base.@ccallable function ace_gc_count()::Clonglong
+    return Clonglong(Base.gc_num().pause)
+end
+
+Base.@ccallable function ace_alloc_bytes()::Clonglong
+    return Clonglong(Base.gc_num().total_allocd + Base.gc_num().allocd)
+end
+
 # ============================================================================
 # HELPER FUNCTIONS FOR C INTERFACE
 # ============================================================================
 
-# Handle -> slot index, or 0 if this is not one of our handles.  See the WORKSPACE_TAG note.
+# Handle -> slot index, or 0 if this is not a handle to a LIVE workspace.  Three conditions,
+# and the third is not optional: tag, range, AND `WORKSPACE_TAKEN`.  Without the last, a
+# use-after-free and a handle to a slot that was never allocated are both SERVED -- they name
+# a real, correctly-typed workspace and produce a plausible answer.  That matters more, not
+# less, as the workspace grows (Task 7 adds the DAG buffers to it), so it is checked here
+# rather than left as a known gap.
 @inline function _ws_index(p::Ptr{Cvoid})
     u = UInt(p)
     (u & ~UInt(0xffff)) == WORKSPACE_TAG || return 0
     idx = Int(u & UInt(0xffff))
     (idx < 1 || idx > MAX_WORKSPACES) && return 0
+    @inbounds WORKSPACE_TAKEN[idx] || return 0
     return idx
 end
 

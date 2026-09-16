@@ -455,8 +455,25 @@ benchmark's own pinned process), `pace recursive` re-run in the same block on th
 
 **Every library was gated before it was timed.** Source gate (`verify_bench_models.jl`,
 `bench_parity/verify_b2_final.log`) and library gates A/B/C (`gate_bench_libs.jl`,
-`bench_parity/gate_libs_b2.log`) both PASS on all four tags; every row reads
+`bench_parity/gate_libs_b2.log`) both PASS on all four tags; every row below reads
 `gate=OK[src,lib,lammps,mpi2]`.
+
+> **THESE ROWS PREDATE TASK 6'S FIX ROUNDS, AND THE LIBRARIES HAVE SINCE BEEN REBUILT.**
+> Read this before comparing any row here against an on-disk artefact.
+>
+> The fix rounds added a tagged-and-validated workspace handle to every `ace_site_*` entry,
+> an `ace_gc_count()` diagnostic, and a liveness gate. The libraries in `bench_parity/` were
+> therefore re-exported and re-compiled, so **their `lib_sha256` no longer matches the one
+> recorded in these rows** and their manifests now read `gates=src,lib,lammps,mpi2,live`
+> rather than the `mpi2` the rows quote. That is expected; the rows are tied to the binaries
+> named by the `lib_sha256` *in the row itself*, which is why that field is there.
+>
+> The rows were NOT re-taken, because the handle check is one AND and two compares **once per
+> site** (<1e-5 of ~57 µs). That is measured, not assumed: four control rows on the rebuilt
+> libraries, on the same core, are in **`bench_parity/rows_task6_fix1.txt`** and move
+> **+1.39 % (`cantor_poly`), +1.02 % (`tial_poly`), +0.34 % (`cantor_h50`), +0.42 %
+> (`tial_h50`)** — each inside its own row's run-to-run spread, and not of one sign. The
+> headline speed-ups below are unaffected.
 
 | tag | source gate max&#124;dE&#124;/at / max&#124;dF&#124; / max&#124;dV&#124;/at | A LAMMPS vs Julia | B lib vs Julia | C 2-vs-1 rank (rel E / abs F) |
 |---|---|---|---|---|
@@ -556,6 +573,9 @@ not because it is worth anything on this benchmark.
   nothing but approximation error at these widths; its case for existing is weaker than
   before, which is a finding for the plan rather than a change to make here.
 * **Every library grew**, from the image-resident workspace pool (32 workspaces of
-  `2·N_A + 2·N_AA + N_BASIS` doubles each): `cantor_poly` 2.99 → 4.13 MB, `cantor_h50`
-  3.75 → 6.18 MB, `tial_poly` 4.29 → 8.05 MB, `tial_h50` 4.67 → 8.94 MB. See
+  `2·N_A + 2·N_AA + N_BASIS` doubles each).  `stat -c%s`, B1 → B2 as rebuilt at the end of
+  fix round 2 — and `stat`, never `du`: this tree is on a compressing filesystem where `du -h`
+  reports the same "140K" for a 311 680 B and a 383 506 B file.
+  `cantor_poly` 2 991 352 → 4 141 592 B, `cantor_h50` 3 746 480 → 6 190 344,
+  `tial_poly` 4 291 384 → 8 056 768, `tial_h50` 4 670 056 → 8 947 184.  See
   `export/src/write_c_interface.jl` for why the pool has to be built into the image.

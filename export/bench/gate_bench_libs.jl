@@ -250,25 +250,47 @@ for tag in TAGS
     dE_lmp = abs(E_jl - E_lmp) / N
     dF_lmp = maximum(norm.(F_jl .- d1.F))
 
-    # ---------------- L. LIVENESS: 100 NVE steps, big enough to reach a GC ---------------
+    # ---------------- L. LIVENESS: the library must survive its own garbage collector -----
     #
     # Gates A, B and C all evaluate the library ONCE (`run 0`).  So does every accuracy check
     # in this plan.  That is a real hole and Task 6 fell into it: a workspace that the
-    # library's own garbage collector reclaimed passed every one of them and then died after
-    # roughly one step of a 2048-atom, 100-step run.
+    # library's own collector reclaimed passed every one of them and then died in a real run.
     #
-    # The arithmetic that sizes this check.  Each site call allocates `Zs` (8n bytes), `Rs`
-    # (24n) and the force buffer (24n) = 56n for n neighbours.  The run that exposed the crash
-    # was 2048 atoms at n = 201 -- 23 MB per step -- and reached `GC: 1` inside the first step,
-    # so the library's first collection lands at roughly 20 MB allocated.  Here the cell is
-    # `-var cells 5`, the same one gates A-C use: 500 atoms at n ~ 201 on Cantor is 5.6 MB per
-    # step, i.e. **563 MB over 100 steps, about 28x the first-collection threshold**.  Dozens
-    # of collections happen with a live workspace in hand.
+    # TWO PARTS, and the first is the decisive one.
     #
-    # It asserts only that the run COMPLETES and that the energies stay finite: the models here
-    # are real fits, but `timestep 0.0` is not used -- the atoms move -- so nothing about the
-    # trajectory is a physics gate.  What it catches is the class of fault that has no other
-    # detector: a buffer whose lifetime does not survive real use.
+    # L1 OBSERVES the condition instead of predicting it.  `liveness_gc.py` drives the library
+    # through the C API until `ace_gc_count()` reports 3 collections and requires every result
+    # to stay BITWISE equal to the first.  It fails if the collections never happen, so it
+    # cannot pass vacuously.  ~1.7 s.
+    #
+    # Sizing a workload by arithmetic was tried instead and got the wrong answer twice -- once
+    # from LAMMPS' `Ave neighs/atom`, which is the UNFILTERED list including the 2 A skin (201
+    # on the Cantor box, where the plugin actually passes in 82.5), and once from reading the
+    # abort banner's allocation counter.  The measured figures, for the record and not as a
+    # gate: the first collection lands at 43.1 MB allocated; a site call costs about
+    # 56*n + 208 bytes; so L2 below allocates ~230 MB (Cantor) or ~74 MB (TiAl), i.e. a few
+    # collections.  L1 is what guarantees it.
+    #
+    # L2 keeps the REAL path covered: 100 NVE steps through `pair_style ace` on the same cell
+    # gates A-C use, asserting only that the run completes with finite energies.  `timestep`
+    # is the metal default, so the atoms move; nothing about the trajectory is a physics gate.
+    live1 = joinpath(REPO, "export", "test", "python", "liveness_gc.py")
+    lenv = copy(env)
+    l1out = try
+        read(setenv(`python3 $live1 $lib --gcs 3`, lenv), String)
+    catch e
+        "LIVENESS_GC FAIL (could not run: $e)"
+    end
+    l1_ok = occursin("LIVENESS_GC PASS", l1out)
+    l1_line = something(findfirst(l -> startswith(l, "LIVENESS_GC:"), split(strip(l1out), '\n')),
+                        0)
+    l1_detail = l1_line == 0 ? strip(l1out) : split(strip(l1out), '\n')[l1_line]
+    l1_ok || error("""[$tag] LIVENESS (L1) FAILED -- the library did not survive its own
+          garbage collector, or never collected at all.  Gates A/B/C evaluate it ONCE and
+          cannot see this; see task-6-report.md section 3.
+          $l1out""")
+    @printf("[%s] L1 liveness (GC)     : %s\n", tag, l1_detail)
+
     live_input = """
     units metal
     atom_style atomic
@@ -284,22 +306,23 @@ for tag in TAGS
     run 100
     """
     outL = run_lmp(exe, env, live_input, joinpath(work, "liveness.lmp"))
-    # Word-bounded, and that matters: a bare `inf` matches "Neighbor list **inf**o ...", which
-    # LAMMPS prints on every run -- the first version of this check failed every library for
-    # that reason alone.
-    live_nonfinite = match(r"(?<![A-Za-z])(nan|inf)(?![A-Za-z])"i, outL)
-    live_ok = !occursin("ERROR", outL) && !occursin("LAMMPS_EXIT_NONZERO", outL) &&
-              occursin("Loop time of", outL) && live_nonfinite === nothing
-    if !live_ok
-        error("""[$tag] LIVENESS FAILED -- the library did not survive 100 NVE steps on the
-              $(CELLS)^3 cell (~563 MB allocated, ~28x its first-GC threshold).  Gates A/B/C
-              evaluate it ONCE and cannot see this; see task-6-report.md section 3.
-              LAMMPS output:
-              $outL""")
-    end
-    @printf("[%s] L liveness           : 100 NVE steps completed, energies finite\n", tag)
+    # The finiteness scan is restricted to the THERMO BLOCK.  Scanning the whole output is
+    # doubly wrong: a bare `inf` matches LAMMPS' "Neighbor list **inf**o ...", which every run
+    # prints (the first version of this check failed four healthy libraries for that reason
+    # alone), and a `mktempdir` path echoed into the log can contain the letters by accident.
+    thermo = join([l for l in split(outL, '\n')
+                   if occursin(r"^\s*\d+(\s+-?[\d.eE+-]+)+\s*$", l)], "\n")
+    live_nonfinite = match(r"(?<![A-Za-z0-9])(nan|inf)(?![A-Za-z0-9])"i, thermo)
+    l2_ok = !occursin("ERROR", outL) && !occursin("LAMMPS_EXIT_NONZERO", outL) &&
+            occursin("Loop time of", outL) && live_nonfinite === nothing
+    l2_ok || error("""[$tag] LIVENESS (L2) FAILED -- the library did not survive 100 NVE steps
+          through pair_style ace on the $(CELLS)^3 cell.
+          LAMMPS output:
+          $outL""")
+    @printf("[%s] L2 liveness (LAMMPS) : 100 NVE steps completed, thermo energies finite\n", tag)
+    live_ok = l1_ok && l2_ok
 
-    # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------
+    # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------    # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------
     penv = copy(env)
     penv["ACE_LIB_PATH"] = lib
     penv["ACE_GEOM"] = geom
@@ -389,14 +412,18 @@ for tag in TAGS
         @printf(io, "# reported only, never gated: mpi2 |dE| = %.6e eV total = %.0f ulp of E = %.6g eV; |dE|/atom = %.6e eV/atom\n",
                 abs_mpi, ulp_mpi, E_lmp, dE_mpi)
         @printf(io, "geometry_roundtrip_max_dx=%.1e\n", maxdx)
-        println(io, "liveness_100_nve_steps=PASS   # ~563 MB allocated, ~28x the library's first-GC threshold")
+        # DERIVED from the run, not a literal: a later refactor that caught gate L's error
+        # instead of letting it abort would otherwise write PASS onto a failed gate.
+        println(io, "liveness=", live_ok ? "PASS" : "FAIL",
+                "   # L1 ", strip(l1_detail), " | L2 100 NVE steps through pair_style ace")
         println(io, "library_gates=", pass ? "PASS" : "FAIL")
         # bench_parity.sh reads `gates=` and `lib_sha256=` from the manifest, and nothing else.
         # `lib_sha256` is an IDENTITY, not a verdict, so it is written either way -- the
         # verdict travels in `gates=`, which bench_parity.sh prints into every row.  A library
         # whose gates did not all pass is refused unless the caller sets ALLOW_PARTIAL_GATE,
         # and the row then says so.
-        println(io, "gates=", pass ? "src,lib,lammps,mpi2,live" : "src,lib,lammps,$(failed_detail)")
+        println(io, "gates=", pass ? (live_ok ? "src,lib,lammps,mpi2,live" : "src,lib,lammps,mpi2") :
+                                     "src,lib,lammps,$(failed_detail)")
         println(io, "lib_sha256=$libsha")
     end
     pass || @error "[$tag] library gates FAILED -- bench_parity.sh will refuse to time it unless ALLOW_PARTIAL_GATE is set"
