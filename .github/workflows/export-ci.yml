@@ -447,7 +447,13 @@ jobs:
           # <julia>/lib/julia, not just libjulia.so in <julia>/lib.
           JL=$(julia -e 'print(joinpath(Sys.BINDIR, ".."))')
           export LD_LIBRARY_PATH="$JL/lib:$JL/lib/julia:$GITHUB_WORKSPACE/export/test/build:$LD_LIBRARY_PATH"
-          python3 -m pip install --quiet numpy
+          # `run_two_ranks.sh` invokes plain `python3` (for compare_dump.py, which needs
+          # numpy) from PATH.  `python3 -m pip install numpy` against the runner's system
+          # Python hits PEP 668's `externally-managed-environment` on ubuntu-latest and would
+          # fail this step.  The `export/.venv` created by the "Install Python dependencies"
+          # step above already has numpy (an `export/pyproject.toml` dependency, pulled in by
+          # `uv sync`) -- put it on PATH instead of installing anything system-wide.
+          export PATH="$GITHUB_WORKSPACE/export/.venv/bin:$PATH"
           bash export/lammps/test/run_two_ranks.sh \
             --lmp $GITHUB_WORKSPACE/lammps/build/lmp \
             --mpirun "$(command -v mpirun)" \
