@@ -112,9 +112,59 @@ jobs:
             Pkg.precompile()
           '
 
-      - name: Run ETACE export tests (polynomial, hermite, multispecies)
+      # `pair` is selected here even though a hosted runner cannot satisfy it: selecting it is
+      # what makes the group report a status at all.  ACE_REQUIRE_GROUPS lists the groups a
+      # hosted runner CAN run, and the suite fails if any of them did not execute; `pair` is
+      # then dealt with explicitly by the step after this one.
+      #
+      # `hermite` pulls in test_hermite_spline_export.jl AND test_hermite_accuracy.jl
+      # (:hermite_spline vs the SPLINIFIED model at 1e-8, :polynomial vs the FITTED model at
+      # 1e-12); `multispecies` runs both radial-basis modes of test_multispecies.jl.
+      - name: Run ETACE export tests (polynomial, hermite, multispecies, pair)
+        env:
+          ACE_REQUIRE_GROUPS: etace,hermite,hermite_accuracy,multispecies
         run: |
-          julia --project=export export/test/runtests.jl etace hermite multispecies
+          set -o pipefail
+          julia --project=export export/test/runtests.jl etace hermite multispecies pair \
+            2>&1 | tee export-tests.log
+
+      # K3: a gate that did not execute must never be reported as a gate that passed.
+      #
+      # test_pair_export.jl checks the exported pair term against the FITTED Cantor model,
+      # whose parameters (verify_cantor/cantor_v010_params.jld2) and held-out geometries are
+      # host-local data that is not in this repository.  A GitHub-hosted runner therefore
+      # CANNOT run the plan's only pair-parity gate, and this step says so in the job summary
+      # and as a workflow annotation rather than letting a green tick imply otherwise.
+      #
+      # Set the repository variable ACE_PAIR_GATE_REQUIRED to `true` on a runner that does
+      # have the fixture (see the pair-parity job below) and the missing gate becomes a hard
+      # failure instead of an annotation.
+      - name: Check the pair-parity gate executed
+        if: always()
+        env:
+          PAIR_GATE_REQUIRED: ${{ vars.ACE_PAIR_GATE_REQUIRED || 'false' }}
+        run: |
+          status=$(grep -o 'ACE_GROUP_STATUS pair=[a-z]*' export-tests.log | tail -1 | cut -d= -f2)
+          echo "pair group status: ${status:-absent}"
+          if [ "$status" = "ran" ]; then
+            echo "- pair-parity gate: **executed**" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          {
+            echo "### :warning: the pair-parity gate did NOT run on this runner"
+            echo ""
+            echo "\`export/test/test_pair_export.jl\` is the only check in this repository that"
+            echo "compares an exported model *including its pair term* against the fitted Cantor"
+            echo "model. It needs \`verify_cantor/cantor_v010_params.jld2\` and the held-out"
+            echo "geometries, neither of which is in the repository, so it cannot run on a"
+            echo "GitHub-hosted runner. **A green tick on this job does not mean pair parity was"
+            echo "checked.**"
+          } >> $GITHUB_STEP_SUMMARY
+          echo "::warning title=pair-parity gate skipped::test_pair_export.jl did not run (Cantor fixture absent); pair parity was NOT checked by this job"
+          if [ "$PAIR_GATE_REQUIRED" = "true" ]; then
+            echo "::error title=pair-parity gate skipped::ACE_PAIR_GATE_REQUIRED=true but the gate did not run"
+            exit 1
+          fi
 
       - name: Compile ETACE model to shared library
         id: compile
@@ -257,7 +307,12 @@ jobs:
             Pkg.instantiate()
           '
 
+      # K1 (the GLIBCXX_3.4.30 errors) is fixed inside the runner: test_python.jl builds its
+      # LD_LIBRARY_PATH with ace_runtime_env, which adds <julia>/lib/julia as well as
+      # <julia>/lib.  Nothing is needed here beyond the venv.
       - name: Run Python tests
+        env:
+          ACE_REQUIRE_GROUPS: python
         run: |
           export PATH="${{ github.workspace }}/export/.venv/bin:$PATH"
           export VIRTUAL_ENV="${{ github.workspace }}/export/.venv"
@@ -277,10 +332,10 @@ jobs:
           name: ace-library
           path: export/test/build
 
-      - name: Install MPI headers
+      - name: Install MPI (headers and mpirun -- the two-rank step needs both)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libopenmpi-dev
+          sudo apt-get install -y libopenmpi-dev mpi-default-bin
 
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
@@ -317,18 +372,48 @@ jobs:
             Pkg.instantiate()
           '
 
-      - name: Build ACE LAMMPS plugin
+      # -DBUILD_OMP=OFF until Task 6 introduces the per-thread workspace: the plugin's
+      # OpenMP path has no verified serial-vs-threaded parity check yet, and building it
+      # here would put an unverified code path under the 1e-10 gate below.  Task 6 switches
+      # this ON together with the OMP_NUM_THREADS=4 vs serial comparison at 1e-12.
+      - name: Build ACE LAMMPS plugin (OpenMP off until Task 6)
         run: |
           cd export/lammps/plugin
           mkdir -p build && cd build
-          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src
+          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src -DBUILD_OMP=OFF
           make -j $(nproc)
 
-      - name: Run LAMMPS tests (serial)
+      # The `lammps` group gates `pair_style ace` against the exported model evaluated in
+      # Julia at 1e-10 (energy/atom and forces), the compiled library through the Python C
+      # API against the same Julia numbers at 1e-12, and 2 MPI ranks against 1 at 1e-12.
+      # ACE_REQUIRE_GROUPS makes a skipped group a failure rather than a warning.
+      - name: Run LAMMPS tests (serial, 1e-10 vs Julia)
         env:
           LAMMPS_SRC: ${{ github.workspace }}/lammps/src
+          ACE_REQUIRE_GROUPS: lammps
         run: |
           julia --project=export export/test/runtests.jl lammps
+
+      # Run the two-rank comparison a second time, standalone.  The Julia group above already
+      # invokes this script; running it again without Julia is what keeps it usable by Task 6
+      # (OMP parity) and Task 8, which have no Julia process to call it from.
+      - name: Two-rank parity (1 rank vs 2 ranks, 1e-12)
+        env:
+          OMPI_ALLOW_RUN_AS_ROOT: 1
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+        run: |
+          # K1: the juliac-compiled library needs the libstdc++ Julia bundles in
+          # <julia>/lib/julia, not just libjulia.so in <julia>/lib.
+          JL=$(julia -e 'print(joinpath(Sys.BINDIR, ".."))')
+          export LD_LIBRARY_PATH="$JL/lib:$JL/lib/julia:$GITHUB_WORKSPACE/export/test/build:$LD_LIBRARY_PATH"
+          python3 -m pip install --quiet numpy
+          bash export/lammps/test/run_two_ranks.sh \
+            --lmp $GITHUB_WORKSPACE/lammps/build/lmp \
+            --mpirun $(command -v mpirun) \
+            --plugin export/lammps/plugin/build/aceplugin.so \
+            --lib export/test/build/libace_test.so \
+            --workdir $RUNNER_TEMP/two_ranks \
+            --tol 1e-12
 
   test-mpi:
     runs-on: ubuntu-latest
@@ -384,11 +469,12 @@ jobs:
             Pkg.instantiate()
           '
 
-      - name: Build ACE LAMMPS plugin
+      # -DBUILD_OMP=OFF until Task 6; see the serial job for why.
+      - name: Build ACE LAMMPS plugin (OpenMP off until Task 6)
         run: |
           cd export/lammps/plugin
           mkdir -p build && cd build
-          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src
+          cmake ../cmake -DLAMMPS_HEADER_DIR=$GITHUB_WORKSPACE/lammps/src -DBUILD_OMP=OFF
           make -j $(nproc)
 
       - name: Run MPI tests
@@ -396,6 +482,7 @@ jobs:
           LAMMPS_SRC: ${{ github.workspace }}/lammps/src
           OMPI_ALLOW_RUN_AS_ROOT: 1
           OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+          ACE_REQUIRE_GROUPS: mpi
         run: |
           julia --project=export export/test/runtests.jl mpi
 
@@ -477,7 +564,9 @@ jobs:
       - name: Setup library path
         run: |
           chmod +x ${{ github.workspace }}/export/test/build/libace_test.so || true
-          echo "LD_LIBRARY_PATH=$(dirname $(julia -e 'print(Sys.BINDIR)'))/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          JL=$(dirname $(julia -e 'print(Sys.BINDIR)'))
+          # K1: <julia>/lib/julia carries the libstdc++ the compiled library was built against.
+          echo "LD_LIBRARY_PATH=$JL/lib:$JL/lib/julia:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Run ase-ace library calculator tests
         env:
@@ -568,3 +657,34 @@ jobs:
         working-directory: export/ase-ace
         run: |
           pytest -v tests/test_julia_calculator.py -x
+
+  # ---------------------------------------------------------------------------------------
+  # The pair-parity gate, where it can actually run.
+  #
+  # `test_pair_export.jl` and `test_hermite_cantor.jl` both check an exported model against
+  # the FITTED Cantor model, using `verify_cantor/cantor_v010_params.jld2` and the held-out
+  # LAMMPS geometries.  Neither file is in this repository -- they are host-local data -- so
+  # these are the only two groups no GitHub-hosted runner can execute.
+  #
+  # Point the repository variable ACE_PAIR_GATE_RUNNER at a self-hosted runner that has that
+  # data and this job runs there with ACE_REQUIRE_GROUPS set, so a missing fixture FAILS
+  # rather than warns.  With the variable unset the job does not run at all, and the
+  # "Check the pair-parity gate executed" step of the hosted job annotates the gap.
+  # ---------------------------------------------------------------------------------------
+  pair-parity:
+    name: Pair-parity gate (Cantor fixture; self-hosted)
+    if: ${{ vars.ACE_PAIR_GATE_RUNNER != '' }}
+    runs-on: ${{ vars.ACE_PAIR_GATE_RUNNER }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Julia dependencies
+        run: |
+          julia --project=export -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Run the Cantor-fixture groups (pair + Cantor Hermite)
+        env:
+          ACE_REQUIRE_GROUPS: pair,hermite_cantor
+        run: |
+          julia --project=export export/test/runtests.jl pair hermite

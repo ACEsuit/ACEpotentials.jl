@@ -333,6 +333,11 @@ function report_group_status(selection)
     for g in sort(collect(keys(GROUP_STATUS)))
         println("    $(rpad(g, 16)) $(GROUP_STATUS[g] == :ran ? "ran" : "SKIPPED")")
     end
+    # Machine-readable form, one line per group, for a CI step to grep.  Kept deliberately
+    # simple and stable: `.github/workflows/export-ci.yml` parses exactly this.
+    for g in sort(collect(keys(GROUP_STATUS)))
+        println("ACE_GROUP_STATUS $g=$(GROUP_STATUS[g] == :ran ? "ran" : "skipped")")
+    end
     spec = strip(get(ENV, "ACE_REQUIRE_GROUPS", ""))
     if isempty(spec)
         println("    (ACE_REQUIRE_GROUPS is unset: a SKIPPED group above is NOT a failure)")
