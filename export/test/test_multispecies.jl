@@ -344,6 +344,10 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         # below is the same check as before -- that table k holds the ORDERED pair k's
         # weights, not the symmetric pair's -- read off the new shape.
         @test ex.RBASIS_ONEHOT == false      # :glorot_normal must NOT be mistaken for one-hot
+        # RNL_USED must BE the set the A basis reads, not merely a set the generator says it
+        # is: recompute it here from the emitted ABASIS_SPEC, which is the table the runtime
+        # forward and backward passes actually index with.
+        @test collect(ex.RNL_USED) == sort(unique(first.(ex.ABASIS_SPEC)))
         for i in 1:NZ, j in 1:NZ
             k = (i - 1) * NZ + j
             p = mb_par[ms3_symidx(i, j, NZ)]
@@ -373,6 +377,8 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
                   for i in 1:NZ, j in 1:NZ)
         @test isdefined(exh, :zz2pair_sym) == false
         @test occursin("zz2pair_sym", read(f_herm, String)) == false
+
+        @test collect(exh.RNL_USED) == sort(unique(first.(exh.ABASIS_SPEC)))
 
         mb_par_u = ms3_mb_params(stacked_u)
         F = ms3_spline_stack(stacked_u; Nspl = 50).calcs[end].st.rembed.params.F

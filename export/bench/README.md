@@ -325,6 +325,17 @@ LAMMPS screen log shows `Pair | … | 99.98 %` of the loop and `Neighbor list bu
 numbers are pair-style cost, and `Ave neighs/atom` is identical to the baseline blocks
 (201.33789 Cantor, 112.13 TiAl) — the same geometry is being timed.
 
+**Provenance note (fix round 1).** After these rows were taken, the generator gained one
+cold-branch change: the `if k == 1 … elseif k == NZ^2` radial dispatch now `error`s on an
+out-of-range pair index instead of returning a silently zero radial basis. The timed
+libraries and their manifests were deliberately NOT rebuilt — their `lib_sha256` and `mtime`
+are what tie these rows to a specific binary. The change was verified separately under the
+tags `cantor_poly_b1m1` / `cantor_h50_b1m1` (source gate, juliac `--trim=safe`, and library
+gates A/B/C, all PASS with identical figures; `bench_parity/verify_b1m1.log`,
+`bench_parity/gate_libs_b1m1.log`). It cannot move a timing number: the `if`-chain above it is
+exhaustive, so the branch is never taken, and the library grew by 8 136 B (+0.27 %) of error
+strings. Nothing below was re-timed.
+
 The libraries are `bench_parity/libace_<tag>_b1.so`, exported by
 `verify_bench_models.jl cantor_poly_b1 cantor_h50_b1 tial_poly_b1 tial_h50_b1`
 (source gate, `bench_parity/verify_b1.log`) and gated by
@@ -397,13 +408,37 @@ The baselines reproduce. The honest same-day, same-core, same-session speed-ups 
   polynomial path — per edge, **two 74x45 dense matrix-vector products reading 26 KB of weights
   out of a 666 KB table** — has no counterpart in the Hermite path.
 * **The plan's ~150 µs/site target for Cantor `:polynomial` is not reached: the row is 222.8**
-  (from 507.8 today / 519.7 at the baseline). It cannot be reached by any further work on the
-  radial basis, and the Hermite row is the evidence: `cantor_h50_b1` runs at **206.0 µs/site**
-  with a 9-wide radial evaluation, so ~206 µs/site is the cost of everything that is *not* the
-  radial basis — neighbour handling, the `N_RNL`-wide embedding copies, `abasis`/`aabasis`, the
-  A2B contraction, and the force/virial assembly, which still loops `for t in 1:N_RNL` (74) per
-  edge and applies a rank-1 virial update inside that loop. The polynomial row now sits 8 %
-  above that floor. Getting to 150 µs/site is a Task 6/7 problem, not a B1 one.
+  (from 507.8 today / 519.7 at the baseline). What these rows do and do not establish about
+  that, stated carefully, because an earlier draft of this section overstated it:
+
+  Write the two rows as `poly = NR + poly_radial` and `h50 = NR + herm_radial`, where `NR` is
+  the cost of everything that is not the radial basis — neighbour handling, the `N_RNL`-wide
+  embedding copies, `abasis`/`aabasis`, the A2B contraction, and the force/virial assembly,
+  which still loops `for t in 1:N_RNL` (74) per edge with a rank-1 virial update *inside* that
+  loop. The two paths share all of it. The `cantor_h50_b1` row is **206.0 µs/site**, so:
+
+  * **Established:** `NR ≤ 206.0` µs/site, and the polynomial path's radial share is
+    `poly_radial = 222.8 − NR ≥ 16.8` µs/site. No radial-only work can take the polynomial row
+    below the `cantor_h50` row of 206.0 µs/site *unless* the polynomial radial evaluation
+    becomes cheaper than the Hermite one, which is possible but is not what these rows measure.
+  * **NOT established, and never measured:** how the 206.0 splits between `NR` and
+    `herm_radial`. **206.0 bounds the non-radial cost from above; it is not a floor.** If
+    `herm_radial` is large — say 56 µs/site — then `NR ≈ 150` and reaching 150 µs/site by
+    radial work alone would be arithmetically possible. Reaching it requires
+    `poly_radial ≥ 72.8` µs/site, which these rows neither establish nor rule out.
+  * The honest summary: **B1 has taken the polynomial row to within 8.2 % of the `cantor_h50`
+    row** (9.8 % of the 203.0 µs/site the same library measured *before* B1 — see the note on
+    which number below), so almost nothing is left in the *difference* between the two radial
+    representations. Whether the remaining 222.8 is mostly `NR` or partly still radial is an
+    open question for Task 6, and the way to close it is to measure `herm_radial` directly.
+* **Which `cantor_h50` number the 8.2 % is measured against.** `cantor_h50` reads 203.0
+  µs/site with the previous generator (415.83 ms/step, re-measured today) and 206.0 with B1
+  (421.90) — a 1.5 % difference, inside that row's 2.0 % run-to-run spread, i.e. the Hermite
+  row did not move. The comparisons above use the **B1** figure (206.0) because it is the
+  like-for-like one: same generator, same session, same core as the 222.8 it is compared with.
+  Against the pre-B1 203.0 the polynomial row is 9.8 % above rather than 8.2 %. Both are
+  quoted so neither can be mistaken for the other.
+
 * **The largest remaining per-edge item that B1 deliberately did not touch** is the polynomial
   recurrence itself. `eval_polys_ed` evaluates `N_POLYS` terms — 45 on Cantor, 33 on TiAl — but
   the emitted `RBASIS_SEL_k` tables show that **only polynomials 1..6 are ever read on Cantor and

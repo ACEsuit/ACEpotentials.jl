@@ -474,7 +474,13 @@ end
 
     _emit_pair_dispatch(io, NZ, "    ", k -> "return _mix_$k(P_env)")
 
-    println(io, """    return zero(SVector{N_RNL, T})
+    # A `k` outside 1:NZ^2 is a BUG in the caller (pair_idx, or Task 6's per-neighbour
+    # indexing), and it used to be invisible: the old `@inbounds RBASIS_W[k]` was undefined
+    # behaviour, and a `return zero(...)` fall-through is worse still -- a silently zero
+    # radial basis produces plausible-looking wrong energies instead of a crash.  This is a
+    # cold branch (the chain above is exhaustive over the emitted tables), so the compare
+    # costs nothing measurable on the hot path.
+    println(io, """    error("_evaluate_Rnl_pair: species-pair index \$k is outside 1:\$(NZ*NZ)")
 end
 
 # Generic radial basis with derivatives
@@ -497,7 +503,7 @@ end
 
     _emit_pair_dispatch(io, NZ, "    ", k -> "return _mix_$k(P_env), _mix_$k(dP_env_dr)")
 
-    println(io, """    return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})
+    println(io, """    error("_evaluate_Rnl_d_pair: species-pair index \$k is outside 1:\$(NZ*NZ)")
 end
 """)
 

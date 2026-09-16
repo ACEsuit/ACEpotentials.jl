@@ -465,7 +465,10 @@ end
         println(io, "    $cond k == $k; return evaluate_Rnl_$k(r)")
     end
     println(io, "    end")
-    println(io, "    return zero(SVector{N_RNL, T})")
+    # Cold branch: the chain above is exhaustive over 1:NZ^2, so reaching here means the
+    # caller computed a species-pair index out of range.  RAISE rather than return zeros --
+    # a silently zero radial basis is plausible-looking wrong energies, not a crash.
+    println(io, "    error(\"evaluate_Rnl: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
     println(io, "end")
     println(io)
 
@@ -480,8 +483,8 @@ end
         println(io, "    $cond k == $k; return evaluate_Rnl_d_$k(r)")
     end
     println(io, "    end")
-    println(io, "    return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})")
-    println(io, "    end")
+    println(io, "    error(\"evaluate_Rnl_d: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
+    println(io, "end")
 
     return String(take!(io))
 end

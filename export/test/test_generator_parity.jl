@@ -14,15 +14,20 @@ compares energy, forces and virial RELATIVELY.  It then re-checks the NEW file a
 Julia calculator at the usual absolute 1e-12, so a pair of generators that agree with each
 other but not with the model still fails.
 
-WHY A SEPARATE SHA ARGUMENT AND NOT `HEAD~1`.  `HEAD~1` is only the previous GENERATOR while
-the working branch is exactly one commit ahead of it; from the second commit of a task onward
-it silently becomes "the generator half-way through this task", which is not the reference the
-constraint names.  Always pass the SHA explicitly:
+`EXPORT_REF_SHA` IS MANDATORY.  There is deliberately NO default.  The brief specified
+`HEAD~1`, and that is wrong in the only situation that matters: `HEAD~1` is the previous
+GENERATOR only while the working branch is exactly one commit ahead of it, and from the second
+commit of a task onward it silently becomes "the generator half-way through this task" -- so
+the gate would compare a change against itself and pass.  A parity gate that picks its own
+reference is worse than one that refuses to run, so an unset `EXPORT_REF_SHA` raises here:
 
-    EXPORT_REF_SHA=3570eb8e julia --project=.. -e 'include("test_generator_parity.jl")'
+    EXPORT_REF_SHA=<previous task's commit> julia --project=.. -e 'include("test_generator_parity.jl")'
+    cd export/test && EXPORT_REF_SHA=<sha> julia --project=.. runtests.jl parity
 
-The default is kept at `HEAD~1` (it is what the brief specifies) but the resolved SHA and its
-subject line are printed on every run, and a @warn fires when the default was used.
+The SHA to pass is the commit the CURRENT task branched from -- the last commit of the
+previous task, recorded at the top of that task's report in
+`.superpowers/sdd/lammps_export_parity_plan/task-<n>-report.md`.  The resolved SHA and its
+subject line are printed on every run so the row carries its own provenance.
 
 WHICH CASES.  Both benchmark models (Cantor, 5 species, order 3; TiAl, 2 species, order 4) in
 both radial modes, plus a DENSE-`W` model.  The dense case is not decoration: both benchmark
@@ -59,8 +64,35 @@ const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolu
 const GENERATOR_FILES = ("export_ace_model.jl", "write_radial.jl", "write_evaluation.jl",
                          "write_c_interface.jl", "codegen.jl", "splinify.jl")
 
-const REF_SHA_GIVEN = haskey(ENV, "EXPORT_REF_SHA")
-const REF_SHA = get(ENV, "EXPORT_REF_SHA", "HEAD~1")
+"""
+    parity_ref_sha() -> String
+
+`ENV["EXPORT_REF_SHA"]`, or a hard error.  See the header: there is no default, on purpose.
+`parity_prereqs()` in runtests.jl reports the same condition as a visible skip so that a
+`runtests.jl parity` run without it is a BROKEN entry in the summary (and a failure under
+`ACE_REQUIRE_GROUPS`) rather than a crash mid-suite.
+"""
+function parity_ref_sha()
+    sha = strip(get(ENV, "EXPORT_REF_SHA", ""))
+    isempty(sha) && error("""
+        EXPORT_REF_SHA is not set, and this gate has NO default.
+
+        test_generator_parity.jl compares the generator in the working tree against the
+        generator at a named commit, at 1e-13 relative.  The plan's global constraints bind
+        every performance step to "the PREVIOUS generator", and only the caller knows which
+        commit that is: `HEAD~1` is it only while the branch is exactly one commit ahead, and
+        silently becomes a mid-task generator after that -- comparing a change against itself.
+
+        Pass the commit this task branched from (the last commit of the previous task, recorded
+        at the top of .superpowers/sdd/lammps_export_parity_plan/task-<n>-report.md):
+
+            EXPORT_REF_SHA=<sha> julia --project=.. -e 'include("test_generator_parity.jl")'
+            EXPORT_REF_SHA=<sha> julia --project=.. runtests.jl parity
+        """)
+    return sha
+end
+
+const REF_SHA = parity_ref_sha()
 
 """
     generator_module(sha) -> Module
@@ -259,11 +291,6 @@ end
     println("generator parity reference: EXPORT_REF_SHA=$REF_SHA  ->  $ref_sha  \"$ref_subj\"")
     println("relative tolerance $(PARITY_TOL) (energy/forces/virial), export gate $(EXPORT_TOL)")
     println("="^100); flush(stdout)
-    REF_SHA_GIVEN || @warn """
-        EXPORT_REF_SHA was not set, so the default HEAD~1 ($ref_sha) is being used.  That is
-        the previous GENERATOR only while this branch is exactly one commit ahead of it.
-        Pass the task's base SHA explicitly."""
-
     for (name, calc, refcalc, held, rcut, mode) in parity_cases()
         @testset "$name ($mode)" begin
             fold = joinpath(PARITY_BUILD, "$(name)_ref.jl")

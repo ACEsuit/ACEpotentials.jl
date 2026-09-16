@@ -9,6 +9,7 @@ This file orchestrates all export-related tests for ETACE models:
 5. Python calculator integration
 6. LAMMPS plugin integration (serial)
 7. MPI parallel tests
+8. Generator-to-generator parity (OPT-IN: not part of `all`; see below)
 
 Usage:
     julia --project=.. runtests.jl              # Run all available tests
@@ -19,6 +20,22 @@ Usage:
     julia --project=.. runtests.jl python       # Run Python tests
     julia --project=.. runtests.jl lammps       # Run LAMMPS tests
     julia --project=.. runtests.jl mpi          # Run MPI tests
+
+    EXPORT_REF_SHA=<sha> julia --project=.. runtests.jl parity
+                                                # Generator-to-generator parity at 1e-13
+                                                # RELATIVE against the generator at <sha>.
+                                                # OPT-IN: never runs under `all`.
+
+THE `parity` GROUP, AND WHY IT IS OPT-IN.  The plan's global constraints bind every
+performance step (Tasks 5-7) to the PREVIOUS generator's exported model: "any force differing
+by more than 1e-13 relative is a bug, not a speed-up".  test_generator_parity.jl is that gate.
+It is not in the default set because it needs (a) both host-local fixtures, (b) a readable git
+object for the reference generator, and (c) ~3.5 minutes -- but it IS selectable, it is listed
+here, and when it cannot run it reports a visible Broken entry rather than nothing at all.
+
+`ACE_REQUIRE_GROUPS=parity` turns "the parity gate did not run" into a test FAILURE, which is
+how a CI job or a task dispatch should ask for it.  There is deliberately no default for
+EXPORT_REF_SHA: a parity gate that picks its own reference can compare a change against itself.
 =#
 
 using Test
@@ -95,6 +112,43 @@ blindness this plan exists to remove.
 function check_cantor_fixture_available()
     p = cantor_fixture_paths()
     return isfile(p.params) && isfile(p.held)
+end
+
+"""
+    parity_prereqs() -> (ok::Bool, reason::String)
+
+Whether the `parity` group can run here, and why not if it cannot.  Three separate
+prerequisites, each named individually so that a skip line says which one is missing:
+
+  * the Cantor fixture (same host-local data the `pair` group needs);
+  * the TiAl order-4 fitted parameters, `bench_parity/tial_o4_params.jld2` (not checked in;
+    `export/bench/fit_tial_order4.jl` produces it);
+  * `EXPORT_REF_SHA`, which test_generator_parity.jl has no default for, AND a git object
+    that actually resolves -- a stale or mistyped SHA must be a named skip here rather than a
+    `git show` failure three minutes into the group.
+
+The controller's ruling for Task 5 is that a skip must be VISIBLE: `skip_group` emits a
+`@test_skip` (a non-zero Broken count in the summary) and records `:skipped`, which
+`report_group_status` turns into a hard failure when `ACE_REQUIRE_GROUPS` names the group.
+"""
+function parity_prereqs()
+    check_cantor_fixture_available() ||
+        return (false, "Cantor fixture data missing")
+    tial = joinpath(PROJECT_DIR, "bench_parity", "tial_o4_params.jld2")
+    isfile(tial) || return (false, "TiAl parameters missing ($tial)")
+    sha = strip(get(ENV, "EXPORT_REF_SHA", ""))
+    isempty(sha) && return (false, "EXPORT_REF_SHA is not set (this gate has no default)")
+    ok = try
+        # `sha^{commit}` must be built as a plain String: `^{}` are shell metacharacters
+        # that Julia's command literal refuses to interpolate unquoted.
+        rev = string(sha, "^{commit}")
+        success(pipeline(`git -C $PROJECT_DIR rev-parse --verify --quiet $rev`;
+                         stdout = devnull, stderr = devnull))
+    catch
+        false
+    end
+    ok || return (false, "EXPORT_REF_SHA=$sha does not resolve to a commit here")
+    return (true, "")
 end
 
 """
@@ -244,6 +298,7 @@ function main()
     @info "=============================="
     @info "Test selection: $selection"
     @info "Cantor fixture available: $(check_cantor_fixture_available())"
+    @info "Parity gate runnable: $(parity_prereqs()[1])  $(parity_prereqs()[2])"
     @info "Python available: $(check_python_available())"
     @info "LAMMPS available: $(check_lammps_available())"
     @info "MPI available: $(check_mpi_available())"
@@ -348,6 +403,25 @@ function main()
             end
         end
 
+        # Generator-to-generator parity (Tasks 5-7).  OPT-IN: deliberately NOT part of
+        # `:all` -- it needs a git object and ~3.5 minutes -- but it is selectable, and when
+        # it is selected and cannot run, the skip is visible in the summary.
+        # NOTE: `:parity in selection`, deliberately NOT `should_run_test(...)` -- that helper
+        # returns true for `:all`, which would pull this group into the default run (adding
+        # ~3.5 minutes, and a Broken entry in every default summary on a host without
+        # EXPORT_REF_SHA set).  The group is opt-in: it runs only when named.
+        if :parity in selection
+            ok, why = parity_prereqs()
+            if ok
+                run_group("parity") do
+                    @info "Running generator-to-generator parity tests (EXPORT_REF_SHA=$(ENV["EXPORT_REF_SHA"]))..."
+                    include(joinpath(TEST_DIR, "test_generator_parity.jl"))
+                end
+            else
+                skip_group("parity", why)
+            end
+        end
+
         # K3: turn "the gate never ran" into a test failure when CI asks for it.
         report_group_status(selection)
     end
@@ -363,7 +437,7 @@ assert that each required group actually executed.
 
 `ACE_REQUIRE_GROUPS=all` requires every group that was selected and reached a decision;
 otherwise it is a comma-separated list of group names (`etace`, `hermite`,
-`hermite_cantor`, `multispecies`, `pair`, `python`, `lammps`, `mpi`). A required group that
+`hermite_cantor`, `multispecies`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
 was skipped, or that was never reached because the selection excluded it, fails.
 """
 function report_group_status(selection)
