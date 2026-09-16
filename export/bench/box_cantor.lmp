@@ -1,0 +1,21 @@
+# 2048-atom random fcc CrMnFeCoNi box -- verbatim from verify_cantor/in.bench_ace so that the
+# rows in README.md are comparable with the pre-plan measurements.  Included by in.bench_ace
+# and in.bench_pace; defines ${species} for their pair_coeff lines.
+units metal
+atom_style atomic
+boundary p p p
+lattice fcc 3.59
+region box block 0 8 0 8 0 8
+create_box 5 box
+create_atoms 1 box
+set type 1 type/fraction 2 0.2 12345
+set type 1 type/fraction 3 0.25 23456
+set type 1 type/fraction 4 0.3333 34567
+set type 1 type/fraction 5 0.5 45678
+mass 1 51.9961
+mass 2 54.938
+mass 3 55.845
+mass 4 58.9332
+mass 5 58.6934
+displace_atoms all random 0.05 0.05 0.05 777
+variable species string "Cr Mn Fe Co Ni"

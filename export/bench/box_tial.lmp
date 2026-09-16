@@ -1,0 +1,15 @@
+# 2000-atom random bcc-B2-like TiAl box, the same size class as box_cantor.lmp (2048 atoms) so
+# that ms/step numbers for the two reference models are directly comparable.
+# bcc a = 3.19 A (B2 TiAl); 10x10x10 conventional cells = 2000 atoms; 50/50 Ti/Al at random.
+units metal
+atom_style atomic
+boundary p p p
+lattice bcc 3.19
+region box block 0 10 0 10 0 10
+create_box 2 box
+create_atoms 1 box
+set type 1 type/fraction 2 0.5 45678
+mass 1 47.867
+mass 2 26.9815
+displace_atoms all random 0.05 0.05 0.05 777
+variable species string "Ti Al"

@@ -87,50 +87,93 @@ def build(nradmax_by_orders):
     return bc, n
 
 
+def randomise(bc):
+    """Give every basis function a random coefficient.
+
+    NOT `block.set_all_coeffs(...)`, which the single-element original used: that also
+    rewrites the block's radial coefficients, and for a multi-species configuration the
+    (i,j) and (j,i) blocks then disagree, so `ACEBBasisSet(bc)` raises
+    "Bonds specifications for pair (1,0) are inconsistent".  Writing `funcspec.coeffs`
+    leaves the bond/radial specification untouched and converts cleanly.  Verified: the
+    B-basis and C-tilde function counts are identical before and after.
+    """
+    rng = np.random.default_rng(0)
+    for blk in bc.funcspecs_blocks:
+        for f in blk.funcspecs:
+            f.coeffs = rng.normal(scale=0.01, size=len(f.coeffs)).tolist()
+    return bc
+
+
+def ctilde_per_element(bc):
+    """(C-tilde basis set, functions per central element).
+
+    This -- not the B-basis count -- is what `pair_style pace` actually evaluates per
+    atom, so it is what the parity benchmark matches on.  The two differ by ~10% here.
+    """
+    ct = ACEBBasisSet(bc).to_ACECTildeBasisSet()
+    per = [len(r1) + len(rn) for r1, rn in zip(ct.basis_rank1, ct.basis)]
+    return ct, per
+
+
 if EXPLICIT is not None:
     assert len(EXPLICIT) == args.order, \
         f"--nradmax-by-orders needs {args.order} entries, got {len(EXPLICIT)}"
-    bc, n = build(EXPLICIT)
-    best = (bc, tuple(EXPLICIT), n)
+    candidates = [tuple(EXPLICIT)]
 else:
     # A uniform nradmax scan (what the single-element original did) is far too coarse
     # here: for Ti-Al order 4 it steps 1526 -> 17414 -> 78760 total functions.  Scan the
     # per-order radial cutoffs instead, which is the knob that actually resolves a few
-    # thousand functions.
-    best = None
-    grid = [(n1, n2, n3, n4)
-            for n1 in (8, 12, 16, 20, 22, 26)
-            for n2 in range(1, 9)
-            for n3 in range(1, 5)
-            for n4 in range(1, 4)
-            if n2 >= n3 >= n4][:1000] if args.order == 4 else None
-    if grid is None:
+    # thousand functions.  Stage 1 ranks the grid by the (cheap) B-basis count; stage 2
+    # converts only the best few and picks on the C-tilde count.
+    if args.order == 4:
+        grid = [(n1, n2, n3, n4)
+                for n1 in (8, 12, 16, 20, 22, 26)
+                for n2 in range(1, 9)
+                for n3 in range(1, 5)
+                for n4 in range(1, 4)
+                if n2 >= n3 >= n4]
+    else:
         grid = [tuple([nr] * args.order) for nr in range(1, 20)]
+    scored = []
     for nrb in grid:
         try:
-            bc, n = build(nrb)
+            _, n = build(nrb)
         except Exception as exc:                     # noqa: BLE001 - pyace raises bare errors
             print(f"  {nrb}: {exc}", file=sys.stderr)
             continue
-        print(f"  nradmax_by_orders={nrb}: {n} total ({n / NEL:.0f} per species)",
+        scored.append((abs(n - TOTAL_TARGET), n, nrb))
+    scored.sort()
+    for d, n, nrb in scored[:10]:
+        print(f"  B-basis  nradmax_by_orders={nrb}: {n} total ({n / NEL:.0f} per species)",
               file=sys.stderr)
-        if best is None or abs(n - TOTAL_TARGET) < abs(best[2] - TOTAL_TARGET):
-            best = (bc, nrb, n)
+    candidates = [nrb for _, _, nrb in scored[:6]]
 
-bc, nradmax, n = best
-print(f"target {args.target} functions/species ({TOTAL_TARGET} total for {NEL} elements) "
-      f"-> achieved {n} total = {n / NEL:.1f} per species "
-      f"(nradmax_by_orders={nradmax}, order={args.order}, lmax={args.lmax}, "
-      f"rcut={args.rcut}, elements={','.join(ELEMENTS)}); "
-      f"mismatch {100.0 * (n - TOTAL_TARGET) / TOTAL_TARGET:+.1f}%")
-print("per-block function counts: "
+best = None
+for nrb in candidates:
+    bc, n = build(nrb)
+    _, per = ctilde_per_element(bc)
+    print(f"  C-tilde  nradmax_by_orders={nrb}: {per} per element "
+          f"(B-basis {n} total)", file=sys.stderr)
+    score = abs(max(per) - args.target)
+    if best is None or score < best[0]:
+        best = (score, nrb, n, per)
+
+_, nradmax, n, per = best
+bc, _ = build(nradmax)
+print(f"target {args.target} many-body functions per central species "
+      f"(ACEpotentials `length(model.tensor)`)")
+print(f"  chosen nradmax_by_orders={nradmax}, order={args.order}, lmax={args.lmax}, "
+      f"rcut={args.rcut}, elements={','.join(ELEMENTS)}")
+print(f"  B-basis  : {n} total = {n / NEL:.1f} per species "
+      f"({100.0 * (n / NEL - args.target) / args.target:+.1f}%)")
+print(f"  C-tilde  : {per} per element   <-- what pair_style pace evaluates "
+      f"({100.0 * (max(per) - args.target) / args.target:+.1f}%)")
+print("  B-basis per-block counts: "
       + ", ".join(f"{b.block_name}={len(b.funcspecs)}" for b in bc.funcspecs_blocks))
-
-rng = np.random.default_rng(0)
-for b in bc.funcspecs_blocks:
-    b.set_all_coeffs(rng.normal(scale=0.01, size=len(b.get_all_coeffs())).tolist())
 
 # pair_style pace reads the C-TILDE basis, not the B-basis configuration that
 # BBasisConfiguration.save() writes -- converting is the whole point of this step.
-ACEBBasisSet(bc).to_ACECTildeBasisSet().save(args.out)
+ct, per_after = ctilde_per_element(randomise(bc))
+assert per_after == per, f"randomising coefficients changed the basis size: {per} -> {per_after}"
+ct.save(args.out)
 print("wrote", args.out)

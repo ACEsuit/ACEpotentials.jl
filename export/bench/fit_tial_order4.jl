@@ -168,8 +168,11 @@ end
 t1 = time()
 Ap = Diagonal(W) * (A / P); Yw = W .* Y
 result = ACEfit.solve(ACEfit.BLR(; factorization = :svd), Ap, Yw)
-M.set_linear_parameters!(pot, P \ result["C"])
+coeffs = P \ result["C"]
+M.set_linear_parameters!(pot, coeffs)
 @printf("BLR(:svd) solve wall time %.0f s; fit wall time %.0f s\n", time() - t1, time() - t0)
+@printf("fitted coefficients: max|WB| = %.3e, max|Wpair| = %.3e, max|c| = %.3e\n",
+        maximum(abs, pot.ps.WB), maximum(abs, pot.ps.Wpair), maximum(abs, coeffs))
 flush(stdout)
 
 println("--- train errors"); ACEpotentials.compute_errors(train, pot; keys_...)
@@ -189,13 +192,14 @@ flush(stdout)
 
 # ---------------------------------------------------------------- physicality sanity
 using AtomsCalculators: potential_energy, forces
-using Unitful, Unitful: ustrip, @u_str
+using Unitful
+using Unitful: ustrip, @u_str
 _F(f) = [SVector{3,Float64}(ustrip.(u"eV/Å", fi)) for fi in f]
-for k in check_idx[[1, 6]]
+for k in check_idx
     at = data[k]
     Fm = maximum(norm.(_F(forces(at, pot))))
     Fr = maximum(norm.([SVector{3,Float64}(f) for f in at[:, :force]]))
-    @printf("config %d (%d atoms): max|F| fitted %.3f eV/Å   reference %.3f eV/Å\n",
+    @printf("config %d (%d atoms): max|F| fitted %8.3f eV/Å   reference %8.3f eV/Å\n",
             k, length(at), Fm, Fr)
 end
 @printf("TOTAL wall time %.0f s\nDONE fit_tial_order4.jl\n", time() - t_start)
