@@ -43,26 +43,36 @@ using Printf: @sprintf
     env = setup.env
     lammps_test_dir = joinpath(TEST_DIR, "lammps")
 
-    if !isfile(lib_path)
-        @test_skip "ACE library not compiled"
+    # UNLIKE `lmp_exe`/`mpirun_exe` below, NOTHING checks `lib_path` or `plugin_path` before
+    # this file is `include`d.  `runtests.jl`'s `mpi` group only gates on
+    # `check_mpi_available() && check_lammps_available()`, i.e. `lammps_setup().mpirun` and
+    # `.exe` -- `.lib_path` and `.plugin_path` are plain path strings `lammps_setup()` builds
+    # unconditionally and never stats.  So `julia export/test/runtests.jl mpi`, run in
+    # isolation on a host with a working LAMMPS and mpirun but no compiled library or built
+    # plugin (the `etace`/`lammps` groups that would normally produce them were never run),
+    # reaches here with `isfile(lib_path) == false` for real: this is a LIVE, reachable skip
+    # path today, not a latent one -- exactly the skip-or-pass blindness this task exists to
+    # remove. Routed through `required_check`, as P4 did for the `mpirun` guard below.
+    if !required_check(isfile(lib_path), "mpi", "ACE library not compiled")
         return
     end
-    if !isfile(plugin_path)
-        @test_skip "LAMMPS plugin not built"
+    if !required_check(isfile(plugin_path), "mpi", "LAMMPS plugin not built")
         return
     end
     if isempty(lmp_exe)
         @test_skip "LAMMPS not found"
         return
     end
-    # This is unreachable today: runtests.jl only includes this file when
+    # This one, by contrast, IS unreachable today: runtests.jl only includes this file when
     # `check_mpi_available() && check_lammps_available()` already held (see the `mpi` group
-    # in runtests.jl's `main()`).  It is routed through `required_check` anyway, rather than
-    # left as a plain `@test_skip`+`return`, because that is exactly the latent pattern
-    # `required_check` exists to remove: if this file is ever `include`d some other way (a
-    # future direct-invocation entry point, a different selection path), an absent `mpirun`
-    # must become a FAILURE under `ACE_REQUIRE_GROUPS=mpi`, not a silent skip that lets
-    # `mpi=ran` be reported with nothing underneath it.
+    # in runtests.jl's `main()`), and `check_lammps_available()` is exactly
+    # `!isempty(lammps_setup().exe)` -- the same `lmp_exe` this guard tests. It is routed
+    # through `required_check` anyway, rather than left as a plain `@test_skip`+`return`,
+    # because that is exactly the latent pattern `required_check` exists to remove: if this
+    # file is ever `include`d some other way (a future direct-invocation entry point, a
+    # different selection path), an absent `mpirun` must become a FAILURE under
+    # `ACE_REQUIRE_GROUPS=mpi`, not a silent skip that lets `mpi=ran` be reported with
+    # nothing underneath it.
     if !required_check(!isempty(mpirun_exe), "mpi",
                        "no mpirun matching this LAMMPS executable was found")
         return
