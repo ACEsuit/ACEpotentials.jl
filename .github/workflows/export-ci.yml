@@ -206,7 +206,11 @@ jobs:
               # through libace_test.so (LAMMPS at 1e-10, the Python C API at 1e-12, the
               # two-rank run, test_python.jl, the ase-ace jobs) evaluates this model, and a
               # bare ETACEPotential would turn all of them into many-body-only checks.
-              # Mirrors setup_stacked_model in export/test/test_etace_export.jl.
+              # This mirrors setup_stacked_model's CONSTRUCTION PATTERN (elements, order,
+              # ETModels.convert2et_full, pair term present, glorot_normal init, E0s) in
+              # export/test/test_etace_export.jl -- NOT its degrees: setup_stacked_model
+              # defaults to max_level=8, maxl=4, pair_maxn=8; this fallback uses a smaller
+              # 6/2/6 for a faster CI compile. Pair presence is identical; basis size is not.
               ace_model = Models.ace_model(;
                   elements = elements, order = 2, Ytype = :solid,
                   level = Models.TotalDegree(), max_level = 6, maxl = 2,
