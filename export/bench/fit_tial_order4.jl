@@ -139,11 +139,38 @@ println("rbasis spec maxl = ", maximum(b.l for b in model.rbasis.spec),
 flush(stdout)
 
 # ---------------------------------------------------------------- fit
+# This is `acefit!(train, pot; solver = BLR(...), repulsion_restraint = true)` with the
+# assembled least-squares system cached (same decomposition chain_cantor.jl:47-72 uses), so a
+# solver retry after an interrupted session does not have to reassemble.
+#
+# SOLVER: `ACEfit.BLR()` -- the plain Cholesky BLR the Cantor fit used -- FAILS here with
+#   PosDefException: matrix is not positive definite; Factorization failed.
+#   (ACEfit/src/bayesianlinear.jl:290, log_marginal_likelihood_overdetermined!)
+# after ~17 LBFGS iterations.  The TiAl_tutorial system is 6191 rows x 4778 columns, i.e.
+# barely overdetermined and badly conditioned, so the Cholesky of the posterior precision
+# breaks down.  `factorization = :svd` takes the SVD path instead, which does not factor that
+# matrix.  This is a solver-robustness choice; no tolerance anywhere is loosened by it.
 keys_ = (energy_key = "energy", force_key = "force", virial_key = "virial")
 t0 = time()
 BLAS.set_num_threads(NPROC)
-acefit!(train, pot; solver = ACEfit.BLR(), repulsion_restraint = true, verbose = true, keys_...)
-@printf("fit wall time %.0f s\n", time() - t0); flush(stdout)
+fitdata = ACEpotentials.make_atoms_data(train, pot; keys_..., weights = ACEpotentials.default_weights())
+append!(fitdata, ACEpotentials._rep_dimer_data_atomsbase(pot; weight = 0.01, energy_key = :energy))
+P = ACEpotentials._make_prior(pot, 4, nothing)     # algebraic smoothness prior, p = 4 (the default)
+cache = joinpath(OUT, "lsq_tial.jld2")
+if isfile(cache)
+    A, Y, W = JLD2.load(cache, "A", "Y", "W")
+    println("loaded cached LSQ system ", size(A))
+else
+    A, Y, W = ACEfit.assemble(fitdata, pot)
+    JLD2.jldsave(cache; A = A, Y = Y, W = W)
+end
+@printf("assembly wall time %.0f s (size %s)\n", time() - t0, size(A)); flush(stdout)
+t1 = time()
+Ap = Diagonal(W) * (A / P); Yw = W .* Y
+result = ACEfit.solve(ACEfit.BLR(; factorization = :svd), Ap, Yw)
+M.set_linear_parameters!(pot, P \ result["C"])
+@printf("BLR(:svd) solve wall time %.0f s; fit wall time %.0f s\n", time() - t1, time() - t0)
+flush(stdout)
 
 println("--- train errors"); ACEpotentials.compute_errors(train, pot; keys_...)
 println("--- held-out errors"); ACEpotentials.compute_errors(held, pot; keys_...)
