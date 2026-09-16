@@ -29,7 +29,16 @@ Public API (used by test_lammps.jl, test_mpi.jl, test_python.jl):
 Environment overrides, for hosts whose runtime libraries are not in any standard place:
 
     ACE_LMP                    absolute path to the LAMMPS executable to use (tried first)
+    ACE_MPIRUN                 absolute path to the mpirun to use (tried first)
     ACE_TEST_LD_LIBRARY_PATH   extra colon-separated directories, prepended to LD_LIBRARY_PATH
+
+NOT REPRODUCIBLE, ON THE FAILURE PATH ONLY: when `_probe_exe` heals a missing shared object
+it takes the FIRST match in `readdir` order under `_LIB_SEARCH_GLOBS`.  A host with the same
+`libfoo.so.N` under two EasyBuild modules can therefore produce a different
+`LD_LIBRARY_PATH` on two runs.  Every candidate and every rejection is printed, so the
+resolved path is always in the log, and `ACE_TEST_LD_LIBRARY_PATH` pins it when it matters.
+This is deliberately not made deterministic: the search only ever runs on a host where the
+alternative is not running the group at all.
 =#
 
 using AtomsBase: periodic_system
@@ -243,10 +252,19 @@ function find_mpirun(lmp_exe, env)
             push!(cands, joinpath(m.captures[1], "bin", "mpirun"))
         end
     end
-    try
-        w = strip(read(`which mpirun`, String))
-        !isempty(w) && push!(cands, String(w))
-    catch
+    # `which mpirun` is consulted ONLY when `ldd` named no MPI prefix.  A PATH mpirun from a
+    # different MPI than the one `lmp` is linked against does not usually fail loudly: it
+    # launches N processes each with an `MPI_COMM_WORLD` of size 1, so a "2 rank" run is
+    # really two independent serial runs, and every rank-parity comparison built on it passes
+    # while proving nothing.  Preferring the `ldd`-derived prefix removes that possibility at
+    # the source; `run_two_ranks.sh` and `test_mpi.jl` additionally assert the rank count
+    # LAMMPS itself reports, because `$ACE_MPIRUN` can still override this.
+    if isempty(cands) || (haskey(ENV, "ACE_MPIRUN") && length(cands) == 1)
+        try
+            w = strip(read(`which mpirun`, String))
+            !isempty(w) && push!(cands, String(w))
+        catch
+        end
     end
     for c in cands
         isfile(c) || continue
