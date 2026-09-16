@@ -26,12 +26,16 @@ ENVIRONMENT.  python-ace ships cp39 wheels only and imports pkg_resources:
     uv venv --python 3.9 /storage/eng/essswb/venvs/pyacenv
     uv pip install --python /storage/eng/essswb/venvs/pyacenv/bin/python python-ace "setuptools<81"
 
-Write the output as `.ace`, NOT `.yace`: `to_ACECTildeBasisSet().save()` emits the TEXT
-format and a `.yace` extension makes yaml-cpp reject it.
+OUTPUT FORMAT.  `.yace` (YAML).  The acejax original wrote the TEXT C-tilde format with
+`.save()`, which is fine for one element but writes a single `radbasename=` line that is
+invalid for more than one -- this LAMMPS build AND pyace's own reader both reject it with
+"`radbasename` array has wrong shape. It must be of shape (nelements, nelements)".
+`save_yaml()` writes the per-ordered-pair form; the script reloads what it wrote and asserts
+the basis size survived the round trip.
 
     /storage/eng/essswb/venvs/pyacenv/bin/python make_pace_basis.py \
         --target 2369 --order 4 --lmax 7 --rcut 5.5 --elements Ti,Al \
-        --out bench_parity/tial_o4_pace.ace
+        --nradmax-by-orders 22,6,2,1 --out bench_parity/tial_o4_pace.yace
 """
 import argparse
 import sys
@@ -175,5 +179,18 @@ print("  B-basis per-block counts: "
 # BBasisConfiguration.save() writes -- converting is the whole point of this step.
 ct, per_after = ctilde_per_element(randomise(bc))
 assert per_after == per, f"randomising coefficients changed the basis size: {per} -> {per_after}"
-ct.save(args.out)
-print("wrote", args.out)
+
+# `.save()` (the TEXT C-tilde format the single-element original used) is BROKEN for more
+# than one element in python-ace 0.2.8: it writes a single `radbasename=ChebExpCos` line,
+# and both this LAMMPS build and pyace's own reader then reject the file with
+#   ValueError: `radbasename` array has wrong shape. It must be of shape (nelements, nelements)
+# `save_yaml()` writes the per-ordered-pair form, which loads.  So the output is YAML (.yace)
+# regardless of what the original docstring said about `.ace`.
+assert args.out.endswith((".yace", ".yaml", ".yml")), \
+    f"--out must be a .yace file (YAML C-tilde format), got {args.out}"
+ct.save_yaml(args.out)
+from pyace import ACECTildeBasisSet                               # noqa: E402
+reloaded = ACECTildeBasisSet(args.out)
+per_reload = [len(r1) + len(rn) for r1, rn in zip(reloaded.basis_rank1, reloaded.basis)]
+assert per_reload == per, f"reloaded basis size differs: {per} -> {per_reload}"
+print(f"wrote {args.out} (reloaded OK, {per_reload} C-tilde functions per element)")

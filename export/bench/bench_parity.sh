@@ -54,7 +54,13 @@ esac
 
 PLUGIN=${PLUGIN:-$REPO/verify_cantor/plugin_build/aceplugin.so}
 LMP_ACE=${LMP_ACE:-$HOME/lammps/lammps-22Jul2025/build/lmp}
-LMP_PACE=${LMP_PACE:-/storage/eng/essswb/lammps-jax-build/lammps/build-SKX-AMPERE86-mlpace/lmp}
+# The ML-PACE comparator build.  NOTE: this is `-acejl`, not the `-mlpace` build the plan's
+# environment notes name.  The -mlpace build's newer ace-evaluator rejects BOTH comparator
+# files with `Exception: bad conversion` -- the Cantor .yace written by the wcwitt fork's
+# export2lammps_n and the TiAl .yace written by pyace 0.2.8 alike.  The -acejl build (ACE
+# version 2023.11.25) reads both and prints "Recursive evaluator is used", so both rows are
+# taken with one binary and are comparable.
+LMP_PACE=${LMP_PACE:-/storage/eng/essswb/lammps-jax-build/lammps/build-SKX-AMPERE86-acejl/lmp}
 VENV=/storage/eng/essswb/venvs/lammps-jax
 OUTFILE=${OUT:-$REPO/bench_parity/rows.txt}
 mkdir -p "$(dirname "$OUTFILE")"
@@ -102,7 +108,10 @@ series() {   # series <lmp> <input> <label-prefix> [extra args...]
 }
 
 # ---- pair_style ace --------------------------------------------------------------------
-export LD_LIBRARY_PATH="$(dirname "$LIB"):/software/easybuild/software/GCCcore/14.3.0/lib64:${LD_LIBRARY_PATH:-}"
+# Same recipe as verify_cantor/run_lammps.sh: the 22Jul2025 build needs GLIBCXX_3.4.32 from
+# GCCcore 14.3.0, libpython3.12 from the miniconda env, and libcudart from CUDA 12.9.1.  Without
+# all three the binary does not even start ("error while loading shared libraries").
+export LD_LIBRARY_PATH="$(dirname "$LIB"):/software/easybuild/software/GCCcore/14.3.0/lib64:$HOME/miniconda3/envs/noteable_base_chemistry/lib:/software/easybuild/software/CUDA/12.9.1/lib64:${LD_LIBRARY_PATH:-}"
 ACE=$(series "$LMP_ACE" "$HERE/in.bench_ace" ace -var lib "$LIB" -var plugin "$PLUGIN")
 
 # ---- pair_style pace recursive ---------------------------------------------------------
