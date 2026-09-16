@@ -334,19 +334,38 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         pr_par = ms3_pair_params(stacked_a)
         W = stacked_a.calcs[end].ps.rembed.post.W
         @test length(ex.TRANSFORM_PARAMS) == NZ^2
-        @test length(ex.RBASIS_W) == NZ^2
         @test length(ex.PAIR_C) == NZ^2
         @test length(ex.PAIR_TRANSFORM_PARAMS) == NZ^2
+
+        # Since Task 5 the radial mixing is emitted from W's SPARSITY STRUCTURE rather than
+        # as one dense SMatrix{N_RNL, N_POLYS} per pair: `RBASIS_ROWS_k` names the rows the
+        # pair needs and `RBASIS_W_k` (dense W, which is what :glorot_normal gives) or
+        # `RBASIS_SEL_k` (one-hot W) carries the mixing for exactly those rows.  The check
+        # below is the same check as before -- that table k holds the ORDERED pair k's
+        # weights, not the symmetric pair's -- read off the new shape.
+        @test ex.RBASIS_ONEHOT == false      # :glorot_normal must NOT be mistaken for one-hot
         for i in 1:NZ, j in 1:NZ
             k = (i - 1) * NZ + j
             p = mb_par[ms3_symidx(i, j, NZ)]
             q = ex.TRANSFORM_PARAMS[k]
             @test (q.rin, q.req, q.a, q.b0, q.b1) == (p.rin, p.req, p.a, p.b0, p.b1)
-            @test ex.RBASIS_W[k] == W[:, :, k]
+            rows = collect(getfield(ex, Symbol("RBASIS_ROWS_$k")))
+            @test issubset(rows, collect(ex.RNL_USED))
+            @test getfield(ex, Symbol("RBASIS_W_$k")) == W[rows, :, k]
+            # every row the generator dropped is either unread by the A basis or identically
+            # zero for this pair -- i.e. the pruning removed nothing that could be observed
+            @test all(t in rows || !(t in ex.RNL_USED) || all(==(0.0), W[t, :, k])
+                      for t in 1:size(W, 1))
             pp = pr_par[ms3_symidx(i, j, NZ)]
             qq = ex.PAIR_TRANSFORM_PARAMS[k]
             @test (qq.rin, qq.req, qq.a, qq.b0, qq.b1) == (pp.rin, pp.req, pp.a, pp.b0, pp.b1)
         end
+        # The whole point of the NZ=3 model: transposed pairs must be observably different in
+        # the emitted tables, which is what makes a symmetric index into an ordered table
+        # detectable.  (Before Task 5 this was `RBASIS_W[k] != RBASIS_W[k']`.)
+        @test all(getfield(ex, Symbol("RBASIS_W_$((i - 1) * NZ + j)")) !=
+                  getfield(ex, Symbol("RBASIS_W_$((j - 1) * NZ + i)"))
+                  for i in 1:NZ, j in 1:NZ if i != j)
 
         # --- :hermite_spline export (the :uniform model) ---------------------------------
         exh = Base.invokelatest(load_exported, f_herm)
@@ -363,7 +382,15 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
             @test isdefined(exh, Symbol("PAIR_$(k)_F"))
             Fk = getfield(exh, Symbol("PAIR_$(k)_F"))
             @test length(Fk) == size(F, 1)
-            @test all(collect(Fk[t]) ≈ collect(F[t, k]) for t in 1:size(F, 1))
+            # Since Task 5 the knot tables carry only PAIR_k_ROWS, the rows the A basis reads
+            # AND this pair populates; compare against exactly those rows of the model's F,
+            # and check separately that every row left out really is unread or zero.
+            rows = collect(getfield(exh, Symbol("PAIR_$(k)_ROWS")))
+            @test issubset(rows, collect(exh.RNL_USED))
+            @test all(collect(Fk[t]) ≈ collect(F[t, k])[rows] for t in 1:size(F, 1))
+            @test all(t in rows || !(t in exh.RNL_USED) ||
+                      all(collect(F[s, k])[t] == 0.0 for s in 1:size(F, 1))
+                      for t in 1:exh.N_RNL)
             p = mb_par_u[ms3_symidx(i, j, NZ)]
             @test getfield(exh, Symbol("PAIR_$(k)_REQ")) == p.req
             @test getfield(exh, Symbol("PAIR_$(k)_B0")) == p.b0

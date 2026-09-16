@@ -319,7 +319,10 @@ function export_ace_model(calc::ETACEPotential, filename::String;
 
             _write_spline_radial_basis_header(io, rcut)
             # Generate Hermite spline code using codegen (trim-safe, exact)
-            spline_code = generate_hermite_spline_code(hermite_data, NZ, rcut)
+            # `rnl_used` prunes the knot tables to the (n,l) rows the A basis actually reads
+            # (Task 5 / B1); the rows it drops are exactly zero in every emitted quantity.
+            spline_code = generate_hermite_spline_code(hermite_data, NZ, rcut;
+                                                       rnl_used = _rnl_used(tensor))
             print(io, spline_code)
             println(io)
         elseif radial_basis == :polynomial

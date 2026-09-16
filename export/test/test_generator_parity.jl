@@ -203,18 +203,48 @@ end
 same split verify_bench_models.jl makes, and for the same reason).
 """
 function parity_cases()
+    # PARITY_CASES=dense_poly,tial_poly narrows the run while iterating on the generator.
+    # It is a development convenience only: a recorded parity result must name every case,
+    # and the default is all of them.
+    want = strip(get(ENV, "PARITY_CASES", ""))
+    keep = isempty(want) ? nothing : strip.(split(want, ','; keepempty = false))
+    wanted(n) = keep === nothing || n in keep
     cases = Any[]
-    cx = load_cantor_fixture()
-    push!(cases, ("cantor_poly", cx.stacked, cx.stacked, cx.held, cx.rcut, :polynomial))
-    push!(cases, ("cantor_h50", cantor_spline_stack(cx; Nspl = 50),
-                  cantor_spline_stack(cx; Nspl = 50), cx.held, cx.rcut, :hermite_spline))
-    tx = load_tial_fixture()
-    push!(cases, ("tial_poly", tx.stacked, tx.stacked, tx.held, tx.rcut, :polynomial))
-    push!(cases, ("tial_h50", tial_spline_stack(tx; Nspl = 50),
-                  tial_spline_stack(tx; Nspl = 50), tx.held, tx.rcut, :hermite_spline))
-    dx = dense_model()
-    push!(cases, ("dense_poly", dx.stacked, dx.stacked, dx.held, dx.rcut, :polynomial))
+    if wanted("cantor_poly") || wanted("cantor_h50")
+        cx = load_cantor_fixture()
+        wanted("cantor_poly") &&
+            push!(cases, ("cantor_poly", cx.stacked, cx.stacked, cx.held, cx.rcut, :polynomial))
+        wanted("cantor_h50") &&
+            push!(cases, ("cantor_h50", cantor_spline_stack(cx; Nspl = 50),
+                          cantor_spline_stack(cx; Nspl = 50), cx.held, cx.rcut, :hermite_spline))
+    end
+    if wanted("tial_poly") || wanted("tial_h50")
+        tx = load_tial_fixture()
+        wanted("tial_poly") &&
+            push!(cases, ("tial_poly", tx.stacked, tx.stacked, tx.held, tx.rcut, :polynomial))
+        wanted("tial_h50") &&
+            push!(cases, ("tial_h50", tial_spline_stack(tx; Nspl = 50),
+                          tial_spline_stack(tx; Nspl = 50), tx.held, tx.rcut, :hermite_spline))
+    end
+    if wanted("dense_poly") || wanted("dense_h50")
+        dx = dense_model()
+        wanted("dense_poly") &&
+            push!(cases, ("dense_poly", dx.stacked, dx.stacked, dx.held, dx.rcut, :polynomial))
+        wanted("dense_h50") &&
+            push!(cases, ("dense_h50", dense_spline_stack(dx; Nspl = 50),
+                          dense_spline_stack(dx; Nspl = 50), dx.held, dx.rcut, :hermite_spline))
+    end
+    @assert !isempty(cases) "PARITY_CASES=$want selected no case"
     return cases
+end
+
+"`(ETOneBody, ETPairModel, splinified ETACE)` for the dense model, as cantor_spline_stack."
+function dense_spline_stack(dx; Nspl::Integer)
+    onebody, pair, ace = dx.stacked.calcs
+    m = ETM.splinify(ace.model, ace.ps, ace.st; Nspl = Nspl)
+    p, s = LuxCore.setup(MersenneTwister(1), m)
+    p.readout.W .= ace.ps.readout.W
+    return ETM.StackedCalculator((onebody, pair, ETM.ETACEPotential(m, p, s, ace.rcut)))
 end
 
 function _resolved_ref()
@@ -266,12 +296,10 @@ end
 
             # The dense case exists to cover the dense radial-mixing branch; prove that it
             # actually takes it rather than silently being one-hot like everything else.
-            if startswith(name, "dense")
+            if mode == :polynomial
                 src = read(fnew, String)
-                @test occursin("RBASIS_ONEHOT = false", src)
-            elseif mode == :polynomial
-                src = read(fnew, String)
-                @test occursin("RBASIS_ONEHOT = true", src)
+                @test occursin(startswith(name, "dense") ? "RBASIS_ONEHOT = false" :
+                                                           "RBASIS_ONEHOT = true", src)
             end
         end
     end

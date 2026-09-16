@@ -92,6 +92,97 @@ function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
         See "Radial Basis Export Options" in export/README.md.""")
 end
 
+"""
+    _emit_pair_dispatch(io, NZ, indent, body)
+
+Emit `if k == 1; <body(1)> elseif k == 2; <body(2)> … end` over the `NZ^2` ORDERED species
+pairs, the analogue of `_emit_species_dispatch` for the per-pair tables.  Written as an
+`if`-chain on a plain `Int` rather than as a tuple lookup because that is the form
+`codegen.jl`'s Hermite dispatchers already use and the form that survives `--trim=safe`.
+"""
+function _emit_pair_dispatch(io, NZ::Int, indent::String, body::Function)
+    for k = 1:NZ^2
+        cond = k == 1 ? "if" : "elseif"
+        println(io, indent, cond, " k == $k; ", body(k))
+    end
+    println(io, indent, "end")
+end
+
+"""
+    _rnl_used(tensor) -> Vector{Int}
+
+The sorted set of `Rnl` (i.e. (n,l)) indices that ANY `A` basis function reads, taken from
+`tensor.abasis.spec`, whose entries are `(Rnl index, Ylm index)` pairs.
+
+Every row of `Rnl` outside this set is dead weight in the generated code, and provably so
+rather than probably so:
+
+  * the forward pass touches `Rnl[j, ϕ1]` only through `ABASIS_SPEC` (`evaluate_abasis!`),
+    so a row outside the set never enters `A`, hence never enters `AA`, `B` or the energy;
+  * the backward pass increments `∂Rnl[j, ϕ1]` only through the same `ABASIS_SPEC`
+    (`pullback_abasis!`) and `∂Rnl` is zeroed before every site, so `∂Rnl[j, t] == 0.0`
+    exactly for every `t` outside the set;
+  * the force accumulation then adds `∂Rnl[j, t] * dRnl[j, t] * r̂`, which is `0.0 * finite`
+    for those rows -- exactly zero, not approximately.
+
+So zeroing those rows changes NO result by a single ulp, which is what lets Task 5 claim
+bit-identical parity with the previous generator rather than merely 1e-13 agreement.
+
+It is a real saving, not a theoretical one: the fitted Cantor model has 74 `Rnl` rows of
+which the `A` basis reads 44, and the TiAl order-4 model has 92 of which it reads 49.
+"""
+function _rnl_used(tensor)
+    spec = collect(tensor.abasis.spec)
+    isempty(spec) && error("abasis spec is empty; nothing to export")
+    return sort(unique(Int(ϕ[1]) for ϕ in spec))
+end
+
+"""
+    _radial_mixing(W_radial, rnl_used) -> (onehot::Bool, rows::Vector{Vector{Int}},
+                                           sel::Vector{Vector{Int}})
+
+Decompose the radial mixing weights `W_radial[n_rnl, n_polys, n_pairs]` into the per-ordered-
+pair sparsity structure the generated code is emitted from.
+
+`rows[k]` lists the `Rnl` rows that pair `k` actually needs: those that are BOTH nonzero in
+`W_radial[:, :, k]` AND read by the `A` basis (`rnl_used`).  `onehot` says whether every pair's
+weight block is a selection matrix -- at most one nonzero per row, and every nonzero exactly
+`1.0` -- in which case `sel[k][i]` is the single polynomial index feeding `rows[k][i]` and the
+mixing collapses from an `n_rnl x n_polys` matrix-vector product to a gather of `length(rows[k])`
+entries.  `sel` is empty when `onehot` is false.
+
+`init_Wradial = :onehot` (the setting both benchmark models were fitted with, and the default
+for `ACEpotentials.Models.ace_model`) produces exactly such a selection matrix and NO fit
+touches it afterwards -- `Wnlq` is not a fitted parameter of the linear model -- so the one-hot
+branch is the one that runs in practice.  The dense branch is still emitted, and still tested
+(`export/test/test_generator_parity.jl` builds a `:glorot_normal` model for it), because
+`init_Wradial` is a user-facing keyword and a learned radial basis is a supported model.
+"""
+function _radial_mixing(W_radial, rnl_used::AbstractVector{Int})
+    n_rnl, n_polys, n_pairs = size(W_radial)
+    @assert maximum(rnl_used) <= n_rnl """
+        the A basis reads Rnl row $(maximum(rnl_used)) but the radial weights only have
+        $n_rnl rows -- abasis.spec and ps.rembed.post.W disagree about the radial basis size"""
+    rows = [Int[] for _ = 1:n_pairs]
+    sel  = [Int[] for _ = 1:n_pairs]
+    onehot = true
+    for k = 1:n_pairs
+        Wk = @view W_radial[:, :, k]
+        for t in rnl_used
+            nz = findall(!=(0.0), Wk[t, :])
+            isempty(nz) && continue
+            push!(rows[k], t)
+            if length(nz) == 1 && Wk[t, nz[1]] == 1.0
+                push!(sel[k], nz[1])
+            else
+                onehot = false
+            end
+        end
+    end
+    onehot || (sel = [Int[] for _ = 1:n_pairs])
+    return onehot, rows, sel
+end
+
 function _write_spline_radial_basis_header(io, rcut)
     println(io, """
 # ============================================================================
@@ -176,20 +267,76 @@ end
     W_radial = ps.rembed.post.W
     n_rnl = size(W_radial, 1)
     n_pairs = size(W_radial, 3)
+    # The per-pair mixing functions are dispatched by `if k == 1 … elseif k == NZ^2`, so the
+    # weight tensor must carry exactly one block per ORDERED pair.  (It always has; this
+    # turns "always has" into "is checked", since a mismatch would silently drop pairs.)
+    @assert n_pairs == NZ^2 """
+        radial weights have $n_pairs species-pair blocks, expected NZ^2 = $(NZ^2)
+        (one per ORDERED pair, as ET.catcat2idx indexes the SelectLinL weights)"""
 
     println(io, "const N_RNL = $(n_rnl)")
     println(io)
 
-    # Write weights as tuple for trim-safe indexing
-    println(io, "# Radial basis weights per species pair (tuple for trim-safe indexing)")
-    println(io, "# indexed by pair_idx(iz, jz) = (iz-1)*NZ + jz")
-    println(io, "const RBASIS_W = (")
-    for (k, iz, jz) in _ordered_pairs(NZ)
-        W_vec = vec(W_radial[:, :, k])
-        println(io, "    SMatrix{$(n_rnl), $(n_polys), Float64, $(n_rnl * n_polys)}($(repr(collect(W_vec)))),  # pair $k: ($iz, $jz)")
-    end
-    println(io, ")")
+    # ------------------------------------------------------------------------------------
+    # RADIAL MIXING, emitted from W's actual sparsity structure (Task 5 / B1)
+    #
+    # What this replaces: a per-ordered-pair DENSE `SMatrix{N_RNL, N_POLYS}` and, on every
+    # edge, two full matrix-vector products `W * P_env` and `W * dP_env` -- 2 * N_RNL *
+    # N_POLYS multiply-adds, 6660 of them per edge on the fitted Cantor model and 6072 on
+    # TiAl.  `W` is not dense: it is what `init_Wradial = :onehot` built (a selection matrix)
+    # and no fit touches it, so on Cantor 370 of its 83250 entries are nonzero.  Combined
+    # with dropping the (n,l) rows the A basis never reads (see `_rnl_used`), 9 of 74 rows
+    # survive per Cantor pair and 26 of 92 per TiAl pair.
+    #
+    # The emitted form is therefore a static gather (one-hot) or a small dense GEMV
+    # (learned W), scattered back into the full-width SVector{N_RNL} that `evaluate_Rnl_d`
+    # still returns -- the WIDTH change belongs to Task 6's kernel, not here.
+    # ------------------------------------------------------------------------------------
+    rnl_used = _rnl_used(etace.basis)
+    onehot, mix_rows, mix_sel = _radial_mixing(W_radial, rnl_used)
+
+    println(io, "# The (n,l) rows any A basis function reads (from ABASIS_SPEC). Rows outside")
+    println(io, "# this set can never reach the energy or the forces -- see _rnl_used in")
+    println(io, "# export/src/write_radial.jl for why zeroing them is exact, not approximate.")
+    println(io, "const RNL_USED = $(repr(Tuple(rnl_used)))")
+    println(io, "const N_RNL_USED = $(length(rnl_used))  # of N_RNL = $n_rnl")
+    println(io, "# true  -> every pair's W is a selection matrix; the mixing is a gather.")
+    println(io, "# false -> W is dense; the mixing is a length(RBASIS_ROWS_k) x N_POLYS GEMV.")
+    println(io, "const RBASIS_ONEHOT = $onehot")
     println(io)
+
+    for (k, iz, jz) in _ordered_pairs(NZ)
+        rows = mix_rows[k]
+        m = length(rows)
+        println(io, "# --- pair $k: ($iz, $jz) -- $m of $n_rnl Rnl rows are nonzero and used ---")
+        println(io, "const RBASIS_ROWS_$k = SVector{$m, Int}($(repr(rows)))")
+        if m == 0
+            println(io, "@inline _mix_$k(P_env::SVector{N_POLYS, T}) where {T} = zero(SVector{N_RNL, T})")
+            println(io)
+            continue
+        end
+        if onehot
+            sel = mix_sel[k]
+            println(io, "const RBASIS_SEL_$k = SVector{$m, Int}($(repr(sel)))  # polynomial feeding each row")
+            entries = ["P_env[$q]" for q in sel]
+            println(io, "@inline function _mix_$k(P_env::SVector{N_POLYS, T}) where {T}")
+            println(io, "    @inbounds return SVector{N_RNL, T}(")
+            println(io, _scatter_expr(rows, entries, n_rnl))
+            println(io, "    )")
+            println(io, "end")
+        else
+            Wk = W_radial[rows, :, k]
+            println(io, "const RBASIS_W_$k = SMatrix{$m, $(n_polys), Float64, $(m * n_polys)}($(repr(vec(Wk))))")
+            entries = ["v[$i]" for i = 1:m]
+            println(io, "@inline function _mix_$k(P_env::SVector{N_POLYS, T}) where {T}")
+            println(io, "    v = RBASIS_W_$k * P_env")
+            println(io, "    @inbounds return SVector{N_RNL, T}(")
+            println(io, _scatter_expr(rows, entries, n_rnl))
+            println(io, "    )")
+            println(io, "end")
+        end
+        println(io)
+    end
 
     # Write parameter table for all species pairs
     println(io, "# ============================================================================")
@@ -209,8 +356,19 @@ end
         sym = _sym_pair_index(iz, jz, NZ)
         p = agnesi_params[sym]
 
+        # `pin` and `pcut` are emitted as Int, not Float64.  `s^2` is a multiply; `s^2.0` is a
+        # call to libm `pow`, and the transform evaluates three of them per edge (`s^pin`,
+        # `s^(pin-pcut)`, `s^(pin-1)`).  This is the same choice `_write_pair_basis` already
+        # made for the pair term (see its header comment).  It is not a change of value for
+        # the integer exponents these models carry: glibc's `pow` is correctly rounded, and
+        # the correctly-rounded `s^2.0` IS `s*s`, so the two agree bit for bit -- which the
+        # generator-parity gate measures rather than assumes.  (For an exponent of 3 or more
+        # `power_by_squaring` and `pow` may differ by 1 ulp; no model here has one.)
+        @assert p.pin isa Integer && p.pcut isa Integer """
+            Agnesi transform of pair $k has non-integer pin=$(p.pin) / pcut=$(p.pcut);
+            the generated code raises `s` to them as integer powers."""
         println(io, "    (rin=$(Float64(p.rin)), req=$(Float64(p.req)), rcut=$(Float64(rcut)), " *
-                    "pin=$(Float64(p.pin)), pcut=$(Float64(p.pcut)), a=$(Float64(p.a)), " *
+                    "pin=$(Int(p.pin)), pcut=$(Int(p.pcut)), a=$(Float64(p.a)), " *
                     "b0=$(Float64(p.b0)), b1=$(Float64(p.b1))),  # pair $k: ($iz, $jz) -> sym $sym")
     end
     println(io, ")")
@@ -293,10 +451,12 @@ end
 end
 """)
 
-    # Write generic radial basis functions
+    # Write generic radial basis functions.  Everything up to `P_env` is pair-generic; only
+    # the MIXING is per-pair, and it is reached through the same `if k == …` chain the
+    # Hermite dispatchers in codegen.jl use.
     println(io, """
 # ============================================================================
-# RADIAL BASIS EVALUATION (generic, using parameter tables)
+# RADIAL BASIS EVALUATION (generic transform + envelope, per-pair mixing)
 # ============================================================================
 
 # Generic radial basis evaluation for any pair
@@ -310,8 +470,11 @@ end
     end
 
     P = eval_polys(y)
-    @inbounds W = RBASIS_W[k]
-    return W * SVector{N_POLYS, T}(env .* P)
+    P_env = SVector{N_POLYS, T}(env .* P)""")
+
+    _emit_pair_dispatch(io, NZ, "    ", k -> "return _mix_$k(P_env)")
+
+    println(io, """    return zero(SVector{N_RNL, T})
 end
 
 # Generic radial basis with derivatives
@@ -329,16 +492,16 @@ end
     P, dP = eval_polys_ed(y)
     dP_dr = dP .* dy_dr
 
-    P_env = env .* P
-    dP_env_dr = denv_dr .* P .+ env .* dP_dr
+    P_env = SVector{N_POLYS, T}(env .* P)
+    dP_env_dr = SVector{N_POLYS, T}(denv_dr .* P .+ env .* dP_dr)""")
 
-    @inbounds W = RBASIS_W[k]
-    Rnl = W * SVector{N_POLYS, T}(P_env)
-    dRnl = W * SVector{N_POLYS, T}(dP_env_dr)
+    _emit_pair_dispatch(io, NZ, "    ", k -> "return _mix_$k(P_env), _mix_$k(dP_env_dr)")
 
-    return Rnl, dRnl
+    println(io, """    return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})
 end
+""")
 
+    println(io, """
 # Public API: dispatch by species indices through the single pair-index convention
 @inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
     return _evaluate_Rnl_pair(r, pair_idx(iz, jz))

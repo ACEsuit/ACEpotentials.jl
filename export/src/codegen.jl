@@ -115,7 +115,8 @@ end
 end
 
 """
-    generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64)
+    generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64;
+                                 rnl_used = nothing)
 
 Generate trim-safe inline Hermite cubic spline evaluation code.
 The hermite_data comes from `extract_hermite_spline_data()`.
@@ -123,14 +124,29 @@ The hermite_data comes from `extract_hermite_spline_data()`.
 This generates exact code that replicates EquivariantTensors' TransSelSplines
 evaluation without any Interpolations.jl or P4ML dependencies.
 
+`rnl_used` (Task 5 / B1) is the set of `Rnl` rows the `A` basis actually reads -- pass
+`_rnl_used(tensor)`.  Each pair's knot tables are then written for only those of its rows
+that are additionally not identically zero, and the cubic is evaluated at that reduced width
+and scattered back into the full `SVector{N_RNL}` the dispatchers return.  On the fitted
+Cantor model that is 9 columns instead of 74, i.e. an 8x smaller `F`/`G` table AND 8x less
+Hermite arithmetic per edge; the dropped rows are exactly zero in every result (the argument
+is in `_rnl_used`'s docstring in write_radial.jl), so this changes no number by one ulp.
+
+`rnl_used = nothing` keeps every row, which is what the standalone diagnostic scripts under
+`export/scripts/` that call the three-argument form get.
+
 Returns a String containing Julia code.
 """
-function generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64)
+function generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64;
+                                      rnl_used = nothing)
     io = IOBuffer()
 
     first_data = first(values(hermite_data))
     n_rnl = first_data.n_rnl
     n_pairs = length(hermite_data)
+    used = rnl_used === nothing ? collect(1:n_rnl) : sort(collect(Int, rnl_used))
+    @assert !isempty(used) && minimum(used) >= 1 && maximum(used) <= n_rnl """
+        rnl_used = $used is not a subset of 1:$n_rnl (the spline tables' row count)"""
 
     # `extract_hermite_spline_data` keys the dictionary by the ORDERED pair index
     # k = pair_idx(iz, jz) = (iz-1)*NZ + jz, the same convention `RBASIS_W`, `PAIR_C` and the
@@ -166,6 +182,14 @@ function generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64
 
 const N_RNL = $n_rnl
 const RCUT_GLOBAL = $rcut
+
+# The (n,l) rows any A basis function reads (Task 5 / B1).  Each pair's knot tables below are
+# written for the subset of these that the pair actually populates, named PAIR_k_ROWS; every
+# other row of the returned SVector{N_RNL} is exactly zero, and is exactly zero in the model
+# too (a row outside RNL_USED can reach neither the energy nor the forces -- see _rnl_used in
+# export/src/write_radial.jl).
+const RNL_USED = $(repr(Tuple(used)))
+const N_RNL_USED = $(length(used))  # of N_RNL = $n_rnl
 """)
 
     # Generate Agnesi transform and envelope functions for each pair
@@ -173,7 +197,15 @@ const RCUT_GLOBAL = $rcut
         data = hermite_data[pair_idx]
         p = data.agnesi_params
 
+        # Task 5 / B1: keep only the rows the A basis reads AND that this pair populates.
+        rows = [t for t in used
+                if any(!=(0.0), @view data.F[:, t]) || any(!=(0.0), @view data.G[:, t])]
+        m = length(rows)
+
         println(io, "# === Pair $pair_idx: Species ($(data.iz), $(data.jz)) ===")
+        println(io, "# $m of $n_rnl Rnl rows are read by the A basis and nonzero for this pair;")
+        println(io, "# the knot tables and the cubic below are written at that reduced width.")
+        println(io, "const PAIR_$(pair_idx)_ROWS = SVector{$m, Int}($(repr(rows)))")
         println(io)
 
         # Agnesi transform parameters
@@ -194,23 +226,23 @@ const RCUT_GLOBAL = $rcut
         println(io, "const PAIR_$(pair_idx)_H = $h  # Knot spacing")
         println(io)
 
-        # Write F matrix (function values at knots)
-        println(io, "# Function values at knots [n_knots × n_rnl]")
+        # Write F matrix (function values at knots), pruned to PAIR_k_ROWS
+        println(io, "# Function values at knots [n_knots × $m] (rows = PAIR_$(pair_idx)_ROWS)")
         println(io, "const PAIR_$(pair_idx)_F = (")
         for i in 1:data.n_knots
-            vals = join([@sprintf("%.16e", v) for v in data.F[i, :]], ", ")
-            print(io, "    SVector{$n_rnl, Float64}($vals)")
+            vals = join([@sprintf("%.16e", data.F[i, t]) for t in rows], ", ")
+            print(io, "    SVector{$m, Float64}($vals)")
             println(io, i < data.n_knots ? "," : "")
         end
         println(io, ")")
         println(io)
 
-        # Write G matrix (gradients at knots)
-        println(io, "# Gradients at knots [n_knots × n_rnl]")
+        # Write G matrix (gradients at knots), pruned to PAIR_k_ROWS
+        println(io, "# Gradients at knots [n_knots × $m] (rows = PAIR_$(pair_idx)_ROWS)")
         println(io, "const PAIR_$(pair_idx)_G = (")
         for i in 1:data.n_knots
-            vals = join([@sprintf("%.16e", v) for v in data.G[i, :]], ", ")
-            print(io, "    SVector{$n_rnl, Float64}($vals)")
+            vals = join([@sprintf("%.16e", data.G[i, t]) for t in rows], ", ")
+            print(io, "    SVector{$m, Float64}($vals)")
             println(io, i < data.n_knots ? "," : "")
         end
         println(io, ")")
@@ -357,7 +389,12 @@ end
 
     # Apply envelope in Y-SPACE: (1 - y²)²
     env = envelope_$pair_idx(y)
-    return env .* s
+    v = env .* s
+    # Scatter the $m computed rows back into the full N_RNL width.  Every other row is
+    # exactly zero in every quantity this model produces -- see PAIR_$(pair_idx)_ROWS above.
+    @inbounds return SVector{N_RNL, T}(
+$(_scatter_expr(rows, ["v[$i]" for i = 1:m], n_rnl))
+    )
 end
 
 # Hermite cubic spline evaluation (with derivatives)
@@ -398,9 +435,16 @@ end
 
     # Product rule with chain rule: d/dr[env(y) * s(y)]
     #   = (denv/dy * s + env * ds/dy) * dy/dr
-    Rnl = env .* s
-    dRnl_dr = (denv_dy .* s .+ env .* ds_dy) .* dy_dr
+    v = env .* s
+    dv = (denv_dy .* s .+ env .* ds_dy) .* dy_dr
 
+    # Scatter the $m computed rows back into the full N_RNL width (see above).
+    @inbounds Rnl = SVector{N_RNL, T}(
+$(_scatter_expr(rows, ["v[$i]" for i = 1:m], n_rnl))
+    )
+    @inbounds dRnl_dr = SVector{N_RNL, T}(
+$(_scatter_expr(rows, ["dv[$i]" for i = 1:m], n_rnl))
+    )
     return Rnl, dRnl_dr
 end
 """)

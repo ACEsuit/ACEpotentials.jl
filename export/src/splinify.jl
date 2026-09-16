@@ -54,6 +54,31 @@ _ordered_pairs(NZ::Int) = [((iz - 1) * NZ + jz, iz, jz) for iz in 1:NZ for jz in
     return (i - 1) * NZ - (i - 1) * (i - 2) ÷ 2 + (j - i + 1)
 end
 
+"""
+    _scatter_expr(rows, entries, n_rnl) -> String
+
+The body of a length-`n_rnl` `SVector` literal in which row `rows[i]` carries `entries[i]` and
+every other row carries `zero(T)`.
+
+Emitting the scatter as a STATIC tuple, rather than as a loop over a runtime index vector,
+is what makes the generated mixing cheap: `rows` is known at export time, so LLVM sees a
+vector of compile-time zeros with a handful of inserted values and emits a `zeroinitializer`
+plus `length(rows)` scalar stores, instead of `n_rnl` runtime-indexed stores into an `MVector`.
+"""
+function _scatter_expr(rows::AbstractVector{Int}, entries::AbstractVector{String}, n_rnl::Int)
+    @assert length(rows) == length(entries)
+    slot = Dict(t => e for (t, e) in zip(rows, entries))
+    parts = [get(slot, t, "zero(T)") for t = 1:n_rnl]
+    # 8 per line: the generated file is read by humans when a gate fails.
+    lines = String[]
+    for i = 1:8:n_rnl
+        push!(lines, "        " * join(parts[i:min(i + 7, n_rnl)], ", "))
+    end
+    return join(lines, ",\n")
+end
+
+
+
 
 """
     HermiteSplineData
