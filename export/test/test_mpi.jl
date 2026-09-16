@@ -55,8 +55,16 @@ using Printf: @sprintf
         @test_skip "LAMMPS not found"
         return
     end
-    if isempty(mpirun_exe)
-        @test_skip "MPI not available"
+    # This is unreachable today: runtests.jl only includes this file when
+    # `check_mpi_available() && check_lammps_available()` already held (see the `mpi` group
+    # in runtests.jl's `main()`).  It is routed through `required_check` anyway, rather than
+    # left as a plain `@test_skip`+`return`, because that is exactly the latent pattern
+    # `required_check` exists to remove: if this file is ever `include`d some other way (a
+    # future direct-invocation entry point, a different selection path), an absent `mpirun`
+    # must become a FAILURE under `ACE_REQUIRE_GROUPS=mpi`, not a silent skip that lets
+    # `mpi=ran` be reported with nothing underneath it.
+    if !required_check(!isempty(mpirun_exe), "mpi",
+                       "no mpirun matching this LAMMPS executable was found")
         return
     end
 
