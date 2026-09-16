@@ -36,9 +36,14 @@ ACEpotentials supports two evaluation backends. Choose based on your needs:
 
 | Feature | Standard ACE | ETACE |
 |---------|-------------|-------|
-| **Evaluation speed** | Baseline | ~2x faster |
+| **Evaluation speed** | not measured on this branch | not measured on this branch |
 | **Export complexity** | Simple (`ace1_model`) | Requires conversion step |
 | **Use case** | Development, small MD | Production MD, HPC |
+
+There is no measured speed comparison between the two backends in this repository. Any
+figure quoted here previously was unsourced; benchmark numbers belong in
+`export/bench/README.md`, whose measurement protocol is fixed and whose "## Results" section
+is filled in by the benchmarking step of the export-parity plan.
 
 ### Standard ACE Export (Simpler)
 
@@ -52,7 +57,7 @@ include("export/scripts/build_deployment.jl")
 build_deployment(model, "silicon_ace")
 ```
 
-### ETACE Export (Faster, Recommended for Production)
+### ETACE Export (Recommended for Production)
 
 ```julia
 using ACEpotentials.Models, ACEpotentials.ETModels

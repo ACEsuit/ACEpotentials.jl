@@ -74,7 +74,7 @@ println("   ✓ Model splinified with 50 knots")
 # Extract Hermite data and generate code
 println("\n[2] Extracting Hermite spline data and generating code...")
 hermite_data = extract_hermite_spline_data(etace_splined, et_ps, et_st, rcut)
-code = generate_hermite_spline_code(hermite_data, n_species)
+code = generate_hermite_spline_code(hermite_data, n_species, rcut)  # 3-arg: (data, NZ, rcut)
 
 # Write generated code to temp file
 codefile = "/tmp/hermite_test_generated.jl"
@@ -212,7 +212,9 @@ println("Overall max error: $(@sprintf("%.3e", total_max_err))")
 println("Average RMSE: $(@sprintf("%.3e", avg_rmse))")
 
 if total_max_err < 1e-6
-    println("\n✓ EXCELLENT: Hermite splines reproduce P4ML with machine precision!")
+    println("\n✓ EXCELLENT: the generated Hermite code reproduces the P4ML SPLINIFIED basis")
+    println("  to roundoff.  NOTE: that is agreement with the splinified model, NOT with the")
+    println("  polynomial model it was splinified from -- splinification is an approximation.")
 elseif total_max_err < 1e-4
     println("\n✓ GOOD: Hermite splines match P4ML to high accuracy")
 else

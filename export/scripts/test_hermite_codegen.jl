@@ -75,7 +75,7 @@ println("   ✓ Extracted data for $(length(hermite_data)) species pairs")
 
 # Generate code
 println("\n[3] Generating Julia code...")
-code = generate_hermite_spline_code(hermite_data, n_species)
+code = generate_hermite_spline_code(hermite_data, n_species, rcut)  # 3-arg: (data, NZ, rcut)
 println("   ✓ Generated $(length(code)) characters of code")
 
 # Write to file

@@ -44,9 +44,11 @@ struct NotAnExportableModel end
     @test occursin("function pair_energy_d", src)
 
     # E0 + pair + many-body reproduced to 1e-12 against the full stack
-    # (the pair-less generator sat at max|dF| = 6.878706238581598 eV/Å here)
-    dE, dF, dV = Base.invokelatest(check_export, f, fx.stacked, fx.held, fx.rcut;
-                                   tol = 1e-12, label = "task-1 :polynomial + pair vs full stack")
+    # check_export_report measures without asserting, so the three @test lines below ARE the
+    # gate; with check_export its internal @assert fires first and makes them unfailable.
+    # (The pair-less generator sat at max|dF| = 6.878706238581598 eV/Å on this comparison.)
+    dE, dF, dV = Base.invokelatest(check_export_report, f, fx.stacked, fx.held, fx.rcut;
+                                   label = "task-1 :polynomial + pair vs full stack")
     @test dE <= 1e-12
     @test dF <= 1e-12
     @test dV <= 1e-12
@@ -151,8 +153,18 @@ end
     @test_broken s.d_se == 0.0
     @test s.d_se <= 1e-12
     @test snp.d_se <= 1e-12
-    # ... and the attribution is asserted, not just asserted-about: the Ylm spread is nonzero
-    # and of the same order as the site-energy spread, while the radial spread is exactly 0.
+
+    # ATTRIBUTION -- the load-bearing part.  The residual must not be the pair term, and the
+    # direct evidence for that is the pair-less export of the SAME model measured in the same
+    # sweep: it shows the same spread, to the last bit (measured 2.842170943040401e-14 for
+    # both).  If a future change made the pair term contribute to the site_energy route, s
+    # would move away from snp and this would fail.
+    @test snp.d_se > 0.0
+    @test s.d_se == snp.d_se
+
+    # Secondary, weaker: the Ylm spread is nonzero and of the same order.  This is a
+    # plausibility bound on the SpheriCart attribution, not proof of it -- the pair-less
+    # cross-check above is what actually pins the residual's origin.
     @test s.d_Ylm > 0.0
     @test s.d_se <= 100 * s.d_Ylm
 end

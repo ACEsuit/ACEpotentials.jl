@@ -115,7 +115,7 @@ end
 end
 
 """
-    generate_hermite_spline_code(hermite_data::Dict, NZ::Int)
+    generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64)
 
 Generate trim-safe inline Hermite cubic spline evaluation code.
 The hermite_data comes from `extract_hermite_spline_data()`.
@@ -230,11 +230,15 @@ const RCUT_GLOBAL = $rcut
     pin = PAIR_$(pair_idx)_PIN
     pcut = PAIR_$(pair_idx)_PCUT
 
-    # Normalized distance from rin to req.  agnesi_transform_d_$pair_idx below MUST form s
-    # the same way (by division, as ET.eval_agnesi does): forming it as a
-    # reciprocal-multiply there differs by 1 ulp, which the spline segment search and the
-    # envelope amplify into a disagreement between site_energy and site_energy_forces*.
+    # This function and agnesi_transform_d_$pair_idx below MUST be structurally identical in
+    # everything that produces `y`: the same guard, the same division to form `s` (as
+    # ET.eval_agnesi does -- a reciprocal-multiply in one of them differs by 1 ulp), and the
+    # same clamp.  site_energy takes this route while site_energy_forces* take the other one,
+    # so any asymmetry here shows up as a disagreement between the exported entry points.
     s = (r - rin) / (req - rin)
+    if s <= zero(T)
+        return -one(T)           # r <= rin maps to y = -1 (ET.agnesi_params: xin -> -1)
+    end
 
     # Generalized Agnesi: x = 1 / (1 + a * s^pin / (1 + s^(pin-pcut)))
     s_pin = s^pin
@@ -243,9 +247,7 @@ const RCUT_GLOBAL = $rcut
 
     # Linear rescaling to [-1, 1]
     y = b1 * x + b0
-    y = clamp(y, -one(T), one(T))
-
-    return y
+    return clamp(y, -one(T), one(T))
 end
 
 # Agnesi transform with analytical derivative: returns (y, dy/dr)
@@ -263,7 +265,8 @@ end
     s = (r - rin) / (req - rin)
     ds_dr = one(T) / (req - rin)
 
-    # Avoid numerical issues at s=0
+    # Same guard, same value, as agnesi_transform_$pair_idx; the derivative is zero because
+    # y is constant at the clamp.
     if s <= zero(T)
         return -one(T), zero(T)
     end
@@ -274,7 +277,6 @@ end
 
     x = one(T) / (one(T) + a * s_pin / denom)
     y = b1 * x + b0
-    y = clamp(y, -one(T), one(T))
 
     # Derivative: dx/ds using quotient rule on x = 1/(1 + a*s^pin/(1+s^(pin-pcut)))
     # Let g = a * s^pin / (1 + s^(pin-pcut))
@@ -290,6 +292,11 @@ end
     dy_ds = b1 * dx_ds
     dy_dr = dy_ds * ds_dr
 
+    # y is clamped exactly as in agnesi_transform_$pair_idx, and WHERE it clamps the
+    # derivative must be zero: y is constant there, so returning the unclamped dy_dr (as this
+    # generator did until Task 2) gives a nonzero force from a flat transform.
+    y_clamped = clamp(y, -one(T), one(T))
+    y_clamped != y && return y_clamped, zero(T)
     return y, dy_dr
 end
 

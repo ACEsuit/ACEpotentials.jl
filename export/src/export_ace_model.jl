@@ -200,6 +200,12 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # Extract Agnesi transform parameters
     agnesi_params = trans_st.params  # SVector of Agnesi parameter NamedTuples
 
+    # :hermite_spline is only valid when every species pair shares the neighbour-list cutoff.
+    # Checked BEFORE the output file is opened, so a refused export leaves no partial file.
+    if radial_basis == :hermite_spline
+        _check_hermite_uniform_cutoffs(agnesi_params, NZ, rcut)
+    end
+
     # Tensor components (same structure as old ACE)
     tensor = etace.basis
 

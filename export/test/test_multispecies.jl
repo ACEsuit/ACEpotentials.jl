@@ -148,9 +148,11 @@ end
 "The six per-symmetric-pair Agnesi tuples of the many-body / pair branches of a stack."
 ms3_mb_params(stacked) = stacked.calcs[end].model.rembed.layer.trans.refstate.params
 ms3_pair_params(stacked) = stacked.calcs[2].model.rembed.layer.rbasis.trans.refstate.params
-# Same expansion the generator performs at export time (== ET.symidx).
-ms3_symidx(i, j, NZ) = (min(i, j) - 1) * NZ - (min(i, j) - 1) * (min(i, j) - 2) ÷ 2 +
-                       (max(i, j) - min(i, j) + 1)
+# UPSTREAM's symmetric index, not a local re-derivation: this is the function
+# ETModels._convert_agnesi actually selects with (via ET.catcat2idx_sym), so comparing the
+# exported tables against it checks the generator against the model rather than against a
+# second copy of the generator's own formula.
+ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
 
 @testset "Multi-Species ETACE Export" verbose = true begin
 
@@ -203,8 +205,9 @@ ms3_symidx(i, j, NZ) = (min(i, j) - 1) * NZ - (min(i, j) - 1) * (min(i, j) - 2) 
     @testset ":polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12" begin
         Base.invokelatest(export_ace_model, stacked_a, f_poly; radial_basis = :polynomial)
         @test isfile(f_poly)
-        dE, dF, dV = Base.invokelatest(check_export, f_poly, stacked_a, held, rcut_a;
-                                       tol = 1e-12,
+        # check_export_report measures without asserting, so the three @test lines below ARE
+        # the gate (check_export's internal @assert would otherwise make them unfailable).
+        dE, dF, dV = Base.invokelatest(check_export_report, f_poly, stacked_a, held, rcut_a;
                                        label = "NZ=3 asym :polynomial vs FITTED stack")
         @test dE <= 1e-12
         @test dF <= 1e-12
@@ -221,8 +224,8 @@ ms3_symidx(i, j, NZ) = (min(i, j) - 1) * NZ - (min(i, j) - 1) * (min(i, j) - 2) 
         # export_ace_model auto-detects splinification; the file must really be the spline one
         @test occursin("HERMITE CUBIC SPLINE RADIAL BASIS", read(f_herm, String))
 
-        dE, dF, dV = Base.invokelatest(check_export, f_herm, spl, held, rcut_u;
-                                       tol = 1e-12,
+        # as above: check_export_report measures, the @test lines gate.
+        dE, dF, dV = Base.invokelatest(check_export_report, f_herm, spl, held, rcut_u;
                                        label = "NZ=3 uniform :hermite_spline(Nspl=50) vs SPLINIFIED stack")
         @test dE <= 1e-12
         @test dF <= 1e-12
@@ -245,6 +248,29 @@ ms3_symidx(i, j, NZ) = (min(i, j) - 1) * NZ - (min(i, j) - 1) * (min(i, j) - 2) 
         # upstream has been fixed: move the Hermite gate above onto the :asym model.
         spl_a = ms3_spline_stack(stacked_a; Nspl = 50)
         @test_throws BoundsError AtomsCalculators.potential_energy(held[1], spl_a)
+
+        # ... and because that reference cannot be evaluated, the exporter must REFUSE to emit
+        # such a model rather than produce an artefact no gate can ever check.  The message
+        # has to name the offending pairs and point at the working alternative.
+        f = joinpath(build, "ms3_hermite_refused.jl")
+        isfile(f) && rm(f)
+        err = try
+            Base.invokelatest(export_ace_model, spl_a, f; radial_basis = :hermite_spline)
+            nothing
+        catch e
+            e
+        end
+        @test err isa ErrorException
+        msg = err === nothing ? "" : sprint(showerror, err)
+        @test occursin("radial_basis=:hermite_spline requires every species pair", msg)
+        @test occursin(":polynomial", msg)
+        @test occursin("pair 1 = (iz=1, jz=1)", msg)      # 5.1 Å, short of RCUT_MAX = 6.1
+        @test isfile(f) == false                           # refused before any file was opened
+
+        # the same model in the default mode is fine, and is already gated above
+        f_ok = joinpath(build, "ms3_asym_poly_ok.jl")
+        Base.invokelatest(export_ace_model, stacked_a, f_ok; radial_basis = :polynomial)
+        @test isfile(f_ok)
     end
 
     @testset "one ordered pair index keys every per-pair table" begin
@@ -299,7 +325,12 @@ ms3_symidx(i, j, NZ) = (min(i, j) - 1) * NZ - (min(i, j) - 1) * (min(i, j) - 2) 
         end
     end
 
-    @testset "> MAX_NEIGHBORS is a loud error, not a silent cap" begin
+    # NOTE the name: this checks that a site with more than MAX_NEIGHBORS neighbours either
+    # evaluates or raises an error that NAMES the limit.  It does NOT prove the absence of a
+    # silent cap -- a build that quietly truncated the neighbour list and returned a plausible
+    # finite number would pass.  Task 6 removes the cap, at which point the first branch is
+    # the one that fires; the name must stay honest about what is actually asserted.
+    @testset "> MAX_NEIGHBORS either evaluates or errors clearly (not proof of no silent cap)" begin
         ex = Base.invokelatest(load_exported, f_poly)
         n = ex.MAX_NEIGHBORS + 44
         Rs = [SVector(2.0 + 0.001k, 0.1, -0.05) for k in 1:n]

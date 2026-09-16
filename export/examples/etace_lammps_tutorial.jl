@@ -5,8 +5,9 @@
 #
 # ## Overview
 #
-# ETACE models offer approximately 2x performance improvement over standard ACE
-# models while maintaining the same accuracy. The workflow is:
+# ETACE models use the EquivariantTensors backend and export to standalone, trim-compatible
+# Julia code. No speed comparison against standard ACE has been measured in this repository,
+# so none is quoted here. The workflow is:
 #
 # 1. **Create** an ACE model with learnable radial basis
 # 2. **Fit** the model to training data
@@ -20,7 +21,7 @@
 #
 # | Feature | Standard ACE | ETACE |
 # |---------|-------------|-------|
-# | Evaluation speed | Baseline | ~2x faster |
+# | Evaluation speed | not measured here | not measured here |
 # | Export complexity | Simple | Requires conversion |
 # | Radial basis | Pre-splinified | Learnable → Splinified |
 # | Recommended for | Quick tests, small systems | Production MD |
@@ -130,7 +131,7 @@ ACEpotentials.compute_errors(train_data, ace_pot; weights=weights)
 
 # ## Step 5: Convert to ETACE
 #
-# The ETACE format uses EquivariantTensors for faster evaluation.
+# The ETACE format uses the EquivariantTensors backend.
 # We need to:
 # 1. Convert the model structure
 # 2. Copy the fitted parameters
@@ -158,8 +159,16 @@ println("ETACE model created")
 # This step converts the polynomial radial basis to Hermite cubic splines.
 # **This must be done BEFORE export** for the Hermite spline radial basis mode.
 #
-# The splinified model evaluates much faster and produces machine-precision
-# accurate results compared to the original polynomials.
+# Splinification is an APPROXIMATION, not a re-encoding: the spline model is a different
+# model from the polynomial one it was built from. On the fitted Cantor model the difference
+# is 2.7e-4 eV/Å in the forces at `Nspl = 50` and 3.0e-6 eV/Å at `Nspl = 200`
+# (`verify_cantor/log.chain`, reproduced by `export/test/test_hermite_cantor.jl`). Fitting
+# AFTER splinification — as this tutorial does — is what keeps that difference out of the
+# deployed potential: the fit then sees the very representation the library will evaluate.
+#
+# An exported Hermite library reproduces the SPLINIFIED model to 1e-12. Its difference from
+# the pre-splinification polynomial model is model error and must never be reported as an
+# export error.
 
 println("\nSplinifying radial basis (Nspl=50 knots)...")
 et_model_splined = splinify(et_model, et_ps, et_st; Nspl=50)
@@ -288,5 +297,6 @@ println("File size: $(round(filesize(export_file)/1024, digits=1)) KB")
 #    `radial_basis=:hermite_spline` matches the splinified model used here
 # 6. Compile with `juliac --trim=safe`
 #
-# The resulting library is ~2x faster than standard ACE exports and requires
-# no Julia installation at runtime.
+# The resulting library requires no Julia installation at runtime. Its evaluation cost has
+# not been benchmarked against a standard ACE export in this repository, so no speed ratio is
+# quoted here; see `export/bench/README.md`.

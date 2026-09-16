@@ -39,8 +39,10 @@ include(joinpath(dirname(@__DIR__), "src", "export_ace_model.jl"))
         @test occursin("const PAIR_C", src)                 # pair term emitted in this mode too
         @test occursin("zz2pair_sym", src) == false         # one pair-index convention only
 
-        dE, dF, dV = Base.invokelatest(check_export, f, spl, fx.held, fx.rcut;
-                                       tol = 1e-12,
+        # check_export_report measures without asserting, so the three @test lines below ARE
+        # the gate; with check_export its internal @assert would fire first and make them
+        # unfailable.  The tolerance is 1e-12 and must never be loosened.
+        dE, dF, dV = Base.invokelatest(check_export_report, f, spl, fx.held, fx.rcut;
                                        label = "Cantor :hermite_spline(Nspl=$Nspl) vs SPLINIFIED stack")
         @test dE <= 1e-12
         @test dF <= 1e-12
@@ -50,5 +52,29 @@ include(joinpath(dirname(@__DIR__), "src", "export_ace_model.jl"))
         fit = Base.invokelatest(check_export_report, f, fx.stacked, fx.held, fx.rcut;
                                 label = "Cantor :hermite_spline(Nspl=$Nspl) vs FITTED stack [informational, log.chain: 2.3e-4 @50, 3.0e-6 @200]")
         @info "Cantor Hermite error against the FITTED model -- reported, never gated" Nspl dE_atom = fit[1] dF = fit[2] dV_atom = fit[3]
+
+        # The `with_pair = false` branch of cantor_spline_stack exists for exactly one
+        # purpose: the `c50` / `c200` columns of verify_cantor/ref_k.txt were produced by
+        # chain_cantor.jl from the PAIR-LESS (ETOneBody + splinified ETACE) stack.  That is
+        # its call site, and it runs here so the branch is never carried unexercised -- an
+        # unexercised branch kept "for later" is how the pair term came to be dropped.
+        # Agreement must be BIT-EXACT: same model, same arithmetic, same neighbour sets.
+        nopair = cantor_spline_stack(fx; Nspl = Nspl, with_pair = false)
+        @test length(nopair.calcs) == 2
+        @test all(!occursin("Pair", string(nameof(typeof(c.model)))) for c in nopair.calcs)
+        dEref = dFref = 0.0
+        for (k, sys) in enumerate(fx.held)
+            ref = load_cantor_reference(k)
+            Eref = Nspl == 50 ? ref.E_c50 : ref.E_c200
+            Fref = Nspl == 50 ? ref.F_c50 : ref.F_c200
+            E = ustrip(u"eV", potential_energy(sys, nopair))
+            F = [SVector{3,Float64}(ustrip.(u"eV/Å", f)) for f in forces(sys, nopair)]
+            dEref = max(dEref, abs(E - Eref) / length(sys))
+            dFref = max(dFref, maximum(norm.(F .- Fref)))
+        end
+        println("cantor_spline_stack(with_pair = false, Nspl = $Nspl) vs ref_k.txt column " *
+                "c$(Nspl):\n    max|dE|/atom = $dEref eV/atom\n    max|dF|      = $dFref eV/Å")
+        @test dEref == 0.0
+        @test dFref == 0.0
     end
 end

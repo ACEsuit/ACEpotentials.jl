@@ -1,29 +1,80 @@
 # Radial basis and spherical harmonics writing functions
 # Split from export_ace_model.jl for maintainability
 
-# ----------------------------------------------------------------------------------------
-# Species-pair indexing -- the export-time half of the single runtime convention.
-#
-# The generated code knows exactly ONE pair index, `pair_idx(iz, jz) = (iz-1)*NZ + jz`
-# (emitted by `_write_species`), which is `ET.catcat2idx`: the index of the SelectLinL
-# weights and of the splinified knot tables.  Whatever the model stores per SYMMETRIC pair
-# -- the Agnesi transform parameters, `ET.catcat2idx_sym` -- is expanded into that ordered
-# layout HERE, at export time, so the runtime never needs a second mapping.
-#
-# `_ordered_pairs(NZ)` enumerates the ordered pairs in table order, and
-# `_sym_pair_index(iz, jz, NZ)` is `ET.symidx` (EquivariantTensors utils/selector.jl:62-65),
-# i.e. the position of `(min, max)` in the `for i = 1:NZ, j = i:NZ` order that
-# `ETModels._convert_agnesi` fills.  Both are used by every per-pair table writer below and
-# by `extract_hermite_spline_data` in splinify.jl.
-# ----------------------------------------------------------------------------------------
+# The ordered/symmetric species-pair index helpers `_ordered_pairs` and `_sym_pair_index`
+# that every per-pair table writer below uses live in splinify.jl, which `extract_hermite_
+# spline_data` also needs them from and which export_ace_model.jl includes first.  See the
+# comment block there for the convention.
 
-"Ordered species pairs `(k, iz, jz)` with `k = (iz-1)*NZ + jz`, in table order."
-_ordered_pairs(NZ::Int) = [((iz - 1) * NZ + jz, iz, jz) for iz in 1:NZ for jz in 1:NZ]
+"""
+    _agnesi_pair_rcut(p, rmax) -> Float64
 
-"Position of the symmetric pair {iz, jz} in the `for i = 1:NZ, j = i:NZ` storage (ET.symidx)."
-@inline function _sym_pair_index(iz::Int, jz::Int, NZ::Int)
-    i, j = min(iz, jz), max(iz, jz)
-    return (i - 1) * NZ - (i - 1) * (i - 2) ÷ 2 + (j - i + 1)
+The distance at which `ET.eval_agnesi(r, p)` first reaches `+1`, i.e. the cutoff that the
+stored Agnesi parameter tuple `p` encodes.  The tuple has no `rcut` field, but
+`ET.agnesi_params` builds `b0, b1` from `xin = x(rin)` and `xcut = x(rcut)` so that those two
+radii map to -1 and +1; inverting the linear part gives `xcut = (1 - b0) / b1`, and `x(r)` is
+strictly decreasing, so a bisection on `s` recovers `rcut` exactly.
+
+`rmax` is returned for a degenerate tuple (one whose `xcut` is outside `(0, 1)`), which means
+"do not treat this pair as short-ranged" -- the caller only ever uses the result to detect
+pairs whose range falls SHORT of the global cutoff.
+"""
+function _agnesi_pair_rcut(p, rmax::Real)
+    xcut = (1 - p.b0) / p.b1
+    (xcut <= 0 || xcut >= 1) && return Float64(rmax)
+    g = 1 / xcut - 1                     # = a s^pin / (1 + s^(pin-pcut)) at r = rcut
+    f(s) = p.a * s^p.pin / (1 + s^(p.pin - p.pcut)) - g    # strictly increasing in s > 0
+    lo, hi = 0.0, 1.0
+    while f(hi) < 0 && hi < 1e6
+        hi *= 2
+    end
+    f(hi) < 0 && return Float64(rmax)
+    for _ = 1:200
+        mid = 0.5 * (lo + hi)
+        f(mid) < 0 ? (lo = mid) : (hi = mid)
+    end
+    return p.rin + 0.5 * (lo + hi) * (p.req - p.rin)
+end
+
+"""
+    _check_hermite_uniform_cutoffs(agnesi_params, NZ, rcut)
+
+Refuse to emit a `:hermite_spline` export whose species pairs do not all share the cutoff the
+neighbour lists are built at.
+
+WHY THIS IS A HARD ERROR, not a warning.  `EquivariantTensors`' spline evaluator clamps the
+transformed coordinate to `[x0, x1]` and then reads knots `il+1, il+2` (`_spl_grid`,
+`embed/transsplines.jl:200-207`).  At `y == x1` that is knot `NX + 1`.  Any edge with
+`rcut[i,j] <= r <= RCUT_MAX` transforms to exactly `y = 1`, so the SPLINIFIED model throws a
+`BoundsError` before an exported library can be compared to it.  The export would therefore
+be un-verifiable by construction: no 1e-12 gate could ever be run on it.  `:polynomial` --
+the default -- handles per-pair cutoffs correctly, so the working alternative is one keyword
+away.  Emitting an unverifiable artefact silently is the same class of defect as silently
+dropping the pair term.
+"""
+function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
+    short = Tuple{Int,Int,Int,Float64}[]        # (k, iz, jz, this pair's cutoff)
+    for (k, iz, jz) in _ordered_pairs(NZ)
+        rc = _agnesi_pair_rcut(agnesi_params[_sym_pair_index(iz, jz, NZ)], rcut)
+        rc < rcut * (1 - 1e-9) && push!(short, (k, iz, jz, rc))
+    end
+    isempty(short) && return nothing
+    lines = join(["      pair $k = (iz=$iz, jz=$jz): cutoff $(round(rc, digits = 6)) Å" *
+                  " (RCUT_MAX is $rcut Å)" for (k, iz, jz, rc) in short], "
+")
+    error("""
+        export_ace_model: radial_basis=:hermite_spline requires every species pair to share
+        one cutoff, and this model's pairs do not:
+        $lines
+        An edge with rcut[i,j] <= r <= RCUT_MAX transforms to exactly y = 1, where
+        EquivariantTensors' spline evaluator (_spl_grid, embed/transsplines.jl:200-207)
+        indexes knot NX+1 and throws a BoundsError.  The SPLINIFIED model that such an export
+        would have to be verified against therefore cannot be evaluated at all, so the export
+        is unverifiable by construction.
+
+        Use radial_basis=:polynomial (the default), which handles per-pair cutoffs exactly,
+        or rebuild the model with a single shared rcut.  See "Radial Basis Export Options" in
+        export/README.md.""")
 end
 
 function _write_spline_radial_basis_header(io, rcut)
@@ -310,8 +361,8 @@ end
 #  * the Agnesi transform parameters are stored per SYMMETRIC pair
 #    (`_convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and the selector is
 #    `catcat2idx_sym`), i.e. NZ*(NZ+1)/2 entries addressed by `symidx`.  The ordered ->
-#    symmetric mapping below goes through the shared `_sym_pair_index` helper at the top of
-#    this file, exactly as TRANSFORM_PARAMS does.
+#    symmetric mapping below goes through the shared `_sym_pair_index` helper (splinify.jl),
+#    exactly as TRANSFORM_PARAMS does.
 #  * the readout weight Wread is per CENTRE species only (shape (1, n_pairbasis, NZ)).
 #
 # Numerics:
