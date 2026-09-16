@@ -9,8 +9,12 @@
    runtime via dlopen.
 
    OpenMP parallelization: The atom loop in compute() is parallelized using
-   OpenMP. The Julia library is thread-safe for concurrent calls after
-   initialization (which happens in load_model via ace_get_cutoff()).
+   OpenMP.  The Julia library is RE-ENTRANT GIVEN ONE WORKSPACE PER THREAD -- it is not
+   thread-safe with a shared workspace and contains no locking to make it so.  This pair
+   style therefore allocates workspaces[t] for t < omp_get_max_threads() in init_style()
+   and passes workspaces[omp_get_thread_num()] to every call inside the parallel region.
+   omp_get_thread_num() is stable for the duration of a parallel region, which is what makes
+   it a valid index (a Julia task id would not be: tasks migrate).
 
    Usage:
      pair_style ace
@@ -51,10 +55,16 @@ PairACE::PairACE(LAMMPS *lmp) : Pair(lmp)
 
   // Initialize pointers
   model_handle = nullptr;
+  ace_workspace_new = nullptr;
+  ace_workspace_free = nullptr;
   ace_site_energy_forces_virial = nullptr;
+  ace_site_energy_forces = nullptr;
   ace_get_cutoff = nullptr;
   ace_get_n_species = nullptr;
   ace_get_species = nullptr;
+
+  workspaces = nullptr;
+  n_workspaces = 0;
 
   cutoff = 0.0;
   n_species = 0;
@@ -77,6 +87,9 @@ PairACE::~PairACE()
     memory->destroy(cutsq);
   }
 
+  // Order matters: the workspaces are Julia objects owned by the loaded library, so they
+  // must be released through it BEFORE it is dlclose()d.
+  free_workspaces();
   unload_model();
 
   memory->destroy(species_Z);
@@ -141,6 +154,40 @@ void PairACE::load_model(const char *filename)
     error->all(FLERR, errmsg);
   }
 
+  ace_site_energy_forces = (ace_site_ef_fn)dlsym(model_handle,
+      "ace_site_energy_forces");
+  err = dlerror();
+  if (err) {
+    char errmsg[1024];
+    snprintf(errmsg, sizeof(errmsg),
+             "Cannot find ace_site_energy_forces in model: %s", err);
+    error->all(FLERR, errmsg);
+  }
+
+  // The workspace entries are REQUIRED.  A model compiled before the workspace API existed
+  // exports ace_site_* with a different signature (no handle), so calling it through the new
+  // typedef would read the z0 argument off a pointer slot and silently produce garbage --
+  // refusing to load is the only safe response, and the message says what to do.
+  ace_workspace_new = (ace_ws_new_fn)dlsym(model_handle, "ace_workspace_new");
+  err = dlerror();
+  if (err) {
+    char errmsg[1024];
+    snprintf(errmsg, sizeof(errmsg),
+             "Cannot find ace_workspace_new in model: %s.  This model predates the "
+             "workspace C API; re-export and re-compile it with the current "
+             "export_ace_model.jl.", err);
+    error->all(FLERR, errmsg);
+  }
+
+  ace_workspace_free = (ace_ws_free_fn)dlsym(model_handle, "ace_workspace_free");
+  err = dlerror();
+  if (err) {
+    char errmsg[1024];
+    snprintf(errmsg, sizeof(errmsg),
+             "Cannot find ace_workspace_free in model: %s", err);
+    error->all(FLERR, errmsg);
+  }
+
   ace_get_cutoff = (ace_get_cutoff_fn)dlsym(model_handle, "ace_get_cutoff");
   err = dlerror();
   if (err) {
@@ -198,14 +245,36 @@ void PairACE::load_model(const char *filename)
 
 void PairACE::unload_model()
 {
+  // Any workspace still held belongs to the library about to be closed.
+  free_workspaces();
+
   if (model_handle) {
     dlclose(model_handle);
     model_handle = nullptr;
   }
+  ace_workspace_new = nullptr;
+  ace_workspace_free = nullptr;
   ace_site_energy_forces_virial = nullptr;
+  ace_site_energy_forces = nullptr;
   ace_get_cutoff = nullptr;
   ace_get_n_species = nullptr;
   ace_get_species = nullptr;
+}
+
+/* ----------------------------------------------------------------------
+   Release the per-thread workspaces through the library that created them
+------------------------------------------------------------------------- */
+
+void PairACE::free_workspaces()
+{
+  if (!workspaces) return;
+  if (ace_workspace_free) {
+    for (int t = 0; t < n_workspaces; t++)
+      if (workspaces[t]) ace_workspace_free(workspaces[t]);
+  }
+  delete[] workspaces;
+  workspaces = nullptr;
+  n_workspaces = 0;
 }
 
 /* ----------------------------------------------------------------------
@@ -374,6 +443,28 @@ void PairACE::init_style()
     memory->create(neighbor_Rij, maxneigh * 3, "pair:neighbor_Rij");
     memory->create(site_forces, maxneigh * 3, "pair:site_forces");
   }
+
+  // One ACE workspace per OpenMP thread (exactly one without OpenMP).  Re-allocated if the
+  // thread count changed between runs; allocating them here rather than inside compute()
+  // keeps the Julia allocation and its lock off the hot path entirely.
+#ifdef _OPENMP
+  int want = omp_get_max_threads();
+#else
+  int want = 1;
+#endif
+  if (!ace_workspace_new)
+    error->all(FLERR, "Pair style ace: no model loaded (pair_coeff must come first)");
+  if (workspaces && n_workspaces != want) free_workspaces();
+  if (!workspaces) {
+    workspaces = new void *[want]();
+    n_workspaces = want;
+    for (int t = 0; t < want; t++) {
+      workspaces[t] = ace_workspace_new();
+      if (!workspaces[t]) error->all(FLERR, "Pair style ace: ace_workspace_new() failed");
+    }
+    if (comm->me == 0)
+      utils::logmesg(lmp, "ACE: {} evaluation workspace(s) (one per OpenMP thread)\n", want);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -406,6 +497,9 @@ void PairACE::compute(int eflag, int vflag)
 
   double cutsq_local = cutoff * cutoff;
 
+  // Whether any consumer of this step needs the per-site virial at all.
+  const bool need_virial = (vflag_global != 0) || (vflag_atom != 0);
+
   // Accumulators for reductions
   double total_energy = 0.0;
   double total_virial[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -423,6 +517,14 @@ void PairACE::compute(int eflag, int vflag)
   {
     int tid = omp_get_thread_num();
     double *thread_forces = all_thread_forces[tid];
+    // omp_get_thread_num() is stable for the whole parallel region, so this is a private
+    // workspace for the duration.  n_workspaces was set from omp_get_max_threads() in
+    // init_style; if a nested/changed team ever made tid exceed it, the modulo keeps the
+    // index in range -- two threads would then share a workspace, so it must not happen
+    // silently: assert it instead.
+    if (tid >= n_workspaces)
+      error->one(FLERR, "Pair style ace: more OpenMP threads than ACE workspaces");
+    void *ace_ws = workspaces[tid];
 
     // Thread-private work arrays
     int thread_maxneigh = 128;  // Initial size per thread
@@ -435,6 +537,7 @@ void PairACE::compute(int eflag, int vflag)
     #pragma omp for schedule(dynamic)
 #else
   {
+    void *ace_ws = workspaces[0];
     // Serial fallback - use class member arrays (allocated in init_style)
     int thread_maxneigh = maxneigh;
     int *thread_neighbor_Z = neighbor_Z;
@@ -528,10 +631,19 @@ void PairACE::compute(int eflag, int vflag)
       for (int k = 0; k < nneigh * 3; k++) thread_site_forces[k] = 0.0;
       for (int k = 0; k < 6; k++) thread_site_virial[k] = 0.0;
 
-      // Call ACE model - this is thread-safe
-      double site_energy = ace_site_energy_forces_virial(
-          z0, nneigh, thread_neighbor_Z, thread_neighbor_Rij,
-          thread_site_forces, thread_site_virial);
+      // Call the ACE model with THIS thread's workspace.  The virial entry is called only
+      // when a virial is actually wanted; otherwise the cheaper forces-only entry skips the
+      // per-edge outer product entirely.
+      double site_energy;
+      if (need_virial) {
+        site_energy = ace_site_energy_forces_virial(
+            ace_ws, z0, nneigh, thread_neighbor_Z, thread_neighbor_Rij,
+            thread_site_forces, thread_site_virial);
+      } else {
+        site_energy = ace_site_energy_forces(
+            ace_ws, z0, nneigh, thread_neighbor_Z, thread_neighbor_Rij,
+            thread_site_forces);
+      }
 
       // Accumulate energy (will be reduced)
       if (eflag_global)

@@ -115,6 +115,35 @@ end
 end
 
 """
+    hermite_pair_rows(hermite_data, rnl_used) -> Dict{Int, Vector{Int}}
+
+For each ORDERED species pair, the `Rnl` rows whose knot tables are actually emitted: the rows
+the `A` basis reads (`rnl_used`, see `_rnl_used` in write_radial.jl) that this pair does not
+represent identically.
+
+This is the single definition of that set.  `generate_hermite_spline_code` writes the knot
+tables and the cubic at exactly this width, and `_write_evaluation_functions` builds its
+per-pair A-accumulation blocks from the same mapping -- local slot `i` of the narrow radial
+vector is global row `rows[k][i]`.  Computing it twice, in two files, from two readings of
+the same data is exactly the kind of coupling that fails silently, so it is computed once.
+
+`rnl_used = nothing` keeps every row (what the three-argument diagnostic callers get).
+"""
+function hermite_pair_rows(hermite_data::Dict, rnl_used = nothing)
+    first_data = first(values(hermite_data))
+    n_rnl = first_data.n_rnl
+    used = rnl_used === nothing ? collect(1:n_rnl) : sort(collect(Int, rnl_used))
+    @assert !isempty(used) && minimum(used) >= 1 && maximum(used) <= n_rnl """
+        rnl_used = $used is not a subset of 1:$n_rnl (the spline tables' row count)"""
+    rows = Dict{Int, Vector{Int}}()
+    for (k, data) in hermite_data
+        rows[k] = [t for t in used
+                   if any(!=(0.0), @view data.F[:, t]) || any(!=(0.0), @view data.G[:, t])]
+    end
+    return rows
+end
+
+"""
     generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64;
                                  rnl_used = nothing)
 
@@ -147,6 +176,11 @@ function generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64
     used = rnl_used === nothing ? collect(1:n_rnl) : sort(collect(Int, rnl_used))
     @assert !isempty(used) && minimum(used) >= 1 && maximum(used) <= n_rnl """
         rnl_used = $used is not a subset of 1:$n_rnl (the spline tables' row count)"""
+    pair_rows = hermite_pair_rows(hermite_data, used)
+    m_max = maximum(length(r) for r in values(pair_rows))
+    @assert m_max >= 1 """
+        no ordered species pair populates a single (n,l) row -- the exported radial basis
+        would be identically zero"""
 
     # `extract_hermite_spline_data` keys the dictionary by the ORDERED pair index
     # k = pair_idx(iz, jz) = (iz-1)*NZ + jz, the same convention `RBASIS_W`, `PAIR_C` and the
@@ -190,6 +224,14 @@ const RCUT_GLOBAL = $rcut
 # export/src/write_radial.jl).
 const RNL_USED = $(repr(Tuple(used)))
 const N_RNL_USED = $(length(used))  # of N_RNL = $n_rnl
+
+# The widest per-pair row set.  Since Task 6 / B2 the per-pair evaluators return an
+# SVector{M_RNL} carrying ONLY the rows that pair populates (PAIR_k_ROWS order), rather than
+# scattering them into an SVector{N_RNL} of mostly zeros: the scatter was immediately undone
+# by the old N_RNL-wide copy into the work arrays, so the pruning bought nothing until the
+# width travelled with it.  `evaluate_Rnl` / `evaluate_Rnl_d` below are full-width wrappers
+# for the tests and diagnostic scripts; the evaluation kernel does not call them.
+const M_RNL = $(m_max)
 """)
 
     # Generate Agnesi transform and envelope functions for each pair
@@ -198,8 +240,8 @@ const N_RNL_USED = $(length(used))  # of N_RNL = $n_rnl
         p = data.agnesi_params
 
         # Task 5 / B1: keep only the rows the A basis reads AND that this pair populates.
-        rows = [t for t in used
-                if any(!=(0.0), @view data.F[:, t]) || any(!=(0.0), @view data.G[:, t])]
+        # One definition, shared with the evaluation writer -- see `hermite_pair_rows`.
+        rows = pair_rows[pair_idx]
         m = length(rows)
 
         println(io, "# === Pair $pair_idx: Species ($(data.iz), $(data.jz)) ===")
@@ -354,8 +396,8 @@ end
 
         # Hermite cubic evaluation
         println(io, """
-# Hermite cubic spline evaluation (values only)
-@inline function evaluate_Rnl_$pair_idx(r::T)::SVector{N_RNL, T} where {T}
+# Hermite cubic spline evaluation (values only), at the pair's own width
+@inline function evaluate_Rnl_$pair_idx(r::T)::SVector{M_RNL, T} where {T}
     # Transform to y-space
     y = agnesi_transform_$pair_idx(r)
 
@@ -390,15 +432,16 @@ end
     # Apply envelope in Y-SPACE: (1 - y²)²
     env = envelope_$pair_idx(y)
     v = env .* s
-    # Scatter the $m computed rows back into the full N_RNL width.  Every other row is
-    # exactly zero in every quantity this model produces -- see PAIR_$(pair_idx)_ROWS above.
-    @inbounds return SVector{N_RNL, T}(
-$(_scatter_expr(rows, ["v[$i]" for i = 1:m], n_rnl))
+    # Pad the $m computed rows to M_RNL (the widest pair), so every pair's evaluator has one
+    # return type.  Local slot i is global (n,l) row PAIR_$(pair_idx)_ROWS[i]; slots beyond
+    # $m are exactly zero in every quantity this model produces.
+    @inbounds return SVector{M_RNL, T}(
+$(_scatter_expr(collect(1:m), ["v[$i]" for i = 1:m], m_max))
     )
 end
 
-# Hermite cubic spline evaluation (with derivatives)
-@inline function evaluate_Rnl_d_$pair_idx(r::T)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
+# Hermite cubic spline evaluation (with derivatives), at the pair's own width
+@inline function evaluate_Rnl_d_$pair_idx(r::T)::Tuple{SVector{M_RNL, T}, SVector{M_RNL, T}} where {T}
     # Transform to y-space (with analytical derivative)
     y, dy_dr = agnesi_transform_d_$pair_idx(r)
 
@@ -438,14 +481,22 @@ end
     v = env .* s
     dv = (denv_dy .* s .+ env .* ds_dy) .* dy_dr
 
-    # Scatter the $m computed rows back into the full N_RNL width (see above).
-    @inbounds Rnl = SVector{N_RNL, T}(
-$(_scatter_expr(rows, ["v[$i]" for i = 1:m], n_rnl))
+    # Padded to M_RNL (see above).
+    @inbounds Rnl = SVector{M_RNL, T}(
+$(_scatter_expr(collect(1:m), ["v[$i]" for i = 1:m], m_max))
     )
-    @inbounds dRnl_dr = SVector{N_RNL, T}(
-$(_scatter_expr(rows, ["dv[$i]" for i = 1:m], n_rnl))
+    @inbounds dRnl_dr = SVector{M_RNL, T}(
+$(_scatter_expr(collect(1:m), ["dv[$i]" for i = 1:m], m_max))
     )
     return Rnl, dRnl_dr
+end
+
+# Narrow (M_RNL, pair-local) -> full width (N_RNL, global (n,l) index).  Compatibility
+# wrappers only; nothing on the hot path scatters.
+@inline function _scatter_full_$pair_idx(v::SVector{M_RNL, T}) where {T}
+    @inbounds return SVector{N_RNL, T}(
+$(_scatter_expr(rows, ["v[$i]" for i = 1:m], n_rnl))
+    )
 end
 """)
     end
@@ -456,9 +507,8 @@ end
 # DISPATCH FUNCTIONS
 # ============================================================================
 
-# Radial basis dispatch (values only)
-@inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
-    k = pair_idx(iz, jz)   # the ONE per-pair index; PAIR_k_* tables are written in that order""")
+# Narrow radial basis dispatch (values only) -- what the per-neighbour kernel calls
+@inline function _evaluate_Rnl_pair_m(r::T, k::Int)::SVector{M_RNL, T} where {T}""")
 
     for k in 1:n_pairs
         cond = k == 1 ? "if" : "elseif"
@@ -468,23 +518,50 @@ end
     # Cold branch: the chain above is exhaustive over 1:NZ^2, so reaching here means the
     # caller computed a species-pair index out of range.  RAISE rather than return zeros --
     # a silently zero radial basis is plausible-looking wrong energies, not a crash.
-    println(io, "    error(\"evaluate_Rnl: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
+    println(io, "    error(\"_evaluate_Rnl_pair_m: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
     println(io, "end")
     println(io)
 
-    # Derivative dispatch
     println(io, """
-# Radial basis dispatch (with derivatives)
-@inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    k = pair_idx(iz, jz)   # the ONE per-pair index; PAIR_k_* tables are written in that order""")
+# Narrow radial basis dispatch (with derivatives)
+@inline function _evaluate_Rnl_d_pair_m(r::T, k::Int)::Tuple{SVector{M_RNL, T}, SVector{M_RNL, T}} where {T}""")
 
     for k in 1:n_pairs
         cond = k == 1 ? "if" : "elseif"
         println(io, "    $cond k == $k; return evaluate_Rnl_d_$k(r)")
     end
     println(io, "    end")
-    println(io, "    error(\"evaluate_Rnl_d: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
+    println(io, "    error(\"_evaluate_Rnl_d_pair_m: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
     println(io, "end")
+    println(io)
+
+    println(io, """
+# Narrow -> full width dispatch (compatibility wrappers only)
+@inline function _scatter_full(v::SVector{M_RNL, T}, k::Int)::SVector{N_RNL, T} where {T}""")
+    for k in 1:n_pairs
+        cond = k == 1 ? "if" : "elseif"
+        println(io, "    $cond k == $k; return _scatter_full_$k(v)")
+    end
+    println(io, "    end")
+    println(io, "    error(\"_scatter_full: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
+    println(io, "end")
+    println(io)
+
+    println(io, """
+# Public API, FULL WIDTH.  These are what the test suite and the diagnostic scripts compare
+# against the model's own `Rnl`, so they keep the N_RNL layout.  The evaluation kernel uses
+# the narrow dispatchers above instead.
+@inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
+    k = pair_idx(iz, jz)   # the ONE per-pair index; PAIR_k_* tables are written in that order
+    return _scatter_full(_evaluate_Rnl_pair_m(r, k), k)
+end
+
+@inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
+    k = pair_idx(iz, jz)
+    v, dv = _evaluate_Rnl_d_pair_m(r, k)
+    return _scatter_full(v, k), _scatter_full(dv, k)
+end
+""")
 
     return String(take!(io))
 end

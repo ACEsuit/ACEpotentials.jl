@@ -1,3 +1,107 @@
+# C Interface API
+
+**There are TWO C interfaces in this repository, and they are not the same ABI.**
+
+| | exported/compiled library | minimal export |
+|---|---|---|
+| produced by | `export_ace_model(...; for_library = true)` + `juliac --trim=safe` | `export/src/ace_c_interface.jl` |
+| one model per | shared library (`libace_<model>.so`) | `model_id`, several per process |
+| consumed by | the LAMMPS `pair_style ace` plugin, `ase_ace.ACELibraryCalculator` | in-process Julia embedding |
+| documented in | **[the section immediately below](#compiled-library-abi-ccallable)** | the rest of this file |
+
+Everything from "C Interface API for Minimal Export" onward describes the SECOND one. If you
+are writing a LAMMPS pair style or a ctypes wrapper against a `.so`, the first is what you
+want.
+
+---
+
+# Compiled-library ABI (`@ccallable`)
+
+The symbols `Base.@ccallable`-exported by a generated model file. All of them are plain C:
+no Julia runtime call is needed beyond loading the library.
+
+## Workspaces and re-entrancy
+
+Since the per-neighbour kernel (B2) the library holds **no mutable global state**. All
+scratch lives in an opaque *workspace*, which the caller allocates and passes to every
+evaluation entry point as its **first argument**:
+
+```c
+void  *ace_workspace_new(void);
+void   ace_workspace_free(void *ws);
+```
+
+* The library is **re-entrant given one workspace per concurrent caller**. It is **not**
+  thread-safe with a shared workspace, and there is no internal locking that would make it
+  so: two threads in one workspace corrupt each other's `A`, `∂A` and neighbour cache.
+* `ace_workspace_new` / `ace_workspace_free` take a lock internally (they touch the list that
+  keeps live workspaces rooted against the Julia GC), so they may be called from anywhere,
+  including inside a parallel region. The evaluation entries take **no** lock.
+* A workspace grows to fit the largest site it has seen and is then reused. There is **no
+  maximum neighbour count**; the pre-B2 `MAX_NEIGHBORS = 256` cap is gone.
+* Free every workspace **before** `dlclose()`ing the library: they are Julia objects owned by
+  it.
+
+The LAMMPS plugin allocates `workspaces[t]` for `t < omp_get_max_threads()` in `init_style()`
+and passes `workspaces[omp_get_thread_num()]`; `ase_ace.ACELibrary` owns exactly one per
+instance.
+
+## Evaluation
+
+```c
+double ace_site_energy(void *ws, int z0, int nneigh,
+                       const int *neighbor_z, const double *neighbor_Rij);
+
+double ace_site_energy_forces(void *ws, int z0, int nneigh,
+                              const int *neighbor_z, const double *neighbor_Rij,
+                              double *forces);
+
+double ace_site_energy_forces_virial(void *ws, int z0, int nneigh,
+                                     const int *neighbor_z, const double *neighbor_Rij,
+                                     double *forces, double *virial);
+
+int    ace_site_basis(void *ws, int z0, int nneigh,
+                      const int *neighbor_z, const double *neighbor_Rij,
+                      double *basis_out);
+
+void   ace_batch_energy_forces_virial(void *ws, int natoms, const int *z,
+                                      const int *neighbor_counts,
+                                      const int *neighbor_offsets,
+                                      const int *neighbor_z, const double *neighbor_Rij,
+                                      double *energies, double *forces, double *virials);
+```
+
+* `neighbor_Rij` is `nneigh * 3` doubles, **displacement vectors** `R_j - R_i` in Å, not
+  positions.
+* `forces` is `nneigh * 3` doubles: the force **on each neighbour**, `-dE_i/dR_j`. The force
+  on the centre atom is minus their sum (Newton's third law); LAMMPS does that itself.
+* `virial` is 6 doubles in Voigt order `xx, yy, zz, yz, xz, xy`.
+* The returned energy is the **site energy including E0** of the centre species (and the pair
+  term, when the model has one). `nneigh == 0` returns E0 and writes zeros.
+* `ace_site_energy_forces` is the same as the `_virial` entry without the per-edge outer
+  product; call it when no virial is wanted.
+* `ace_batch_*` is sequential inside one call and uses the one workspace it is given. To
+  evaluate concurrently, split the atom range across threads, one workspace each.
+
+## Metadata (no workspace, no state)
+
+```c
+double ace_get_cutoff(void);      /* Å */
+int    ace_get_n_species(void);
+int    ace_get_species(int idx);  /* 1-based; atomic number, or -1 out of range */
+int    ace_get_n_basis(void);
+```
+
+## Version check
+
+A model compiled before the workspace API exports `ace_site_*` **without** the handle
+argument. Calling such a library through the signatures above reads `z0` out of the pointer
+slot and returns a plausible wrong number rather than crashing, so both the LAMMPS plugin and
+`ACELibrary` resolve `ace_workspace_new` first and **refuse to load** a library that does not
+export it. Do not paper over that: re-export and re-compile the model.
+
+---
+
 # C Interface API for Minimal Export
 
 This document describes the C-compatible API for ACE models exported using the minimal export approach.

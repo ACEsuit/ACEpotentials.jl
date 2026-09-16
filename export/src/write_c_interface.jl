@@ -93,10 +93,54 @@ function _write_c_interface(io, NZ)
 # Two API levels:
 # 1. SITE-LEVEL (for LAMMPS): Works with pre-computed neighbor lists
 # 2. SYSTEM-LEVEL (for Python/ASE): Computes neighbor list internally
+#
+# RE-ENTRANCY.  Every hot entry point takes an opaque workspace handle as its FIRST argument,
+# obtained from ace_workspace_new() and released with ace_workspace_free().  The library holds
+# no mutable global state, so N threads with N workspaces produce bitwise the serial result.
+# One workspace may NOT be used by two threads at once.
+
+# ============================================================================
+# WORKSPACE HANDLES
+# ============================================================================
+#
+# `pointer_from_objref` does not root anything, so every live workspace is kept in WORKSPACES
+# until it is freed; without that the GC is free to collect a workspace the C caller still
+# holds a pointer to.  new/free take a lock because a plugin may allocate its per-thread
+# workspaces from inside a parallel region; the HOT entries below take none -- they only
+# convert the pointer back, which touches no shared state.
+
+const WORKSPACES = Workspace[]
+const WORKSPACES_LOCK = ReentrantLock()
+
+Base.@ccallable function ace_workspace_new()::Ptr{Cvoid}
+    ws = new_workspace()
+    lock(WORKSPACES_LOCK)
+    try
+        push!(WORKSPACES, ws)
+    finally
+        unlock(WORKSPACES_LOCK)
+    end
+    return pointer_from_objref(ws)
+end
+
+Base.@ccallable function ace_workspace_free(p::Ptr{Cvoid})::Cvoid
+    p == C_NULL && return nothing
+    ws = unsafe_pointer_to_objref(p)::Workspace
+    lock(WORKSPACES_LOCK)
+    try
+        i = findfirst(w -> w === ws, WORKSPACES)
+        i === nothing || deleteat!(WORKSPACES, i)
+    finally
+        unlock(WORKSPACES_LOCK)
+    end
+    return nothing
+end
 
 # ============================================================================
 # HELPER FUNCTIONS FOR C INTERFACE
 # ============================================================================
+
+@inline _ws(p::Ptr{Cvoid}) = unsafe_pointer_to_objref(p)::Workspace
 
 @inline function c_read_Rij(ptr::Ptr{Cdouble}, nneigh::Int)::Vector{SVector{3, Float64}}
     Rs = Vector{SVector{3, Float64}}(undef, nneigh)
@@ -117,12 +161,12 @@ end
     return species
 end
 
-@inline function c_write_forces!(ptr::Ptr{Cdouble}, forces::Vector{SVector{3, Float64}})
-    @inbounds for j in 1:length(forces)
-        unsafe_store!(ptr, forces[j][1], 3*(j-1) + 1)
-        unsafe_store!(ptr, forces[j][2], 3*(j-1) + 2)
-        unsafe_store!(ptr, forces[j][3], 3*(j-1) + 3)
-    end
+# Force output written straight through the caller's buffer: `unsafe_wrap` + `reinterpret`
+# gives an AbstractVector{SVector{3,Float64}} aliasing it, so the kernel's `forces[j] = -f`
+# stores land in the C array with no intermediate Vector{SVector} to allocate and copy.
+@inline function c_force_view(ptr::Ptr{Cdouble}, nneigh::Int)
+    flat = unsafe_wrap(Array, ptr, 3 * nneigh; own = false)
+    return reinterpret(SVector{3, Float64}, flat)
 end
 
 @inline function c_write_virial!(ptr::Ptr{Cdouble}, virial::SMatrix{3,3,Float64,9})
@@ -143,30 +187,24 @@ end
 # LAMMPS handles force accumulation via Newton's 3rd law.
 
 Base.@ccallable function ace_site_energy(
+    ws::Ptr{Cvoid},
     z0::Cint,
     nneigh::Cint,
     neighbor_z::Ptr{Cint},
     neighbor_Rij::Ptr{Cdouble}
 )::Cdouble
     if nneigh == 0
-        # Return E0 for isolated atom
-        iz0 = z2i(z0)
-""")
-
-    # Generate E0 lookup for each species
-    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
-    println(io, "        return 0.0")
-    println(io, "    end")
-
-    println(io, """
+        return E0_of(z2i(z0))
+    end
 
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
 
-    return site_energy(Rs, Zs, Int(z0))
+    return site_energy!(_ws(ws), Rs, Zs, Int(z0))
 end
 
 Base.@ccallable function ace_site_energy_forces(
+    ws::Ptr{Cvoid},
     z0::Cint,
     nneigh::Cint,
     neighbor_z::Ptr{Cint},
@@ -174,27 +212,18 @@ Base.@ccallable function ace_site_energy_forces(
     forces::Ptr{Cdouble}
 )::Cdouble
     if nneigh == 0
-        iz0 = z2i(z0)
-""")
-
-    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
-    println(io, "        return 0.0")
-    println(io, "    end")
-
-    println(io, """
+        return E0_of(z2i(z0))
+    end
 
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
+    F = c_force_view(forces, Int(nneigh))
 
-    Ei, Fi = site_energy_forces(Rs, Zs, Int(z0))
-
-    # Write forces (these are -dE/dRj, the force ON neighbor j)
-    c_write_forces!(forces, Fi)
-
-    return Ei
+    return site_energy_forces!(_ws(ws), Rs, Zs, Int(z0), F)
 end
 
 Base.@ccallable function ace_site_energy_forces_virial(
+    ws::Ptr{Cvoid},
     z0::Cint,
     nneigh::Cint,
     neighbor_z::Ptr{Cint},
@@ -203,25 +232,17 @@ Base.@ccallable function ace_site_energy_forces_virial(
     virial::Ptr{Cdouble}
 )::Cdouble
     if nneigh == 0
-        iz0 = z2i(z0)
-        # Zero virial for isolated atom
         for k in 1:6
             unsafe_store!(virial, 0.0, k)
         end
-""")
-
-    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
-    println(io, "        return 0.0")
-    println(io, "    end")
-
-    println(io, """
+        return E0_of(z2i(z0))
+    end
 
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
+    F = c_force_view(forces, Int(nneigh))
 
-    Ei, Fi, Vi = site_energy_forces_virial(Rs, Zs, Int(z0))
-
-    c_write_forces!(forces, Fi)
+    Ei, Vi = site_energy_forces_virial!(_ws(ws), Rs, Zs, Int(z0), F)
     c_write_virial!(virial, Vi)
 
     return Ei
@@ -255,6 +276,7 @@ end
 # ============================================================================
 
 Base.@ccallable function ace_site_basis(
+    ws::Ptr{Cvoid},
     z0::Cint,
     nneigh::Cint,
     neighbor_z::Ptr{Cint},
@@ -272,9 +294,8 @@ Base.@ccallable function ace_site_basis(
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
 
-    B = site_basis(Rs, Zs, Int(z0))
+    B = site_basis!(_ws(ws), Rs, Zs, Int(z0))
 
-    # Write basis to output buffer
     for k in 1:N_BASIS
         unsafe_store!(basis_out, B[k], k)
     end
@@ -286,10 +307,11 @@ end
 # BATCH API
 # ============================================================================
 # Process multiple atoms at once, reducing Python-Julia FFI call overhead.
-# Note: Threads.@threads doesn't work with --trim=safe (closures are trimmed).
-# For multi-threaded evaluation, use LAMMPS (OpenMP) or IPICalculator.
+# Sequential within one call: pass one workspace per THREAD and split the atom range in the
+# caller to evaluate concurrently (Threads.@threads does not survive --trim=safe).
 
 Base.@ccallable function ace_batch_energy_forces_virial(
+    ws::Ptr{Cvoid},
     natoms::Cint,
     z::Ptr{Cint},
     neighbor_counts::Ptr{Cint},
@@ -300,31 +322,18 @@ Base.@ccallable function ace_batch_energy_forces_virial(
     forces::Ptr{Cdouble},
     virials::Ptr{Cdouble}
 )::Cvoid
-    # Process atoms sequentially
+    w = _ws(ws)
     for i in 1:Int(natoms)
         z0 = unsafe_load(z, i)
         nneigh = Int(unsafe_load(neighbor_counts, i))
         offset = Int(unsafe_load(neighbor_offsets, i))  # 0-indexed from C
 
         if nneigh == 0
-            # Isolated atom - return E0
-            iz0 = z2i(z0)
-""")
-
-    # Generate E0 lookup for each species for batch API
-    for iz in 1:NZ
-        cond = iz == 1 ? "if" : "elseif"
-        println(io, "            $cond iz0 == $iz; E0 = E0_$iz")
-    end
-    println(io, """            else; E0 = 0.0
-            end
-            unsafe_store!(energies, E0, i)
-            # Zero virial
+            unsafe_store!(energies, E0_of(z2i(z0)), i)
             for k in 1:6
                 unsafe_store!(virials, 0.0, (i-1)*6 + k)
             end
         else
-            # Read neighbor data for this atom
             Zs = Vector{Int}(undef, nneigh)
             Rs = Vector{SVector{3, Float64}}(undef, nneigh)
 
@@ -337,19 +346,10 @@ Base.@ccallable function ace_batch_energy_forces_virial(
                 Rs[j] = SVector(x, y, z_coord)
             end
 
-            # Compute energy, forces, virial
-            Ei, Fi, Vi = site_energy_forces_virial(Rs, Zs, Int(z0))
+            F = c_force_view(forces + 3 * offset * sizeof(Cdouble), nneigh)
+            Ei, Vi = site_energy_forces_virial!(w, Rs, Zs, Int(z0), F)
 
-            # Write outputs
             unsafe_store!(energies, Ei, i)
-
-            # Forces for this atom's neighbors
-            @inbounds for j in 1:nneigh
-                idx = offset + j
-                unsafe_store!(forces, Fi[j][1], 3*(idx-1) + 1)
-                unsafe_store!(forces, Fi[j][2], 3*(idx-1) + 2)
-                unsafe_store!(forces, Fi[j][3], 3*(idx-1) + 3)
-            end
 
             # Virial in Voigt notation: xx, yy, zz, yz, xz, xy
             vbase = (i-1)*6

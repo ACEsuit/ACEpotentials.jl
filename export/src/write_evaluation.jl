@@ -1,6 +1,52 @@
 # Evaluation functions writing
 # Split from export_ace_model.jl for maintainability
-
+#
+# ============================================================================================
+# THE KERNEL THIS EMITS (Task 6 / B2), and why it is shaped this way
+# ============================================================================================
+#
+# Before B2 a site was evaluated in five full-width sweeps over the neighbour list:
+#
+#   1. `compute_embeddings_ed` copied `evaluate_Rnl_d`'s `SVector{N_RNL}` into a
+#      `MAX_NEIGHBORS x N_RNL` global work array, one `@simd for t in 1:N_RNL` per edge --
+#      74 stores per edge on the fitted Cantor model, of which 44 rows could ever be read and
+#      only 9 were nonzero for that edge's species pair;
+#   2. `evaluate_abasis!` looped over EVERY A function and, inside, over EVERY neighbour;
+#   3. the A2B contraction and the readout;
+#   4. `pullback_abasis!` did the same double loop again, writing `∂Rnl` and `∂Ylm` at full
+#      width (which had to be zeroed at full width first);
+#   5. the force assembly looped `for t in 1:N_RNL` PLUS `for t in 1:N_YLM` per edge, with a
+#      rank-1 `virial -= Rⱼ * df'` INSIDE those loops -- 78 outer products per edge.
+#
+# Every one of those is O(N_RNL) or O(N_A x nneigh) per edge, independent of how few rows the
+# edge's species pair actually populates.  B1 pruned the tables; the pruning bought nothing
+# because steps 1, 4 and 5 immediately re-spent it at full width.
+#
+# B2 evaluates per NEIGHBOUR instead, in two passes over the neighbour list:
+#
+#   pass 1  `_embed_ed!`   -- for each edge: the narrow radial vector `SVector{M_RNL}` (only
+#                             the rows that pair populates), the solid harmonics, and an
+#                             accumulation into A restricted to that pair's A block.  The
+#                             per-edge data is kept in an isbits `NeighCache` in the caller's
+#                             workspace.
+#   (tensor) `_energy_and_∂A!` -- AA, B, the readout, and the pullback down to ∂A.  Unchanged
+#                             in substance from before; Task 7 replaces it with a DAG.
+#   pass 2  `_forces_from_∂A!` -- for each edge: one `(g, v)` from that pair's A block, ONE
+#                             `f`, ONE rank-1 virial update.
+#
+# The per-pair A block is `ABLOCK_k`: the A indices `a` whose `Rnl` row belongs to pair `k`'s
+# row set, together with the LOCAL slot of that row in the narrow radial vector and the Ylm
+# index.  Restricting the accumulation to it is exact and not merely accurate: a row outside
+# the pair's set is identically zero in `_evaluate_Rnl_pair_m`'s output (that is what
+# `_radial_mixing` / `hermite_pair_rows` select on), so the terms dropped are `0.0 * Ylm`.
+#
+# WORKSPACE.  All scratch lives in a caller-supplied `Workspace`, so the library is re-entrant:
+# the LAMMPS plugin holds one per OpenMP thread and the ASE calculator one per instance.  There
+# is no `MAX_NEIGHBORS`: `ws.nb` is `resize!`d, and `NeighCache` is isbits precisely so that
+# `resize!` on a `Vector{NeighCache}` survives `--trim=safe`.
+#
+# ============================================================================================
+#
 # The emitted evaluation functions always call `pair_energy` / `pair_energy_d`; when the
 # exported model has no ETPairModel those are the zero stubs from `_write_no_pair_basis`,
 # which makes every pair contribution an exact no-op.
@@ -9,10 +55,51 @@
 # of one comment line in the generated file.  The pair call sites are emitted either way.
 # Do not add logic behind it without also removing that guarantee from
 # `_write_no_pair_basis`'s contract.
-function _write_evaluation_functions(io, tensor, NZ, has_pair)
-    # Get dimensions for pre-allocation
+#
+# `pair_rows[k]` is the ORDERED pair `k`'s radial row set, in the order the narrow radial
+# vector carries it.  It comes from whichever radial writer ran (`_write_etace_radial_basis`
+# returns it; `hermite_pair_rows` computes it for the spline mode) -- never recomputed here,
+# because a second reading of the same data that drifts out of step would produce a kernel
+# that indexes the wrong radial slot and is wrong by a smooth, plausible-looking amount.
+
+"""
+    _ablocks(tensor, pair_rows) -> Vector{Vector{Tuple{Int,Int,Int}}}
+
+For each ORDERED species pair `k`, the list of `(a, s, y)` triples driving both the forward
+A accumulation and the force assembly:
+
+  * `a` -- index into `A` (and into `∂A`),
+  * `s` -- LOCAL slot of that A function's `Rnl` row in pair `k`'s narrow radial vector,
+  * `y` -- index into the solid harmonics.
+
+i.e. `A[a] += R[s] * Y[y]` for every edge of species pair `k`, which is exactly the subset of
+`ABASIS_SPEC` whose radial row `k` populates.  Every other entry of `ABASIS_SPEC` contributes
+`0.0 * Y[y]` for such an edge, so this restriction changes no value.
+"""
+function _ablocks(tensor, pair_rows)
+    spec = collect(tensor.abasis.spec)
+    blocks = Vector{Vector{Tuple{Int,Int,Int}}}(undef, length(pair_rows))
+    for k in eachindex(pair_rows)
+        rows = pair_rows[k]
+        slot = Dict{Int,Int}(t => i for (i, t) in enumerate(rows))
+        blk = Tuple{Int,Int,Int}[]
+        for (a, ϕ) in enumerate(spec)
+            t = Int(ϕ[1])
+            haskey(slot, t) && push!(blk, (a, slot[t], Int(ϕ[2])))
+        end
+        blocks[k] = blk
+    end
+    return blocks
+end
+
+function _write_evaluation_functions(io, tensor, NZ, has_pair, pair_rows)
     nA = length(tensor.abasis)
     nAA = length(tensor.aabasis)
+    @assert length(pair_rows) == NZ^2 """
+        the radial writer returned $(length(pair_rows)) per-pair row sets, expected
+        NZ^2 = $(NZ^2) (one per ORDERED pair)"""
+
+    blocks = _ablocks(tensor, pair_rows)
 
     println(io, "# Pair potential term in the site energy: " *
                 (has_pair ? "ACTIVE (ETPairModel exported above)" :
@@ -20,258 +107,195 @@ function _write_evaluation_functions(io, tensor, NZ, has_pair)
 
     println(io, """
 # ============================================================================
-# PRE-ALLOCATED WORK ARRAYS (avoid allocations in hot paths)
+# WORKSPACE (no globals, no neighbour cap -- the library is re-entrant)
 # ============================================================================
+#
+# One Workspace per concurrent caller.  The LAMMPS plugin allocates one per OpenMP thread via
+# ace_workspace_new(); the Python calculator holds one per instance.  Nothing here is global,
+# so two threads evaluating two sites at once produce bitwise the serial answer.
 
-const MAX_NEIGHBORS = 256  # Maximum number of neighbors per site
+const N_A = $nA
+const N_AA = $nAA
 
-# Work arrays for embeddings (indexed as [neighbor, feature])
-# Layout matches the abasis inner loop: Rnl[j, ϕ1] with j varying is contiguous
-const WORK_Rnl = zeros(Float64, MAX_NEIGHBORS, N_RNL)
-const WORK_dRnl = zeros(Float64, MAX_NEIGHBORS, N_RNL)
-const WORK_Ylm = zeros(Float64, MAX_NEIGHBORS, N_YLM)
-const WORK_dYlm = zeros(SVector{3, Float64}, MAX_NEIGHBORS, N_YLM)
-const WORK_rs = zeros(Float64, MAX_NEIGHBORS)
-const WORK_rhats = zeros(SVector{3, Float64}, MAX_NEIGHBORS)
+# Per-neighbour data carried from pass 1 to pass 2.  isbits (every field is a scalar or an
+# SVector of scalars), which is what lets `resize!(ws.nb, n)` compile under --trim=safe.
+struct NeighCache
+    jz::Int                                   # neighbour species index (0 for a skipped edge)
+    r::Float64
+    rhat::SVector{3, Float64}
+    R::SVector{M_RNL, Float64}                # narrow radial values, pair-local slots
+    dR::SVector{M_RNL, Float64}               # dR/dr, same slots
+    Y::SVector{N_YLM, Float64}
+    dY::SVector{N_YLM, SVector{3, Float64}}   # dR_lm/dR (solid harmonics: direct gradient)
+end
 
-# Work arrays for tensor evaluation
-const WORK_A = zeros(Float64, $nA)
-const WORK_AA = zeros(Float64, $nAA)
-const WORK_B = zeros(Float64, N_BASIS)
+@inline _empty_cache() = NeighCache(0, 0.0, zero(SVector{3, Float64}),
+                                    zero(SVector{M_RNL, Float64}), zero(SVector{M_RNL, Float64}),
+                                    zero(SVector{N_YLM, Float64}),
+                                    zero(SVector{N_YLM, SVector{3, Float64}}))
 
-# Work arrays for pullback
-const WORK_∂A = zeros(Float64, $nA)
-const WORK_∂AA = zeros(Float64, $nAA)
-const WORK_∂Rnl = zeros(Float64, MAX_NEIGHBORS, N_RNL)
-const WORK_∂Ylm = zeros(Float64, MAX_NEIGHBORS, N_YLM)
-const WORK_∂B = zeros(Float64, N_BASIS)
+mutable struct Workspace
+    A::Vector{Float64}
+    AA::Vector{Float64}
+    B::Vector{Float64}
+    ∂A::Vector{Float64}
+    ∂AA::Vector{Float64}
+    nb::Vector{NeighCache}
+end
 
+new_workspace() = Workspace(zeros(Float64, N_A), zeros(Float64, N_AA), zeros(Float64, N_BASIS),
+                            zeros(Float64, N_A), zeros(Float64, N_AA), NeighCache[])
+""")
+
+    # ---- E0 lookup -----------------------------------------------------------------------
+    println(io, "# Reference energy of the centre species")
+    println(io, "@inline function E0_of(iz0::Int)")
+    _emit_species_dispatch(io, NZ, "    ", iz -> "return E0_$iz")
+    println(io, "    error(\"E0_of: species index \$iz0 is outside 1:\$NZ\")")
+    println(io, "end")
+    println(io)
+
+    # ---- per-pair A accumulation and force blocks ----------------------------------------
+    println(io, """
 # ============================================================================
-# EVALUATION FUNCTIONS
+# PER-PAIR A BLOCKS (the species-block accumulation)
 # ============================================================================
+#
+# `_accA_k!` is the subset of ABASIS_SPEC that pair k's radial rows feed, written as straight
+# line code over compile-time indices.  `_forceblk_k` is its transpose, grouped so that the
+# per-edge work is the block's size and not N_RNL + N_YLM:
+#
+#   w[s] = Σ_{a in block, slot s} ∂A[a] * Y[y]     (this pair's rows of ∂Rnl)
+#   g    = Σ_s w[s] * dR[s]                        (scalar; multiplied by r̂ by the caller)
+#   u[y] = Σ_{a in block, harmonic y} ∂A[a] * R[s] (this pair's ∂Ylm)
+#   v    = Σ_y u[y] * dY[y]                        (SVector{3})
+#
+# so each edge contributes ONE force vector and ONE rank-1 virial update, instead of one per
+# (n,l) and one per lm.""")
 
-# Compute embeddings for all neighbors (values only)
-# Uses pre-allocated arrays, returns views
-function compute_embeddings(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
-    nneigh = length(Rs)
-    @assert nneigh <= MAX_NEIGHBORS "site has \$nneigh neighbours; this export supports at most \$MAX_NEIGHBORS (re-export after Task 6 removes the cap)"
-    iz0 = z2i(Z0)
-
-    # Get views into pre-allocated arrays
-    Rnl = view(WORK_Rnl, 1:nneigh, :)
-    Ylm = view(WORK_Ylm, 1:nneigh, :)
-
-    @inbounds for j in 1:nneigh
-        r = norm(Rs[j])
-        if r > 1e-10
-            jz = z2i(Zs[j])
-            Rnl_j = evaluate_Rnl(r, iz0, jz)
-            @simd for t in 1:N_RNL
-                WORK_Rnl[j, t] = Rnl_j[t]
-            end
-
-            # Solid harmonics: evaluate with full R vector (not unit vector!)
-            Ylm_j = eval_ylm(Rs[j])
-            @simd for t in 1:N_YLM
-                WORK_Ylm[j, t] = Ylm_j[t]
-            end
+    for k = 1:NZ^2
+        blk = blocks[k]
+        rows = pair_rows[k]
+        m = length(rows)
+        println(io, "\n# --- pair $k: $(length(blk)) of $nA A functions, $m radial rows ---")
+        # forward
+        println(io, "@inline function _accA_$(k)!(A::Vector{Float64}, R::SVector{M_RNL, Float64}, Y::SVector{N_YLM, Float64})")
+        if isempty(blk)
+            println(io, "    return nothing")
         else
-            # Zero out for this neighbor (r too small)
-            @simd for t in 1:N_RNL
-                WORK_Rnl[j, t] = 0.0
+            println(io, "    @inbounds begin")
+            for (a, sl, y) in blk
+                println(io, "        A[$a] += R[$sl] * Y[$y]")
             end
-            @simd for t in 1:N_YLM
-                WORK_Ylm[j, t] = 0.0
-            end
+            println(io, "    end")
+            println(io, "    return nothing")
         end
-    end
+        println(io, "end")
 
-    return Rnl, Ylm
-end
-
-# Compute embeddings with derivatives for analytic forces
-# Uses pre-allocated arrays, returns views
-function compute_embeddings_ed(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
-    nneigh = length(Rs)
-    @assert nneigh <= MAX_NEIGHBORS "site has \$nneigh neighbours; this export supports at most \$MAX_NEIGHBORS (re-export after Task 6 removes the cap)"
-    iz0 = z2i(Z0)
-
-    # Get views into pre-allocated arrays
-    Rnl = view(WORK_Rnl, 1:nneigh, :)
-    dRnl = view(WORK_dRnl, 1:nneigh, :)
-    Ylm = view(WORK_Ylm, 1:nneigh, :)
-    dYlm = view(WORK_dYlm, 1:nneigh, :)
-    rs = view(WORK_rs, 1:nneigh)
-    rhats = view(WORK_rhats, 1:nneigh)
-
-    @inbounds for j in 1:nneigh
-        r = norm(Rs[j])
-        WORK_rs[j] = r
-        if r > 1e-10
-            rhat = Rs[j] / r
-            WORK_rhats[j] = rhat
-            jz = z2i(Zs[j])
-
-            # Radial basis with derivative
-            Rnl_j, dRnl_j = evaluate_Rnl_d(r, iz0, jz)
-            @simd for t in 1:N_RNL
-                WORK_Rnl[j, t] = Rnl_j[t]
-                WORK_dRnl[j, t] = dRnl_j[t]
-            end
-
-            # Solid harmonics with derivatives (evaluated with full R vector)
-            # dYlm returns dR_lm/dR directly (not dY_lm/dr̂)
-            Ylm_j, dYlm_j = eval_ylm_ed(Rs[j])
-            @simd for t in 1:N_YLM
-                WORK_Ylm[j, t] = Ylm_j[t]
-                WORK_dYlm[j, t] = dYlm_j[t]
-            end
+        # backward
+        println(io, "@inline function _forceblk_$k(∂A::Vector{Float64}, R::SVector{M_RNL, Float64}, " *
+                    "dR::SVector{M_RNL, Float64}, Y::SVector{N_YLM, Float64}, " *
+                    "dY::SVector{N_YLM, SVector{3, Float64}})")
+        if isempty(blk)
+            println(io, "    return 0.0, zero(SVector{3, Float64})")
         else
-            # Zero out for this neighbor (r too small)
-            WORK_rhats[j] = zero(SVector{3, Float64})
-            @simd for t in 1:N_RNL
-                WORK_Rnl[j, t] = 0.0
-                WORK_dRnl[j, t] = 0.0
+            slots = sort(unique(t[2] for t in blk))
+            ylms  = sort(unique(t[3] for t in blk))
+            println(io, "    @inbounds begin")
+            for sl in slots
+                println(io, "        w_$sl = 0.0")
+                for (a, s2, y) in blk
+                    s2 == sl && println(io, "        w_$sl += ∂A[$a] * Y[$y]")
+                end
             end
-            @simd for t in 1:N_YLM
-                WORK_Ylm[j, t] = 0.0
-                WORK_dYlm[j, t] = zero(SVector{3, Float64})
+            println(io, "        g = 0.0")
+            for sl in slots
+                println(io, "        g += w_$sl * dR[$sl]")
             end
+            for y in ylms
+                println(io, "        u_$y = 0.0")
+                for (a, s2, y2) in blk
+                    y2 == y && println(io, "        u_$y += ∂A[$a] * R[$s2]")
+                end
+            end
+            println(io, "        v = zero(SVector{3, Float64})")
+            for y in ylms
+                println(io, "        v += u_$y * dY[$y]")
+            end
+            println(io, "        return g, v")
+            println(io, "    end")
         end
+        println(io, "end")
     end
-
-    return Rnl, dRnl, Ylm, dYlm, rs, rhats
-end
-
-# Site energy evaluation
-function site_energy(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
-    iz0 = z2i(Z0)
-
-    if length(Rs) == 0
-        # Return E0 for isolated atom
-""")
-
-    # Write E0 lookup
-    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz")
+    println(io)
 
     println(io, """
-    end
-
-    # Compute embeddings
-    Rnl, Ylm = compute_embeddings(Rs, Zs, Z0)
-
-    # Evaluate tensor (using manual inline evaluation, trim-safe)
-    B, _ = tensor_evaluate(Rnl, Ylm)
-
-    # Contract with weights
-    val = 0.0
-""")
-
-    # Write weight contraction
-    _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["val = dot(B, WB_$iz)"])
-
-    # Pair potential term. `pair_energy_d` is always defined; without an ETPairModel in the
-    # stack it returns (0.0, 0.0), which leaves `val` bit-identical.
-    println(io, """
-    # Pair potential (ordered pair: centre species first)
-    @inbounds for j in 1:length(Rs)
-        r = norm(Rs[j])
-        if r > 1e-10
-            val += pair_energy(r, iz0, z2i(Zs[j]))
-        end
-    end""")
-
-    # Add E0
-    println(io, "\n    # Add reference energy")
-    _emit_species_dispatch(io, NZ, "    ", iz -> "val += E0_$iz")
+@inline function _accumulate_A_block!(A::Vector{Float64}, R::SVector{M_RNL, Float64},
+                                      Y::SVector{N_YLM, Float64}, k::Int)""")
+    _emit_pair_dispatch(io, NZ, "    ", k -> "return _accA_$(k)!(A, R, Y)")
+    println(io, "    error(\"_accumulate_A_block!: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
+    println(io, "end")
+    println(io)
 
     println(io, """
+@inline function _force_block(∂A::Vector{Float64}, nb::NeighCache, k::Int)""")
+    _emit_pair_dispatch(io, NZ, "    ", k -> "return _forceblk_$k(∂A, nb.R, nb.dR, nb.Y, nb.dY)")
+    println(io, "    error(\"_force_block: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
+    println(io, "end")
+    println(io)
 
-    return val
-end
-
-# Site basis evaluation (returns raw basis vector without weight contraction)
-function site_basis(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
-    if length(Rs) == 0
-        # Return zeros for isolated atom
-        return zeros(Float64, N_BASIS)
-    end
-
-    # Compute embeddings
-    Rnl, Ylm = compute_embeddings(Rs, Zs, Z0)
-
-    # Evaluate tensor (using manual inline evaluation, trim-safe)
-    B, _ = tensor_evaluate(Rnl, Ylm)
-
-    return collect(B)
-end
-
-# ============================================================================
-# MANUAL PULLBACK FUNCTIONS (trim-safe)
-# ============================================================================
-
-# Static product with gradient (for SparseSymmProd pullback)
-@inline function _static_prod_ed(b::NTuple{1, T}) where {T}
-    return b[1], (one(T),)
-end
-
-@inline function _static_prod_ed(b::NTuple{2, T}) where {T}
-    return b[1] * b[2], (b[2], b[1])
-end
-
-@inline function _static_prod_ed(b::NTuple{3, T}) where {T}
-    p12 = b[1] * b[2]
-    return p12 * b[3], (b[2] * b[3], b[1] * b[3], p12)
-end
-
-@inline function _static_prod_ed(b::NTuple{4, T}) where {T}
-    p12 = b[1] * b[2]
-    p34 = b[3] * b[4]
-    return p12 * p34, (b[2] * p34, b[1] * p34, p12 * b[4], p12 * b[3])
-end
-
-# Manual pullback through PooledSparseProduct (abasis): ∂A -> (∂Rnl, ∂Ylm)
-# This is the key function that replaces ET.pullback for the abasis
-@inline function pullback_abasis!(∂Rnl, ∂Ylm, ∂A, Rnl, Ylm)
-    nX = size(Rnl, 1)
-
-    @inbounds for (iA, ϕ) in enumerate(ABASIS_SPEC)
-        ϕ1, ϕ2 = ϕ  # (Rnl index, Ylm index)
-        ∂A_iA = ∂A[iA]
-        @simd ivdep for j = 1:nX
-            ∂Rnl[j, ϕ1] += ∂A_iA * Ylm[j, ϕ2]
-            ∂Ylm[j, ϕ2] += ∂A_iA * Rnl[j, ϕ1]
-        end
-    end
-    return ∂Rnl, ∂Ylm
-end
-""")
-
-    # Write the aabasis pullback with the correct order
+    # ---- aabasis forward -----------------------------------------------------------------
     aabasis = tensor.aabasis
     max_order = length(aabasis.specs)
 
     println(io, """
-# Manual pullback through SparseSymmProd (aabasis): ∂AA -> ∂A
-# Note: Accepts any array types to support views
-@inline function pullback_aabasis!(∂A, ∂AA, A)
-""")
+# ============================================================================
+# TENSOR: A -> AA -> B  and its pullback  ∂B -> ∂AA -> ∂A   (trim-safe, manual)
+# ============================================================================
 
-    # Generate pullback code for each order
+# Manual forward pass through SparseSymmProd (aabasis): A -> AA
+@inline function evaluate_aabasis!(AA::Vector{Float64}, A::Vector{Float64})
+""")
     for ord in 1:max_order
         spec = aabasis.specs[ord]
+        isempty(spec) && continue
         range_start = aabasis.ranges[ord].start
         range_stop = aabasis.ranges[ord].stop
-
-        if isempty(spec)
-            continue
+        println(io, "    # Order $ord terms (indices $range_start:$range_stop)")
+        println(io, "    @inbounds for (i_local, ϕ) in enumerate(AABASIS_SPECS_$ord)")
+        println(io, "        i = $(range_start - 1) + i_local")
+        if ord == 1
+            println(io, "        AA[i] = A[ϕ[1]]")
+        elseif ord == 2
+            println(io, "        AA[i] = A[ϕ[1]] * A[ϕ[2]]")
+        elseif ord == 3
+            println(io, "        AA[i] = A[ϕ[1]] * A[ϕ[2]] * A[ϕ[3]]")
+        elseif ord == 4
+            println(io, "        AA[i] = A[ϕ[1]] * A[ϕ[2]] * A[ϕ[3]] * A[ϕ[4]]")
+        else
+            println(io, "        AA[i] = prod(A[ϕ[t]] for t in 1:$ord)")
         end
+        println(io, "    end")
+        println(io)
+    end
+    println(io, "    return AA")
+    println(io, "end")
+    println(io)
 
+    # ---- aabasis pullback ----------------------------------------------------------------
+    println(io, """
+# Manual pullback through SparseSymmProd (aabasis): ∂AA -> ∂A
+@inline function pullback_aabasis!(∂A::Vector{Float64}, ∂AA::Vector{Float64}, A::Vector{Float64})
+""")
+    for ord in 1:max_order
+        spec = aabasis.specs[ord]
+        isempty(spec) && continue
+        range_start = aabasis.ranges[ord].start
+        range_stop = aabasis.ranges[ord].stop
         println(io, "    # Order $ord terms (indices $range_start:$range_stop)")
         println(io, "    @inbounds for (i_local, ϕ) in enumerate(AABASIS_SPECS_$ord)")
         println(io, "        i = $(range_start - 1) + i_local")
         println(io, "        ∂AA_i = ∂AA[i]")
-
         if ord == 1
             println(io, "        ∂A[ϕ[1]] += ∂AA_i")
         elseif ord == 2
@@ -290,7 +314,6 @@ end
             println(io, "        ∂A[ϕ[3]] += ∂AA_i * a1 * a2 * a4")
             println(io, "        ∂A[ϕ[4]] += ∂AA_i * a1 * a2 * a3")
         else
-            # General case using _static_prod_ed
             println(io, "        aa = ntuple(t -> A[ϕ[t]], Val($ord))")
             println(io, "        _, gi = _static_prod_ed(aa)")
             println(io, "        for t in 1:$ord")
@@ -300,307 +323,263 @@ end
         println(io, "    end")
         println(io)
     end
-
     println(io, "    return ∂A")
     println(io, "end")
     println(io)
 
-    # Write the full tensor pullback
+    # ---- A2B, readout, embeddings, entry points ------------------------------------------
     println(io, """
-# ============================================================================
-# MANUAL FORWARD EVALUATION FUNCTIONS (trim-safe)
-# ============================================================================
+# Static product with gradient (general-order fallback used by pullback_aabasis!)
+@inline _static_prod_ed(b::NTuple{1, T}) where {T} = (b[1], (one(T),))
+@inline _static_prod_ed(b::NTuple{2, T}) where {T} = (b[1] * b[2], (b[2], b[1]))
+@inline function _static_prod_ed(b::NTuple{3, T}) where {T}
+    p12 = b[1] * b[2]
+    return p12 * b[3], (b[2] * b[3], b[1] * b[3], p12)
+end
+@inline function _static_prod_ed(b::NTuple{4, T}) where {T}
+    p12 = b[1] * b[2]
+    p34 = b[3] * b[4]
+    return p12 * p34, (b[2] * p34, b[1] * p34, p12 * b[4], p12 * b[3])
+end
 
-# Manual forward pass through PooledSparseProduct (abasis): (Rnl, Ylm) -> A
-# This replaces ET.evaluate! for the abasis
-@inline function evaluate_abasis!(A, Rnl, Ylm)
-    nX = size(Rnl, 1)
-
-    @inbounds for (iA, ϕ) in enumerate(ABASIS_SPEC)
-        ϕ1, ϕ2 = ϕ  # (Rnl index, Ylm index)
-        acc = 0.0
-        @simd ivdep for j = 1:nX
-            acc += Rnl[j, ϕ1] * Ylm[j, ϕ2]
-        end
-        A[iA] = acc
+# AA -> B  (sparse A2Bmap product)
+@inline function _tensor_B!(ws::Workspace)
+    evaluate_aabasis!(ws.AA, ws.A)
+    B = ws.B
+    fill!(B, 0.0)
+    AA = ws.AA
+    @inbounds for idx in eachindex(A2BMAP_1_I)
+        B[A2BMAP_1_I[idx]] += A2BMAP_1_V[idx] * AA[A2BMAP_1_J[idx]]
     end
-    return A
-end""")
+    return B
+end
 
-    # Get number of A basis functions
-    nA = length(tensor.abasis)
-    nAA = length(tensor.aabasis)
+# ============================================================================
+# PASS 1: per-neighbour embeddings, A accumulated inside the pair's block only
+# ============================================================================
 
-    println(io, """
+# Values only (the site_energy route).  Returns the pair-potential sum.
+@inline function _embed_val!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
+                             Zs::AbstractVector{<:Integer}, iz0::Int)
+    A = ws.A
+    fill!(A, 0.0)
+    Epair = 0.0
+    @inbounds for j in 1:length(Rs)
+        Rj = Rs[j]
+        r = norm(Rj)
+        r <= 1e-10 && continue
+        jz = z2i(Zs[j])
+        k = pair_idx(iz0, jz)
+        R = _evaluate_Rnl_pair_m(r, k)
+        Y = eval_ylm(Rj)
+        _accumulate_A_block!(A, R, Y, k)
+        Epair += pair_energy(r, iz0, jz)
+    end
+    return Epair
+end
 
-# Manual forward pass through SparseSymmProd (aabasis): A -> AA
-# This replaces ET.evaluate for the aabasis
-# Note: Accepts any array types to support views
-@inline function evaluate_aabasis!(AA, A)
-""")
-
-    # Generate forward pass code for each order
-    aabasis = tensor.aabasis
-    max_order = length(aabasis.specs)
-
-    for ord in 1:max_order
-        spec = aabasis.specs[ord]
-        range_start = aabasis.ranges[ord].start
-        range_stop = aabasis.ranges[ord].stop
-
-        if isempty(spec)
+# With derivatives (the force routes).  Fills A and the per-neighbour cache.
+@inline function _embed_ed!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
+                            Zs::AbstractVector{<:Integer}, iz0::Int)
+    nneigh = length(Rs)
+    resize!(ws.nb, nneigh)
+    A = ws.A
+    fill!(A, 0.0)
+    @inbounds for j in 1:nneigh
+        Rj = Rs[j]
+        r = norm(Rj)
+        if r <= 1e-10
+            ws.nb[j] = _empty_cache()
             continue
         end
-
-        println(io, "    # Order $ord terms (indices $range_start:$range_stop)")
-        println(io, "    @inbounds for (i_local, ϕ) in enumerate(AABASIS_SPECS_$ord)")
-        println(io, "        i = $(range_start - 1) + i_local")
-
-        if ord == 1
-            println(io, "        AA[i] = A[ϕ[1]]")
-        elseif ord == 2
-            println(io, "        AA[i] = A[ϕ[1]] * A[ϕ[2]]")
-        elseif ord == 3
-            println(io, "        AA[i] = A[ϕ[1]] * A[ϕ[2]] * A[ϕ[3]]")
-        elseif ord == 4
-            println(io, "        AA[i] = A[ϕ[1]] * A[ϕ[2]] * A[ϕ[3]] * A[ϕ[4]]")
-        else
-            # General case
-            println(io, "        AA[i] = prod(A[ϕ[t]] for t in 1:$ord)")
-        end
-        println(io, "    end")
-        println(io)
+        jz = z2i(Zs[j])
+        k = pair_idx(iz0, jz)
+        R, dR = _evaluate_Rnl_d_pair_m(r, k)
+        Y, dY = eval_ylm_ed(Rj)
+        _accumulate_A_block!(A, R, Y, k)
+        ws.nb[j] = NeighCache(jz, r, Rj / r, R, dR, Y, dY)
     end
+    return nothing
+end
+""")
 
-    println(io, "    return AA")
-    println(io, "end")
-    println(io)
-
-    # Write full tensor forward evaluation
+    # ---- energy + ∂A ---------------------------------------------------------------------
     println(io, """
-# Full manual forward pass through tensor: (Rnl, Ylm) -> B
-# This replaces ET.evaluate with a trim-safe implementation
-# Uses pre-allocated work arrays to avoid allocations
-function tensor_evaluate(Rnl, Ylm)
-    # Reset and use pre-allocated arrays
-    fill!(WORK_A, 0.0)
-    fill!(WORK_AA, 0.0)
-    fill!(WORK_B, 0.0)
-
-    # Step 1: A = evaluate(abasis, Rnl, Ylm)
-    evaluate_abasis!(WORK_A, Rnl, Ylm)
-
-    # Step 2: AA = evaluate(aabasis, A)
-    evaluate_aabasis!(WORK_AA, WORK_A)
-
-    # Step 3: B = A2Bmap * AA (sparse matrix-vector multiplication)
-    @inbounds for (idx, I) in enumerate(A2BMAP_1_I)
-        J = A2BMAP_1_J[idx]
-        V = A2BMAP_1_V[idx]
-        WORK_B[I] += V * WORK_AA[J]
-    end
-
-    return WORK_B, WORK_A
+# ============================================================================
+# TENSOR STEP: energy readout, and ∂A for the force pass
+# ============================================================================
+#
+# ∂Ei/∂B is the readout weight vector WB itself, so the transposed A2B product is taken
+# directly against WB rather than through a ∂B copy of it.  (Folding A2Bmap' * WB into a
+# per-species constant is Task 7's `ctilde`; it is deliberately NOT done here, so that this
+# task's parity figures attribute only to the kernel restructuring.)
+@inline function _energy_and_∂A!(ws::Workspace, iz0::Int)
+    B = _tensor_B!(ws)
+    ∂AA = ws.∂AA
+    fill!(∂AA, 0.0)
+    Ei = 0.0""")
+    _emit_species_dispatch_multi(io, NZ, "    ", iz -> [
+        "Ei = dot(B, WB_$iz)",
+        "@inbounds for idx in eachindex(A2BMAP_1_I)",
+        "    ∂AA[A2BMAP_1_J[idx]] += A2BMAP_1_V[idx] * WB_$(iz)[A2BMAP_1_I[idx]]",
+        "end",
+    ])
+    println(io, """
+    ∂A = ws.∂A
+    fill!(∂A, 0.0)
+    pullback_aabasis!(∂A, ∂AA, ws.A)
+    return Ei
 end
 
 # ============================================================================
-# MANUAL PULLBACK FUNCTIONS (trim-safe)
+# PASS 2: forces (and virial) from ∂A
 # ============================================================================
-
-# Full manual pullback through tensor: ∂B -> (∂Rnl, ∂Ylm)
-# This replaces ET.pullback with a trim-safe implementation
-# Uses pre-allocated work arrays to avoid allocations
-function tensor_pullback!(∂Rnl, ∂Ylm, ∂B, Rnl, Ylm, A)
-    # Reset pre-allocated arrays
-    fill!(WORK_∂AA, 0.0)
-    fill!(WORK_∂A, 0.0)
-
-    # Step 1: ∂AA = A2Bmap' * ∂B (sparse transpose multiplication)
-    @inbounds for (I_idx, I) in enumerate(A2BMAP_1_I)
-        J = A2BMAP_1_J[I_idx]
-        V = A2BMAP_1_V[I_idx]
-        WORK_∂AA[J] += V * ∂B[I]  # Transpose: A2Bmap'[J,I] = A2Bmap[I,J]
+#
+# One force vector and ONE rank-1 virial update per EDGE.  Before B2 the virial was updated
+# once per (n,l) and once per lm inside the force loop: 78 outer products per edge on Cantor,
+# which is the same number in exact arithmetic and 78x the work.
+@inline function _forces_from_∂A!(forces::AbstractVector{SVector{3, Float64}}, ws::Workspace,
+                                  Rs::AbstractVector{SVector{3, Float64}}, iz0::Int,
+                                  with_virial::Bool)
+    ∂A = ws.∂A
+    Epair = 0.0
+    vir = zero(SMatrix{3, 3, Float64, 9})
+    @inbounds for j in 1:length(Rs)
+        nb = ws.nb[j]
+        if nb.r <= 1e-10
+            forces[j] = zero(SVector{3, Float64})
+            continue
+        end
+        k = pair_idx(iz0, nb.jz)
+        g, v = _force_block(∂A, nb, k)
+        # Pair potential (ordered pair: centre species first)
+        ep, dep = pair_energy_d(nb.r, iz0, nb.jz)
+        Epair += ep
+        f = (g + dep) * nb.rhat + v
+        forces[j] = -f          # force is the negative gradient
+        if with_virial
+            vir = vir - Rs[j] * f'
+        end
     end
-
-    # Step 2: ∂A = pullback_aabasis(∂AA, A)
-    pullback_aabasis!(WORK_∂A, WORK_∂AA, A)
-
-    # Step 3: (∂Rnl, ∂Ylm) = pullback_abasis(∂A, Rnl, Ylm)
-    pullback_abasis!(∂Rnl, ∂Ylm, WORK_∂A, Rnl, Ylm)
-
-    return ∂Rnl, ∂Ylm
+    return Epair, vir
 end
 
-# Site energy with ANALYTIC forces using manual pullback (trim-safe)
+# ============================================================================
+# ENTRY POINTS
+# ============================================================================
+#
+# The `!` forms take the workspace; the positional forms allocate one and are what the tests,
+# the diagnostic scripts and `_write_main` call.  Both compute the same expression in the same
+# order, so they agree bitwise.
+
+function site_energy!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
+                      Zs::AbstractVector{<:Integer}, Z0::Integer)
+    iz0 = z2i(Z0)
+    length(Rs) == 0 && return E0_of(iz0)
+    Epair = _embed_val!(ws, Rs, Zs, iz0)
+    B = _tensor_B!(ws)
+    Emb = 0.0""")
+    _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["Emb = dot(B, WB_$iz)"])
+    println(io, """    return (Emb + Epair) + E0_of(iz0)
+end
+
+function site_energy_forces_virial!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
+                                    Zs::AbstractVector{<:Integer}, Z0::Integer,
+                                    forces::AbstractVector{SVector{3, Float64}})
+    iz0 = z2i(Z0)
+    if length(Rs) == 0
+        return E0_of(iz0), zero(SMatrix{3, 3, Float64, 9})
+    end
+    _embed_ed!(ws, Rs, Zs, iz0)
+    Emb = _energy_and_∂A!(ws, iz0)
+    Epair, vir = _forces_from_∂A!(forces, ws, Rs, iz0, true)
+    return (Emb + Epair) + E0_of(iz0), vir
+end
+
+function site_energy_forces!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
+                             Zs::AbstractVector{<:Integer}, Z0::Integer,
+                             forces::AbstractVector{SVector{3, Float64}})
+    iz0 = z2i(Z0)
+    length(Rs) == 0 && return E0_of(iz0)
+    _embed_ed!(ws, Rs, Zs, iz0)
+    Emb = _energy_and_∂A!(ws, iz0)
+    Epair, _ = _forces_from_∂A!(forces, ws, Rs, iz0, false)
+    return (Emb + Epair) + E0_of(iz0)
+end
+
+function site_basis!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
+                     Zs::AbstractVector{<:Integer}, Z0::Integer)
+    length(Rs) == 0 && return zeros(Float64, N_BASIS)
+    _embed_val!(ws, Rs, Zs, z2i(Z0))
+    return copy(_tensor_B!(ws))
+end
+
+site_energy(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer) =
+    site_energy!(new_workspace(), Rs, Zs, Z0)
+
+site_basis(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer) =
+    site_basis!(new_workspace(), Rs, Zs, Z0)
+
 function site_energy_forces(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
-    iz0 = z2i(Z0)
-    nneigh = length(Rs)
-
-    if nneigh == 0
-        # Return E0 for isolated atom, no forces
-""")
-
-    # Write E0 lookup for forces function
-    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz, SVector{3, Float64}[]")
-
-    println(io, """
-    end
-
-    # Compute embeddings with derivatives
-    Rnl, dRnl, Ylm, dYlm, rs, rhats = compute_embeddings_ed(Rs, Zs, Z0)
-
-    # Evaluate tensor (using manual inline evaluation, trim-safe)
-    # Returns both B and A (A needed for pullback)
-    B, A = tensor_evaluate(Rnl, Ylm)
-
-    # Contract with weights to get energy
-    # Use pre-allocated ∂B array
-    fill!(WORK_∂B, 0.0)
-    Ei = 0.0
-""")
-
-    # Write weight contraction for forces
-    _emit_species_dispatch_multi(io, NZ, "    ", iz -> [
-        "Ei = dot(B, WB_$iz)",
-        "for k in 1:N_BASIS; WORK_∂B[k] = WB_$(iz)[k]; end  # ∂Ei/∂B = WB"
-    ])
-
-    println(io, """
-
-    # Backward pass through tensor using MANUAL pullback (trim-safe)
-    # Use pre-allocated arrays for gradients
-    ∂Rnl = view(WORK_∂Rnl, 1:nneigh, :)
-    ∂Ylm = view(WORK_∂Ylm, 1:nneigh, :)
-    @inbounds for j in 1:nneigh
-        @simd for t in 1:N_RNL; WORK_∂Rnl[j, t] = 0.0; end
-        @simd for t in 1:N_YLM; WORK_∂Ylm[j, t] = 0.0; end
-    end
-    tensor_pullback!(∂Rnl, ∂Ylm, WORK_∂B, Rnl, Ylm, A)
-
-    # Assemble forces: ∂Ei/∂Rⱼ
-    forces = Vector{SVector{3, Float64}}(undef, nneigh)
-    @inbounds for j in 1:nneigh
-        f = zero(SVector{3, Float64})
-        r = rs[j]
-        if r > 1e-10
-            rhat = rhats[j]
-            # Contribution from radial basis: ∂Ei/∂Rnl * dRnl/dr * r̂
-            for t in 1:N_RNL
-                f = f + (∂Rnl[j, t] * dRnl[j, t]) * rhat
-            end
-            # Contribution from solid harmonics: ∂Ei/∂R_lm * dR_lm/dR
-            # (dYlm is dR_lm/dR for solid harmonics - direct gradient, no chain rule needed)
-            for t in 1:N_YLM
-                f = f + ∂Ylm[j, t] * dYlm[j, t]
-            end
-            # Pair potential (ordered pair: centre species first)
-            ep, dep = pair_energy_d(r, iz0, z2i(Zs[j]))
-            Ei += ep
-            f = f + dep * rhat
-        end
-        forces[j] = -f  # Force is negative gradient
-    end
-
-    # Add reference energy
-""")
-
-    # Add E0
-    _emit_species_dispatch(io, NZ, "    ", iz -> "Ei += E0_$iz")
-
-    println(io, """
-
-    return Ei, forces
+    forces = Vector{SVector{3, Float64}}(undef, length(Rs))
+    E = site_energy_forces!(new_workspace(), Rs, Zs, Z0, forces)
+    return E, forces
 end
 
-# Site energy with forces AND virial stress using manual pullback (trim-safe)
 function site_energy_forces_virial(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
-    iz0 = z2i(Z0)
+    forces = Vector{SVector{3, Float64}}(undef, length(Rs))
+    E, V = site_energy_forces_virial!(new_workspace(), Rs, Zs, Z0, forces)
+    return E, forces, V
+end
+
+# ============================================================================
+# DIAGNOSTIC EMBEDDINGS (full width, allocating -- NOT on the hot path)
+# ============================================================================
+#
+# These reproduce the pre-B2 `compute_embeddings*` signatures at full N_RNL width, which is
+# what export/test/test_pair_export.jl uses to attribute the value-route / derivative-route
+# disagreement to the radial half or the spherical-harmonic half.  They allocate their own
+# output, so (unlike the pre-B2 versions, which shared one set of global scratch arrays)
+# the value-route result does NOT have to be copied before the derivative route runs.
+
+function compute_embeddings(Rs::AbstractVector{SVector{3, Float64}},
+                            Zs::AbstractVector{<:Integer}, Z0::Integer)
     nneigh = length(Rs)
-
-    # Initialize virial tensor (3x3 symmetric)
-    virial = zeros(SMatrix{3, 3, Float64, 9})
-
-    if nneigh == 0
-        # Return E0 for isolated atom, no forces/virial
-""")
-
-    # Write E0 lookup for virial function
-    _emit_species_dispatch(io, NZ, "        ", iz -> "return E0_$iz, SVector{3, Float64}[], virial")
-
-    println(io, """
+    iz0 = z2i(Z0)
+    Rnl = zeros(Float64, nneigh, N_RNL)
+    Ylm = zeros(Float64, nneigh, N_YLM)
+    for j in 1:nneigh
+        r = norm(Rs[j])
+        r <= 1e-10 && continue
+        Rj = evaluate_Rnl(r, iz0, z2i(Zs[j]))
+        Yj = eval_ylm(Rs[j])
+        for t in 1:N_RNL; Rnl[j, t] = Rj[t]; end
+        for t in 1:N_YLM; Ylm[j, t] = Yj[t]; end
     end
+    return Rnl, Ylm
+end
 
-    # Compute embeddings with derivatives
-    Rnl, dRnl, Ylm, dYlm, rs, rhats = compute_embeddings_ed(Rs, Zs, Z0)
-
-    # Evaluate tensor (using manual inline evaluation, trim-safe)
-    # Returns both B and A (A needed for pullback)
-    B, A = tensor_evaluate(Rnl, Ylm)
-
-    # Contract with weights to get energy
-    # Use pre-allocated ∂B array
-    fill!(WORK_∂B, 0.0)
-    Ei = 0.0
-""")
-
-    # Write weight contraction for virial
-    _emit_species_dispatch_multi(io, NZ, "    ", iz -> [
-        "Ei = dot(B, WB_$iz)",
-        "for k in 1:N_BASIS; WORK_∂B[k] = WB_$(iz)[k]; end  # ∂Ei/∂B = WB"
-    ])
-
-    println(io, """
-
-    # Backward pass through tensor using MANUAL pullback (trim-safe)
-    # Use pre-allocated arrays for gradients
-    ∂Rnl = view(WORK_∂Rnl, 1:nneigh, :)
-    ∂Ylm = view(WORK_∂Ylm, 1:nneigh, :)
-    @inbounds for j in 1:nneigh
-        @simd for t in 1:N_RNL; WORK_∂Rnl[j, t] = 0.0; end
-        @simd for t in 1:N_YLM; WORK_∂Ylm[j, t] = 0.0; end
+function compute_embeddings_ed(Rs::AbstractVector{SVector{3, Float64}},
+                               Zs::AbstractVector{<:Integer}, Z0::Integer)
+    nneigh = length(Rs)
+    iz0 = z2i(Z0)
+    Rnl = zeros(Float64, nneigh, N_RNL)
+    dRnl = zeros(Float64, nneigh, N_RNL)
+    Ylm = zeros(Float64, nneigh, N_YLM)
+    dYlm = fill(zero(SVector{3, Float64}), nneigh, N_YLM)
+    rs = zeros(Float64, nneigh)
+    rhats = fill(zero(SVector{3, Float64}), nneigh)
+    for j in 1:nneigh
+        r = norm(Rs[j])
+        rs[j] = r
+        r <= 1e-10 && continue
+        rhats[j] = Rs[j] / r
+        Rj, dRj = evaluate_Rnl_d(r, iz0, z2i(Zs[j]))
+        Yj, dYj = eval_ylm_ed(Rs[j])
+        for t in 1:N_RNL; Rnl[j, t] = Rj[t]; dRnl[j, t] = dRj[t]; end
+        for t in 1:N_YLM; Ylm[j, t] = Yj[t]; dYlm[j, t] = dYj[t]; end
     end
-    tensor_pullback!(∂Rnl, ∂Ylm, WORK_∂B, Rnl, Ylm, A)
-
-    # Assemble forces and virial
-    forces = Vector{SVector{3, Float64}}(undef, nneigh)
-    @inbounds for j in 1:nneigh
-        f = zero(SVector{3, Float64})
-        r = rs[j]
-        if r > 1e-10
-            rhat = rhats[j]
-            Rj = Rs[j]
-            # Contribution from radial basis
-            for t in 1:N_RNL
-                df = (∂Rnl[j, t] * dRnl[j, t]) * rhat
-                f = f + df
-                # Virial: -Rⱼ ⊗ fⱼ (outer product)
-                virial = virial - Rj * df'
-            end
-            # Contribution from solid harmonics: ∂Ei/∂R_lm * dR_lm/dR
-            for t in 1:N_YLM
-                df = ∂Ylm[j, t] * dYlm[j, t]
-                f = f + df
-                virial = virial - Rj * df'
-            end
-            # Pair potential (ordered pair: centre species first)
-            ep, dep = pair_energy_d(r, iz0, z2i(Zs[j]))
-            Ei += ep
-            dfp = dep * rhat
-            f = f + dfp
-            virial = virial - Rj * dfp'
-        end
-        forces[j] = -f
-    end
-
-    # Add reference energy
-""")
-
-    # Add E0 for virial
-    _emit_species_dispatch(io, NZ, "    ", iz -> "Ei += E0_$iz")
-
-    println(io, """
-
-    return Ei, forces, virial
+    return Rnl, dRnl, Ylm, dYlm, rs, rhats
 end
 """)
 end

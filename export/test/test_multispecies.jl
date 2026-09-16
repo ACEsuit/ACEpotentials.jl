@@ -403,24 +403,34 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         end
     end
 
-    # NOTE the name: this checks that a site with more than MAX_NEIGHBORS neighbours either
-    # evaluates or raises an error that NAMES the limit.  It does NOT prove the absence of a
-    # silent cap -- a build that quietly truncated the neighbour list and returned a plausible
-    # finite number would pass.  Task 6 removes the cap, at which point the first branch is
-    # the one that fires; the name must stay honest about what is actually asserted.
-    @testset "> MAX_NEIGHBORS either evaluates or errors clearly (not proof of no silent cap)" begin
+    # Task 6 removed the neighbour cap: there is no MAX_NEIGHBORS constant any more and the
+    # scratch arrays live in a per-call Workspace that is resize!d to the site.  What is
+    # asserted here is therefore stronger than before: a 300-neighbour site must EVALUATE,
+    # and the emitted source must not carry the constant or the old global work arrays.
+    #
+    # It is still not proof of the absence of a silent cap -- a build that quietly truncated
+    # the neighbour list would return a plausible finite number and pass.  The gate that
+    # actually catches truncation is the 1e-12 comparison against the Julia calculator on the
+    # real held-out configurations (check_export), whose Cantor sites carry ~200 neighbours.
+    @testset "a 300-neighbour site evaluates; the cap and the global scratch are gone" begin
         ex = Base.invokelatest(load_exported, f_poly)
-        n = ex.MAX_NEIGHBORS + 44
+        src = read(f_poly, String)
+        @test !occursin("MAX_NEIGHBORS", src)
+        @test !occursin("WORK_", src)
+        @test isdefined(ex, :MAX_NEIGHBORS) == false
+
+        n = 300
         Rs = [SVector(2.0 + 0.001k, 0.1, -0.05) for k in 1:n]
         Zs = fill(22, n)
-        r = try
-            Base.invokelatest(ex.site_energy, Rs, Zs, 22)
-        catch e
-            e
-        end
-        # Until Task 6 removes the cap this must be a clear error naming the limit;
-        # afterwards it must simply evaluate.
-        @test r isa Number || occursin("neighbours", sprint(showerror, r))
+        E = Base.invokelatest(ex.site_energy, Rs, Zs, 22)
+        @test isfinite(E)
+        Ef, Ff, Vf = Base.invokelatest(ex.site_energy_forces_virial, Rs, Zs, 22)
+        @test isfinite(Ef) && length(Ff) == n && all(isfinite, Vf)
+        # the same site through an explicitly supplied workspace is bitwise identical
+        ws = Base.invokelatest(ex.new_workspace)
+        F2 = Vector{SVector{3, Float64}}(undef, n)
+        E2, V2 = Base.invokelatest(ex.site_energy_forces_virial!, ws, Rs, Zs, 22, F2)
+        @test E2 === Ef && F2 == Ff && V2 == Vf
     end
 
 end

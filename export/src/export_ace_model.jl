@@ -309,7 +309,13 @@ function export_ace_model(calc::ETACEPotential, filename::String;
         _write_species(io, _i2z)
         _write_tensor(io, tensor)
 
-        # Write radial basis (hermite_spline or polynomial)
+        # Write radial basis (hermite_spline or polynomial).
+        #
+        # Both writers return the per-ORDERED-pair radial row sets: `pair_rows[k][i]` is the
+        # global (n,l) index carried in local slot `i` of the narrow `SVector{M_RNL}` that
+        # pair k's evaluator returns.  `_write_evaluation_functions` builds its per-pair A
+        # blocks from exactly this, so the kernel and the tables cannot drift apart.
+        pair_rows = Vector{Vector{Int}}()
         if radial_basis == :hermite_spline
             @info "Extracting Hermite cubic spline data for exact trim-safe export..."
             # Extract the Hermite spline data from the already-splinified model
@@ -321,12 +327,15 @@ function export_ace_model(calc::ETACEPotential, filename::String;
             # Generate Hermite spline code using codegen (trim-safe, exact)
             # `rnl_used` prunes the knot tables to the (n,l) rows the A basis actually reads
             # (Task 5 / B1); the rows it drops are exactly zero in every emitted quantity.
+            rnl_used = _rnl_used(tensor)
             spline_code = generate_hermite_spline_code(hermite_data, NZ, rcut;
-                                                       rnl_used = _rnl_used(tensor))
+                                                       rnl_used = rnl_used)
             print(io, spline_code)
             println(io)
+            rows_dict = hermite_pair_rows(hermite_data, rnl_used)
+            pair_rows = [rows_dict[k] for k = 1:NZ^2]
         elseif radial_basis == :polynomial
-            _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
+            pair_rows = _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
         else
             error("Unknown radial_basis option: $radial_basis. Use :hermite_spline or :polynomial")
         end
@@ -342,7 +351,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
 
         _write_spherical_harmonics(io, maxl)
         _write_etace_weights(io, W_readout, NZ, E0_dict, _i2z)
-        _write_evaluation_functions(io, tensor, NZ, pair_calc !== nothing)
+        _write_evaluation_functions(io, tensor, NZ, pair_calc !== nothing, pair_rows)
         if for_library
             _write_c_interface(io, NZ)
         else

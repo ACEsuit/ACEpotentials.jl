@@ -99,9 +99,10 @@ function _site_function_spread(ex, fx)
             d_sef = max(d_sef, abs(Ef - Ev))
             d_F = max(d_F, maximum(norm.(Ff .- Fv)))
 
-            # Attribute the site_energy spread to the radial half or the Ylm half.  Both
-            # entry points write the same WORK_* arrays, so the value-route results must be
-            # COPIED before the derivative route overwrites them.
+            # Attribute the site_energy spread to the radial half or the Ylm half.  Since
+            # Task 6 `compute_embeddings*` allocate their own output (they are diagnostics,
+            # not the kernel: the kernel is per-neighbour and never materialises a full-width
+            # Rnl), so no copy is needed before the derivative route runs.
             Rnl_v, Ylm_v = ex.compute_embeddings(Rs, Zs, Z0)
             Rv, Yv = Array(Rnl_v), Array(Ylm_v)
             emb = ex.compute_embeddings_ed(Rs, Zs, Z0)

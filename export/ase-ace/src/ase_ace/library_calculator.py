@@ -7,9 +7,13 @@ shared library (.so file) instead of running Julia via sockets. This approach:
 - Requires a deployment package created by ACEpotentials.jl
 - No Julia installation needed at runtime
 
-Note: Multi-threading is NOT supported with compiled libraries (--trim=safe
-removes the required closure specializations). For multi-threaded evaluation,
-use ACECalculator (socket-based) or LAMMPS with OpenMP.
+Threading: the library is RE-ENTRANT given one workspace per concurrent caller.  Each
+ACELibrary instance owns exactly one workspace (allocated in __init__, released in
+__del__), so one instance must not be driven from two threads at once; construct one
+ACELibrary per thread to evaluate concurrently.  The library itself still contains no
+internal threading (--trim=safe removes the closure specializations Threads.@threads needs);
+for threaded evaluation of one system use LAMMPS with OpenMP, which holds one workspace per
+OpenMP thread.
 """
 
 import ctypes
@@ -56,6 +60,26 @@ class ACELibrary:
         # Set up function signatures
         self._setup_functions()
 
+        # One evaluation workspace for this instance.  Every ace_site_* / ace_batch_* entry
+        # takes it as its first argument; the library holds no global scratch, which is what
+        # makes it re-entrant.  A library that predates the workspace API has no
+        # ace_workspace_new, and calling its ace_site_* through the current signatures would
+        # read z0 out of the handle slot and return a plausible wrong number -- so refuse.
+        try:
+            self.lib.ace_workspace_new.restype = ctypes.c_void_p
+            self.lib.ace_workspace_new.argtypes = []
+            self.lib.ace_workspace_free.restype = None
+            self.lib.ace_workspace_free.argtypes = [ctypes.c_void_p]
+        except AttributeError as exc:
+            raise RuntimeError(
+                f"{self.lib_path} does not export ace_workspace_new/ace_workspace_free. "
+                "It was compiled before the workspace C API; re-export and re-compile it "
+                "with the current export_ace_model.jl."
+            ) from exc
+        self._ws = self.lib.ace_workspace_new()
+        if not self._ws:
+            raise RuntimeError("ace_workspace_new() returned NULL")
+
         # Get potential info
         self.cutoff = self.lib.ace_get_cutoff()
         self.n_species = self.lib.ace_get_n_species()
@@ -80,6 +104,7 @@ class ACELibrary:
         # Site-level functions (always available)
         self.lib.ace_site_energy_forces_virial.restype = ctypes.c_double
         self.lib.ace_site_energy_forces_virial.argtypes = [
+            ctypes.c_void_p,                           # workspace handle
             ctypes.c_int,                              # z0
             ctypes.c_int,                              # nneigh
             ctypes.POINTER(ctypes.c_int),              # neighbor_z
@@ -93,6 +118,7 @@ class ACELibrary:
         try:
             self.lib.ace_batch_energy_forces_virial.restype = None
             self.lib.ace_batch_energy_forces_virial.argtypes = [
+                ctypes.c_void_p,                           # workspace handle
                 ctypes.c_int,                              # natoms
                 ctypes.POINTER(ctypes.c_int),              # z
                 ctypes.POINTER(ctypes.c_int),              # neighbor_counts
@@ -118,6 +144,7 @@ class ACELibrary:
 
             self.lib.ace_site_basis.restype = ctypes.c_int
             self.lib.ace_site_basis.argtypes = [
+                ctypes.c_void_p,                 # workspace handle
                 ctypes.c_int,                    # z0
                 ctypes.c_int,                    # nneigh
                 ctypes.POINTER(ctypes.c_int),    # neighbor_z
@@ -169,6 +196,7 @@ class ACELibrary:
         neighbor_Rij = np.ascontiguousarray(neighbor_Rij, dtype=np.float64).flatten()
 
         self.lib.ace_site_basis(
+            ctypes.c_void_p(self._ws),
             ctypes.c_int(z0),
             ctypes.c_int(nneigh),
             neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -189,7 +217,9 @@ class ACELibrary:
         """
         Compute energies, forces, and virials for multiple atoms.
 
-        Note: Threading is NOT available in --trim=safe compiled libraries.
+        Note: this call is sequential inside the library; it uses this instance's single
+        workspace.  Split the atom range across several ACELibrary instances to evaluate
+        concurrently.
         """
         natoms = len(z)
         total_neighbors = len(neighbor_z)
@@ -207,6 +237,7 @@ class ACELibrary:
         virials = np.zeros(natoms * 6, dtype=np.float64)
 
         self.lib.ace_batch_energy_forces_virial(
+            ctypes.c_void_p(self._ws),
             ctypes.c_int(natoms),
             z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
             neighbor_counts.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -243,6 +274,7 @@ class ACELibrary:
         virial_out = np.zeros(6, dtype=np.float64)
 
         energy = self.lib.ace_site_energy_forces_virial(
+            ctypes.c_void_p(self._ws),
             ctypes.c_int(z0),
             ctypes.c_int(nneigh),
             neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -253,6 +285,17 @@ class ACELibrary:
 
         return energy, forces_out.reshape(-1, 3), virial_out
 
+    def __del__(self):
+        # Release the workspace back to the library.  Guarded: __del__ can run during
+        # interpreter shutdown when self.lib or ctypes itself is already torn down.
+        try:
+            ws = getattr(self, "_ws", None)
+            if ws:
+                self.lib.ace_workspace_free(ctypes.c_void_p(ws))
+                self._ws = None
+        except Exception:
+            pass
+
 
 class ACELibraryCalculator(ACECalculatorBase):
     """
@@ -261,8 +304,9 @@ class ACELibraryCalculator(ACECalculatorBase):
     This calculator uses a compiled Julia ACE potential (.so file) with
     matscipy neighbor lists. It provides instant startup with no JIT delay.
 
-    Note: Multi-threading is NOT supported (Julia --trim=safe removes required
-    closures). For threaded evaluation, use ACECalculator or LAMMPS.
+    Threading: one calculator owns one library workspace, so a single instance must not be
+    called from two threads at once.  Build one calculator per thread, or use LAMMPS with
+    OpenMP (which holds one workspace per OpenMP thread).
 
     Parameters
     ----------

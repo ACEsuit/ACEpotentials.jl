@@ -183,6 +183,47 @@ function _radial_mixing(W_radial, rnl_used::AbstractVector{Int})
     return onehot, rows, sel
 end
 
+"""
+    _polys_used(W_radial, mix_rows, mix_sel, onehot) -> Int
+
+The largest polynomial index the emitted mixing ever reads, i.e. the length the three-term
+recurrence has to be evaluated to.
+
+Truncating the recurrence there is EXACT, not approximate, and for a reason worth stating
+because it is the whole of Task 6's "width change":
+
+  * the recurrence is strictly forward -- `P[n] = (A[n] y + B[n]) P[n-1] + C[n] P[n-2]` and
+    likewise for `dP` -- so `P[1:q]` and `dP[1:q]` are computed from `A/B/C[1:q]` alone and
+    do not depend on `N_POLYS` in any way;
+  * `P_env` and `dP_env_dr` are formed elementwise from `P`, `dP` and the (scalar) envelope,
+    so their first `q` entries are likewise unchanged;
+  * the mixing reads `P_env[s]` only for `s` in this set (one-hot) or multiplies by a `W`
+    block whose columns beyond it are identically zero (dense).
+
+So every emitted number is bit-identical to the untruncated evaluation.  It is the largest
+single per-edge item B1 left behind: the fitted Cantor model evaluates 45 polynomials and
+reads 6, TiAl evaluates 33 and reads 11.
+"""
+function _polys_used(W_radial, mix_rows, mix_sel, onehot::Bool)
+    q = 0
+    if onehot
+        for sel in mix_sel
+            isempty(sel) || (q = max(q, maximum(sel)))
+        end
+    else
+        n_polys = size(W_radial, 2)
+        for (k, rows) in enumerate(mix_rows)
+            isempty(rows) && continue
+            for j = 1:n_polys
+                any(!=(0.0), @view W_radial[rows, j, k]) && (q = max(q, j))
+            end
+        end
+    end
+    # A model whose mixing reads nothing at all would emit a zero-length recurrence; the
+    # generated `eval_polys` indexes `POLY_A[1]` unconditionally, so keep at least one term.
+    return max(q, 1)
+end
+
 function _write_spline_radial_basis_header(io, rcut)
     println(io, """
 # ============================================================================
@@ -195,6 +236,12 @@ end
 
 # Write ETACE radial basis using data-table approach for reduced code generation.
 # Uses parameter tables and generic kernel functions instead of per-pair code generation.
+#
+# Returns `mix_rows::Vector{Vector{Int}}` -- for each ORDERED pair k, the global `Rnl` row
+# indices this pair's radial evaluator produces, in the order they occupy the local slots
+# `1:length(mix_rows[k])` of the narrow `SVector{M_RNL}` it returns.  Task 6's evaluation
+# kernel needs exactly that mapping to build its per-pair A-accumulation blocks, and taking it
+# from the same computation that emitted the tables is what keeps the two in step.
 function _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
     println(io, """
 # ============================================================================
@@ -220,50 +267,8 @@ function _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
     poly_B = poly_refstate.B
     poly_C = poly_refstate.C
 
-    println(io, "# Polynomial basis (orthonormalized Chebyshev)")
-    println(io, "const N_POLYS = $(n_polys)")
-    println(io, "const POLY_A = SVector{$(n_polys), Float64}($(repr(collect(poly_A))))")
-    println(io, "const POLY_B = SVector{$(n_polys), Float64}($(repr(collect(poly_B))))")
-    println(io, "const POLY_C = SVector{$(n_polys), Float64}($(repr(collect(poly_C))))")
-    println(io)
-
-    # Write polynomial evaluation
-    println(io, """
-# Polynomial evaluation via 3-term recurrence
-@inline function eval_polys(y::T) where {T}
-    P = MVector{N_POLYS, T}(undef)
-    @inbounds begin
-        P[1] = T(POLY_A[1])
-        if N_POLYS >= 2
-            P[2] = POLY_A[2] * y + POLY_B[2]
-        end
-        for n = 3:N_POLYS
-            P[n] = (POLY_A[n] * y + POLY_B[n]) * P[n-1] + POLY_C[n] * P[n-2]
-        end
-    end
-    return P
-end
-
-@inline function eval_polys_ed(y::T) where {T}
-    P = MVector{N_POLYS, T}(undef)
-    dP = MVector{N_POLYS, T}(undef)
-    @inbounds begin
-        P[1] = T(POLY_A[1])
-        dP[1] = zero(T)
-        if N_POLYS >= 2
-            P[2] = POLY_A[2] * y + POLY_B[2]
-            dP[2] = T(POLY_A[2])
-        end
-        for n = 3:N_POLYS
-            P[n] = (POLY_A[n] * y + POLY_B[n]) * P[n-1] + POLY_C[n] * P[n-2]
-            dP[n] = POLY_A[n] * P[n-1] + (POLY_A[n] * y + POLY_B[n]) * dP[n-1] + POLY_C[n] * dP[n-2]
-        end
-    end
-    return P, dP
-end
-""")
-
-    # Write radial weights
+    # Radial weights (needed BEFORE the polynomials are emitted: the recurrence is written at
+    # the truncated width `n_polys_used`, which comes out of W's sparsity).
     W_radial = ps.rembed.post.W
     n_rnl = size(W_radial, 1)
     n_pairs = size(W_radial, 3)
@@ -273,6 +278,66 @@ end
     @assert n_pairs == NZ^2 """
         radial weights have $n_pairs species-pair blocks, expected NZ^2 = $(NZ^2)
         (one per ORDERED pair, as ET.catcat2idx indexes the SelectLinL weights)"""
+
+    rnl_used = _rnl_used(etace.basis)
+    onehot, mix_rows, mix_sel = _radial_mixing(W_radial, rnl_used)
+    n_polys_used = _polys_used(W_radial, mix_rows, mix_sel, onehot)
+    m_max = maximum(length(r) for r in mix_rows)
+    @assert m_max >= 1 """
+        no ordered species pair contributes a single (n,l) row -- the exported radial basis
+        would be identically zero"""
+
+    println(io, "# Polynomial basis (orthonormalized Chebyshev)")
+    println(io, "#")
+    println(io, "# TRUNCATED RECURRENCE (Task 6 / B2).  The model carries $(n_polys)")
+    println(io, "# polynomials, but the mixing below reads only the first $(n_polys_used):")
+    println(io, "# no RBASIS_SEL_k / RBASIS_W_k column beyond that index is ever selected or")
+    println(io, "# nonzero.  The recurrence is strictly FORWARD -- P[n] depends only on P[n-1]")
+    println(io, "# and P[n-2] -- so stopping at N_POLYS_USED leaves P[1:N_POLYS_USED] and")
+    println(io, "# dP[1:N_POLYS_USED] bit-identical to the untruncated evaluation.  The full")
+    println(io, "# count is kept as N_POLYS for provenance; nothing evaluates it.")
+    println(io, "const N_POLYS = $(n_polys)")
+    println(io, "const N_POLYS_USED = $(n_polys_used)  # of N_POLYS = $(n_polys)")
+    println(io, "const POLY_A = SVector{$(n_polys_used), Float64}($(repr(collect(poly_A)[1:n_polys_used])))")
+    println(io, "const POLY_B = SVector{$(n_polys_used), Float64}($(repr(collect(poly_B)[1:n_polys_used])))")
+    println(io, "const POLY_C = SVector{$(n_polys_used), Float64}($(repr(collect(poly_C)[1:n_polys_used])))")
+    println(io)
+
+    # Write polynomial evaluation
+    println(io, """
+# Polynomial evaluation via 3-term recurrence, truncated to N_POLYS_USED (see above)
+@inline function eval_polys(y::T) where {T}
+    P = MVector{N_POLYS_USED, T}(undef)
+    @inbounds begin
+        P[1] = T(POLY_A[1])
+        if N_POLYS_USED >= 2
+            P[2] = POLY_A[2] * y + POLY_B[2]
+        end
+        for n = 3:N_POLYS_USED
+            P[n] = (POLY_A[n] * y + POLY_B[n]) * P[n-1] + POLY_C[n] * P[n-2]
+        end
+    end
+    return P
+end
+
+@inline function eval_polys_ed(y::T) where {T}
+    P = MVector{N_POLYS_USED, T}(undef)
+    dP = MVector{N_POLYS_USED, T}(undef)
+    @inbounds begin
+        P[1] = T(POLY_A[1])
+        dP[1] = zero(T)
+        if N_POLYS_USED >= 2
+            P[2] = POLY_A[2] * y + POLY_B[2]
+            dP[2] = T(POLY_A[2])
+        end
+        for n = 3:N_POLYS_USED
+            P[n] = (POLY_A[n] * y + POLY_B[n]) * P[n-1] + POLY_C[n] * P[n-2]
+            dP[n] = POLY_A[n] * P[n-1] + (POLY_A[n] * y + POLY_B[n]) * dP[n-1] + POLY_C[n] * dP[n-2]
+        end
+    end
+    return P, dP
+end
+""")
 
     println(io, "const N_RNL = $(n_rnl)")
     println(io)
@@ -288,20 +353,24 @@ end
     # with dropping the (n,l) rows the A basis never reads (see `_rnl_used`), 9 of 74 rows
     # survive per Cantor pair and 26 of 92 per TiAl pair.
     #
-    # The emitted form is therefore a static gather (one-hot) or a small dense GEMV
-    # (learned W), scattered back into the full-width SVector{N_RNL} that `evaluate_Rnl_d`
-    # still returns -- the WIDTH change belongs to Task 6's kernel, not here.
+    # Task 6 / B2 takes the WIDTH with it: `_mix_k` now returns an `SVector{M_RNL}` carrying
+    # only the rows this pair populates, in `RBASIS_ROWS_k` order, rather than scattering them
+    # back into an `SVector{N_RNL}` of mostly zeros.  M_RNL is the widest such set over all
+    # pairs, so every pair's evaluator has one return type and the per-neighbour kernel can
+    # cache it in an isbits `NeighCache`.  The full-width `evaluate_Rnl` / `evaluate_Rnl_d`
+    # below are kept as scattering wrappers: they are what the tests and the diagnostic
+    # scripts compare against the model, and nothing on the hot path calls them.
     # ------------------------------------------------------------------------------------
-    rnl_used = _rnl_used(etace.basis)
-    onehot, mix_rows, mix_sel = _radial_mixing(W_radial, rnl_used)
-
     println(io, "# The (n,l) rows any A basis function reads (from ABASIS_SPEC). Rows outside")
     println(io, "# this set can never reach the energy or the forces -- see _rnl_used in")
     println(io, "# export/src/write_radial.jl for why zeroing them is exact, not approximate.")
     println(io, "const RNL_USED = $(repr(Tuple(rnl_used)))")
     println(io, "const N_RNL_USED = $(length(rnl_used))  # of N_RNL = $n_rnl")
+    println(io, "# The widest per-pair row set: the length of the narrow radial vectors the")
+    println(io, "# evaluation kernel passes around and caches.")
+    println(io, "const M_RNL = $(m_max)")
     println(io, "# true  -> every pair's W is a selection matrix; the mixing is a gather.")
-    println(io, "# false -> W is dense; the mixing is a length(RBASIS_ROWS_k) x N_POLYS GEMV.")
+    println(io, "# false -> W is dense; the mixing is a length(RBASIS_ROWS_k) x N_POLYS_USED GEMV.")
     println(io, "const RBASIS_ONEHOT = $onehot")
     println(io)
 
@@ -311,7 +380,8 @@ end
         println(io, "# --- pair $k: ($iz, $jz) -- $m of $n_rnl Rnl rows are nonzero and used ---")
         println(io, "const RBASIS_ROWS_$k = SVector{$m, Int}($(repr(rows)))")
         if m == 0
-            println(io, "@inline _mix_$k(P_env::SVector{N_POLYS, T}) where {T} = zero(SVector{N_RNL, T})")
+            println(io, "@inline _mix_$k(P_env::SVector{N_POLYS_USED, T}) where {T} = zero(SVector{M_RNL, T})")
+            println(io, "@inline _scatter_full_$k(v::SVector{M_RNL, T}) where {T} = zero(SVector{N_RNL, T})")
             println(io)
             continue
         end
@@ -319,22 +389,28 @@ end
             sel = mix_sel[k]
             println(io, "const RBASIS_SEL_$k = SVector{$m, Int}($(repr(sel)))  # polynomial feeding each row")
             entries = ["P_env[$q]" for q in sel]
-            println(io, "@inline function _mix_$k(P_env::SVector{N_POLYS, T}) where {T}")
-            println(io, "    @inbounds return SVector{N_RNL, T}(")
-            println(io, _scatter_expr(rows, entries, n_rnl))
+            println(io, "@inline function _mix_$k(P_env::SVector{N_POLYS_USED, T}) where {T}")
+            println(io, "    @inbounds return SVector{M_RNL, T}(")
+            println(io, _scatter_expr(collect(1:m), entries, m_max))
             println(io, "    )")
             println(io, "end")
         else
-            Wk = W_radial[rows, :, k]
-            println(io, "const RBASIS_W_$k = SMatrix{$m, $(n_polys), Float64, $(m * n_polys)}($(repr(vec(Wk))))")
+            Wk = W_radial[rows, 1:n_polys_used, k]
+            println(io, "const RBASIS_W_$k = SMatrix{$m, $(n_polys_used), Float64, $(m * n_polys_used)}($(repr(vec(Wk))))")
             entries = ["v[$i]" for i = 1:m]
-            println(io, "@inline function _mix_$k(P_env::SVector{N_POLYS, T}) where {T}")
+            println(io, "@inline function _mix_$k(P_env::SVector{N_POLYS_USED, T}) where {T}")
             println(io, "    v = RBASIS_W_$k * P_env")
-            println(io, "    @inbounds return SVector{N_RNL, T}(")
-            println(io, _scatter_expr(rows, entries, n_rnl))
+            println(io, "    @inbounds return SVector{M_RNL, T}(")
+            println(io, _scatter_expr(collect(1:m), entries, m_max))
             println(io, "    )")
             println(io, "end")
         end
+        # Narrow -> full width, for the compatibility wrappers only (never on the hot path).
+        println(io, "@inline function _scatter_full_$k(v::SVector{M_RNL, T}) where {T}")
+        println(io, "    @inbounds return SVector{N_RNL, T}(")
+        println(io, _scatter_expr(rows, ["v[$i]" for i = 1:m], n_rnl))
+        println(io, "    )")
+        println(io, "end")
         println(io)
     end
 
@@ -459,32 +535,33 @@ end
 # RADIAL BASIS EVALUATION (generic transform + envelope, per-pair mixing)
 # ============================================================================
 
-# Generic radial basis evaluation for any pair
-@inline function _evaluate_Rnl_pair(r::T, k::Int)::SVector{N_RNL, T} where {T}
+# Narrow radial basis evaluation for any pair: only the rows the pair populates, in
+# RBASIS_ROWS_k order, padded to M_RNL.  This is what the per-neighbour kernel calls.
+@inline function _evaluate_Rnl_pair_m(r::T, k::Int)::SVector{M_RNL, T} where {T}
     @inbounds p = TRANSFORM_PARAMS[k]
     y = agnesi_transform(r, p)
 
     env = envelope_quartic(y)
     if env <= zero(T)
-        return zero(SVector{N_RNL, T})
+        return zero(SVector{M_RNL, T})
     end
 
     P = eval_polys(y)
-    P_env = SVector{N_POLYS, T}(env .* P)""")
+    P_env = SVector{N_POLYS_USED, T}(env .* P)""")
 
     _emit_pair_dispatch(io, NZ, "    ", k -> "return _mix_$k(P_env)")
 
-    # A `k` outside 1:NZ^2 is a BUG in the caller (pair_idx, or Task 6's per-neighbour
-    # indexing), and it used to be invisible: the old `@inbounds RBASIS_W[k]` was undefined
-    # behaviour, and a `return zero(...)` fall-through is worse still -- a silently zero
-    # radial basis produces plausible-looking wrong energies instead of a crash.  This is a
-    # cold branch (the chain above is exhaustive over the emitted tables), so the compare
-    # costs nothing measurable on the hot path.
-    println(io, """    error("_evaluate_Rnl_pair: species-pair index \$k is outside 1:\$(NZ*NZ)")
+    # A `k` outside 1:NZ^2 is a BUG in the caller (pair_idx, or the per-neighbour indexing),
+    # and it used to be invisible: the old `@inbounds RBASIS_W[k]` was undefined behaviour,
+    # and a `return zero(...)` fall-through is worse still -- a silently zero radial basis
+    # produces plausible-looking wrong energies instead of a crash.  This is a cold branch
+    # (the chain above is exhaustive over the emitted tables), so the compare costs nothing
+    # measurable on the hot path.
+    println(io, """    error("_evaluate_Rnl_pair_m: species-pair index \$k is outside 1:\$(NZ*NZ)")
 end
 
-# Generic radial basis with derivatives
-@inline function _evaluate_Rnl_d_pair(r::T, k::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
+# Narrow radial basis with derivatives
+@inline function _evaluate_Rnl_d_pair_m(r::T, k::Int)::Tuple{SVector{M_RNL, T}, SVector{M_RNL, T}} where {T}
     @inbounds p = TRANSFORM_PARAMS[k]
     y, dy_dr = agnesi_transform_d(r, p)
 
@@ -492,31 +569,48 @@ end
     denv_dr = denv_dy * dy_dr
 
     if env <= zero(T)
-        return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})
+        return zero(SVector{M_RNL, T}), zero(SVector{M_RNL, T})
     end
 
     P, dP = eval_polys_ed(y)
     dP_dr = dP .* dy_dr
 
-    P_env = SVector{N_POLYS, T}(env .* P)
-    dP_env_dr = SVector{N_POLYS, T}(denv_dr .* P .+ env .* dP_dr)""")
+    P_env = SVector{N_POLYS_USED, T}(env .* P)
+    dP_env_dr = SVector{N_POLYS_USED, T}(denv_dr .* P .+ env .* dP_dr)""")
 
     _emit_pair_dispatch(io, NZ, "    ", k -> "return _mix_$k(P_env), _mix_$k(dP_env_dr)")
 
-    println(io, """    error("_evaluate_Rnl_d_pair: species-pair index \$k is outside 1:\$(NZ*NZ)")
+    println(io, """    error("_evaluate_Rnl_d_pair_m: species-pair index \$k is outside 1:\$(NZ*NZ)")
+end
+""")
+
+    # Full-width scatter dispatch, used ONLY by the compatibility wrappers below.
+    println(io, """
+# Narrow (M_RNL, pair-local) -> full width (N_RNL, global (n,l) index).
+@inline function _scatter_full(v::SVector{M_RNL, T}, k::Int)::SVector{N_RNL, T} where {T}""")
+    _emit_pair_dispatch(io, NZ, "    ", k -> "return _scatter_full_$k(v)")
+    println(io, """    error("_scatter_full: species-pair index \$k is outside 1:\$(NZ*NZ)")
 end
 """)
 
     println(io, """
-# Public API: dispatch by species indices through the single pair-index convention
+# Public API, FULL WIDTH.  These are the functions the test suite and the diagnostic scripts
+# compare against the model's own `Rnl`, so they keep the N_RNL layout.  The evaluation
+# kernel does NOT call them: it uses the narrow `_evaluate_Rnl_*_pair_m` above and the
+# per-pair A blocks, which is what removes the N_RNL-wide copies from the hot path.
 @inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
-    return _evaluate_Rnl_pair(r, pair_idx(iz, jz))
+    k = pair_idx(iz, jz)
+    return _scatter_full(_evaluate_Rnl_pair_m(r, k), k)
 end
 
 @inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    return _evaluate_Rnl_d_pair(r, pair_idx(iz, jz))
+    k = pair_idx(iz, jz)
+    v, dv = _evaluate_Rnl_d_pair_m(r, k)
+    return _scatter_full(v, k), _scatter_full(dv, k)
 end
 """)
+
+    return mix_rows
 end
 
 # ============================================================================

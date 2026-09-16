@@ -42,17 +42,32 @@ class PairACE : public Pair {
   // Dynamic library handle for loaded model
   void *model_handle;
 
-  // Function pointer types for ACE C API
-  typedef double (*ace_site_efv_fn)(int, int, int*, double*, double*, double*);
+  // Function pointer types for ACE C API.
+  //
+  // Every site entry takes an opaque WORKSPACE handle first.  The library keeps no mutable
+  // global state, so it is re-entrant given one workspace per thread -- it is NOT thread-safe
+  // with a shared workspace, and there is no internal locking to make it so.
+  typedef void *(*ace_ws_new_fn)();
+  typedef void (*ace_ws_free_fn)(void *);
+  typedef double (*ace_site_efv_fn)(void *, int, int, int *, double *, double *, double *);
+  typedef double (*ace_site_ef_fn)(void *, int, int, int *, double *, double *);
   typedef double (*ace_get_cutoff_fn)();
   typedef int (*ace_get_n_species_fn)();
   typedef int (*ace_get_species_fn)(int);
 
   // Function pointers (resolved from loaded model)
+  ace_ws_new_fn ace_workspace_new;
+  ace_ws_free_fn ace_workspace_free;
   ace_site_efv_fn ace_site_energy_forces_virial;
+  ace_site_ef_fn ace_site_energy_forces;
   ace_get_cutoff_fn ace_get_cutoff;
   ace_get_n_species_fn ace_get_n_species;
   ace_get_species_fn ace_get_species;
+
+  // One workspace per OpenMP thread (exactly one without OpenMP).  Allocated in init_style
+  // once the model is loaded, released in free_workspaces() BEFORE the library is dlclose()d.
+  void **workspaces;
+  int n_workspaces;
 
   // Model information
   double cutoff;               // Cutoff radius from model
@@ -74,6 +89,7 @@ class PairACE : public Pair {
   void allocate();
   void load_model(const char *filename);
   void unload_model();
+  void free_workspaces();
   int element_to_Z(const char *elem);
 };
 
