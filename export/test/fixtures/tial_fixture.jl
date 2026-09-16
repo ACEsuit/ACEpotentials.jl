@@ -4,7 +4,7 @@
 # Why a second reference model at all: the Cantor fixture is order 3 with 1348 many-body basis
 # functions per species; the performance tasks need a model whose many-body term dominates, and
 # this one has 2369 per species at order 4.  It is also the model the matched `pair_style pace`
-# comparator bench_parity/tial_o4_pace.ace is sized against.
+# comparator bench_parity/tial_o4_pace.yace is sized against.
 #
 # The model-construction block below is a verbatim copy of `tial_model` in
 # export/bench/fit_tial_order4.jl; the saved `ps` only fits that exact spec, so any edit there
@@ -39,7 +39,11 @@ const NL = ACEpotentials.NeighbourLists     # not a dependency of export/Project
 
 const TIAL_REPO   = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const TIAL_PARAMS = joinpath(TIAL_REPO, "bench_parity", "tial_o4_params.jld2")
-const TIAL_PACE   = joinpath(TIAL_REPO, "bench_parity", "tial_o4_pace.ace")
+# The size-matched `pair_style pace` comparator this model is benchmarked against.  YAML
+# (.yace), not the text C-tilde .ace format: pyace 0.2.8's text writer is invalid for more
+# than one element (see export/bench/make_pace_basis.py).  Informational -- bench_parity.sh
+# takes the comparator path as an argument.
+const TIAL_PACE   = joinpath(TIAL_REPO, "bench_parity", "tial_o4_pace.yace")
 
 const TIAL_ELEMENTS  = (:Ti, :Al)
 const TIAL_ORDER     = 4

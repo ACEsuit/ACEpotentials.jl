@@ -1,7 +1,7 @@
 # fit_tial_order4.jl -- fit the LARGE reference model used by the parity benchmarks.
 #
 # Ti-Al, correlation order 4, rcut 5.5 Å, BLR + repulsion restraint.  The point of this model
-# is to be *big*: the Cantor reference has 5 species but only order 3 / 1078 many-body basis
+# is to be *big*: the Cantor reference has 5 species but only order 3 / 1348 many-body basis
 # functions, which is too small to show the cost structure the performance tasks are chasing.
 # `max_level` is chosen so that the many-body basis lands in 1500-2500 functions (see the
 # `--probe` output recorded in export/bench/README.md).
@@ -78,7 +78,7 @@ end
 
 Deterministic split of the `TiAl_tutorial` dataset.  That dataset is **315 dimers + 14 bulk
 configurations** (9 x 54 atoms, 5 x 128 atoms), so a naive `data[1:5:end]` train set is almost
-entirely two-atom configurations and carries far too little information for a 4738-parameter
+entirely two-atom configurations and carries far too little information for a 4778-parameter
 model.  Instead:
 
 * `held_idx`  -- a genuine out-of-sample set: every 4th bulk configuration (4 of 14) plus every
@@ -146,7 +146,7 @@ flush(stdout)
 # SOLVER: `ACEfit.BLR()` -- the plain Cholesky BLR the Cantor fit used -- FAILS here with
 #   PosDefException: matrix is not positive definite; Factorization failed.
 #   (ACEfit/src/bayesianlinear.jl:290, log_marginal_likelihood_overdetermined!)
-# after ~17 LBFGS iterations.  The TiAl_tutorial system is 6191 rows x 4778 columns, i.e.
+# after ~17 LBFGS iterations.  The TiAl_tutorial system is 6194 rows x 4778 columns, i.e.
 # barely overdetermined and badly conditioned, so the Cholesky of the posterior precision
 # breaks down.  `factorization = :svd` takes the SVD path instead, which does not factor that
 # matrix.  This is a solver-robustness choice; no tolerance anywhere is loosened by it.

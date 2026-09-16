@@ -1,7 +1,20 @@
-# verify_bench_models.jl -- export the benchmark reference models, GATE them at 1e-12, and
-# print the measured deviation for each.  Nothing here is timed; this is the "verified before
-# timed" half of the protocol (export/bench/README.md).  bench_parity.sh refuses to know
-# anything about accuracy, so this script is what licenses a row.
+# verify_bench_models.jl -- export the benchmark reference models, GATE the GENERATED SOURCE
+# at 1e-12, and print the measured deviation for each.  Nothing here is timed.
+#
+# THIS IS ONLY THE FIRST OF THREE LINKS.  The plan's global constraints gate three things,
+# and this script covers exactly one of them:
+#
+#   1. generated Julia code vs the ETACE/Stacked calculator      1e-12   <- HERE
+#   2. the compiled library through the Python C API vs Julia    1e-12   <- gate_bench_libs.jl
+#   3. `pair_style ace` in LAMMPS vs Julia, 1 and 2 MPI ranks    1e-10 / 1e-12
+#                                                                        <- gate_bench_libs.jl
+#
+# A library that has passed (1) alone has NOT been shown to compute what the source says: a
+# juliac or cpu_target miscompilation would change what it computes, and therefore what it
+# costs, without touching the generated `.jl` that (1) checks.  Run gate_bench_libs.jl too.
+#
+# Output per tag: `bench_parity/<tag>_model.jl` and the gate manifest
+# `bench_parity/<tag>.gated`, which bench_parity.sh requires before it will time anything.
 #
 #   cd <repo> && julia --project=export export/bench/verify_bench_models.jl [tags...]
 #
@@ -15,7 +28,7 @@
 # and additionally REPORTS (never asserts) the Hermite error against the fitted stack, which is
 # model error, not export error.
 
-using Printf
+using Printf, SHA, Dates
 
 const REPO = normpath(joinpath(@__DIR__, "..", ".."))
 const OUT  = joinpath(REPO, "bench_parity"); mkpath(OUT)
@@ -60,6 +73,31 @@ function do_tag(tag)
                                     label = "$tag vs the FITTED stack")
     end
     results[tag] = (; file, dE, dF, dV, ref, extra, natoms = sum(length, fx.held))
+
+    # The gate MANIFEST.  bench_parity.sh refuses to time a library whose manifest is
+    # missing or whose sha256 does not match, so a gate that was never run, or a library
+    # rebuilt after the gate, cannot silently produce a timing row.  This file is rewritten
+    # from scratch here (the source gate is the first link in the chain);
+    # gate_bench_libs.jl APPENDS the library-level gates and `lib_sha256` to it.
+    open(joinpath(OUT, "$(tag).gated"), "w") do io
+        println(io, "# gate manifest for '$tag' -- written by export/bench/verify_bench_models.jl")
+        println(io, "# consumed by export/bench/bench_parity.sh; do not hand-edit")
+        println(io, "tag=$tag")
+        println(io, "date=", Dates.format(Dates.now(), "yyyy-mm-ddTHH:MM:SS"))
+        println(io, "model_file=$file")
+        println(io, "model_sha256=", bytes2hex(open(sha256, file)))
+        println(io, "source_gate_reference=$ref")
+        println(io, "source_gate_tol=$TOL")
+        @printf(io, "source_gate_dE_per_atom=%.6e\n", dE)
+        @printf(io, "source_gate_dF=%.6e\n", dF)
+        @printf(io, "source_gate_dV_per_atom=%.6e\n", dV)
+        println(io, "source_gate=PASS")
+        if extra !== nothing
+            @printf(io, "# reported only, never asserted: vs the FITTED stack dE/atom=%.3e dF=%.3e dV/atom=%.3e\n",
+                    extra...)
+        end
+    end
+    @printf("[%s] wrote %s\n", tag, joinpath(OUT, "$(tag).gated"))
     @printf("[%s] OK in %.0f s\n\n", tag, time() - t0); flush(stdout)
 end
 
