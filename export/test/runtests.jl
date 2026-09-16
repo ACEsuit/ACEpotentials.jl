@@ -229,6 +229,16 @@ function main()
                 include(joinpath(TEST_DIR, "test_hermite_spline_export.jl"))
             end
 
+            # test_hermite_accuracy.jl states which reference each of its numbers uses
+            # (:hermite_spline gated against the SPLINIFIED model at 1e-8, its error against
+            # the FITTED model reported only; :polynomial gated against the FITTED model at
+            # 1e-12).  It was a standalone script that nothing ran -- so its tolerances were
+            # never enforced by anything.  It is part of the `hermite` group now.
+            run_group("hermite_accuracy") do
+                @info "Running Hermite/polynomial export accuracy tests..."
+                include(joinpath(TEST_DIR, "test_hermite_accuracy.jl"))
+            end
+
             # Hermite export of the fitted multi-species Cantor model, gated against the
             # SPLINIFIED stack.  Guarded exactly like the pair group: the fitted parameters
             # and the held-out geometries are host-local, untracked data, and an absent gate
