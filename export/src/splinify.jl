@@ -37,9 +37,9 @@ that define piecewise cubic polynomials. Each knot stores values for multiple
 basis functions simultaneously (vectorized evaluation).
 
 # Fields
-- `pair_idx::Int`: Species pair index (1-based)
-- `iz::Int`: First species index
-- `jz::Int`: Second species index
+- `pair_idx::Int`: ORDERED species-pair index, `(iz - 1) * NZ + jz` (1-based)
+- `iz::Int`: centre species index
+- `jz::Int`: neighbour species index
 - `n_rnl::Int`: Number of radial basis functions (output dimension)
 - `n_knots::Int`: Number of knot points (segments = n_knots - 1)
 - `y_min::T`: Minimum y value (transformed space, typically -1.0)
@@ -87,7 +87,10 @@ approximation. The extracted data can be used for exact code generation.
 - `rcut`: Radial cutoff distance
 
 # Returns
-Dict mapping pair_idx => HermiteSplineData for each species pair
+`Dict` mapping the ORDERED pair index `pair_idx(iz, jz) = (iz - 1) * NZ + jz` to its
+`HermiteSplineData`, with an entry for every one of the `NZ^2` ordered pairs.  That is the
+same index the generated `pair_idx` helper, `RBASIS_W` and `PAIR_C` use; the generated
+dispatchers in `generate_hermite_spline_code` assume it and assert it.
 
 # Notes
 The splines operate in transformed y-space (via Agnesi transform) where y ∈ [y_min, y_max],
@@ -151,13 +154,19 @@ function extract_hermite_spline_data(etace_splined, ps, st, rcut::Real)
     # Convert F and G from SVector to regular matrices for each category
     hermite_data = Dict{Int, HermiteSplineData{Float64}}()
 
-    for cat_idx in 1:n_categories
-        # Convert cat_idx to (iz, jz) species indices
-        # The selector function determines the mapping, but typically it's:
-        # cat_idx = (iz - 1) * NZ + jz for asymmetric pairs
-        iz = (cat_idx - 1) ÷ NZ + 1
-        jz = (cat_idx - 1) % NZ + 1
+    # The spline categories are the ORDERED species pairs: `TransSelSplines`' selector is
+    # `ET.catcat2idx`, i.e. k = (iz - 1) * NZ + jz with iz the CENTRE species -- the same
+    # `pair_idx` the generated code uses for every other per-pair table.  The dictionary is
+    # therefore keyed by that index and by nothing else.  (The Agnesi parameters underneath
+    # are stored per SYMMETRIC pair and are expanded here, once, at export time.)
+    @assert n_categories == NZ^2 """
+        splinified model has $n_categories spline categories, expected NZ^2 = $(NZ^2)
+        (one per ORDERED species pair)."""
+    @assert length(agnesi_params_list) == (NZ * (NZ + 1)) ÷ 2 """
+        splinified model has $(length(agnesi_params_list)) transform parameter sets, expected
+        $((NZ*(NZ+1))÷2) (one per SYMMETRIC species pair)."""
 
+    for (cat_idx, iz, jz) in _ordered_pairs(NZ)
         # Extract F and G for this category
         F_cat = zeros(Float64, n_knots, n_rnl)
         G_cat = zeros(Float64, n_knots, n_rnl)
@@ -167,13 +176,8 @@ function extract_hermite_spline_data(etace_splined, ps, st, rcut::Real)
             G_cat[i, :] = G_all[i, cat_idx]
         end
 
-        # Get Agnesi parameters for this pair
-        # Agnesi params are stored symmetrically, so we need to map (iz, jz) to symmetric index
-        sym_i = min(iz, jz)
-        sym_j = max(iz, jz)
-        # Symmetric indexing: upper triangular
-        sym_pair_idx = (sym_i - 1) * NZ - (sym_i - 1) * (sym_i - 2) ÷ 2 + (sym_j - sym_i + 1)
-        agnesi_p = agnesi_params_list[sym_pair_idx]
+        # Agnesi parameters: symmetric storage -> this ordered pair
+        agnesi_p = agnesi_params_list[_sym_pair_index(iz, jz, NZ)]
 
         # Extract envelope parameters if present
         envelope_p = nothing

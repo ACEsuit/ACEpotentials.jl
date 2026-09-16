@@ -111,9 +111,34 @@ Arguments:
 - `calc`: The fitted ETACEPotential to export
 - `filename`: Output filename
 - `for_library=false`: If true, generate a shared library with C interface instead of executable
-- `radial_basis=:polynomial`: Radial basis evaluation method
-  - `:polynomial` - Runtime polynomial evaluation (default, exact, works with any model)
-  - `:hermite_spline` - Hermite cubic splines (fast, exact). Model must be pre-splinified.
+- `radial_basis=:polynomial`: Radial basis evaluation method -- see the table below.
+
+# Radial basis modes
+
+| mode | reproduces | accuracy | when to use |
+|---|---|---|---|
+| `:polynomial` (**default**) | the fitted model | exact: 1e-12 in energies, forces and virial | any model |
+| `:hermite_spline` | the **splinified** model | approximate; the splinification error is a property of the model, not of the export | learned radials with a small `N_POLYS`, where the spline table is cheaper than the recurrence |
+
+`:polynomial` re-evaluates the orthogonal polynomial recurrence at runtime and reproduces the
+model it was exported from to double-precision roundoff.  It is the default and the mode every
+verification step of this project gates at 1e-12.
+
+`:hermite_spline` emits the knot tables of a model that has ALREADY been splinified with
+`ETModels.splinify` and evaluates a piecewise cubic.  It reproduces *that splinified model* to
+1e-12 -- but the splinified model is not the fitted one.  On the fitted Cantor model the
+difference is ~2.3e-4 eV/Å at `Nspl = 50` and ~3.0e-6 eV/Å at `Nspl = 200`
+(`verify_cantor/log.chain`); the interpolation error of a cubic on a uniform grid falls like
+`h^4` in values and `h^3` in derivatives, so it is the FORCES that set the usable knot count.
+Splinify BEFORE fitting if you intend to deploy this mode, so that the fit sees the same
+representation the library will evaluate.  Never gate a `:hermite_spline` export against the
+fitted model; gate it against the splinified one and report the rest.
+
+KNOWN LIMITATION (multi-species): `:hermite_spline` is only usable when every species pair
+shares one cutoff.  With per-pair cutoffs, any edge beyond a pair's own cutoff transforms to
+exactly `y = 1` and `EquivariantTensors`' `_spl_grid` then indexes knot `NX + 1`, so the
+splinified model throws a `BoundsError` before it can even be compared to the export.  See
+`export/test/test_multispecies.jl`.
 
 # Example 1: Standard polynomial export (no pre-processing needed)
 ```julia
@@ -122,25 +147,17 @@ export_ace_model(calc, "my_model.jl"; for_library=true)
 # Compile with: juliac --output-lib libace.so --trim=safe my_model.jl
 ```
 
-# Example 2: Fast Hermite spline export (requires pre-splinification)
+# Example 2: Hermite spline export (requires pre-splinification)
 ```julia
 using ACEpotentials.ETModels: splinify
 
-# Splinify BEFORE fitting for ~3-4x faster evaluation
+# Splinify BEFORE fitting, so the fit sees the representation that will be deployed
 etace_splined = splinify(etace, ps, st; Nspl=50)
 # ... fit the splinified model ...
 calc = ETACEPotential(etace_splined, ps_fitted, st_fitted, 5.5)
 
 export_ace_model(calc, "my_model.jl"; for_library=true, radial_basis=:hermite_spline)
 ```
-
-# Performance
-- `:polynomial` - Evaluates Chebyshev polynomials at runtime (~585 ops/neighbor)
-- `:hermite_spline` - Table lookup + cubic interpolation (~150 ops/neighbor, ~3-4x faster)
-
-# Notes
-- `:hermite_spline` provides exact reproduction of P4ML splines with C1 continuity
-- `:polynomial` works with any model but is slower due to runtime polynomial evaluation
 """
 function export_ace_model(calc::ETACEPotential, filename::String;
                           for_library::Bool=false,
@@ -322,6 +339,16 @@ const NZ = $(length(_i2z))
     end
     error("Unknown atomic number: \$Z")
 end
+
+# Ordered species-pair index (CENTRE species first), the single convention used by EVERY
+# per-pair table in this file: TRANSFORM_PARAMS, RBASIS_W, PAIR_C, PAIR_TRANSFORM_PARAMS and
+# the Hermite knot tables PAIR_k_F / PAIR_k_G.  It matches ET.catcat2idx, which is what
+# indexes the SelectLinL weights of the model this file was generated from.
+#
+# Parameters the model stores per SYMMETRIC pair (the Agnesi transforms, ET.catcat2idx_sym)
+# are expanded into this ordered layout at EXPORT time, so there is no second convention and
+# no runtime mapping.  For NZ=2: (1,1)->1, (1,2)->2, (2,1)->3, (2,2)->4.
+@inline pair_idx(iz::Int, jz::Int) = (iz - 1) * NZ + jz
 """)
 end
 

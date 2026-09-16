@@ -3,7 +3,7 @@ Export Test Suite - Main Test Runner
 
 This file orchestrates all export-related tests for ETACE models:
 1. ETACE export functionality (polynomial radial basis)
-2. Hermite spline export (machine-precision splined radial basis)
+2. Hermite spline export (approximate splined radial basis; incl. the fitted Cantor model)
 3. Multi-species model tests
 4. Pair-potential export (ETOneBody + ETPairModel + ETACE, Cantor fixture)
 5. Python calculator integration
@@ -173,6 +173,21 @@ function main()
         if should_run_test(selection, :hermite) || should_run_test(selection, :all)
             @info "Running Hermite spline export tests..."
             include(joinpath(TEST_DIR, "test_hermite_spline_export.jl"))
+
+            # Hermite export of the fitted multi-species Cantor model, gated against the
+            # SPLINIFIED stack.  Guarded exactly like the pair group: the fitted parameters
+            # and the held-out geometries are host-local, untracked data, and an absent gate
+            # must be visible in the summary rather than look like a pass.
+            if check_cantor_fixture_available()
+                @info "Running Cantor Hermite export tests..."
+                include(joinpath(TEST_DIR, "test_hermite_cantor.jl"))
+            else
+                missing_paths = [f for f in values(cantor_fixture_paths()) if !isfile(f)]
+                @warn "Skipping Cantor Hermite tests: Cantor fixture data not found" missing_paths
+                @testset "Cantor Hermite export (SKIPPED: Cantor fixture data missing)" begin
+                    @test_skip check_cantor_fixture_available()
+                end
+            end
         end
 
         # Multi-species tests

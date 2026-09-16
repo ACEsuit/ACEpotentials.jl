@@ -64,7 +64,11 @@ function build_deployment(
     export_script = joinpath(export_dir, "src", "export_ace_model.jl")
     include(export_script)
     # Use invokelatest to handle world-age issues when include() defines new methods
-    Base.invokelatest(export_ace_model, model, model_jl; for_library=true)
+    # :polynomial is the default and the only mode that reproduces the FITTED model exactly
+    # (1e-12 in energy, forces and virial).  :hermite_spline reproduces a splinified model
+    # instead and requires the model to have been splinified before fitting.
+    Base.invokelatest(export_ace_model, model, model_jl;
+                      for_library=true, radial_basis=:polynomial)
     verbose && println("  → Exported to: $model_jl")
 
     # Step 2: Compile with juliac --trim

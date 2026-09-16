@@ -1,11 +1,50 @@
 #=
-Multi-Species ETACE Model Tests
+Multi-species export tests -- NZ = 3, both radial modes, gated at 1e-12.
 
-Tests for:
-1. Export of multi-species ETACE models (e.g., Ti-Al)
-2. Verification that RCUT_MAX is correctly computed
-3. Species indexing in exported code
-4. Cutoff handling for different species pairs
+WHY THESE MODELS.  Every per-pair table in a generated model is addressed by a species-pair
+index, and there are two candidate conventions:
+
+    ordered    k = (iz - 1) * NZ + jz                  (NZ^2 entries, centre species first)
+    symmetric  k = symidx(min, max, NZ)                (NZ(NZ+1)/2 entries)
+
+The *model* uses both: `ET.SelectLinL` weights (many-body `RBASIS_W`, the pair `PAIR_C`) and
+the splinified knot tables are per ORDERED pair, while the Agnesi transform parameters are
+stored per SYMMETRIC pair (`ETModels._convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and
+selects with `ET.catcat2idx_sym`).  The generator resolves the symmetric storage into ordered
+tables at export time, so at RUNTIME there is exactly one convention: `pair_idx(iz, jz)`.
+
+No single-species model can tell the two conventions apart (both give 1), and the Cantor
+fixture cannot either: it was fitted with a scalar `r0 = 2.54` and a single `rcut`, so all of
+its stored Agnesi tuples are byte-identical and no permutation of them is observable.  The
+models below are the first ones on this branch that *can* discriminate:
+
+  * their six symmetric Agnesi tuples are mutually distinct (asserted), so a wrong
+    ordered -> symmetric expansion changes the numbers;
+  * `init_Wradial = :glorot_normal` makes `RBASIS_W[k] != RBASIS_W[k']` for transposed pairs
+    (asserted), so a symmetric index into an ordered table is observable;
+  * the pair basis carries a per-symmetric-pair `r0`, so the pair term's six tuples are
+    distinct too.
+
+READ THIS BEFORE CHANGING THE CUTOFFS.  Two variants are needed, and the reason is an
+upstream limitation, not a preference:
+
+  `:asym`     many-body `rin0cuts[i,j].rcut = 4.6 + 0.2i + 0.3j` -- genuinely per-pair
+              cutoffs.  Works in `:polynomial` mode.  In `:hermite_spline` mode the
+              SPLINIFIED ET model itself cannot be evaluated: any edge with
+              `rcut[i,j] <= r <= max(rcut)` transforms to exactly `y = 1`, and
+              `EquivariantTensors`' `_spl_grid` then indexes knot `NX + 1`
+              (`transsplines.jl:200-207`, `BoundsError: ... at index [51, 5]`).  There is
+              therefore no reference to gate a Hermite export against.  That is asserted
+              below so the day upstream fixes it, this file fails and coverage is extended.
+  `:uniform`  one cutoff for every pair, with a per-symmetric-pair `r0` instead.  Equally
+              discriminating for the index convention, and evaluable in both modes, so it
+              carries the `:hermite_spline` gate.
+
+REFERENCES AND TOLERANCES (metric definitions are in check_export.jl):
+  * `:polynomial`     is compared to the FITTED ET stack at 1e-12.
+  * `:hermite_spline` is compared to the SPLINIFIED stack at 1e-12; its error against the
+    fitted stack is REPORTED and never asserted -- that is model (splinification) error, not
+    export error.  No tolerance in this file may ever be loosened.
 =#
 
 using Test
@@ -17,161 +56,262 @@ using LinearAlgebra
 using Random
 using Lux
 using LuxCore
+using AtomsBase
+using Unitful
 
-const M = ACEpotentials.Models
-const ETM = ACEpotentials.ETModels
+include(joinpath(@__DIR__, "check_export.jl"))
+include(joinpath(dirname(@__DIR__), "src", "export_ace_model.jl"))
 
-# Test configuration
-const EXPORT_DIR = dirname(@__DIR__)
-const TEST_DIR = @__DIR__
-const TEST_ARTIFACTS = Dict{String, Any}()
+const MS3_ELEMENTS = (:Ti, :Al, :V)
+const MS3_NZ = 3
+const MS3_PAIR_MAXN = 8
+# One cutoff drives the model, the neighbour lists and every check_export call.
+const MS3_RCUT = 6.1
 
-@testset "Multi-Species ETACE Export" verbose=true begin
+"""
+    ms3_model(kind) -> (model, ps, st, rcut)
 
-    @testset "Multi-Species ETACE Model Creation" begin
-        # Create a simple Ti-Al ETACE model for testing multi-species export
-        @info "Creating multi-species Ti-Al ETACE model..."
+`kind = :asym`    -- per-pair many-body cutoffs `4.6 + 0.2i + 0.3j` (max = `MS3_RCUT`).
+`kind = :uniform` -- one cutoff `MS3_RCUT`, per-symmetric-pair `r0` instead.
 
-        elements = (:Ti, :Al)
-        rcut = 5.0
+Both have a live pair term.  The pair *envelope* cutoff must be the same for every pair in
+both variants: `ETModels._convert_pair_envelope` asserts `env == env1` over the whole
+NZ x NZ envelope matrix, so only the pair `r0` may vary.  `rcut` is returned rather than
+hard-coded at the call sites, and is asserted to equal the cutoff `convert2et_full` picks.
+"""
+function ms3_model(kind::Symbol)
+    d = M._default_rin0cuts(MS3_ELEMENTS)
+    mb = if kind == :asym
+        SMatrix{3,3}([(rin = 0.0, r0 = d[i, j].r0, rcut = 4.6 + 0.2i + 0.3j) for i in 1:3, j in 1:3])
+    elseif kind == :uniform
+        SMatrix{3,3}([(rin = 0.0, r0 = 2.3 + 0.13 * min(i, j) + 0.17 * max(i, j), rcut = MS3_RCUT)
+                      for i in 1:3, j in 1:3])
+    else
+        error("ms3_model: unknown kind $kind")
+    end
+    rcut = maximum(c.rcut for c in mb)
+    pair_r0(i, j) = 2.3 + 0.13 * min(i, j) + 0.17 * max(i, j)
+    pair_rin0cuts = SMatrix{3,3}([(rin = 0.0, r0 = pair_r0(i, j), rcut = rcut) for i in 1:3, j in 1:3])
+    pair_basis = M.ace_learnable_Rnlrzz(; elements = MS3_ELEMENTS, level = M.TotalDegree(),
+                                          max_level = MS3_PAIR_MAXN, maxl = 0,
+                                          maxn = MS3_PAIR_MAXN, rin0cuts = pair_rin0cuts,
+                                          transforms = (:agnesi, 1, 4), envelopes = :poly1sr,
+                                          Winit = :glorot_normal)
+    model = M.ace_model(; elements = MS3_ELEMENTS, order = 3, Ytype = :solid,
+                          level = M.TotalDegree(), max_level = 6,
+                          rin0cuts = mb, pair_basis = pair_basis,
+                          init_WB = :glorot_normal, init_Wpair = :glorot_normal,
+                          init_Wradial = :glorot_normal,
+                          E0s = Dict(:Ti => -1.1, :Al => -2.2, :V => -3.3))
+    ps, st = Lux.setup(MersenneTwister(7), model)
+    return model, ps, st, rcut
+end
 
-        rin0cuts = M._default_rin0cuts(elements)
-        rin0cuts = (x -> (rin = x.rin, r0 = x.r0, rcut = rcut)).(rin0cuts)
-
-        rng = Random.MersenneTwister(1234)
-
-        ace_model = M.ace_model(;
-            elements = elements,
-            order = 2,
-            Ytype = :solid,
-            level = M.TotalDegree(),
-            max_level = 6,
-            maxl = 2,
-            pair_maxn = 6,
-            rin0cuts = rin0cuts,
-            init_WB = :glorot_normal,
-            init_Wpair = :glorot_normal
-        )
-
-        ps, st = Lux.setup(rng, ace_model)
-
-        # Convert to ETACE
-        et_model = ETM.convert2et(ace_model)
-        et_ps, et_st = LuxCore.setup(MersenneTwister(1234), et_model)
-
-        # Copy parameters
-        n_species = length(elements)
-        for iz in 1:n_species
-            for jz in 1:n_species
-                et_ps.rembed.post.W[:, :, (iz-1)*n_species + jz] .= ps.rbasis.Wnlq[:, :, iz, jz]
-            end
+"Rattled BCC supercells, 54 atoms each, species cycled Ti/Al/V so every ordered pair occurs."
+function ms3_configs(n)
+    a = 3.3
+    box = [SVector(3a, 0.0, 0.0), SVector(0.0, 3a, 0.0), SVector(0.0, 0.0, 3a)]
+    out = []
+    for k in 1:n
+        rng = MersenneTwister(100 + k)
+        pos = SVector{3,Float64}[]
+        spec = Symbol[]
+        idx = 0
+        for ix in 0:2, iy in 0:2, iz in 0:2, b in ((0.0, 0.0, 0.0), (0.5, 0.5, 0.5))
+            idx += 1
+            p = a .* (SVector(ix, iy, iz) .+ SVector(b))
+            push!(pos, p + 0.15 * randn(rng, SVector{3,Float64}))
+            push!(spec, MS3_ELEMENTS[mod1(idx + k, 3)])
         end
-        for iz in 1:n_species
-            et_ps.readout.W[1, :, iz] .= ps.WB[:, iz]
+        push!(out, AtomsBase.periodic_system([e => x * u"Å" for (e, x) in zip(spec, pos)],
+                                             box .* u"Å"))
+    end
+    return out
+end
+
+"""
+    ms3_spline_stack(stacked; Nspl) -> StackedCalculator
+
+`(ETOneBody, ETPairModel, splinified ETACE)`.  The pair term is carried over UNSPLINIFIED --
+`splinify` only touches the many-body radial basis, and the exporter emits the pair term in
+both radial modes, so a pair-less reference would re-measure the defect Task 1 removed.
+Built exactly like `cantor_spline_stack` in fixtures/cantor_fixture.jl.
+"""
+function ms3_spline_stack(stacked; Nspl::Integer)
+    onebody, pair, ace = stacked.calcs
+    m = ETM.splinify(ace.model, ace.ps, ace.st; Nspl = Nspl)
+    p, s = LuxCore.setup(MersenneTwister(1), m)
+    p.readout.W .= ace.ps.readout.W
+    return ETM.StackedCalculator((onebody, pair, ETM.ETACEPotential(m, p, s, ace.rcut)))
+end
+
+"The six per-symmetric-pair Agnesi tuples of the many-body / pair branches of a stack."
+ms3_mb_params(stacked) = stacked.calcs[end].model.rembed.layer.trans.refstate.params
+ms3_pair_params(stacked) = stacked.calcs[2].model.rembed.layer.rbasis.trans.refstate.params
+# Same expansion the generator performs at export time (== ET.symidx).
+ms3_symidx(i, j, NZ) = (min(i, j) - 1) * NZ - (min(i, j) - 1) * (min(i, j) - 2) ÷ 2 +
+                       (max(i, j) - min(i, j) + 1)
+
+@testset "Multi-Species ETACE Export" verbose = true begin
+
+    model_a, ps_a, st_a, rcut_a = ms3_model(:asym)
+    model_u, ps_u, st_u, rcut_u = ms3_model(:uniform)
+    stacked_a = ETM.convert2et_full(model_a, ps_a, st_a)
+    stacked_u = ETM.convert2et_full(model_u, ps_u, st_u)
+    held = ms3_configs(3)
+    build = mkpath(joinpath(@__DIR__, "build"))
+    f_poly = joinpath(build, "ms3_poly.jl")
+    f_herm = joinpath(build, "ms3_hermite50.jl")
+
+    @testset "the NZ=3 models discriminate the two pair conventions" begin
+        for (tag, stacked, rcut) in (("asym", stacked_a, rcut_a), ("uniform", stacked_u, rcut_u))
+            @test length(stacked.calcs) == 3
+            @test [string(nameof(typeof(c.model))) for c in stacked.calcs] ==
+                  ["ETOneBody", "ETPairModel", "ETACE"]
+            # ONE cutoff: the model's own maximum, what convert2et_full picked, and what
+            # every neighbour list and check_export call below uses.
+            @test rcut == MS3_RCUT
+            @test stacked.calcs[end].rcut == rcut
+            @test stacked.calcs[2].rcut == rcut
+
+            mb_par = ms3_mb_params(stacked)
+            pr_par = ms3_pair_params(stacked)
+            nsym = (MS3_NZ * (MS3_NZ + 1)) ÷ 2
+            # transform parameters are stored per SYMMETRIC pair ...
+            @test length(mb_par) == nsym
+            @test length(pr_par) == nsym
+            # ... and are mutually distinct, which is the ONLY thing that makes a wrong
+            # ordered -> symmetric expansion observable (the Cantor fixture has six
+            # identical tuples, so no permutation of them could ever be detected).
+            @test length(unique(mb_par)) == nsym
+            @test length(unique(pr_par)) == nsym
+
+            # Weights are per ORDERED pair and are genuinely asymmetric under (i,j)->(j,i).
+            # (The transform parameters cannot be: one tuple is shared by both orderings.)
+            W = stacked.calcs[end].ps.rembed.post.W
+            Wp = stacked.calcs[2].ps.rembed.rbasis.post.W
+            @test size(W, 3) == MS3_NZ^2
+            @test size(Wp, 3) == MS3_NZ^2
+            @test all(W[:, :, (i - 1) * MS3_NZ + j] != W[:, :, (j - 1) * MS3_NZ + i]
+                      for i in 1:MS3_NZ, j in 1:MS3_NZ if i != j)
+            @test all(Wp[:, :, (i - 1) * MS3_NZ + j] != Wp[:, :, (j - 1) * MS3_NZ + i]
+                      for i in 1:MS3_NZ, j in 1:MS3_NZ if i != j)
+            @info "NZ=3 $tag model: $nsym distinct symmetric transform tuples, asymmetric ordered weights"
         end
-
-        # Create ETACE calculator
-        et_calc = ETM.ETACEPotential(et_model, et_ps, et_st, rcut)
-
-        @test et_calc !== nothing
-        @info "Multi-species ETACE model created with $n_species species"
-
-        # Store model for export test
-        TEST_ARTIFACTS["multispecies_etace_calc"] = et_calc
     end
 
-    @testset "Multi-Species Export Code Generation" begin
-        et_calc = get(TEST_ARTIFACTS, "multispecies_etace_calc", nothing)
-        if et_calc === nothing
-            @test_skip "Multi-species ETACE model not created"
-            return
-        end
-
-        # Export to Julia code
-        build_dir = joinpath(TEST_DIR, "build")
-        mkpath(build_dir)
-
-        include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
-        model_file = joinpath(build_dir, "test_multispecies_etace.jl")
-
-        # Export with library interface
-        export_ace_model(et_calc, model_file; for_library=true)
-        @test isfile(model_file)
-
-        # Verify file contents have expected multi-species components
-        content = read(model_file, String)
-
-        # Check for multiple species
-        @test occursin("NZ = 2", content)  # Two species
-
-        # Check species mapping (Ti=22, Al=13)
-        @test occursin("22", content)  # Ti atomic number
-        @test occursin("13", content)  # Al atomic number
-
-        # Check for I2Z array
-        @test occursin("I2Z", content)
-
-        @info "Multi-species ETACE export code generated successfully"
+    @testset ":polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12" begin
+        Base.invokelatest(export_ace_model, stacked_a, f_poly; radial_basis = :polynomial)
+        @test isfile(f_poly)
+        dE, dF, dV = Base.invokelatest(check_export, f_poly, stacked_a, held, rcut_a;
+                                       tol = 1e-12,
+                                       label = "NZ=3 asym :polynomial vs FITTED stack")
+        @test dE <= 1e-12
+        @test dF <= 1e-12
+        @test dV <= 1e-12
     end
 
-    @testset "Multi-Species Evaluation" begin
-        build_dir = joinpath(TEST_DIR, "build")
-        model_file = joinpath(build_dir, "test_multispecies_etace.jl")
+    @testset ":hermite_spline (uniform cutoff) vs the SPLINIFIED stack, 1e-12" begin
+        spl = ms3_spline_stack(stacked_u; Nspl = 50)
+        # the SPLINIFIED stack is what gets exported -- export_ace_model refuses to emit
+        # Hermite tables for an unsplinified model (it warns and silently falls back to
+        # :polynomial), which would turn this gate into a comparison of two different models
+        Base.invokelatest(export_ace_model, spl, f_herm; radial_basis = :hermite_spline)
+        @test isfile(f_herm)
+        # export_ace_model auto-detects splinification; the file must really be the spline one
+        @test occursin("HERMITE CUBIC SPLINE RADIAL BASIS", read(f_herm, String))
 
-        if !isfile(model_file)
-            @test_skip "Multi-species model file not found"
-            return
-        end
+        dE, dF, dV = Base.invokelatest(check_export, f_herm, spl, held, rcut_u;
+                                       tol = 1e-12,
+                                       label = "NZ=3 uniform :hermite_spline(Nspl=50) vs SPLINIFIED stack")
+        @test dE <= 1e-12
+        @test dF <= 1e-12
+        @test dV <= 1e-12
 
-        # Load exported model
-        exported = Module(:ExportedMultispecies)
-        Base.include(exported, model_file)
-
-        # Test with Ti center and mixed Ti/Al neighbors
-        Z0 = 22  # Ti center
-        Rs = [
-            SVector(2.5, 0.0, 0.0),
-            SVector(0.0, 2.5, 0.0),
-            SVector(0.0, 0.0, 2.5),
-        ]
-        Zs = [22, 13, 22]  # Ti, Al, Ti neighbors
-
-        # Energy should be finite
-        E = exported.site_energy(Rs, Zs, Z0)
-        @test isfinite(E)
-
-        # Forces should be finite and correct length
-        E2, F = exported.site_energy_forces(Rs, Zs, Z0)
-        @test E2 ≈ E
-        @test length(F) == 3
-        @test all(isfinite, norm.(F))
-
-        # Test with Al center
-        Z0_Al = 13  # Al center
-        E_Al = exported.site_energy(Rs, Zs, Z0_Al)
-        @test isfinite(E_Al)
-
-        @info "Multi-species evaluation verified"
+        # Informational ONLY.  This is splinification (model) error, never export error, and
+        # it must never be compared against any tolerance.
+        fit = Base.invokelatest(check_export_report, f_herm, stacked_u, held, rcut_u;
+                                label = "NZ=3 uniform :hermite_spline(Nspl=50) vs FITTED stack [informational]")
+        @info "Hermite error against the FITTED model -- reported, never gated" dE_atom = fit[1] dF = fit[2] dV_atom = fit[3]
     end
 
-    @testset "Species Index Mapping" begin
-        build_dir = joinpath(TEST_DIR, "build")
-        model_file = joinpath(build_dir, "test_multispecies_etace.jl")
+    @testset "upstream: splinified evaluation is impossible with per-pair cutoffs" begin
+        # EquivariantTensors `_spl_grid` (transsplines.jl:200-207) clamps y to [x0, x1] and
+        # then takes knots `il+1, il+2`; at y == x1 that is knot NX+1.  Any edge beyond a
+        # pair's own cutoff but inside the neighbour cutoff transforms to exactly y = 1, so
+        # the splinified ET model throws before the exported model can be compared to it.
+        # The EXPORTED code clamps the segment index and evaluates fine -- it is the
+        # reference, not the export, that is missing.  When this test starts failing,
+        # upstream has been fixed: move the Hermite gate above onto the :asym model.
+        spl_a = ms3_spline_stack(stacked_a; Nspl = 50)
+        @test_throws BoundsError AtomsCalculators.potential_energy(held[1], spl_a)
+    end
 
-        if !isfile(model_file)
-            @test_skip "Multi-species model file not found"
-            return
+    @testset "one ordered pair index keys every per-pair table" begin
+        NZ = MS3_NZ
+
+        # --- :polynomial export (the :asym model) ----------------------------------------
+        ex = Base.invokelatest(load_exported, f_poly)
+        @test ex.NZ == NZ
+        @test all(Base.invokelatest(ex.pair_idx, i, j) == (i - 1) * NZ + j
+                  for i in 1:NZ, j in 1:NZ)
+        # the old symmetric helper is gone from both the module and the emitted source
+        @test isdefined(ex, :zz2pair_sym) == false
+        @test occursin("zz2pair_sym", read(f_poly, String)) == false
+
+        mb_par = ms3_mb_params(stacked_a)
+        pr_par = ms3_pair_params(stacked_a)
+        W = stacked_a.calcs[end].ps.rembed.post.W
+        @test length(ex.TRANSFORM_PARAMS) == NZ^2
+        @test length(ex.RBASIS_W) == NZ^2
+        @test length(ex.PAIR_C) == NZ^2
+        @test length(ex.PAIR_TRANSFORM_PARAMS) == NZ^2
+        for i in 1:NZ, j in 1:NZ
+            k = (i - 1) * NZ + j
+            p = mb_par[ms3_symidx(i, j, NZ)]
+            q = ex.TRANSFORM_PARAMS[k]
+            @test (q.rin, q.req, q.a, q.b0, q.b1) == (p.rin, p.req, p.a, p.b0, p.b1)
+            @test ex.RBASIS_W[k] == W[:, :, k]
+            pp = pr_par[ms3_symidx(i, j, NZ)]
+            qq = ex.PAIR_TRANSFORM_PARAMS[k]
+            @test (qq.rin, qq.req, qq.a, qq.b0, qq.b1) == (pp.rin, pp.req, pp.a, pp.b0, pp.b1)
         end
 
-        content = read(model_file, String)
+        # --- :hermite_spline export (the :uniform model) ---------------------------------
+        exh = Base.invokelatest(load_exported, f_herm)
+        @test all(Base.invokelatest(exh.pair_idx, i, j) == (i - 1) * NZ + j
+                  for i in 1:NZ, j in 1:NZ)
+        @test isdefined(exh, :zz2pair_sym) == false
+        @test occursin("zz2pair_sym", read(f_herm, String)) == false
 
-        # Check I2Z mapping (index to atomic number)
-        @test occursin("I2Z", content)
+        mb_par_u = ms3_mb_params(stacked_u)
+        F = ms3_spline_stack(stacked_u; Nspl = 50).calcs[end].st.rembed.params.F
+        @test size(F, 2) == NZ^2          # the knot tables are per ORDERED pair
+        for i in 1:NZ, j in 1:NZ
+            k = (i - 1) * NZ + j
+            @test isdefined(exh, Symbol("PAIR_$(k)_F"))
+            Fk = getfield(exh, Symbol("PAIR_$(k)_F"))
+            @test length(Fk) == size(F, 1)
+            @test all(collect(Fk[t]) ≈ collect(F[t, k]) for t in 1:size(F, 1))
+            p = mb_par_u[ms3_symidx(i, j, NZ)]
+            @test getfield(exh, Symbol("PAIR_$(k)_REQ")) == p.req
+            @test getfield(exh, Symbol("PAIR_$(k)_B0")) == p.b0
+        end
+    end
 
-        # The z2i function should handle both Ti (Z=22) and Al (Z=13)
-        @test occursin("z2i", content)
-
-        @info "Species index mapping verified"
+    @testset "> MAX_NEIGHBORS is a loud error, not a silent cap" begin
+        ex = Base.invokelatest(load_exported, f_poly)
+        n = ex.MAX_NEIGHBORS + 44
+        Rs = [SVector(2.0 + 0.001k, 0.1, -0.05) for k in 1:n]
+        Zs = fill(22, n)
+        r = try
+            Base.invokelatest(ex.site_energy, Rs, Zs, 22)
+        catch e
+            e
+        end
+        # Until Task 6 removes the cap this must be a clear error naming the limit;
+        # afterwards it must simply evaluate.
+        @test r isa Number || occursin("neighbours", sprint(showerror, r))
     end
 
 end

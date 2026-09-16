@@ -54,7 +54,7 @@ const WORK_∂B = zeros(Float64, N_BASIS)
 # Uses pre-allocated arrays, returns views
 function compute_embeddings(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
     nneigh = length(Rs)
-    @assert nneigh <= MAX_NEIGHBORS "Too many neighbors: \$nneigh > \$MAX_NEIGHBORS"
+    @assert nneigh <= MAX_NEIGHBORS "site has \$nneigh neighbours; this export supports at most \$MAX_NEIGHBORS (re-export after Task 6 removes the cap)"
     iz0 = z2i(Z0)
 
     # Get views into pre-allocated arrays
@@ -93,7 +93,7 @@ end
 # Uses pre-allocated arrays, returns views
 function compute_embeddings_ed(Rs::Vector{SVector{3, Float64}}, Zs::Vector{<:Integer}, Z0::Integer)
     nneigh = length(Rs)
-    @assert nneigh <= MAX_NEIGHBORS "Too many neighbors: \$nneigh > \$MAX_NEIGHBORS"
+    @assert nneigh <= MAX_NEIGHBORS "site has \$nneigh neighbours; this export supports at most \$MAX_NEIGHBORS (re-export after Task 6 removes the cap)"
     iz0 = z2i(Z0)
 
     # Get views into pre-allocated arrays

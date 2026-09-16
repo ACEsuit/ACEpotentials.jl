@@ -182,12 +182,15 @@ println("Splinified ETACE calculator ready for export")
 #
 # ### Radial Basis Options
 #
-# | Mode | Accuracy | File Size | Speed | Recommended |
-# |------|----------|-----------|-------|-------------|
-# | `:hermite_spline` | Machine precision | ~1 MB | Fast | Yes |
-# | `:polynomial` | Exact | ~100 KB | Medium | For debugging |
+# | Mode | Accuracy | Reproduces | File size | Default |
+# |------|----------|------------|-----------|---------|
+# | `:polynomial` | exact (1e-12) | the fitted model | ~100 KB | **yes** |
+# | `:hermite_spline` | approximate (2.7e-4 eV/Å at `Nspl=50` on the Cantor model) | the *splinified* model | ~1 MB | no |
 #
-# Use `:hermite_spline` for production - it's both faster and accurate.
+# `:polynomial` is the default and reproduces the fitted model exactly. `:hermite_spline` is
+# opt-in: it reproduces the SPLINIFIED model to 1e-12, and the difference from the fitted
+# model is model error introduced by `splinify`, which is why this tutorial splinifies before
+# exporting. It also requires a single cutoff shared by all species pairs.
 
 include(joinpath(@__DIR__, "../../src/export_ace_model.jl"))
 
@@ -197,6 +200,8 @@ mkpath(joinpath(deploy_dir, "lib"))
 
 export_file = joinpath(deploy_dir, "tial_etace_model.jl")
 println("\nExporting ETACE model...")
+# This model was splinified above, so :hermite_spline is the matching mode; drop the keyword
+# (or pass radial_basis=:polynomial with an unsplinified model) for the exact default.
 export_ace_model(et_calc, export_file; for_library=true, radial_basis=:hermite_spline)
 
 println("Exported to: $export_file")
@@ -279,7 +284,8 @@ println("File size: $(round(filesize(export_file)/1024, digits=1)) KB")
 # 2. Fit with `acefit!()` as usual
 # 3. Convert with `ETModels.convert2et()` and copy parameters
 # 4. **Splinify BEFORE export** with `splinify()`
-# 5. Export with `radial_basis=:hermite_spline`
+# 5. Export -- `:polynomial` (the default) is exact against the fitted model;
+#    `radial_basis=:hermite_spline` matches the splinified model used here
 # 6. Compile with `juliac --trim=safe`
 #
 # The resulting library is ~2x faster than standard ACE exports and requires

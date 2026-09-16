@@ -132,6 +132,23 @@ function generate_hermite_spline_code(hermite_data::Dict, NZ::Int, rcut::Float64
     n_rnl = first_data.n_rnl
     n_pairs = length(hermite_data)
 
+    # `extract_hermite_spline_data` keys the dictionary by the ORDERED pair index
+    # k = pair_idx(iz, jz) = (iz-1)*NZ + jz, the same convention `RBASIS_W`, `PAIR_C` and the
+    # generated `pair_idx` helper use.  Emitting a table for every k in 1:NZ^2 is what makes
+    # the dispatchers at the bottom of this function correct for NZ >= 2; keying or
+    # dispatching symmetrically (as this generator did before Task 2) silently swaps the
+    # radial basis of the transposed species pairs.
+    @assert n_pairs == NZ^2 """
+        Hermite spline data has $n_pairs tables, expected NZ^2 = $(NZ^2) (one per ORDERED
+        species pair).  extract_hermite_spline_data must key on pair_idx(iz, jz)."""
+    @assert sort(collect(keys(hermite_data))) == collect(1:NZ^2) """
+        Hermite spline table keys are $(sort(collect(keys(hermite_data)))), expected 1:$(NZ^2)."""
+    for (k, data) in hermite_data
+        @assert data.pair_idx == k && k == (data.iz - 1) * NZ + data.jz """
+            Hermite table $k claims to be pair ($(data.iz), $(data.jz)) / index
+            $(data.pair_idx); pair_idx would be $((data.iz - 1) * NZ + data.jz)."""
+    end
+
     println(io, """
 # ============================================================================
 # HERMITE CUBIC SPLINE RADIAL BASIS (trim-safe)
@@ -213,7 +230,10 @@ const RCUT_GLOBAL = $rcut
     pin = PAIR_$(pair_idx)_PIN
     pcut = PAIR_$(pair_idx)_PCUT
 
-    # Normalized distance from rin to req
+    # Normalized distance from rin to req.  agnesi_transform_d_$pair_idx below MUST form s
+    # the same way (by division, as ET.eval_agnesi does): forming it as a
+    # reciprocal-multiply there differs by 1 ulp, which the spline segment search and the
+    # envelope amplify into a disagreement between site_energy and site_energy_forces*.
     s = (r - rin) / (req - rin)
 
     # Generalized Agnesi: x = 1 / (1 + a * s^pin / (1 + s^(pin-pcut)))
@@ -238,8 +258,10 @@ end
     pin = PAIR_$(pair_idx)_PIN
     pcut = PAIR_$(pair_idx)_PCUT
 
+    # s formed exactly as in agnesi_transform_$pair_idx (division, not reciprocal-multiply);
+    # ds_dr is built separately and used only for the chain rule.
+    s = (r - rin) / (req - rin)
     ds_dr = one(T) / (req - rin)
-    s = (r - rin) * ds_dr
 
     # Avoid numerical issues at s=0
     if s <= zero(T)
@@ -385,11 +407,11 @@ end
 
 # Radial basis dispatch (values only)
 @inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
-    pair_idx = (iz - 1) * NZ + jz  # asymmetric indexing: tables are written in (iz-1)*NZ+jz order (fix: zz2pair_sym was wrong for NZ>1)""")
+    k = pair_idx(iz, jz)   # the ONE per-pair index; PAIR_k_* tables are written in that order""")
 
-    for pair_idx in 1:n_pairs
-        cond = pair_idx == 1 ? "if" : "elseif"
-        println(io, "    $cond pair_idx == $pair_idx; return evaluate_Rnl_$pair_idx(r)")
+    for k in 1:n_pairs
+        cond = k == 1 ? "if" : "elseif"
+        println(io, "    $cond k == $k; return evaluate_Rnl_$k(r)")
     end
     println(io, "    end")
     println(io, "    return zero(SVector{N_RNL, T})")
@@ -400,11 +422,11 @@ end
     println(io, """
 # Radial basis dispatch (with derivatives)
 @inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    pair_idx = (iz - 1) * NZ + jz  # asymmetric indexing: tables are written in (iz-1)*NZ+jz order (fix: zz2pair_sym was wrong for NZ>1)""")
+    k = pair_idx(iz, jz)   # the ONE per-pair index; PAIR_k_* tables are written in that order""")
 
-    for pair_idx in 1:n_pairs
-        cond = pair_idx == 1 ? "if" : "elseif"
-        println(io, "    $cond pair_idx == $pair_idx; return evaluate_Rnl_d_$pair_idx(r)")
+    for k in 1:n_pairs
+        cond = k == 1 ? "if" : "elseif"
+        println(io, "    $cond k == $k; return evaluate_Rnl_d_$k(r)")
     end
     println(io, "    end")
     println(io, "    return zero(SVector{N_RNL, T}), zero(SVector{N_RNL, T})")

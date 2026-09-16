@@ -1,6 +1,31 @@
 # Radial basis and spherical harmonics writing functions
 # Split from export_ace_model.jl for maintainability
 
+# ----------------------------------------------------------------------------------------
+# Species-pair indexing -- the export-time half of the single runtime convention.
+#
+# The generated code knows exactly ONE pair index, `pair_idx(iz, jz) = (iz-1)*NZ + jz`
+# (emitted by `_write_species`), which is `ET.catcat2idx`: the index of the SelectLinL
+# weights and of the splinified knot tables.  Whatever the model stores per SYMMETRIC pair
+# -- the Agnesi transform parameters, `ET.catcat2idx_sym` -- is expanded into that ordered
+# layout HERE, at export time, so the runtime never needs a second mapping.
+#
+# `_ordered_pairs(NZ)` enumerates the ordered pairs in table order, and
+# `_sym_pair_index(iz, jz, NZ)` is `ET.symidx` (EquivariantTensors utils/selector.jl:62-65),
+# i.e. the position of `(min, max)` in the `for i = 1:NZ, j = i:NZ` order that
+# `ETModels._convert_agnesi` fills.  Both are used by every per-pair table writer below and
+# by `extract_hermite_spline_data` in splinify.jl.
+# ----------------------------------------------------------------------------------------
+
+"Ordered species pairs `(k, iz, jz)` with `k = (iz-1)*NZ + jz`, in table order."
+_ordered_pairs(NZ::Int) = [((iz - 1) * NZ + jz, iz, jz) for iz in 1:NZ for jz in 1:NZ]
+
+"Position of the symmetric pair {iz, jz} in the `for i = 1:NZ, j = i:NZ` storage (ET.symidx)."
+@inline function _sym_pair_index(iz::Int, jz::Int, NZ::Int)
+    i, j = min(iz, jz), max(iz, jz)
+    return (i - 1) * NZ - (i - 1) * (i - 2) ÷ 2 + (j - i + 1)
+end
+
 function _write_spline_radial_basis_header(io, rcut)
     println(io, """
 # ============================================================================
@@ -8,13 +33,6 @@ function _write_spline_radial_basis_header(io, rcut)
 # ============================================================================
 
 const RCUT_MAX = $(rcut)
-
-# Symmetric species pair indexing: (iz, jz) -> pair index
-# For NZ=2: (1,1)->1, (1,2)->2, (2,2)->3
-@inline function zz2pair_sym(iz::Int, jz::Int)::Int
-    i, j = min(iz, jz), max(iz, jz)
-    return (i - 1) * NZ - (i - 1) * (i - 2) ÷ 2 + (j - i + 1)
-end
 """)
 end
 
@@ -31,15 +49,8 @@ function _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
     println(io, "const RCUT_MAX = $(rcut)")
     println(io)
 
-    # Write species pair index helper
-    println(io, """
-# Symmetric species pair indexing: (iz, jz) -> pair index
-# For NZ=2: (1,1)->1, (1,2)->2, (2,2)->3
-@inline function zz2pair_sym(iz::Int, jz::Int)::Int
-    i, j = min(iz, jz), max(iz, jz)
-    return (i - 1) * NZ - (i - 1) * (i - 2) ÷ 2 + (j - i + 1)
-end
-""")
+    # The ordered species-pair index `pair_idx(iz, jz)` is emitted once by `_write_species`
+    # and keys every per-pair table below.
 
     # Extract polynomial basis info
     rembed_layer = etace.rembed.layer
@@ -105,11 +116,11 @@ end
 
     # Write weights as tuple for trim-safe indexing
     println(io, "# Radial basis weights per species pair (tuple for trim-safe indexing)")
+    println(io, "# indexed by pair_idx(iz, jz) = (iz-1)*NZ + jz")
     println(io, "const RBASIS_W = (")
-    for pair_idx in 1:n_pairs
-        W_pair = W_radial[:, :, pair_idx]
-        W_vec = vec(W_pair)
-        println(io, "    SMatrix{$(n_rnl), $(n_polys), Float64, $(n_rnl * n_polys)}($(repr(collect(W_vec)))),")
+    for (k, iz, jz) in _ordered_pairs(NZ)
+        W_vec = vec(W_radial[:, :, k])
+        println(io, "    SMatrix{$(n_rnl), $(n_polys), Float64, $(n_rnl * n_polys)}($(repr(collect(W_vec)))),  # pair $k: ($iz, $jz)")
     end
     println(io, ")")
     println(io)
@@ -120,20 +131,21 @@ end
     println(io, "# ============================================================================")
     println(io)
 
-    println(io, "# Agnesi transform parameters per species pair")
+    println(io, "# Agnesi transform parameters, expanded from the model's per-SYMMETRIC-pair")
+    println(io, "# storage to one entry per ORDERED pair, indexed by pair_idx(iz, jz).")
     println(io, "const TRANSFORM_PARAMS = (")
 
-    for asym_pair_idx in 1:n_pairs
-        iz = (asym_pair_idx - 1) ÷ NZ + 1
-        jz = (asym_pair_idx - 1) % NZ + 1
-        sym_i = min(iz, jz)
-        sym_j = max(iz, jz)
-        sym_pair_idx = (sym_i - 1) * NZ - (sym_i - 1) * (sym_i - 2) ÷ 2 + (sym_j - sym_i + 1)
-        p = agnesi_params[sym_pair_idx]
+    @assert length(agnesi_params) == (NZ * (NZ + 1)) ÷ 2 """
+        many-body transform params: $(length(agnesi_params)) entries, expected \
+        $((NZ*(NZ+1))÷2) (one per symmetric pair, as ETModels._convert_agnesi stores them)"""
+
+    for (k, iz, jz) in _ordered_pairs(NZ)
+        sym = _sym_pair_index(iz, jz, NZ)
+        p = agnesi_params[sym]
 
         println(io, "    (rin=$(Float64(p.rin)), req=$(Float64(p.req)), rcut=$(Float64(rcut)), " *
                     "pin=$(Float64(p.pin)), pcut=$(Float64(p.pcut)), a=$(Float64(p.a)), " *
-                    "b0=$(Float64(p.b0)), b1=$(Float64(p.b1))),  # pair $asym_pair_idx: ($iz, $jz)")
+                    "b0=$(Float64(p.b0)), b1=$(Float64(p.b1))),  # pair $k: ($iz, $jz) -> sym $sym")
     end
     println(io, ")")
     println(io)
@@ -151,13 +163,26 @@ end
     return one_minus_y2^2, -4 * y * one_minus_y2
 end
 
-# Generic Agnesi transform using parameter tuple
+# Generalized Agnesi transform, mirroring ET.eval_agnesi
+# (EquivariantTensors src/transforms/agnesi.jl:45-61):
+#     s = (r - rin) / (req - rin);  x = 1/(1 + a s^pin / (1 + s^(pin-pcut)));  y = b1 x + b0
+# clamped to [-1, 1].  The parameters are built so that r = rin maps to y = -1 and r = rcut
+# to y = +1 (`xin -> -1`, `xcut -> +1` in `agnesi_params`), which is why the shortcuts below
+# return -1 at/below rin and +1 at/above rcut.  They are shortcuts for the clamp, NOT an
+# independent convention: getting their signs wrong (as this generator did until Task 2)
+# is invisible while rin = 0 and no edge reaches rcut, and silently wrong otherwise.
+#
+# `agnesi_transform` and `agnesi_transform_d` MUST form `s` identically -- both by division,
+# as eval_agnesi does.  Forming it as `(r - rin) * (1/(req - rin))` in one of them differs by
+# 1 ulp, which the N_POLYS-term recurrence amplifies into a ~4e-14 eV/site disagreement
+# between `site_energy` and `site_energy_forces_virial` (they take different routes through
+# these two functions).  See export/test/test_pair_export.jl.
 @inline function agnesi_transform(r::T, p) where {T}
     if r <= p.rin
-        return one(T)
+        return -one(T)
     end
     if r >= p.rcut
-        return -one(T)
+        return one(T)
     end
     s = (r - p.rin) / (p.req - p.rin)
     s_pin = s^p.pin
@@ -168,21 +193,18 @@ end
     return clamp(y, -one(T), one(T))
 end
 
-# Agnesi transform with derivative
+# Agnesi transform with derivative.  `s` is computed exactly as above (division); `ds_dr` is
+# formed separately for the chain rule and never used to build `s`.
 @inline function agnesi_transform_d(r::T, p) where {T}
     if r <= p.rin
-        return one(T), zero(T)
-    end
-    if r >= p.rcut
         return -one(T), zero(T)
     end
-
-    ds_dr = one(T) / (p.req - p.rin)
-    s = (r - p.rin) * ds_dr
-
-    if s <= T(1e-12)
+    if r >= p.rcut
         return one(T), zero(T)
     end
+
+    s = (r - p.rin) / (p.req - p.rin)
+    ds_dr = one(T) / (p.req - p.rin)
 
     s_pin = s^p.pin
     s_diff = s^(p.pin - p.pcut)
@@ -212,8 +234,8 @@ end
 # ============================================================================
 
 # Generic radial basis evaluation for any pair
-@inline function _evaluate_Rnl_pair(r::T, pair_idx::Int)::SVector{N_RNL, T} where {T}
-    @inbounds p = TRANSFORM_PARAMS[pair_idx]
+@inline function _evaluate_Rnl_pair(r::T, k::Int)::SVector{N_RNL, T} where {T}
+    @inbounds p = TRANSFORM_PARAMS[k]
     y = agnesi_transform(r, p)
 
     env = envelope_quartic(y)
@@ -222,13 +244,13 @@ end
     end
 
     P = eval_polys(y)
-    @inbounds W = RBASIS_W[pair_idx]
+    @inbounds W = RBASIS_W[k]
     return W * SVector{N_POLYS, T}(env .* P)
 end
 
 # Generic radial basis with derivatives
-@inline function _evaluate_Rnl_d_pair(r::T, pair_idx::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    @inbounds p = TRANSFORM_PARAMS[pair_idx]
+@inline function _evaluate_Rnl_d_pair(r::T, k::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
+    @inbounds p = TRANSFORM_PARAMS[k]
     y, dy_dr = agnesi_transform_d(r, p)
 
     env, denv_dy = envelope_quartic_d(y)
@@ -244,22 +266,20 @@ end
     P_env = env .* P
     dP_env_dr = denv_dr .* P .+ env .* dP_dr
 
-    @inbounds W = RBASIS_W[pair_idx]
+    @inbounds W = RBASIS_W[k]
     Rnl = W * SVector{N_POLYS, T}(P_env)
     dRnl = W * SVector{N_POLYS, T}(dP_env_dr)
 
     return Rnl, dRnl
 end
 
-# Public API: dispatch by species indices
+# Public API: dispatch by species indices through the single pair-index convention
 @inline function evaluate_Rnl(r::T, iz::Int, jz::Int)::SVector{N_RNL, T} where {T}
-    pair_idx = (iz - 1) * NZ + jz  # Asymmetric indexing for weights
-    return _evaluate_Rnl_pair(r, pair_idx)
+    return _evaluate_Rnl_pair(r, pair_idx(iz, jz))
 end
 
 @inline function evaluate_Rnl_d(r::T, iz::Int, jz::Int)::Tuple{SVector{N_RNL, T}, SVector{N_RNL, T}} where {T}
-    pair_idx = (iz - 1) * NZ + jz
-    return _evaluate_Rnl_d_pair(r, pair_idx)
+    return _evaluate_Rnl_d_pair(r, pair_idx(iz, jz))
 end
 """)
 end
@@ -290,8 +310,8 @@ end
 #  * the Agnesi transform parameters are stored per SYMMETRIC pair
 #    (`_convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and the selector is
 #    `catcat2idx_sym`), i.e. NZ*(NZ+1)/2 entries addressed by `symidx`.  The ordered ->
-#    symmetric mapping below is the same one `_write_etace_radial_basis` uses for
-#    TRANSFORM_PARAMS (lines ~126-136).
+#    symmetric mapping below goes through the shared `_sym_pair_index` helper at the top of
+#    this file, exactly as TRANSFORM_PARAMS does.
 #  * the readout weight Wread is per CENTRE species only (shape (1, n_pairbasis, NZ)).
 #
 # Numerics:
@@ -368,10 +388,10 @@ function _write_pair_basis(io, pair_calc, NZ, etace_zlist, rcut)
     println(io, "const PAIR_ENV_P = $(Int(env.p))")
     println(io)
 
-    println(io, "# Readout-folded polynomial coefficients, one entry per ORDERED pair (iz0, jz)")
+    println(io, "# Readout-folded polynomial coefficients, one entry per ORDERED pair,")
+    println(io, "# indexed by pair_idx(iz0, jz) with iz0 the CENTRE species.")
     println(io, "const PAIR_C = (")
-    for iz0 in 1:NZ, jz in 1:NZ
-        k = (iz0 - 1) * NZ + jz
+    for (k, iz0, jz) in _ordered_pairs(NZ)
         c = vec(transpose(Wr[1, :, iz0]) * W[:, :, k])
         @assert length(c) == nq
         println(io, "    SVector{$(nq), Float64}($(repr(collect(c)))),  # pair $k: ($iz0, $jz)")
@@ -380,12 +400,11 @@ function _write_pair_basis(io, pair_calc, NZ, etace_zlist, rcut)
     println(io)
 
     println(io, "# Agnesi transform parameters, expanded from the symmetric-pair storage")
-    println(io, "# to one entry per ORDERED pair (iz0, jz) so no runtime mapping is needed.")
+    println(io, "# to one entry per ORDERED pair, indexed by pair_idx(iz0, jz) -- the same")
+    println(io, "# table layout as PAIR_C above, so no runtime mapping is needed.")
     println(io, "const PAIR_TRANSFORM_PARAMS = (")
-    for iz0 in 1:NZ, jz in 1:NZ
-        k = (iz0 - 1) * NZ + jz
-        sym_i, sym_j = min(iz0, jz), max(iz0, jz)
-        sym_idx = (sym_i - 1) * NZ - (sym_i - 1) * (sym_i - 2) ÷ 2 + (sym_j - sym_i + 1)
+    for (k, iz0, jz) in _ordered_pairs(NZ)
+        sym_idx = _sym_pair_index(iz0, jz, NZ)
         p = trans[sym_idx]
         println(io, "    (pin=$(Int(p.pin)), pcut=$(Int(p.pcut)), a=$(Float64(p.a)), " *
                     "b0=$(Float64(p.b0)), b1=$(Float64(p.b1)), rin=$(Float64(p.rin)), " *
@@ -427,7 +446,7 @@ end
 @inline function pair_energy_d(r::Float64, iz0::Int, jz::Int)
     e, de = _pair_env_d(r)
     e == 0.0 && return 0.0, 0.0
-    k = (iz0 - 1) * NZ + jz
+    k = pair_idx(iz0, jz)
     @inbounds p = PAIR_TRANSFORM_PARAMS[k]
     y, dy_dr = _pair_transform_d(r, p)
     @inbounds c = PAIR_C[k]

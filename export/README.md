@@ -65,8 +65,8 @@ acefit!(data, ACEPotential(ace_model, ps, st))
 et_model = ETModels.convert2et(ace_model)
 et_model_splined = ETModels.splinify(et_model, et_ps, et_st; Nspl=50)
 
-# Export with Hermite splines
-export_ace_model(et_calc, "model.jl"; radial_basis=:hermite_spline)
+# Export (default: :polynomial, exact to 1e-12 against the fitted model)
+export_ace_model(et_calc, "model.jl")
 ```
 
 See [`examples/etace_lammps_tutorial.jl`](examples/etace_lammps_tutorial.jl) for a complete walkthrough.
@@ -75,19 +75,31 @@ See [`examples/etace_lammps_tutorial.jl`](examples/etace_lammps_tutorial.jl) for
 
 When exporting, choose the radial basis representation:
 
-| Mode | Accuracy | File Size | Speed | Use Case |
-|------|----------|-----------|-------|----------|
-| `:hermite_spline` | Machine precision | ~1 MB | Fast | **Recommended** |
-| `:polynomial` | Exact | ~100 KB | Medium | Debugging, verification |
+| Mode | Accuracy | Reference it reproduces | Status | Use case |
+|------|----------|-------------------------|--------|----------|
+| `:polynomial` | exact (1e-12 in energy, forces and virial) | the **fitted** model | **default** | any model |
+| `:hermite_spline` | approximate: 2.7e-4 eV/Å at `Nspl=50`, 3e-6 eV/Å at `Nspl=200` on the Cantor model | the **splinified** model | opt-in | learned radials with a small `N_POLYS` |
 
-**Recommendation**: Use `:hermite_spline` for all production deployments.
+`:polynomial` re-evaluates the polynomial recurrence at runtime and reproduces the model it
+was exported from to double-precision roundoff.
+
+`:hermite_spline` emits the knot tables of a model that was already splinified with
+`ETModels.splinify`, and evaluates a piecewise cubic.  It reproduces *that splinified model*
+to 1e-12 — but the splinified model is not the fitted one, and the numbers in the table above
+are that model error (from `verify_cantor/log.chain`), not export error.  Splinify **before**
+fitting if you intend to deploy this mode.  Two further constraints:
+
+* every species pair must share one cutoff — with per-pair cutoffs the splinified model
+  itself throws a `BoundsError` at `y = 1` (upstream `EquivariantTensors._spl_grid`);
+* never compare a `:hermite_spline` export against the fitted model and call the difference
+  an export error.
 
 ```julia
-# Hermite cubic splines (recommended)
-export_ace_model(calc, "model.jl"; radial_basis=:hermite_spline)
+# Polynomial (default, exact)
+export_ace_model(calc, "model.jl")
 
-# Polynomial (for debugging)
-export_ace_model(calc, "model.jl"; radial_basis=:polynomial)
+# Hermite cubic splines (opt-in; the model must already be splinified)
+export_ace_model(calc, "model.jl"; radial_basis=:hermite_spline)
 ```
 
 ## Directory Structure

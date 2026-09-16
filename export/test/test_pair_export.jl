@@ -62,21 +62,31 @@ end
 # `site_energy_forces` and `site_energy_forces_virial` share their whole evaluation route, so
 # they are compared BITWISE and must stay that way -- do not relax those to `≈`.
 #
-# `site_energy` takes the value-only route (`compute_embeddings` -> `evaluate_Rnl`) while the
-# other two take the derivative route (`compute_embeddings_ed` -> `evaluate_Rnl_d`), and those
-# two form the transform variable differently: `agnesi_transform` computes
-# `s = (r - rin) / (req - rin)` whereas `agnesi_transform_d` computes
-# `s = (r - rin) * (1 / (req - rin))`, which is a 1-ulp difference that the 45-term recurrence
-# amplifies.  That is PRE-EXISTING many-body behaviour, not the pair term: the run below
-# measures the same divergence on a pair-less export of the same model.  It is recorded as
-# `@test_broken` (visible in the summary, and it flips to a failure the day someone makes the
-# two agree) and gated absolutely at 1e-12 per site, which is ~20x the measured divergence and
-# orders of magnitude below either failure mode this testset exists to catch.
+# `site_energy` takes the value-only route (`compute_embeddings` -> `evaluate_Rnl`, `eval_ylm`)
+# while the other two take the derivative route (`compute_embeddings_ed` -> `evaluate_Rnl_d`,
+# `eval_ylm_ed`).  Those two routes do NOT agree bitwise, and this testset pins down exactly
+# which half is responsible, because the two halves have very different status:
+#
+#   RADIAL  -- fixed in Task 2 and now gated BITWISE below (`d_Rnl == 0.0`).  Until then
+#     `agnesi_transform` formed `s = (r - rin) / (req - rin)` while `agnesi_transform_d`
+#     formed `s = (r - rin) * (1 / (req - rin))`; that 1-ulp difference, amplified by the
+#     45-term recurrence, was the larger part of the site-energy spread (4.263256414560601e-14
+#     eV/site).  Both now divide, exactly as `ET.eval_agnesi` does, and the radial embeddings
+#     of the two routes are identical to the last bit.  Do not reintroduce a
+#     reciprocal-multiply in one route only.
+#
+#   SPHERICAL HARMONICS -- NOT fixed, and not fixable inside export/.  `eval_ylm` is emitted
+#     from `SpheriCart._codegen_Zlm` and `eval_ylm_ed` from `SpheriCart._codegen_Zlm_grads`
+#     (codegen.jl:57,93): two independently generated expression trees for the same Zlm, which
+#     agree only to roundoff.  Measured 3.552713678800501e-15 on the Ylm entries, and it is
+#     the whole of the remaining 2.842170943040401e-14 eV/site energy spread.  That residual
+#     is therefore recorded as `@test_broken` with an absolute 1e-12 gate, NOT asserted to
+#     zero, and NOT papered over by relaxing anything to `≈`.
 #
 # Call this through `Base.invokelatest` (as check_export.jl does with `exported_efv`): the
 # `ex.site_energy*` bindings do not exist in the world this file was compiled in.
 function _site_function_spread(ex, fx)
-    d_se = d_sef = d_F = 0.0
+    d_se = d_sef = d_F = d_Rnl = d_Ylm = 0.0
     nsites = 0
     for sys in fx.held
         for (Rs, Zs, Z0, _js) in site_sets(sys, fx.rcut)
@@ -86,10 +96,19 @@ function _site_function_spread(ex, fx)
             d_se = max(d_se, abs(Es - Ev))
             d_sef = max(d_sef, abs(Ef - Ev))
             d_F = max(d_F, maximum(norm.(Ff .- Fv)))
+
+            # Attribute the site_energy spread to the radial half or the Ylm half.  Both
+            # entry points write the same WORK_* arrays, so the value-route results must be
+            # COPIED before the derivative route overwrites them.
+            Rnl_v, Ylm_v = ex.compute_embeddings(Rs, Zs, Z0)
+            Rv, Yv = Array(Rnl_v), Array(Ylm_v)
+            emb = ex.compute_embeddings_ed(Rs, Zs, Z0)
+            d_Rnl = max(d_Rnl, maximum(abs.(Rv .- Array(emb[1]))))
+            d_Ylm = max(d_Ylm, maximum(abs.(Yv .- Array(emb[3]))))
             nsites += 1
         end
     end
-    return (; d_se, d_sef, d_F, nsites)
+    return (; d_se, d_sef, d_F, d_Rnl, d_Ylm, nsites)
 end
 
 @testset "site_energy / _forces / _forces_virial agree, with a live pair term" begin
@@ -108,7 +127,9 @@ end
             "(pair export / pair-less export of the same model):" *
             "\n    max|site_energy        - site_energy_forces_virial[1]| = $(s.d_se) / $(snp.d_se)" *
             "\n    max|site_energy_forces[1] - site_energy_forces_virial[1]| = $(s.d_sef) / $(snp.d_sef)" *
-            "\n    max|site_energy_forces[2] - site_energy_forces_virial[2]| = $(s.d_F) / $(snp.d_F)")
+            "\n    max|site_energy_forces[2] - site_energy_forces_virial[2]| = $(s.d_F) / $(snp.d_F)" *
+            "\n    max|Rnl(value route) - Rnl(derivative route)| = $(s.d_Rnl) / $(snp.d_Rnl)  [must be 0.0]" *
+            "\n    max|Ylm(value route) - Ylm(derivative route)| = $(s.d_Ylm) / $(snp.d_Ylm)  [SpheriCart, not gated to 0]")
     flush(stdout)
 
     @test s.nsites == sum(length.(fx.held))
@@ -119,12 +140,21 @@ end
     @test snp.d_sef == 0.0
     @test snp.d_F == 0.0
 
-    # site_energy: known pre-existing spread, gated absolutely
+    # RADIAL: bitwise since Task 2 made agnesi_transform / agnesi_transform_d form `s`
+    # identically (both by division, as ET.eval_agnesi does).  This is a hard gate.
+    @test s.d_Rnl == 0.0
+    @test snp.d_Rnl == 0.0
+
+    # site_energy: still not bitwise, and the ONLY remaining cause is the spherical harmonics
+    # (see the header).  Recorded rather than asserted away: it shows in the summary as Broken
+    # and flips to a failure the day the two SpheriCart expression trees are unified.
     @test_broken s.d_se == 0.0
     @test s.d_se <= 1e-12
-    # and it is not the pair term's doing: the pair-less export shows the same magnitude
-    @test snp.d_se > 0.0
-    @test s.d_se <= 10 * max(snp.d_se, eps())
+    @test snp.d_se <= 1e-12
+    # ... and the attribution is asserted, not just asserted-about: the Ylm spread is nonzero
+    # and of the same order as the site-energy spread, while the radial spread is exactly 0.
+    @test s.d_Ylm > 0.0
+    @test s.d_se <= 100 * s.d_Ylm
 end
 
 @testset "Unknown calculator in the stack is refused" begin

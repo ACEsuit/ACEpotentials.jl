@@ -10,7 +10,8 @@
 #   load_cantor_fixture()        -> (; model, ps, st, E0s, stacked, held, held_xyz, rcut, elements)
 #   cantor_substacks(fx)         -> (onebody_calc, pair_calc, ace_calc)   [by model type name]
 #   cantor_mb_stack(fx)          -> StackedCalculator (E0 + many-body)
-#   cantor_spline_stack(fx;Nspl) -> StackedCalculator (E0 + splinified ETACE)
+#   cantor_spline_stack(fx;Nspl[, with_pair]) -> StackedCalculator
+#                                (E0 + pair + splinified ETACE; with_pair=false drops the pair)
 #   load_cantor_reference(k)     -> (; natoms, E_a, E_amb, E_bmb, E_c50, E_c200, F_a, ...)
 #   read_cantor_lammps_data(fn)  -> periodic_system
 #
@@ -184,16 +185,29 @@ function cantor_mb_stack(fx)
 end
 
 """
-    cantor_spline_stack(fx; Nspl) -> StackedCalculator
+    cantor_spline_stack(fx; Nspl, with_pair = true) -> StackedCalculator
 
-`E0 + splinified ETACE`, built exactly as `chain_cantor.jl:129-136` builds it (this is the
-reference for `:hermite_spline` exports; `Nspl = 50` -> `c50`, `Nspl = 200` -> `c200`).
+The reference a `:hermite_spline` export must be compared against.
+
+`with_pair = true` (the DEFAULT since Task 2) returns the three-term stack
+`(ETOneBody, ETPairModel, splinified ETACE)`.  `splinify` only replaces the many-body radial
+basis; the pair term is carried over unchanged, and since Task 1 the generator emits it in
+BOTH radial modes.  Comparing a Hermite export against a pair-less stack would therefore
+re-measure exactly the 6.9 eV/Å defect Task 1 removed and misattribute it to Hermite error.
+
+`with_pair = false` returns the two-term `(ETOneBody, splinified ETACE)` stack that
+`chain_cantor.jl:129-136` builds and that columns `c50` / `c200` of `ref_k.txt` record
+(`Nspl = 50` -> `c50`, `Nspl = 200` -> `c200`).  Use it ONLY to check against those columns;
+it is not a valid reference for an exported model.
+
 Components are located with [`cantor_substacks`](@ref), never by index.
 """
-function cantor_spline_stack(fx; Nspl::Integer)
-    onebody_calc, _, ace_calc = cantor_substacks(fx)
+function cantor_spline_stack(fx; Nspl::Integer, with_pair::Bool = true)
+    onebody_calc, pair_calc, ace_calc = cantor_substacks(fx)
     m = ETM.splinify(ace_calc.model, ace_calc.ps, ace_calc.st; Nspl = Nspl)
     p, s = LuxCore.setup(MersenneTwister(1), m)
     p.readout.W .= ace_calc.ps.readout.W
-    return ETM.StackedCalculator((onebody_calc, ETM.ETACEPotential(m, p, s, fx.rcut)))
+    spl_calc = ETM.ETACEPotential(m, p, s, fx.rcut)
+    return with_pair ? ETM.StackedCalculator((onebody_calc, pair_calc, spl_calc)) :
+                       ETM.StackedCalculator((onebody_calc, spl_calc))
 end
