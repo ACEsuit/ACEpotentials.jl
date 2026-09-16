@@ -8,6 +8,11 @@
 #   check_export_report(model_file, calc, held, rcut; label) -> (maxdE, maxdF, maxdV)   [no assert]
 #   check_export(model_file, calc, held, rcut; tol = 1e-12, label) -> (maxdE, maxdF, maxdV) [asserts]
 #
+# The two differ ONLY in who raises: check_export is check_export_report plus one @assert over
+# all three maxima.  In-suite call sites use check_export_report + three explicit @test lines
+# (same three quantities, same tol, but a breach reports as a test FAILURE naming the quantity
+# instead of as an error).  Either way, gating all three is the CALLER's responsibility.
+#
 # METRICS -- READ THIS BEFORE CHOOSING A `tol`.  The three maxima are NOT normalised the same
 # way, so one `tol` value means three different things:
 #   maxdE = max |E - Eref| / natoms          [eV / atom]   PER ATOM  (energy is extensive)
@@ -123,20 +128,32 @@ The exported `:polynomial` model against the `E0 + many-body` ET stack deviates 
 deviation is `8e-16 .. 3.6e-15` **relative** to `\\|V\\|_inf`, i.e. 4-16 ulp, which is what pure
 summation roundoff looks like. A dropped pair term, by contrast, reads `3.8e+01` eV/atom.
 
-# Residual risk
+# Residual risk, and WHOSE job it is to gate the virial
 
 An absolute virial error smaller than `tol * natoms` eV (up to ~4.8e-11 eV for the 48-atom
-configurations here) passes this gate. Nothing else re-checks it: downstream call sites that
-inspect only the returned force component never look at the virial, so the internal `@assert`
-in [`check_export`](@ref) is the only thing gating it. Use `check_export`, not
-`check_export_report`, whenever the virial must actually be constrained.
+configurations here) passes any gate built on `maxdV`. Nothing re-checks it afterwards, so
+whichever of the two entry points a caller uses, **the caller is responsible for gating all
+three returned quantities** — a call site that tests only `maxdF` leaves the virial
+unconstrained entirely.
+
+The two entry points differ only in who raises:
+
+| | gate mechanism | reports as | use when |
+|---|---|---|---|
+| `check_export_report` + `@test x <= tol` | the caller's `@test` | a test **failure**, naming the quantity | inside a `@testset` |
+| `check_export` | this file's internal `@assert` | a test **error** | outside a testset, or in a script |
+
+Both are equally strict at the same `tol`. As of Task 2 the four in-suite call sites use
+`check_export_report` + three explicit `@test` lines, so that the gate is visible in the test
+summary and a breach names which of E, F or V moved; `check_export` remains for callers that
+want the assertion, and Tasks 5-7 are briefed to use it.
 
 Every call prints all four figures with unambiguous labels, each tagged `[per atom]` or
 `[absolute]`, and the raw `max|dV|` is tagged `[absolute; reported only, never gated]` so it
-cannot be mistaken for the number `check_export` tests.
+cannot be mistaken for a gated quantity.
 
 Use `check_export_report` when the deviation *is* the measurement (e.g. the Hermite-spline
-error against the fitted model); use `check_export` when it must be inside a tolerance.
+error against the fitted model, which must never be asserted against a tolerance at all).
 """
 function check_export_report(model_file, calc, held, rcut; label = model_file)
     ex = load_exported(model_file)
@@ -179,8 +196,13 @@ things — read the table in [`check_export_report`](@ref) before choosing one:
 That last row is deliberate (energy and virial are extensive; see
 [`check_export_report`](@ref) for why an absolute virial gate at this magnitude is below
 double-precision resolution) and it is the residual risk of this harness: a total virial error
-under `tol * natoms` eV is not caught here, and this `@assert` is the only place the virial is
-checked at all.
+under `tol * natoms` eV is not caught.
+
+This function is [`check_export_report`](@ref) plus one `@assert` over all three maxima. A
+caller inside a `@testset` will usually prefer `check_export_report` and three explicit
+`@test` lines, which gate the same three quantities at the same `tol` but report a breach as a
+test failure naming the quantity rather than as an error; the in-suite call sites do that as
+of Task 2. Either way the virial is only constrained if the caller constrains it.
 """
 function check_export(model_file, calc, held, rcut; tol = 1e-12, label = model_file)
     maxdE, maxdF, maxdV = check_export_report(model_file, calc, held, rcut; label = label)

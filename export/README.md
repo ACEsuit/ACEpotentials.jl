@@ -92,7 +92,12 @@ was exported from to double-precision roundoff.
 `ETModels.splinify`, and evaluates a piecewise cubic.  It reproduces *that splinified model*
 to 1e-12 — but the splinified model is not the fitted one, and the numbers in the table above
 are that model error (from `verify_cantor/log.chain`), not export error.  Splinify **before**
-fitting if you intend to deploy this mode.  Two further constraints:
+fitting if you intend to deploy this mode, so the fit absorbs the spline discretisation into
+its coefficients — the recipe is written out in the header of `export/src/splinify.jl`.  Note
+that no runnable example here follows it: both `examples/etace_lammps_tutorial.jl` and
+`verify_cantor/chain_cantor.jl` fit first and splinify afterwards, so the Hermite models they
+produce do carry the error quoted above (the tutorial says so at its Step 6).  Two further
+constraints:
 
 * every species pair must share one cutoff — with per-pair cutoffs the splinified model
   itself throws a `BoundsError` at `y = 1` (upstream `EquivariantTensors._spl_grid`);

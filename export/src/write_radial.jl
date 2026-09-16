@@ -47,10 +47,16 @@ transformed coordinate to `[x0, x1]` and then reads knots `il+1, il+2` (`_spl_gr
 `embed/transsplines.jl:200-207`).  At `y == x1` that is knot `NX + 1`.  Any edge with
 `rcut[i,j] <= r <= RCUT_MAX` transforms to exactly `y = 1`, so the SPLINIFIED model throws a
 `BoundsError` before an exported library can be compared to it.  The export would therefore
-be un-verifiable by construction: no 1e-12 gate could ever be run on it.  `:polynomial` --
-the default -- handles per-pair cutoffs correctly, so the working alternative is one keyword
-away.  Emitting an unverifiable artefact silently is the same class of defect as silently
-dropping the pair term.
+be un-verifiable by construction: no 1e-12 gate could ever be run on it.  Emitting an
+unverifiable artefact silently is the same class of defect as silently dropping the pair term.
+
+WHAT THE MESSAGE MAY AND MAY NOT SUGGEST.  Reaching this function implies the model IS
+splinified: `export_ace_model` demotes `:hermite_spline` to `:polynomial` for an unsplinified
+model, and PROMOTES `:polynomial` to `:hermite_spline` for a splinified one, so
+`radial_basis == :hermite_spline` at the call site can only mean "splinified".  Telling such a
+caller to "use `radial_basis = :polynomial`" would therefore be useless advice -- the promotion
+would route them straight back here whichever keyword they pass.  The two remedies below are
+the ones that actually work for a caller who can reach this error.
 """
 function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
     short = Tuple{Int,Int,Int,Float64}[]        # (k, iz, jz, this pair's cutoff)
@@ -72,9 +78,17 @@ function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
         would have to be verified against therefore cannot be evaluated at all, so the export
         is unverifiable by construction.
 
-        Use radial_basis=:polynomial (the default), which handles per-pair cutoffs exactly,
-        or rebuild the model with a single shared rcut.  See "Radial Basis Export Options" in
-        export/README.md.""")
+        Two things fix this; passing radial_basis=:polynomial is NOT one of them, because
+        this model is already splinified and export_ace_model promotes :polynomial back to
+        :hermite_spline for a splinified model:
+
+          1. Export the model as it was BEFORE splinify() was applied, with
+             radial_basis=:polynomial (the default).  That mode handles per-pair cutoffs
+             exactly and is gated at 1e-12 against the fitted model.
+          2. Rebuild the model with a single rcut shared by every species pair, then
+             re-splinify it, if you specifically need the spline tables.
+
+        See "Radial Basis Export Options" in export/README.md.""")
 end
 
 function _write_spline_radial_basis_header(io, rcut)

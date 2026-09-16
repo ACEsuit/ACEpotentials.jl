@@ -250,24 +250,39 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         @test_throws BoundsError AtomsCalculators.potential_energy(held[1], spl_a)
 
         # ... and because that reference cannot be evaluated, the exporter must REFUSE to emit
-        # such a model rather than produce an artefact no gate can ever check.  The message
-        # has to name the offending pairs and point at the working alternative.
-        f = joinpath(build, "ms3_hermite_refused.jl")
-        isfile(f) && rm(f)
-        err = try
-            Base.invokelatest(export_ace_model, spl_a, f; radial_basis = :hermite_spline)
-            nothing
-        catch e
-            e
+        # such a model rather than produce an artefact no gate can ever check.
+        #
+        # BOTH keywords must be refused for a SPLINIFIED per-pair-cutoff model, and this is
+        # the point of the second case below: export_ace_model promotes :polynomial to
+        # :hermite_spline whenever the model is splinified, so a user who reaches this error
+        # cannot escape it by passing :polynomial.  The message must therefore not offer that
+        # as the remedy -- asserted explicitly.
+        function _refusal(calc, tag, kw)
+            f = joinpath(build, "ms3_hermite_refused_$tag.jl")
+            isfile(f) && rm(f)
+            err = try
+                Base.invokelatest(export_ace_model, calc, f; radial_basis = kw)
+                nothing
+            catch e
+                e
+            end
+            return (; err, msg = err === nothing ? "" : sprint(showerror, err), f)
         end
-        @test err isa ErrorException
-        msg = err === nothing ? "" : sprint(showerror, err)
-        @test occursin("radial_basis=:hermite_spline requires every species pair", msg)
-        @test occursin(":polynomial", msg)
-        @test occursin("pair 1 = (iz=1, jz=1)", msg)      # 5.1 Å, short of RCUT_MAX = 6.1
-        @test isfile(f) == false                           # refused before any file was opened
 
-        # the same model in the default mode is fine, and is already gated above
+        for (tag, kw) in (("hermite", :hermite_spline), ("promoted", :polynomial))
+            r = _refusal(spl_a, tag, kw)
+            @test r.err isa ErrorException
+            @test occursin("radial_basis=:hermite_spline requires every species pair", r.msg)
+            @test occursin("pair 1 = (iz=1, jz=1)", r.msg)   # 5.1 Å, short of RCUT_MAX = 6.1
+            @test isfile(r.f) == false                        # refused before any file opened
+            # the advice must be reachable for a caller who is already splinified
+            @test occursin("passing radial_basis=:polynomial is NOT one of them", r.msg)
+            @test occursin("BEFORE splinify()", r.msg)
+        end
+
+        # The reachable remedy actually works: the SAME model, exported as it was before
+        # splinify() was applied, in the default mode.  (That export is gated at 1e-12
+        # against the fitted stack in the :polynomial testset above.)
         f_ok = joinpath(build, "ms3_asym_poly_ok.jl")
         Base.invokelatest(export_ace_model, stacked_a, f_ok; radial_basis = :polynomial)
         @test isfile(f_ok)

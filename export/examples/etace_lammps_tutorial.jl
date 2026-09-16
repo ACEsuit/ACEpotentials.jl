@@ -162,9 +162,22 @@ println("ETACE model created")
 # Splinification is an APPROXIMATION, not a re-encoding: the spline model is a different
 # model from the polynomial one it was built from. On the fitted Cantor model the difference
 # is 2.7e-4 eV/Å in the forces at `Nspl = 50` and 3.0e-6 eV/Å at `Nspl = 200`
-# (`verify_cantor/log.chain`, reproduced by `export/test/test_hermite_cantor.jl`). Fitting
-# AFTER splinification — as this tutorial does — is what keeps that difference out of the
-# deployed potential: the fit then sees the very representation the library will evaluate.
+# (`verify_cantor/log.chain`, reproduced by `export/test/test_hermite_cantor.jl`).
+#
+# READ THIS BEFORE COPYING THIS WORKFLOW. **This tutorial fits first and splinifies
+# afterwards** — `acefit!` is in Step 4 above, `splinify` is the call below — so the model it
+# deploys DOES carry that approximation error relative to the model that was fitted. That is
+# the simpler order and it is fine for a walkthrough, but it is not what you want for a
+# production potential.
+#
+# To keep the error out of the deployed potential you would have to splinify BEFORE fitting,
+# so that the fit sees the very representation the library will evaluate and absorbs the
+# spline discretisation into its coefficients. That is what `export/README.md` recommends for
+# a production potential. It means fitting the splinified ET model directly rather than the
+# `ACEPotential` fitted in Step 4 — a different and longer workflow. `export/src/splinify.jl`
+# documents the recipe in its header comment, but no RUNNABLE example in this repository
+# follows it: `verify_cantor/chain_cantor.jl` also fits first and splinifies afterwards (its
+# Nspl=50/200 stacks are comparison references, not fits of a splinified model).
 #
 # An exported Hermite library reproduces the SPLINIFIED model to 1e-12. Its difference from
 # the pre-splinification polynomial model is model error and must never be reported as an
@@ -198,8 +211,10 @@ println("Splinified ETACE calculator ready for export")
 #
 # `:polynomial` is the default and reproduces the fitted model exactly. `:hermite_spline` is
 # opt-in: it reproduces the SPLINIFIED model to 1e-12, and the difference from the fitted
-# model is model error introduced by `splinify`, which is why this tutorial splinifies before
-# exporting. It also requires a single cutoff shared by all species pairs.
+# model is model error introduced by `splinify` (see the note in Step 6 — this tutorial fits
+# before it splinifies, so its deployed model carries that error). `:hermite_spline` also
+# requires a single cutoff shared by all species pairs, and the model must already have been
+# splinified, which is why Step 6 comes before this one.
 
 include(joinpath(@__DIR__, "../../src/export_ace_model.jl"))
 
@@ -292,7 +307,8 @@ println("File size: $(round(filesize(export_file)/1024, digits=1)) KB")
 # 1. Use `Models.ace_model()` (not `ace1_model()`) for learnable radial basis
 # 2. Fit with `acefit!()` as usual
 # 3. Convert with `ETModels.convert2et()` and copy parameters
-# 4. **Splinify BEFORE export** with `splinify()`
+# 4. **Splinify BEFORE export** with `splinify()` -- and, for a production potential,
+#    before `acefit!` too, which this tutorial does NOT do (see Step 6)
 # 5. Export -- `:polynomial` (the default) is exact against the fitted model;
 #    `radial_basis=:hermite_spline` matches the splinified model used here
 # 6. Compile with `juliac --trim=safe`

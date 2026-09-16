@@ -202,7 +202,14 @@ function export_ace_model(calc::ETACEPotential, filename::String;
 
     # :hermite_spline is only valid when every species pair shares the neighbour-list cutoff.
     # Checked BEFORE the output file is opened, so a refused export leaves no partial file.
+    #
+    # By the promotion/demotion block above, `radial_basis == :hermite_spline` here implies
+    # `is_splinified` (an unsplinified model is demoted to :polynomial; a splinified one is
+    # promoted to :hermite_spline whatever the caller passed).  The refusal message relies on
+    # that invariant when it says :polynomial is NOT a usable remedy, so assert it rather
+    # than leave it as a reading of the branch above.
     if radial_basis == :hermite_spline
+        @assert is_splinified "internal: :hermite_spline selected for an unsplinified model"
         _check_hermite_uniform_cutoffs(agnesi_params, NZ, rcut)
     end
 
