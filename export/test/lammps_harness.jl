@@ -235,7 +235,8 @@ against, or `""`.  Launching `lmp` under a foreign `mpirun` either fails to star
 worse for a 1-rank-vs-2-rank parity test -- silently gives every rank `MPI_COMM_WORLD` of
 size 1, so that the "2 rank" run is really two independent serial runs and the comparison
 proves nothing.  The MPI prefix is read out of `ldd <lmp>`: `<prefix>/lib/libmpi.so.N` maps
-to `<prefix>/bin/mpirun`.  `\$ACE_MPIRUN` overrides; `which mpirun` is the last resort.
+to `<prefix>/bin/mpirun`.  `\$ACE_MPIRUN` overrides; `which mpirun` is consulted only
+when `ldd <lmp>` named no MPI prefix at all.
 """
 function find_mpirun(lmp_exe, env)
     cands = String[]
