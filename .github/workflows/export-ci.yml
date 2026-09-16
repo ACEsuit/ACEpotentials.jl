@@ -261,12 +261,20 @@ jobs:
           ls -la libace_test.so
           echo "library-built=true" >> $GITHUB_OUTPUT
 
+      # test_lammps.jl's own 1e-10 gate (`load_exported(model_file)`) reads the generated
+      # `.jl` source, not just the compiled `.so` -- it needs both PAIR_C/E0_1 for the pair
+      # assertions and `site_energy_forces_virial` for `exported_efv`'s reference value.  A
+      # download-artifact of `ace-library` that carried only the `.so` made that gate ERROR
+      # on every hosted runner (the source file was simply absent from `export/test/build`),
+      # so the 1e-10 gate had never actually executed on GitHub-hosted CI.
       - name: Upload compiled library
         if: steps.compile.outputs.library-built == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ace-library
-          path: export/test/build/libace_test.so
+          path: |
+            export/test/build/libace_test.so
+            export/test/build/test_etace_model.jl
           retention-days: 1
 
   test-python:
