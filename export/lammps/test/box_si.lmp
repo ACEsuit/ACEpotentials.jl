@@ -1,0 +1,21 @@
+# Single-species diamond-Si cell, for the test library (`build/libace_test.so`, exported from
+# the Si StackedCalculator in export/test/test_etace_export.jl).  Same shape as
+# export/bench/box_cantor.lmp: an `include`-able fragment that leaves a built, perturbed box
+# and defines ${species} for the caller's pair_coeff line.
+#
+# Used by export/lammps/test/test_omp_vs_serial.sh (whose own default box is the 5-species
+# Cantor one, which the Si test library cannot evaluate).  `cells` is an index variable, so a
+# command-line -var overrides it; 3 -> 216 atoms, enough to give several atoms per OpenMP
+# thread while staying fast.  The random displacement is what makes max|F| O(1) eV/A, which
+# is what compare_dump.py's --min-force non-triviality gate needs.
+units metal
+atom_style atomic
+boundary p p p
+lattice diamond 5.43
+variable cells index 3
+region box block 0 ${cells} 0 ${cells} 0 ${cells}
+create_box 1 box
+create_atoms 1 box
+mass 1 28.0855
+displace_atoms all random 0.08 0.08 0.08 4242
+variable species string "Si"

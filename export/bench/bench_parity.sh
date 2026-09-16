@@ -204,7 +204,15 @@ series() {   # series <lmp> <input> <label-prefix> [extra args...]
 # the path while the comparator runs.
 BASE_LD=${LD_LIBRARY_PATH:-}
 export LD_LIBRARY_PATH="$(dirname "$LIB"):/software/easybuild/software/GCCcore/14.3.0/lib64:$HOME/miniconda3/envs/noteable_base_chemistry/lib:/software/easybuild/software/CUDA/12.9.1/lib64:$BASE_LD"
-ACE=$(series "$LMP_ACE" "$HERE/in.bench_ace" ace -var lib "$LIB" -var plugin "$PLUGIN")
+# IN_ACE overrides the pair_style ace input.  It exists for ONE purpose: `in.bench_ace` sets
+# `thermo 50`, so LAMMPS asks for the virial on 2 steps in 100, and since Task 6 the plugin
+# calls the cheaper forces-only entry on the other 98.  `in.bench_ace_thermo1` sets
+# `thermo 1`, which forces the virial on every step -- the workload every row before Task 6
+# measured.  Quoting an IN_ACE row next to a default row is how the virial skip is separated
+# from the kernel change; a row taken with a non-default input says so in its `input=` field.
+IN_ACE=${IN_ACE:-$HERE/in.bench_ace}
+[ -f "$IN_ACE" ] || { echo "bench_parity.sh: no such ace input: $IN_ACE" >&2; exit 2; }
+ACE=$(series "$LMP_ACE" "$IN_ACE" ace -var lib "$LIB" -var plugin "$PLUGIN")
 
 # ---- pair_style pace recursive ---------------------------------------------------------
 # M5: a failed ACE series short-circuits.  Running the comparator anyway only burns core
@@ -232,6 +240,7 @@ NATOMS=${NATOMS:-0}
 ROW=$(awk -v tag="$TAG" -v date="$DATE" -v tm="$TIME" -v core="$CORE" -v la="$LOADAVG" \
           -v steps="$STEPS" -v box="$(basename "$BOXFILE")" -v nat="$NATOMS" \
           -v lib="$LIB" -v libsha="$LIB_SHA" -v libmt="$LIB_MTIME" -v gate="$GATE_FIELD" \
+          -v plug="$PLUGIN" -v inace="$(basename "$IN_ACE")" \
           -v pacef="$PACEFILE" -v screen="$SCREENDIR/${TAG}_${STAMP}_*.log" \
           -v ace="$ACE" -v pace="$PACE" '
 function us(ms) { return (nat+0 > 0 && ms != "FAILED" && ms != "-") ? sprintf("%.3f", 1000*ms/nat) : "-" }
@@ -242,6 +251,7 @@ BEGIN {
   if (am != "FAILED" && pm != "FAILED" && pm != "-" && pm+0 > 0) ratio = sprintf("%.2f", am/pm);
   printf "%-18s %s %s core=%-2s loadavg=\"%s\" box=%s natoms=%s steps=%s", tag, date, tm, core, la, box, nat, steps;
   printf " gate=%s lib=%s lib_sha256=%s lib_mtime=%s pace=%s", gate, lib, libsha, libmt, pacef;
+  printf " plugin=%s input=%s", plug, inace;
   printf "  ace_ms/step(median)=%s ace_us/site=%s (n=%s runs(exec order)= %s %s %s, spread=%s)", am, us(am), A[2], A[3], A[4], A[5], A[6];
   if (pm == "-") printf "  pace_ms/step=-";
   else printf "  pace_recursive_ms/step(median)=%s pace_us/site=%s (n=%s runs(exec order)= %s %s %s, spread=%s)", pm, us(pm), P[2], P[3], P[4], P[5], P[6];

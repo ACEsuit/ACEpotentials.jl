@@ -87,8 +87,18 @@ lib_path = os.environ['ACE_LIB_PATH']
 lib = ctypes.CDLL(lib_path)
 
 # Set up function signature for site energy
+# Since Task 6 every ace_site_* entry takes an opaque WORKSPACE handle FIRST.  It is not
+# optional and it is not checked at the ABI boundary: omitting it makes ctypes pass z0 where
+# the handle belongs, and the library then dereferences 14 as a pointer.
+lib.ace_workspace_new.restype = ctypes.c_void_p
+lib.ace_workspace_new.argtypes = []
+lib.ace_workspace_free.restype = None
+lib.ace_workspace_free.argtypes = [ctypes.c_void_p]
+ws = lib.ace_workspace_new()
+
 lib.ace_site_energy.restype = ctypes.c_double
 lib.ace_site_energy.argtypes = [
+    ctypes.c_void_p,  # workspace
     ctypes.c_int,  # z0
     ctypes.c_int,  # nneigh
     ctypes.POINTER(ctypes.c_int),  # neighbor_z
@@ -111,6 +121,7 @@ neighbor_z = np.array([14, 14, 14, 14], dtype=np.int32)
 nneigh = 4
 
 E = lib.ace_site_energy(
+    ws,
     z0,
     nneigh,
     neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -133,16 +144,22 @@ import numpy as np
 lib_path = os.environ['ACE_LIB_PATH']
 lib = ctypes.CDLL(lib_path)
 
+lib.ace_workspace_new.restype = ctypes.c_void_p
+lib.ace_workspace_new.argtypes = []
+lib.ace_workspace_free.restype = None
+lib.ace_workspace_free.argtypes = [ctypes.c_void_p]
+ws = lib.ace_workspace_new()
+
 lib.ace_site_energy.restype = ctypes.c_double
 lib.ace_site_energy.argtypes = [
-    ctypes.c_int, ctypes.c_int,
+    ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
     ctypes.POINTER(ctypes.c_int),
     ctypes.POINTER(ctypes.c_double)
 ]
 
 lib.ace_site_energy_forces.restype = ctypes.c_double
 lib.ace_site_energy_forces.argtypes = [
-    ctypes.c_int, ctypes.c_int,
+    ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
     ctypes.POINTER(ctypes.c_int),
     ctypes.POINTER(ctypes.c_double),
     ctypes.POINTER(ctypes.c_double)  # forces output
@@ -167,7 +184,7 @@ nneigh = 4
 forces = np.zeros(nneigh * 3, dtype=np.float64)
 
 E = lib.ace_site_energy_forces(
-    z0, nneigh,
+    ws, z0, nneigh,
     neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
     neighbor_R.flatten().ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
     forces.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -184,12 +201,12 @@ for alpha in range(3):
     R_m[0, alpha] -= h
 
     E_p = lib.ace_site_energy(
-        z0, nneigh,
+        ws, z0, nneigh,
         neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         R_p.flatten().ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     )
     E_m = lib.ace_site_energy(
-        z0, nneigh,
+        ws, z0, nneigh,
         neighbor_z.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         R_m.flatten().ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     )

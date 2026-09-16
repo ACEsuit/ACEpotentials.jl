@@ -28,6 +28,28 @@ not evaluate the same geometry, which the caller should treat as a setup error.
 tolerance (energy is extensive, hence per atom -- the same convention as
 ``export/test/check_export.jl``).
 
+WHY THIS STAYS ABSOLUTE-PER-ATOM WHILE `export/bench/gate_bench_libs.jl`'s GATE C WENT
+RELATIVE.  Task 4 changed gate C's energy comparison from ``|dE|/natoms <= 1e-12`` to
+``|dE|/|E| <= 1e-13`` because a flat per-atom tolerance means wildly different things on two
+models with different reference energies: ``E0(Ti) = -1586 eV/atom`` makes a 250-atom TiAl
+cell total -216027 eV, where 1e-12 eV/atom is **8.6 ulp** of the total -- a tolerance no
+correct implementation can meet.  Task 6 re-examined whether this script should follow, and
+deliberately did not change it:
+
+  * both of its callers (``run_two_ranks.sh``, ``test_omp_vs_serial.sh``) compare two runs of
+    the SAME binary on the SAME geometry, where the energy difference is a reduction-order
+    effect of a few ulp at most.  Measured on the Task 6 workspace change: ``|dE|/atom`` is
+    exactly **0.0** for Cantor (256 atoms) and for TiAl (128 atoms), 4 OpenMP threads vs 1.
+    There is no headroom problem to solve.
+  * on the boxes these callers actually use, switching to ``|dE|/|E| <= tol`` would make the
+    gate LOOSER in absolute terms, not tighter -- and the plan forbids loosening a tolerance.
+  * gate C compares one rank against two, i.e. genuinely different summation TREES over the
+    whole cell; here the two runs differ only in the order of a per-thread reduction.
+
+If a caller ever needs this on a TiAl-scale ``E0``, the right change is to add a relative
+mode and say at the call site which one it uses -- not to silently reinterpret the existing
+flag.
+
 A NON-TRIVIALITY GATE IS ON BY DEFAULT.  Most uses of this script compare two runs of the
 SAME library, where an all-zero-force regression would make both sides agree perfectly and
 pass.  That is not hypothetical: ``export/test/test_mpi.jl`` used to compare a rigidly

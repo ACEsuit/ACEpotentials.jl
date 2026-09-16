@@ -12,7 +12,24 @@
 # cell in a serial run and writes it with `write_data`; both timed runs then `read_data` it.
 #
 #   run_two_ranks.sh --lmp <lmp> --mpirun <mpirun> --plugin <aceplugin.so> \
-#                    --lib <libace.so> [--workdir DIR] [--tol 1e-12] [--size 2]
+#                    --lib <libace.so> [--workdir DIR] [--tol 1e-12] [--size 2] \
+#                    [--species "Si"] [--geom <geom.data | box.lmp>]
+#
+# SPECIES AND GEOMETRY.  Until Task 6 both were hard-coded: a diamond-Si cell and
+# `pair_coeff * * <lib> Si`.  That silently restricted the only rank-to-rank gate in the plan
+# to single-species models -- run it on the 5-species Cantor library and LAMMPS rejects the
+# pair_coeff line, or worse, maps every type to Cr.  `--species` names the pair_coeff element
+# list (default "Si"), and `--geom` supplies the cell instead of building one:
+#
+#   * a `.data` file is `read_data`-ed directly (it must carry the same number of types as
+#     `--species` has entries);
+#   * anything else is `include`-d as a LAMMPS input fragment that must leave a built box --
+#     `export/bench/box_cantor.lmp` and `box_tial.lmp` are exactly such fragments.  Pass
+#     `--species` as well: the two timed runs read_data the written cell and never include
+#     the fragment, so a `${species}` it defines is not in scope for their pair_coeff line.
+#
+# The built-in default remains the perturbed diamond-Si cell, so existing call sites are
+# unchanged.
 #
 # Anything not given is taken from the environment (LMP, MPIRUN, ACE_PLUGIN, ACE_LIB) or, for
 # `lmp`/`mpirun`, from PATH.  LD_LIBRARY_PATH is used as inherited -- the caller is
@@ -29,6 +46,8 @@ LIB="${ACE_LIB:-}"
 WORKDIR=""
 TOL="1e-12"
 SIZE=2          # lattice cells per side; 2 -> 64 atoms, enough for a real 2-domain split
+SPECIES="Si"
+GEOM=""         # empty -> build the default diamond-Si cell (step 0 below)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -39,7 +58,9 @@ while [[ $# -gt 0 ]]; do
     --workdir) WORKDIR="$2"; shift 2 ;;
     --tol)     TOL="$2"; shift 2 ;;
     --size)    SIZE="$2"; shift 2 ;;
-    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
+    --species) SPECIES="$2"; shift 2 ;;
+    --geom)    GEOM="$2"; shift 2 ;;
+    -h|--help) sed -n '2,42p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -55,10 +76,25 @@ WORKDIR="${WORKDIR:-$(mktemp -d)}"
 mkdir -p "$WORKDIR" || fail "cannot create workdir $WORKDIR"
 LIB="$(readlink -f "$LIB")"
 PLUGIN="$(readlink -f "$PLUGIN")"
+[[ -n "$GEOM" ]] && { GEOM="$(readlink -f "$GEOM")"; [[ -f "$GEOM" ]] || fail "no geometry file: $GEOM"; }
 cd "$WORKDIR" || fail "cannot cd to $WORKDIR"
 
 # --- step 0: build the geometry once, serially -----------------------------------------
-cat > in.build <<EOF
+# Whatever the source, the cell ends up in geom.data, written by a SERIAL run: the two timed
+# runs both read_data it, so they provably evaluate the same geometry.  (`displace_atoms
+# random` does not reproduce under a different domain decomposition, so building the cell
+# independently in each run would compare two different configurations.)
+if [[ -n "$GEOM" && "$GEOM" == *.data ]]; then
+  cp "$GEOM" geom.data || fail "cannot copy $GEOM"
+elif [[ -n "$GEOM" ]]; then
+  cat > in.build <<EOF
+include ${GEOM}
+write_data geom.data
+EOF
+  "$LMP" -in in.build -log log.build -screen none \
+    || fail "geometry build from $GEOM failed; see $WORKDIR/log.build"
+else
+  cat > in.build <<EOF
 units metal
 atom_style atomic
 boundary p p p
@@ -70,9 +106,10 @@ mass 1 28.0855
 displace_atoms all random 0.05 0.05 0.05 4242
 write_data geom.data
 EOF
-"$LMP" -in in.build -log log.build -screen none \
-  || fail "geometry build failed; see $WORKDIR/log.build"
-[[ -f geom.data ]] || fail "write_data produced no geom.data"
+  "$LMP" -in in.build -log log.build -screen none \
+    || fail "geometry build failed; see $WORKDIR/log.build"
+fi
+[[ -f geom.data ]] || fail "no geom.data was produced"
 
 # --- steps 1 and 2: the same input on 1 and on 2 ranks -----------------------------------
 cat > in.parity <<EOF
@@ -82,7 +119,7 @@ boundary p p p
 read_data geom.data
 plugin load ${PLUGIN}
 pair_style ace
-pair_coeff * * ${LIB} Si
+pair_coeff * * ${LIB} ${SPECIES}
 variable e equal pe
 thermo_style custom step pe
 thermo_modify format float %.17g
