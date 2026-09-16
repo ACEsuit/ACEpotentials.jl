@@ -460,7 +460,16 @@ void PairACE::init_style()
     n_workspaces = want;
     for (int t = 0; t < want; t++) {
       workspaces[t] = ace_workspace_new();
-      if (!workspaces[t]) error->all(FLERR, "Pair style ace: ace_workspace_new() failed");
+      if (!workspaces[t]) {
+        char errmsg[512];
+        snprintf(errmsg, sizeof(errmsg),
+                 "Pair style ace: ace_workspace_new() returned NULL after %d workspace(s). "
+                 "The model's workspace pool is fixed when its library is built and is "
+                 "smaller than omp_get_max_threads() = %d. Lower OMP_NUM_THREADS, or raise "
+                 "MAX_WORKSPACES in export/src/write_c_interface.jl and re-export the model.",
+                 t, want);
+        error->all(FLERR, errmsg);
+      }
     }
     if (comm->me == 0)
       utils::logmesg(lmp, "ACE: {} evaluation workspace(s) (one per OpenMP thread)\n", want);

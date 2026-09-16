@@ -24,15 +24,23 @@
 #
 # B2 evaluates per NEIGHBOUR instead, in two passes over the neighbour list:
 #
-#   pass 1  `_embed_ed!`   -- for each edge: the narrow radial vector `SVector{M_RNL}` (only
+#   pass 1  `_embed_val!`  -- for each edge: the narrow radial vector `SVector{M_RNL}` (only
 #                             the rows that pair populates), the solid harmonics, and an
-#                             accumulation into A restricted to that pair's A block.  The
-#                             per-edge data is kept in an isbits `NeighCache` in the caller's
-#                             workspace.
+#                             accumulation into A restricted to that pair's A block.
 #   (tensor) `_energy_and_∂A!` -- AA, B, the readout, and the pullback down to ∂A.  Unchanged
 #                             in substance from before; Task 7 replaces it with a DAG.
-#   pass 2  `_forces_from_∂A!` -- for each edge: one `(g, v)` from that pair's A block, ONE
-#                             `f`, ONE rank-1 virial update.
+#   pass 2  `_forces_from_∂A!` -- for each edge: the radial vector WITH derivatives and the
+#                             harmonics WITH gradients, then one `(g, v)` from that pair's A
+#                             block, ONE `f`, ONE rank-1 virial update.
+#
+# PASS 2 RECOMPUTES THE EMBEDDINGS RATHER THAN CACHING THEM, and that is a deliberate choice
+# made twice over.  Caching them (an isbits per-neighbour struct in the workspace) was the
+# first design and it is ~95 kB of write-then-read traffic per Cantor site; recomputing costs
+# one extra Agnesi transform, one 6-term recurrence and one solid-harmonic evaluation per
+# edge, all of which B1 and the width change made cheap.  Decisively, it also removes the only
+# VARIABLE-LENGTH buffer from the workspace, which is what lets the workspace itself live in
+# the compiled image (see the WORKSPACE POOL note in write_c_interface.jl): a `resize!`d
+# `Vector` cannot.
 #
 # The per-pair A block is `ABLOCK_k`: the A indices `a` whose `Rnl` row belongs to pair `k`'s
 # row set, together with the LOCAL slot of that row in the narrow radial vector and the Ylm
@@ -41,9 +49,9 @@
 # `_radial_mixing` / `hermite_pair_rows` select on), so the terms dropped are `0.0 * Ylm`.
 #
 # WORKSPACE.  All scratch lives in a caller-supplied `Workspace`, so the library is re-entrant:
-# the LAMMPS plugin holds one per OpenMP thread and the ASE calculator one per instance.  There
-# is no `MAX_NEIGHBORS`: `ws.nb` is `resize!`d, and `NeighCache` is isbits precisely so that
-# `resize!` on a `Vector{NeighCache}` survives `--trim=safe`.
+# the LAMMPS plugin holds one per OpenMP thread and the ASE calculator one per instance.  Every
+# buffer in it is sized from the MODEL (N_A, N_AA, N_BASIS) and never from the neighbour count,
+# so there is no `MAX_NEIGHBORS` and nothing is ever reallocated.
 #
 # ============================================================================================
 #
@@ -107,32 +115,20 @@ function _write_evaluation_functions(io, tensor, NZ, has_pair, pair_rows)
 
     println(io, """
 # ============================================================================
-# WORKSPACE (no globals, no neighbour cap -- the library is re-entrant)
+# WORKSPACE (no neighbour cap, nothing reallocated -- the library is re-entrant)
 # ============================================================================
 #
 # One Workspace per concurrent caller.  The LAMMPS plugin allocates one per OpenMP thread via
-# ace_workspace_new(); the Python calculator holds one per instance.  Nothing here is global,
-# so two threads evaluating two sites at once produce bitwise the serial answer.
+# ace_workspace_new(); the Python calculator holds one per instance.  Two threads with two
+# workspaces produce bitwise the serial answer.
+#
+# EVERY FIELD IS SIZED FROM THE MODEL, never from the neighbour count.  That is what removes
+# the 256-neighbour cap this export used to carry -- a site of any size uses the same buffers
+# -- and it is also what lets the compiled library keep its workspaces in the image itself
+# rather than on the runtime heap (see write_c_interface.jl).
 
 const N_A = $nA
 const N_AA = $nAA
-
-# Per-neighbour data carried from pass 1 to pass 2.  isbits (every field is a scalar or an
-# SVector of scalars), which is what lets `resize!(ws.nb, n)` compile under --trim=safe.
-struct NeighCache
-    jz::Int                                   # neighbour species index (0 for a skipped edge)
-    r::Float64
-    rhat::SVector{3, Float64}
-    R::SVector{M_RNL, Float64}                # narrow radial values, pair-local slots
-    dR::SVector{M_RNL, Float64}               # dR/dr, same slots
-    Y::SVector{N_YLM, Float64}
-    dY::SVector{N_YLM, SVector{3, Float64}}   # dR_lm/dR (solid harmonics: direct gradient)
-end
-
-@inline _empty_cache() = NeighCache(0, 0.0, zero(SVector{3, Float64}),
-                                    zero(SVector{M_RNL, Float64}), zero(SVector{M_RNL, Float64}),
-                                    zero(SVector{N_YLM, Float64}),
-                                    zero(SVector{N_YLM, SVector{3, Float64}}))
 
 mutable struct Workspace
     A::Vector{Float64}
@@ -140,11 +136,10 @@ mutable struct Workspace
     B::Vector{Float64}
     ∂A::Vector{Float64}
     ∂AA::Vector{Float64}
-    nb::Vector{NeighCache}
 end
 
 new_workspace() = Workspace(zeros(Float64, N_A), zeros(Float64, N_AA), zeros(Float64, N_BASIS),
-                            zeros(Float64, N_A), zeros(Float64, N_AA), NeighCache[])
+                            zeros(Float64, N_A), zeros(Float64, N_AA))
 """)
 
     # ---- E0 lookup -----------------------------------------------------------------------
@@ -238,8 +233,10 @@ new_workspace() = Workspace(zeros(Float64, N_A), zeros(Float64, N_AA), zeros(Flo
     println(io)
 
     println(io, """
-@inline function _force_block(∂A::Vector{Float64}, nb::NeighCache, k::Int)""")
-    _emit_pair_dispatch(io, NZ, "    ", k -> "return _forceblk_$k(∂A, nb.R, nb.dR, nb.Y, nb.dY)")
+@inline function _force_block(∂A::Vector{Float64}, R::SVector{M_RNL, Float64},
+                              dR::SVector{M_RNL, Float64}, Y::SVector{N_YLM, Float64},
+                              dY::SVector{N_YLM, SVector{3, Float64}}, k::Int)""")
+    _emit_pair_dispatch(io, NZ, "    ", k -> "return _forceblk_$k(∂A, R, dR, Y, dY)")
     println(io, "    error(\"_force_block: species-pair index \$k is outside 1:\$(NZ*NZ)\")")
     println(io, "end")
     println(io)
@@ -357,8 +354,9 @@ end
 # ============================================================================
 # PASS 1: per-neighbour embeddings, A accumulated inside the pair's block only
 # ============================================================================
-
-# Values only (the site_energy route).  Returns the pair-potential sum.
+#
+# Values only -- the derivative route needs no more than this, because pass 2 re-evaluates
+# the edge (see the header).  Returns the pair-potential sum.
 @inline function _embed_val!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
                              Zs::AbstractVector{<:Integer}, iz0::Int)
     A = ws.A
@@ -378,33 +376,6 @@ end
     return Epair
 end
 
-# With derivatives (the force routes).  Fills A and the per-neighbour cache.
-@inline function _embed_ed!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
-                            Zs::AbstractVector{<:Integer}, iz0::Int)
-    nneigh = length(Rs)
-    resize!(ws.nb, nneigh)
-    A = ws.A
-    fill!(A, 0.0)
-    @inbounds for j in 1:nneigh
-        Rj = Rs[j]
-        r = norm(Rj)
-        if r <= 1e-10
-            ws.nb[j] = _empty_cache()
-            continue
-        end
-        jz = z2i(Zs[j])
-        k = pair_idx(iz0, jz)
-        R, dR = _evaluate_Rnl_d_pair_m(r, k)
-        Y, dY = eval_ylm_ed(Rj)
-        _accumulate_A_block!(A, R, Y, k)
-        ws.nb[j] = NeighCache(jz, r, Rj / r, R, dR, Y, dY)
-    end
-    return nothing
-end
-""")
-
-    # ---- energy + ∂A ---------------------------------------------------------------------
-    println(io, """
 # ============================================================================
 # TENSOR STEP: energy readout, and ∂A for the force pass
 # ============================================================================
@@ -439,26 +410,31 @@ end
 # once per (n,l) and once per lm inside the force loop: 78 outer products per edge on Cantor,
 # which is the same number in exact arithmetic and 78x the work.
 @inline function _forces_from_∂A!(forces::AbstractVector{SVector{3, Float64}}, ws::Workspace,
-                                  Rs::AbstractVector{SVector{3, Float64}}, iz0::Int,
+                                  Rs::AbstractVector{SVector{3, Float64}},
+                                  Zs::AbstractVector{<:Integer}, iz0::Int,
                                   with_virial::Bool)
     ∂A = ws.∂A
     Epair = 0.0
     vir = zero(SMatrix{3, 3, Float64, 9})
     @inbounds for j in 1:length(Rs)
-        nb = ws.nb[j]
-        if nb.r <= 1e-10
+        Rj = Rs[j]
+        r = norm(Rj)
+        if r <= 1e-10
             forces[j] = zero(SVector{3, Float64})
             continue
         end
-        k = pair_idx(iz0, nb.jz)
-        g, v = _force_block(∂A, nb, k)
+        jz = z2i(Zs[j])
+        k = pair_idx(iz0, jz)
+        R, dR = _evaluate_Rnl_d_pair_m(r, k)
+        Y, dY = eval_ylm_ed(Rj)
+        g, v = _force_block(∂A, R, dR, Y, dY, k)
         # Pair potential (ordered pair: centre species first)
-        ep, dep = pair_energy_d(nb.r, iz0, nb.jz)
+        ep, dep = pair_energy_d(r, iz0, jz)
         Epair += ep
-        f = (g + dep) * nb.rhat + v
+        f = (g + dep) * (Rj / r) + v
         forces[j] = -f          # force is the negative gradient
         if with_virial
-            vir = vir - Rs[j] * f'
+            vir = vir - Rj * f'
         end
     end
     return Epair, vir
@@ -490,9 +466,9 @@ function site_energy_forces_virial!(ws::Workspace, Rs::AbstractVector{SVector{3,
     if length(Rs) == 0
         return E0_of(iz0), zero(SMatrix{3, 3, Float64, 9})
     end
-    _embed_ed!(ws, Rs, Zs, iz0)
+    _embed_val!(ws, Rs, Zs, iz0)
     Emb = _energy_and_∂A!(ws, iz0)
-    Epair, vir = _forces_from_∂A!(forces, ws, Rs, iz0, true)
+    Epair, vir = _forces_from_∂A!(forces, ws, Rs, Zs, iz0, true)
     return (Emb + Epair) + E0_of(iz0), vir
 end
 
@@ -501,9 +477,9 @@ function site_energy_forces!(ws::Workspace, Rs::AbstractVector{SVector{3, Float6
                              forces::AbstractVector{SVector{3, Float64}})
     iz0 = z2i(Z0)
     length(Rs) == 0 && return E0_of(iz0)
-    _embed_ed!(ws, Rs, Zs, iz0)
+    _embed_val!(ws, Rs, Zs, iz0)
     Emb = _energy_and_∂A!(ws, iz0)
-    Epair, _ = _forces_from_∂A!(forces, ws, Rs, iz0, false)
+    Epair, _ = _forces_from_∂A!(forces, ws, Rs, Zs, iz0, false)
     return (Emb + Epair) + E0_of(iz0)
 end
 

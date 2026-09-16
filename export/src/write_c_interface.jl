@@ -100,47 +100,100 @@ function _write_c_interface(io, NZ)
 # One workspace may NOT be used by two threads at once.
 
 # ============================================================================
-# WORKSPACE HANDLES
+# WORKSPACE POOL AND HANDLES
 # ============================================================================
 #
-# `pointer_from_objref` does not root anything, so every live workspace is kept in WORKSPACES
-# until it is freed; without that the GC is free to collect a workspace the C caller still
-# holds a pointer to.  new/free take a lock because a plugin may allocate its per-thread
-# workspaces from inside a parallel region; the HOT entries below take none -- they only
-# convert the pointer back, which touches no shared state.
+# The pool is built WHEN THE IMAGE IS BUILT and the handle is a 1-BASED INDEX into it, cast to
+# a pointer.  Both halves of that are load-bearing, and both were arrived at by measurement
+# rather than by taste:
+#
+#  1. NO JULIA OBJECT ADDRESS CROSSES THE C BOUNDARY.  `pointer_from_objref(ws)` +
+#     `unsafe_pointer_to_objref(p)::Workspace` is the obvious implementation.  In a juliac
+#     --trim library it fails: a 2048-atom, 100-step LAMMPS run survives the first force
+#     evaluation and then dies with a TypeError inside the pointer conversion at
+#     `Allocations: 98048 ... GC: 1` -- on the FIRST garbage collection.
+#
+#  2. THE WORKSPACES ARE CREATED AT IMAGE BUILD TIME, not at runtime.  Replacing the raw
+#     address with an index into a `const WORKSPACES = Workspace[]` that is `push!`ed to at
+#     runtime did NOT fix it: the same run then dies with a smashed malloc arena (SEGV in
+#     glibc's `unlink_chunk` from `_int_malloc`), i.e. the workspace's buffers were collected
+#     and reused underneath the library.  Whatever roots a runtime-allocated object pushed
+#     into an image-baked global in a trimmed image, it is not sufficient.  The pattern that
+#     demonstrably DOES work in these libraries is the one the pre-B2 code used: fixed-size
+#     arrays created when the image is built and never reallocated.  So the pool is built
+#     here, at image build time, and `ace_workspace_new` only hands out a slot.
+#
+#     This is also why `Workspace` has no variable-length field: the per-neighbour cache that
+#     the first version of the kernel carried would have had to be `resize!`d, which is
+#     exactly the operation this constraint forbids.  `_forces_from_∂A!` re-evaluates the edge
+#     instead.  Neither the image nor the workspace depends on the neighbour count, so there
+#     is still NO neighbour cap.
+#
+#  3. The pool is FIXED SIZE.  MAX_WORKSPACES bounds the number of CONCURRENT workspaces (one
+#     per OpenMP thread in the plugin, one per calculator instance in Python) -- it is not a
+#     bound on anything physical.  `ace_workspace_new` returns NULL when the pool is
+#     exhausted, and both callers check for it.
+#
+# A freed slot is marked free and reused; the handle IS the index, so slots never move.
+# Handle 0 (NULL) is never valid, which matches the C convention that `ace_workspace_new`
+# returns non-NULL on success.
+#
+# new/free take a lock (they mutate the shared free list); the HOT entries take none.
 
-const WORKSPACES = Workspace[]
+const MAX_WORKSPACES = 32
+const WORKSPACES = Workspace[new_workspace() for _ in 1:MAX_WORKSPACES]
+const WORKSPACE_TAKEN = fill(false, MAX_WORKSPACES)
 const WORKSPACES_LOCK = ReentrantLock()
 
 Base.@ccallable function ace_workspace_new()::Ptr{Cvoid}
-    ws = new_workspace()
+    idx = 0
     lock(WORKSPACES_LOCK)
     try
-        push!(WORKSPACES, ws)
+        @inbounds for i in 1:MAX_WORKSPACES
+            if !WORKSPACE_TAKEN[i]
+                WORKSPACE_TAKEN[i] = true
+                idx = i
+                break
+            end
+        end
     finally
         unlock(WORKSPACES_LOCK)
     end
-    return pointer_from_objref(ws)
+    return Ptr{Cvoid}(UInt(idx))     # 0 == NULL == pool exhausted
 end
 
 Base.@ccallable function ace_workspace_free(p::Ptr{Cvoid})::Cvoid
-    p == C_NULL && return nothing
-    ws = unsafe_pointer_to_objref(p)::Workspace
-    lock(WORKSPACES_LOCK)
-    try
-        i = findfirst(w -> w === ws, WORKSPACES)
-        i === nothing || deleteat!(WORKSPACES, i)
-    finally
-        unlock(WORKSPACES_LOCK)
+    idx = Int(UInt(p))
+    if 1 <= idx <= MAX_WORKSPACES
+        lock(WORKSPACES_LOCK)
+        try
+            @inbounds WORKSPACE_TAKEN[idx] = false
+        finally
+            unlock(WORKSPACES_LOCK)
+        end
     end
     return nothing
+end
+
+Base.@ccallable function ace_max_workspaces()::Cint
+    return Cint(MAX_WORKSPACES)
 end
 
 # ============================================================================
 # HELPER FUNCTIONS FOR C INTERFACE
 # ============================================================================
 
-@inline _ws(p::Ptr{Cvoid}) = unsafe_pointer_to_objref(p)::Workspace
+# Handle -> workspace.  The range check is NOT decoration: a caller that passes 0 (a NULL
+# handle, or an `ace_workspace_new` return it never checked) or a stale index would otherwise
+# index the vector out of bounds.  It is one compare against a loaded length on a path that
+# costs ~200 us per site.
+@inline function _ws(p::Ptr{Cvoid})
+    idx = Int(UInt(p))
+    if idx < 1 || idx > MAX_WORKSPACES
+        error("ace: invalid workspace handle \$idx; obtain one from ace_workspace_new()")
+    end
+    return @inbounds WORKSPACES[idx]
+end
 
 @inline function c_read_Rij(ptr::Ptr{Cdouble}, nneigh::Int)::Vector{SVector{3, Float64}}
     Rs = Vector{SVector{3, Float64}}(undef, nneigh)
@@ -161,13 +214,26 @@ end
     return species
 end
 
-# Force output written straight through the caller's buffer: `unsafe_wrap` + `reinterpret`
-# gives an AbstractVector{SVector{3,Float64}} aliasing it, so the kernel's `forces[j] = -f`
-# stores land in the C array with no intermediate Vector{SVector} to allocate and copy.
-@inline function c_force_view(ptr::Ptr{Cdouble}, nneigh::Int)
-    flat = unsafe_wrap(Array, ptr, 3 * nneigh; own = false)
-    return reinterpret(SVector{3, Float64}, flat)
+# Force output.  The kernel writes into a Julia `Vector{SVector{3,Float64}}` and this copies
+# it out; it does NOT alias the caller's buffer.
+#
+# Aliasing it was tried and REVERTED.  `unsafe_wrap(Array, ptr, 3n; own = false)` followed by
+# `reinterpret(SVector{3,Float64}, ...)` gives a zero-copy view and is the obvious
+# optimisation -- and in a juliac --trim library it corrupts the C heap: a 2048-atom,
+# 100-step LAMMPS run dies inside glibc's `unlink_chunk` from `_int_malloc`, i.e. with a
+# smashed malloc arena, after surviving the short `run 0` that every accuracy gate in this
+# project uses.  The copy costs 3n stores per site against ~200 us of evaluation; it is not
+# worth re-litigating without a specific diagnosis of what `unsafe_wrap` does to a foreign
+# pointer under `--trim`.
+@inline function c_write_forces!(ptr::Ptr{Cdouble}, forces::Vector{SVector{3, Float64}})
+    @inbounds for j in 1:length(forces)
+        unsafe_store!(ptr, forces[j][1], 3*(j-1) + 1)
+        unsafe_store!(ptr, forces[j][2], 3*(j-1) + 2)
+        unsafe_store!(ptr, forces[j][3], 3*(j-1) + 3)
+    end
 end
+
+@inline _force_buffer(nneigh::Int) = Vector{SVector{3, Float64}}(undef, nneigh)
 
 @inline function c_write_virial!(ptr::Ptr{Cdouble}, virial::SMatrix{3,3,Float64,9})
     # Voigt notation: xx, yy, zz, yz, xz, xy (LAMMPS convention)
@@ -217,9 +283,11 @@ Base.@ccallable function ace_site_energy_forces(
 
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
-    F = c_force_view(forces, Int(nneigh))
+    F = _force_buffer(Int(nneigh))
+    Ei = site_energy_forces!(_ws(ws), Rs, Zs, Int(z0), F)
+    c_write_forces!(forces, F)
 
-    return site_energy_forces!(_ws(ws), Rs, Zs, Int(z0), F)
+    return Ei
 end
 
 Base.@ccallable function ace_site_energy_forces_virial(
@@ -240,9 +308,9 @@ Base.@ccallable function ace_site_energy_forces_virial(
 
     Zs = c_read_species(neighbor_z, Int(nneigh))
     Rs = c_read_Rij(neighbor_Rij, Int(nneigh))
-    F = c_force_view(forces, Int(nneigh))
-
+    F = _force_buffer(Int(nneigh))
     Ei, Vi = site_energy_forces_virial!(_ws(ws), Rs, Zs, Int(z0), F)
+    c_write_forces!(forces, F)
     c_write_virial!(virial, Vi)
 
     return Ei
@@ -346,8 +414,9 @@ Base.@ccallable function ace_batch_energy_forces_virial(
                 Rs[j] = SVector(x, y, z_coord)
             end
 
-            F = c_force_view(forces + 3 * offset * sizeof(Cdouble), nneigh)
+            F = _force_buffer(nneigh)
             Ei, Vi = site_energy_forces_virial!(w, Rs, Zs, Int(z0), F)
+            c_write_forces!(forces + 3 * offset * sizeof(Cdouble), F)
 
             unsafe_store!(energies, Ei, i)
 
