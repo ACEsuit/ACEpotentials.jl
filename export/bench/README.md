@@ -77,6 +77,8 @@ Added by Task 4 (all in this directory unless stated):
 * `verify_bench_models.jl` — exports and gates the generated SOURCE at 1e-12, and writes the
   gate manifest `bench_parity/<tag>.gated`.
 * `compile_bench_libs.sh` — juliac each gated export into `bench_parity/libace_<tag>.so`.
+* `test_assert_ranks.jl` — a standalone check that gate C's rank assertion actually fires
+  (no LAMMPS, no MPI needed): `julia export/bench/test_assert_ranks.jl`.
 * `gate_bench_libs.jl` — the LIBRARY-level gates (LAMMPS vs Julia 1e-10, library via the
   Python C API vs Julia 1e-12, 2 ranks vs 1 rank 1e-12), appended to the same manifest
   together with the library's sha256. `bench_parity.sh` refuses to time a library whose
@@ -120,6 +122,15 @@ miscompilation would change what the library computes, and therefore what it cos
 touching the generated `.jl`. All three run on the benchmark's own box at `-var cells 5`
 (500 / 250 atoms, same lattice and neighbour count per atom), built once serially and handed to
 every run through one `write_data` file, so the atom ids are identical across rank counts.
+
+Gate C's two-rank run is **verified to have happened**, from LAMMPS' own output, before its
+numbers are used: `Loop time of … on 2 procs` and a `1 by 1 by 2 MPI processor grid` are both
+asserted (and recorded in the manifest as `mpi2_decomposition_confirmed=1x1x2 procs=2`). Without
+that, a `mpirun` belonging to a different MPI than LAMMPS was linked against launches two
+*independent serial* jobs, each computing the whole cell and printing the same energy — and gate
+C then agrees perfectly while proving nothing about ghost atoms or the neighbour list. The
+assertion throws; it never skips. `export/bench/test_assert_ranks.jl` exercises it on synthetic
+output, including that exact hazard.
 
 Gate C compares the **energy relatively** (`|dE| / |E_total|`, tol **1e-13**) and the **forces
 absolutely** (`max|dF|`, tol **1e-12**) — the same extensive/intensive split

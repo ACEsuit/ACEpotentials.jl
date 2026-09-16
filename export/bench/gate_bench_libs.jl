@@ -117,6 +117,48 @@ end
 
 parse_ace_energy(out) = (m = match(r"ACE_ENERGY\s+(\S+)", out); m === nothing ? nothing : parse(Float64, m.captures[1]))
 
+"""
+    assert_ranks(out, n) -> String
+
+Assert, from LAMMPS' OWN output, that the run really used `n` MPI ranks and really split the
+cell `n` ways.  THROWS on a mismatch -- it must never skip.
+
+Gate C is the only rank-sensitive check in this harness, and without this it is a gate that
+passes when the thing it tests did not happen: a `mpirun` belonging to a different MPI than the
+one LAMMPS was linked against launches `n` INDEPENDENT SERIAL jobs, each of which computes the
+whole cell, writes the same dump and prints the same energy.  The 1-vs-2-rank comparison then
+agrees perfectly while proving nothing about ghost atoms or the half/full neighbour list.  That
+is not hypothetical on this host: `export/test/test_mpi.jl` (Task 3) found the entire MPI group
+had been skipping silently, and `export/lammps/test/run_two_ranks.sh` guards the same way.
+
+Two independent facts are checked:
+  * `Loop time of <t> on <n> procs` -- the rank count LAMMPS itself reports (the pattern
+    test_mpi.jl:89 uses), which is `1` for each of `n` independent serial jobs;
+  * `<a> by <b> by <c> MPI processor grid` with a*b*c == n -- the decomposition actually built,
+    which catches a run that has n ranks but was not decomposed (the check run_two_ranks.sh
+    makes).
+
+Returns the processor-grid string, for the manifest, so Task 8 can see it was checked.
+"""
+function assert_ranks(out::AbstractString, n::Int)
+    m = match(r"Loop time of \S+ on (\d+) procs", out)
+    m === nothing && error("no `Loop time of ... on N procs` line in the $(n)-rank output -- " *
+                           "the run did not complete, so the rank count cannot be confirmed")
+    got = parse(Int, m.captures[1])
+    got == n || error("LAMMPS reports $got MPI rank(s) but $n were requested. Either mpirun " *
+                      "belongs to a different MPI than LAMMPS was linked against (in which " *
+                      "case it launched $n independent SERIAL jobs and gate C proves nothing), " *
+                      "or the launch failed. Set ACE_MPIRUN to the mpirun matching " *
+                      "the LAMMPS build.")
+    g = match(r"(\d+) by (\d+) by (\d+) MPI processor grid", out)
+    g === nothing && error("no `N by N by N MPI processor grid` line in the $(n)-rank output")
+    grid = parse.(Int, g.captures)
+    prod(grid) == n || error("LAMMPS built a $(join(grid, "x")) processor grid = $(prod(grid)) " *
+                             "domains for $n requested ranks; the cell was not split $n ways, " *
+                             "so gate C would not exercise the ghost-atom path")
+    return join(grid, "x")
+end
+
 results = Dict{String, Any}()
 
 for tag in TAGS
@@ -207,6 +249,17 @@ for tag in TAGS
     # ---------------- C. two MPI ranks vs one rank, 1e-12 --------------------------------
     out2 = run_lmp(exe, env, lmp_input(dump2), joinpath(work, "gate2.lmp"); ranks = 2)
     mpi_ok = !occursin("ERROR", out2) && !occursin("LAMMPS_EXIT_NONZERO", out2)
+    # Loud, never a skip: a gate that passes when the decomposition did not happen is worse
+    # than no gate.  `assert_ranks` throws, so this aborts the script rather than recording a
+    # green row.  The 1-rank reference run is checked too -- if THAT silently ran on 2 ranks
+    # the comparison is equally meaningless.
+    mpi_grid = "not-checked"
+    if mpi_ok
+        assert_ranks(out1, 1)
+        mpi_grid = assert_ranks(out2, 2)
+        @printf("[%s] 2-rank run confirmed: %s MPI processor grid, 2 procs (from LAMMPS' own output)\n",
+                tag, mpi_grid)
+    end
     dE_mpi = dF_mpi = NaN            # dE_mpi: per atom, REPORTED only
     rel_mpi = ulp_mpi = abs_mpi = NaN # rel_mpi: relative, GATED; abs_mpi: total, REPORTED
     if mpi_ok
@@ -251,6 +304,11 @@ for tag in TAGS
                 Dates.format(Dates.now(), "yyyy-mm-ddTHH:MM:SS"))
         println(io, "gate_box=$(sp.box) cells=$CELLS natoms=$N")
         println(io, "gate_lammps_exe=$exe")
+        println(io, "gate_mpirun=$MPIRUN")
+        # Asserted from LAMMPS' own output, not from what mpirun was asked for.  "not-checked"
+        # can only appear if the 2-rank run did not complete at all, in which case
+        # library_gates is FAIL anyway.
+        println(io, "mpi2_decomposition_confirmed=$mpi_grid procs=2   # asserted, not assumed")
         @printf(io, "lammps_vs_julia_tol=%.0e dE_per_atom=%.6e dF=%.6e\n", TOL_LAMMPS, dE_lmp, dF_lmp)
         @printf(io, "library_vs_julia_tol=%.0e dE_per_atom=%.6e dF=%.6e\n", TOL_LIB, dE_py, dF_py)
         @printf(io, "mpi2_vs_mpi1_energy_tol_relative=%.0e dE_relative=%.6e   # GATED\n",
