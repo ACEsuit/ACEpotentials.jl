@@ -103,11 +103,18 @@ Julia calculator at an absolute 1e-12 per atom on every case (TiAl measures 6.92
 virial_tol(case::AbstractString) = startswith(case, "tial") ? 3e-13 : PARITY_TOL
 const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolute
 
-# Every source file the generator is made of.  `export_ace_model.jl` `include`s the other
-# five by relative path, so writing all six into one directory is enough to run an old
-# generator unmodified.
+# Every source file the generator is made of, ACROSS the commits this gate is ever pointed
+# at.  `export_ace_model.jl` `include`s the others by relative path, so writing them all into
+# one directory is enough to run an old generator unmodified.
+#
+# A file that does not exist at the reference commit is SKIPPED rather than fatal:
+# `symmprod_dag.jl` was added by Task 7, so `git show b826c831:export/src/symmprod_dag.jl`
+# fails, and an old generator that never `include`s it does not want it.  This cannot hide a
+# real omission -- the NEW generator runs from the working tree, not from git, and an old
+# generator missing a file it does `include` fails loudly on that `include`.
 const GENERATOR_FILES = ("export_ace_model.jl", "write_radial.jl", "write_evaluation.jl",
-                         "write_c_interface.jl", "codegen.jl", "splinify.jl")
+                         "write_c_interface.jl", "codegen.jl", "splinify.jl",
+                         "symmprod_dag.jl")
 
 """
     parity_ref_sha() -> String
@@ -151,10 +158,18 @@ const _GEN_CACHE = Dict{String, Module}()
 function generator_module(sha::AbstractString)
     haskey(_GEN_CACHE, sha) && return _GEN_CACHE[sha]
     tmp = mktempdir(; prefix = "acegen_")
+    missing_files = String[]
     for f in GENERATOR_FILES
-        src = read(`git -C $PARITY_REPO show $sha:export/src/$f`, String)
+        src = try
+            read(`git -C $PARITY_REPO show $sha:export/src/$f`, String)
+        catch
+            push!(missing_files, f)
+            continue        # see GENERATOR_FILES: absent at this commit, so not part of it
+        end
         write(joinpath(tmp, f), src)
     end
+    isempty(missing_files) ||
+        @info "generator at $sha does not contain $(join(missing_files, ", ")) -- skipped"
     m = Module(Symbol("Gen_", replace(string(sha), r"[^A-Za-z0-9]" => "_")))
     # `Module(name)` does NOT bring `eval`/`include` with it on Julia 1.12, and
     # export_ace_model.jl's first act is `include("splinify.jl")`.  Bind them explicitly; the

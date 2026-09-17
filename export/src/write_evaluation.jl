@@ -103,9 +103,10 @@ function _ablocks(tensor, pair_rows)
     return blocks
 end
 
-function _write_evaluation_functions(io, tensor, NZ, has_pair, pair_rows)
+function _write_evaluation_functions(io, tensor, dag, NZ, has_pair, pair_rows)
     nA = length(tensor.abasis)
     nAA = length(tensor.aabasis)
+    has0 = dag.has0 ? 1 : 0
     @assert length(pair_rows) == NZ^2 """
         the radial writer returned $(length(pair_rows)) per-pair row sets, expected
         NZ^2 = $(NZ^2) (one per ORDERED pair)"""
@@ -133,16 +134,23 @@ function _write_evaluation_functions(io, tensor, NZ, has_pair, pair_rows)
 const N_A = $nA
 const N_AA = $nAA
 
+# `AAd` / `∂AAd` (Task 7 / B3) are sized from N_DAG, which is a MODEL constant emitted above --
+# exactly the same class as N_AA and N_BASIS, evaluated when the image is built.  The rule the
+# workspace has to obey is that no field is sized at RUNTIME (that is what would need a
+# `resize!` and is what the Task 6 report's section 3 measured as fatal under juliac --trim);
+# a larger image-time constant is not that.  `AA` and `B` remain for `site_basis!`, which is
+# `ace_site_basis`'s contract and is the only reader of the flat AA/A2B/WB representation.
 mutable struct Workspace
     A::Vector{Float64}
     AA::Vector{Float64}
     B::Vector{Float64}
     ∂A::Vector{Float64}
-    ∂AA::Vector{Float64}
+    AAd::Vector{Float64}
+    ∂AAd::Vector{Float64}
 end
 
 new_workspace() = Workspace(zeros(Float64, N_A), zeros(Float64, N_AA), zeros(Float64, N_BASIS),
-                            zeros(Float64, N_A), zeros(Float64, N_AA))
+                            zeros(Float64, N_A), zeros(Float64, N_DAG), zeros(Float64, N_DAG))
 """)
 
     # ---- E0 lookup -----------------------------------------------------------------------
@@ -250,8 +258,13 @@ new_workspace() = Workspace(zeros(Float64, N_A), zeros(Float64, N_AA), zeros(Flo
 
     println(io, """
 # ============================================================================
-# TENSOR: A -> AA -> B  and its pullback  ∂B -> ∂AA -> ∂A   (trim-safe, manual)
+# TENSOR: A -> AA -> B   (trim-safe, manual)  --  `site_basis` ONLY
 # ============================================================================
+#
+# The flat AA -> B route is NOT on the energy/force path since B3; that path is the DAG
+# below.  It survives because `ace_site_basis` returns the N_BASIS descriptor vector `B`,
+# which the DAG representation does not compute (the readout is folded into CTILDE, so there
+# is no `B` left in it).
 
 # Manual forward pass through SparseSymmProd (aabasis): A -> AA
 @inline function evaluate_aabasis!(AA::Vector{Float64}, A::Vector{Float64})
@@ -282,67 +295,9 @@ new_workspace() = Workspace(zeros(Float64, N_A), zeros(Float64, N_AA), zeros(Flo
     println(io, "end")
     println(io)
 
-    # ---- aabasis pullback ----------------------------------------------------------------
+    # ---- A2B (site_basis only) -----------------------------------------------------------
     println(io, """
-# Manual pullback through SparseSymmProd (aabasis): ∂AA -> ∂A
-@inline function pullback_aabasis!(∂A::Vector{Float64}, ∂AA::Vector{Float64}, A::Vector{Float64})
-""")
-    for ord in 1:max_order
-        spec = aabasis.specs[ord]
-        isempty(spec) && continue
-        range_start = aabasis.ranges[ord].start
-        range_stop = aabasis.ranges[ord].stop
-        println(io, "    # Order $ord terms (indices $range_start:$range_stop)")
-        println(io, "    @inbounds for (i_local, ϕ) in enumerate(AABASIS_SPECS_$ord)")
-        println(io, "        i = $(range_start - 1) + i_local")
-        println(io, "        ∂AA_i = ∂AA[i]")
-        if ord == 1
-            println(io, "        ∂A[ϕ[1]] += ∂AA_i")
-        elseif ord == 2
-            println(io, "        a1, a2 = A[ϕ[1]], A[ϕ[2]]")
-            println(io, "        ∂A[ϕ[1]] += ∂AA_i * a2")
-            println(io, "        ∂A[ϕ[2]] += ∂AA_i * a1")
-        elseif ord == 3
-            println(io, "        a1, a2, a3 = A[ϕ[1]], A[ϕ[2]], A[ϕ[3]]")
-            println(io, "        ∂A[ϕ[1]] += ∂AA_i * a2 * a3")
-            println(io, "        ∂A[ϕ[2]] += ∂AA_i * a1 * a3")
-            println(io, "        ∂A[ϕ[3]] += ∂AA_i * a1 * a2")
-        elseif ord == 4
-            println(io, "        a1, a2, a3, a4 = A[ϕ[1]], A[ϕ[2]], A[ϕ[3]], A[ϕ[4]]")
-            println(io, "        ∂A[ϕ[1]] += ∂AA_i * a2 * a3 * a4")
-            println(io, "        ∂A[ϕ[2]] += ∂AA_i * a1 * a3 * a4")
-            println(io, "        ∂A[ϕ[3]] += ∂AA_i * a1 * a2 * a4")
-            println(io, "        ∂A[ϕ[4]] += ∂AA_i * a1 * a2 * a3")
-        else
-            println(io, "        aa = ntuple(t -> A[ϕ[t]], Val($ord))")
-            println(io, "        _, gi = _static_prod_ed(aa)")
-            println(io, "        for t in 1:$ord")
-            println(io, "            ∂A[ϕ[t]] += ∂AA_i * gi[t]")
-            println(io, "        end")
-        end
-        println(io, "    end")
-        println(io)
-    end
-    println(io, "    return ∂A")
-    println(io, "end")
-    println(io)
-
-    # ---- A2B, readout, embeddings, entry points ------------------------------------------
-    println(io, """
-# Static product with gradient (general-order fallback used by pullback_aabasis!)
-@inline _static_prod_ed(b::NTuple{1, T}) where {T} = (b[1], (one(T),))
-@inline _static_prod_ed(b::NTuple{2, T}) where {T} = (b[1] * b[2], (b[2], b[1]))
-@inline function _static_prod_ed(b::NTuple{3, T}) where {T}
-    p12 = b[1] * b[2]
-    return p12 * b[3], (b[2] * b[3], b[1] * b[3], p12)
-end
-@inline function _static_prod_ed(b::NTuple{4, T}) where {T}
-    p12 = b[1] * b[2]
-    p34 = b[3] * b[4]
-    return p12 * p34, (b[2] * p34, b[1] * p34, p12 * b[4], p12 * b[3])
-end
-
-# AA -> B  (sparse A2Bmap product)
+# AA -> B  (sparse A2Bmap product) -- `site_basis` only, see above
 @inline function _tensor_B!(ws::Workspace)
     evaluate_aabasis!(ws.AA, ws.A)
     B = ws.B
@@ -380,30 +335,87 @@ end
 end
 
 # ============================================================================
-# TENSOR STEP: energy readout, and ∂A for the force pass
+# TENSOR STEP: the AA DAG, the folded readout, and ∂A for the force pass  (B3)
 # ============================================================================
 #
-# ∂Ei/∂B is the readout weight vector WB itself, so the transposed A2B product is taken
-# directly against WB rather than through a ∂B copy of it.  (Folding A2Bmap' * WB into a
-# per-species constant is Task 7's `ctilde`; it is deliberately NOT done here, so that this
-# task's parity figures attribute only to the kernel restructuring.)
-@inline function _energy_and_∂A!(ws::Workspace, iz0::Int)
-    B = _tensor_B!(ws)
-    ∂AA = ws.∂AA
-    fill!(∂AA, 0.0)
+# WHAT B3 REMOVED.  Before it, one site cost: a flat AA pass (one product tree per AA
+# function, sharing nothing between them); a sparse A2B product AA -> B; `dot(B, WB_iz)`; a
+# SECOND traversal of the same sparse map to seed ∂AA from WB_iz -- with `A2Bmapᵀ · WB_iz` a
+# PER-SPECIES CONSTANT recomputed at every site; and a flat pullback that re-multiplied the
+# order-N products term by term.  B, the A2B map and WB are on none of those paths now:
+#
+#   forward   AAd[n] = AAd[n1] * AAd[n2]     ONE multiply per node, subproducts shared
+#   energy    Ei = dot(CTILDE_iz, AAd)       the readout, folded at export time
+#   backward  ∂AAd .= CTILDE_iz;  then per node  ∂AAd[n1] += w*AAd[n2]; ∂AAd[n2] += w*AAd[n1]
+#
+# i.e. TWO FMAs per node, seeded by the same constant vector the energy used.  Nothing is
+# zeroed: `AAd` and `∂AAd` are fully overwritten, and `∂A` is written (not accumulated) from
+# the leaf cotangents.
+#
+# The backward loop runs the nodes in DESCENDING index order.  That is a valid reverse
+# topological order because every node's parents have a STRICTLY LARGER index than it (the
+# builder only ever combines nodes that already exist), so by the time node i is read, every
+# contribution to ∂AAd[i] has been made.
+
+# Forward pass: A -> AAd (all N_DAG node values).
+@inline function dag_forward!(AAd::Vector{Float64}, A::Vector{Float64})
+    @inbounds begin""")
+    if dag.has0
+        println(io, "        AAd[1] = 1.0")
+    end
+    println(io, """        for i in 1:DAG_NUM1
+            AAd[$(has0 == 0 ? "i" : "$has0 + i")] = A[i]
+        end
+        for j in eachindex(DAG_NODES)
+            n1, n2 = DAG_NODES[j]
+            AAd[DAG_FIRST - 1 + j] = AAd[n1] * AAd[n2]
+        end
+    end
+    return AAd
+end
+
+# Energy only (no pullback): the entry `ace_site_energy` takes.  Shares dag_forward! and
+# CTILDE with the force path, so `ace_site_energy` and `ace_site_energy_forces` agree BITWISE
+# on the many-body term.
+@inline function tensor_energy!(AAd::Vector{Float64}, A::Vector{Float64}, iz0::Int)
+    dag_forward!(AAd, A)
+    Ei = 0.0""")
+    _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["Ei = dot(CTILDE_$iz, AAd)"])
+    println(io, """    return Ei
+end
+
+# Forward + readout + pullback to ∂A, in one pass down the DAG.  This is the signature Task
+# 7's brief specifies; `_energy_and_∂A!` below is the workspace-shaped wrapper the entry
+# points call.
+@inline function tensor_energy_and_∂A!(∂A::Vector{Float64}, AAd::Vector{Float64},
+                                       ∂AAd::Vector{Float64}, A::Vector{Float64}, iz0::Int)
+    dag_forward!(AAd, A)
     Ei = 0.0""")
     _emit_species_dispatch_multi(io, NZ, "    ", iz -> [
-        "Ei = dot(B, WB_$iz)",
-        "@inbounds for idx in eachindex(A2BMAP_1_I)",
-        "    ∂AA[A2BMAP_1_J[idx]] += A2BMAP_1_V[idx] * WB_$(iz)[A2BMAP_1_I[idx]]",
-        "end",
+        "Ei = dot(CTILDE_$iz, AAd)",
+        "copyto!(∂AAd, CTILDE_$iz)",
     ])
-    println(io, """
-    ∂A = ws.∂A
-    fill!(∂A, 0.0)
-    pullback_aabasis!(∂A, ∂AA, ws.A)
-    return Ei
+    println(io, """    @inbounds for j in length(DAG_NODES):-1:1
+        w = ∂AAd[DAG_FIRST - 1 + j]
+        n1, n2 = DAG_NODES[j]
+        ∂AAd[n1] = muladd(w, AAd[n2], ∂AAd[n1])
+        ∂AAd[n2] = muladd(w, AAd[n1], ∂AAd[n2])
+    end
+    @inbounds for i in 1:DAG_NUM1
+        ∂A[i] = ∂AAd[$(has0 == 0 ? "i" : "$has0 + i")]
+    end""")
+    if dag.num1 < nA
+        println(io, """    # A functions $(dag.num1 + 1):$nA appear in no AA function, so their
+    # cotangent is identically zero; ∂A is WRITTEN rather than accumulated, so say so.
+    @inbounds for i in $(dag.num1 + 1):N_A
+        ∂A[i] = 0.0
+    end""")
+    end
+    println(io, """    return Ei
 end
+
+@inline _energy_and_∂A!(ws::Workspace, iz0::Int) =
+    tensor_energy_and_∂A!(ws.∂A, ws.AAd, ws.∂AAd, ws.A, iz0)
 
 # ============================================================================
 # PASS 2: forces (and virial) from ∂A
@@ -456,10 +468,8 @@ function site_energy!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
     iz0 = z2i(Z0)
     length(Rs) == 0 && return E0_of(iz0)
     Epair = _embed_val!(ws, Rs, Zs, iz0)
-    B = _tensor_B!(ws)
-    Emb = 0.0""")
-    _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["Emb = dot(B, WB_$iz)"])
-    println(io, """    return (Emb + Epair) + E0_of(iz0)
+    Emb = tensor_energy!(ws.AAd, ws.A, iz0)
+    return (Emb + Epair) + E0_of(iz0)
 end
 
 function site_energy_forces_virial!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},

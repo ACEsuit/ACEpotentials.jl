@@ -22,6 +22,7 @@ using AtomsBase: ChemicalSpecies
 include("build_stamp.jl")
 include("splinify.jl")
 include("codegen.jl")
+include("symmprod_dag.jl")   # AA product DAG (export time only; see its header)
 
 # Include code generation modules (split for maintainability)
 include("write_radial.jl")
@@ -315,10 +316,14 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # compiled library was silently testing a different model from the one the Julia-side
     # gates measured.  `export/test/runtests.jl:library_build_id` recomputes the id from the
     # `.jl` and refuses to run the library groups against a mismatch.
+    # The AA product DAG and the folded readout.  Built once here and handed to both writers
+    # so the constants and the kernel cannot be built from two different DAGs.
+    dag = SymmProdDAG(aa_flat_spec(tensor.aabasis))
+
     let io = IOBuffer()
         _write_header(io, for_library)
         _write_species(io, _i2z)
-        _write_tensor(io, tensor)
+        _write_tensor(io, tensor, dag, W_readout, NZ)
 
         # Write radial basis (hermite_spline or polynomial).
         #
@@ -362,7 +367,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
 
         _write_spherical_harmonics(io, maxl)
         _write_etace_weights(io, W_readout, NZ, E0_dict, _i2z)
-        _write_evaluation_functions(io, tensor, NZ, pair_calc !== nothing, pair_rows)
+        _write_evaluation_functions(io, tensor, dag, NZ, pair_calc !== nothing, pair_rows)
         if for_library
             _write_c_interface(io, NZ)
         else
@@ -444,7 +449,26 @@ end
 """)
 end
 
-function _write_tensor(io, tensor)
+"""
+    _write_tensor(io, tensor, dag, W_readout, NZ)
+
+Emit the tensor-step constants.  TWO REPRESENTATIONS OF THE SAME BASIS are written, and they
+are used by different entry points:
+
+  * the **DAG** (`N_DAG`, `DAG_NUM1`, `DAG_FIRST`, `DAG_NODES`, `CTILDE_iz`) drives the
+    ENERGY/FORCE path.  `E = dot(CTILDE_iz, AAd)` with the readout already folded in, so `B`,
+    the A2B map and `WB` are not on that path at all (Task 7 / B3).
+  * the **flat** `AABASIS_SPECS_*` / `A2BMAP_*` / `WB_*` drive `site_basis` only, which is
+    the `ace_site_basis` C entry point's contract: it returns the N_BASIS-vector `B`, which
+    the DAG representation does not compute.  That entry point is exported and documented, so
+    the constants behind it are kept rather than silently dropped.  They cost image size, not
+    time: nothing on the hot path reads them.
+
+`CTILDE_iz = projectionᵀ · (A2Bmapᵀ · WB_iz)`.  Both factors are per-species constants that
+the pre-B3 kernel recomputed at EVERY SITE (`A2Bmapᵀ · WB` was a full pass over the sparse map
+to seed `∂AA`, and `A2Bmap · AA` a second one to build `B`).
+"""
+function _write_tensor(io, tensor, dag, W_readout, NZ)
     # Extract specs
     abasis_spec = tensor.abasis.spec
     aabasis = tensor.aabasis
@@ -476,6 +500,70 @@ function _write_tensor(io, tensor)
         println(io, "const A2BMAP_$(idx)_J = $(repr(J))")
         println(io, "const A2BMAP_$(idx)_V = $(repr(V))")
         println(io, "const A2BMAP_$(idx)_SIZE = ($m, $n)")
+    end
+    println(io)
+
+    _write_dag(io, tensor, dag, W_readout, NZ)
+end
+
+function _write_dag(io, tensor, dag, W_readout, NZ)
+    nnodes = length(dag.nodes)
+    has0 = dag.has0 ? 1 : 0
+    first_interior = has0 + dag.num1 + 1
+    ninterior = nnodes - first_interior + 1
+    @assert ninterior >= 0
+    nA = length(tensor.abasis)
+    @assert dag.num1 <= nA "DAG leaf count $(dag.num1) exceeds the A basis size $nA"
+
+    # Depth, for the provenance comment (and because a DAG whose depth exploded would be a
+    # sign the partition heuristic had gone wrong).
+    depth = zeros(Int, nnodes)
+    for i in first_interior:nnodes
+        n1, n2 = dag.nodes[i]
+        depth[i] = 1 + max(depth[n1], depth[n2])
+    end
+
+    println(io, """
+# ============================================================================
+# AA PRODUCT DAG  (Task 7 / B3)
+# ============================================================================
+#
+# Binary DAG over the A basis replacing the flat AA products.  Layout (upstream
+# SparseSymmProdDAG's, see export/src/symmprod_dag.jl for why that type is ported rather
+# than imported):
+#
+#   AAd[1]                        = 1.0                       iff DAG_HAS0
+#   AAd[$(has0)+i] = A[i]                 for i = 1:DAG_NUM1  (LEAVES -- no node emitted)
+#   AAd[i]                        = AAd[n1] * AAd[n2]         for i = DAG_FIRST:N_DAG
+#
+# `DAG_NODES[j]` is the (n1, n2) of node `DAG_FIRST - 1 + j`; both are < that index, so the
+# forward loop is one pass up and the pullback one pass down.  A Vector of Int32 pairs, not a
+# Tuple of tuples: the pullback indexes it in REVERSE, and a runtime index into a
+# $(ninterior)-element tuple is not something to hand a compiler.
+#
+# This model: $(nnodes) nodes = $(has0) constant + $(dag.num1) leaves + $(ninterior) interior,
+# against $(length(tensor.aabasis)) flat AA functions and $(size(W_readout, 2)) B functions.
+# Max depth $(maximum(depth; init = 0)).""")
+
+    println(io, "const N_DAG = $nnodes")
+    println(io, "const DAG_NUM1 = $(dag.num1)")
+    println(io, "const DAG_HAS0 = $(dag.has0)")
+    println(io, "const DAG_FIRST = $first_interior")
+    nodes_str = join(("($(Int32(dag.nodes[i][1])),$(Int32(dag.nodes[i][2])))"
+                      for i in first_interior:nnodes), ", ")
+    println(io, "const DAG_NODES = NTuple{2, Int32}[$nodes_str]")
+    println(io)
+
+    println(io, """
+# Folded readout: CTILDE_iz[n] is the coefficient of DAG node n in the site energy, i.e.
+# `projection' * (A2Bmap' * WB_iz)`.  `E = dot(CTILDE_iz, AAd)`, and the SAME vector seeds the
+# pullback (`∂AAd .= CTILDE_iz`), which is what makes the backward pass two FMAs per node with
+# no ∂B, no ∂AA scatter and no second traversal of the A2B map.""")
+    A2B = tensor.A2Bmaps[1]
+    for iz in 1:NZ
+        ct = dag_ctilde(dag, A2B' * W_readout[1, :, iz])
+        @assert length(ct) == nnodes
+        println(io, "const CTILDE_$(iz) = $(repr(ct))")
     end
     println(io)
 end

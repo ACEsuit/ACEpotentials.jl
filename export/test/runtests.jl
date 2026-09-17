@@ -6,6 +6,7 @@ This file orchestrates all export-related tests for ETACE models:
 2. Hermite spline export (approximate splined radial basis; incl. the fitted Cantor model)
 3. Multi-species model tests
 4. Pair-potential export (ETOneBody + ETPairModel + ETACE, Cantor fixture)
+4b. AA product DAG (Task 7 / B3), both benchmark models
 5. Python calculator integration
 6. LAMMPS plugin integration (serial)
 7. MPI parallel tests
@@ -17,6 +18,7 @@ Usage:
     julia --project=.. runtests.jl hermite      # Run Hermite spline export tests
     julia --project=.. runtests.jl multispecies # Run multi-species tests
     julia --project=.. runtests.jl pair         # Run pair-potential export tests (Cantor fixture)
+    julia --project=.. runtests.jl dag          # Run AA-DAG tests (both benchmark models)
     julia --project=.. runtests.jl python       # Run Python tests
     julia --project=.. runtests.jl lammps       # Run LAMMPS tests
     julia --project=.. runtests.jl mpi          # Run MPI tests
@@ -116,6 +118,23 @@ blindness this plan exists to remove.
 function check_cantor_fixture_available()
     p = cantor_fixture_paths()
     return isfile(p.params) && isfile(p.held)
+end
+
+"""
+    dag_prereqs() -> (ok::Bool, reason::String)
+
+Whether the `dag` group (test_dag.jl, Task 7 / B3) can run here.  It checks the ported AA-DAG
+builder on BOTH benchmark models, so it needs the Cantor fixture and the TiAl order-4
+parameters -- the same two host-local data prerequisites as `parity`, but neither
+`EXPORT_REF_SHA` nor a resolvable git object, because it compares the generator against the
+MODEL rather than against an earlier generator.
+"""
+function dag_prereqs()
+    check_cantor_fixture_available() ||
+        return (false, "Cantor fixture data missing")
+    tial = joinpath(PROJECT_DIR, "bench_parity", "tial_o4_params.jld2")
+    isfile(tial) || return (false, "TiAl parameters missing ($tial)")
+    return (true, "")
 end
 
 """
@@ -433,6 +452,22 @@ function main()
             end
         end
 
+        # AA product DAG (Task 7 / B3).  Structural + numeric checks of the ported DAG
+        # builder on BOTH benchmark models, so it needs the same host-local fixtures the
+        # `pair` and `parity` groups do (and, unlike `parity`, no git object and no
+        # EXPORT_REF_SHA -- it checks the generator against itself and against the model).
+        if should_run_test(selection, :dag) || should_run_test(selection, :all)
+            ok, why = dag_prereqs()
+            if ok
+                run_group("dag") do
+                    @info "Running AA-DAG tests..."
+                    include(joinpath(TEST_DIR, "test_dag.jl"))
+                end
+            else
+                skip_group("dag", why)
+            end
+        end
+
         # Pair-potential export tests (ETOneBody + ETPairModel + ETACE stack)
         if should_run_test(selection, :pair) || should_run_test(selection, :all)
             if check_cantor_fixture_available()
@@ -523,7 +558,7 @@ assert that each required group actually executed.
 
 `ACE_REQUIRE_GROUPS=all` requires every group that was selected and reached a decision;
 otherwise it is a comma-separated list of group names (`etace`, `hermite`,
-`hermite_cantor`, `multispecies`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
+`hermite_cantor`, `multispecies`, `dag`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
 was skipped, or that was never reached because the selection excluded it, fails.
 """
 function report_group_status(selection)
