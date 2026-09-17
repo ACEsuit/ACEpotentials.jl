@@ -60,7 +60,7 @@ AA_PRODUCTS in (:flat, :dag) || error("AA_PRODUCTS must be flat or dag, got $AA_
 #     association -- its cancellation condition number kappa = sum|contributions| / |dA| is
 #     18.8 (Ti) and 37.7 (Al) on |dA| of 317 and 152, so the floor kappa*eps*|dA| is
 #     1.154e-12 / 1.228e-12;
-#   * the SHIPPED generator's own error against exact arithmetic is 1.306e-12 (Ti) --
+#   * the SHIPPED generator's own error against exact arithmetic is 1.307e-12 (Ti) --
 #     LARGER THAN THE 1e-12 GATE IT PASSES.
 #
 # It passes because it shares EquivariantTensors' product association and the two identical
@@ -137,7 +137,13 @@ function do_tag(tag)
         @printf(io, "source_gate_dE_per_atom=%.6e\n", dE)
         @printf(io, "source_gate_dF=%.6e\n", dF)
         @printf(io, "source_gate_dV_per_atom=%.6e\n", dV)
-        println(io, "source_gate=PASS")
+        # DERIVED, not asserted as a literal.  `check_export` throws on failure, so this line
+        # is only reachable on a pass and a hard-coded "PASS" would in fact always be true --
+        # but "a flag that is printed rather than computed" is the exact shape of two real
+        # defects this plan has already found (a manifest field nothing derived, a spread flag
+        # printed and not applied), and the cost of computing it is one line.
+        println(io, "source_gate=",
+                (dE <= TOL && dF <= TOL && dV <= TOL) ? "PASS" : "FAIL")
         if extra !== nothing
             @printf(io, "# reported only, never asserted: vs the FITTED stack dE/atom=%.3e dF=%.3e dV/atom=%.3e\n",
                     extra...)

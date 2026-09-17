@@ -115,7 +115,7 @@ virial_tol(case::AbstractString) = startswith(case, "tial") ? 3e-13 : PARITY_TOL
 #     association -- its cancellation condition number kappa = sum|contributions| / |dA| is
 #     18.8 (Ti) and 37.7 (Al) on |dA| of 317 and 152, so the floor kappa*eps*|dA| is
 #     1.154e-12 / 1.228e-12;
-#   * the SHIPPED generator's own error against exact arithmetic is 1.306e-12 (Ti) --
+#   * the SHIPPED generator's own error against exact arithmetic is 1.307e-12 (Ti) --
 #     LARGER THAN THE 1e-12 GATE IT PASSES.
 #
 # It passes because it shares EquivariantTensors' product association and the two identical

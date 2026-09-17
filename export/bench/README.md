@@ -714,10 +714,16 @@ ratios are Cantor embed **1.44-1.51**, tensor **0.72-0.81**, forces **1.45-1.50*
 
 > **CORRECTION.** The first version of this table was produced by a script that was never
 > committed and left no log, contrary to the rule stated two hundred lines above it. It is
-> replaced above by output from the committed tool. The `:flat` column reproduces (20.94 /
-> 13.57 / 28.46 / 49.64 then, 20.82 / 13.49 / 28.50 / 49.60 now) and so does all of TiAl; the
-> **Cantor `:dag` column does not** — it read 26.68 / 8.54 / 36.77 / 56.37, against 31.39 /
-> 10.98 / 42.67 / 65.18 here, i.e. the earlier figures understated the penalty by ~17 %. The
+> replaced above by output from the committed tool. The `:flat` column reproduces **within the
+> tool's own run-to-run spread** — it read 20.94 / 13.57 / 28.46 / 49.64, and the two logged
+> runs bracket it at 20.82–21.21 / 13.49–13.72 / 28.50–28.94 / 49.60–51.22, so three of the
+> four phases lie *inside* the range and `forces` misses it by 0.14 % — and so does all of
+> TiAl; the **Cantor `:dag` column does not** — it read 26.68 / 8.54 / 36.77 / 56.37, against
+> ranges of 30.57–31.39 / 9.90–10.98 / 41.94–42.67 / 63.15–65.18 here, i.e. the earlier figures
+> understated the penalty by ~17 %. On the headline whole-site figure the old `:dag` number
+> sits 10.7 % below a range only 3.2 % wide: **3.3x outside the run-to-run spread**, where the
+> `:flat` column is inside it. That asymmetry is the reason this is recorded as unexplained
+> rather than dismissed as noise. The
 > regenerated numbers agree BETTER with the protocol row (whole-site 1.23-1.31x here against
 > the row's 1.32x, where the old table said 1.14x), so the correction strengthens the
 > conclusion rather than weakening it; the cause of the difference was not established and the

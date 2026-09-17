@@ -521,23 +521,24 @@ end
         "Ei = dot(CTILDE_$iz, AAd)",
         "copyto!(∂AAd, CTILDE_$iz)",
     ])
-    println(io, """
-    @inbounds for j in length(DAG_NODES):-1:1
-        w = ∂AAd[DAG_FIRST - 1 + j]
-        n1, n2 = DAG_NODES[j]
-        ∂AAd[n1] = muladd(w, AAd[n2], ∂AAd[n1])
-        ∂AAd[n2] = muladd(w, AAd[n1], ∂AAd[n2])
-    end
-    @inbounds for i in 1:DAG_NUM1
-        ∂A[i] = ∂AAd[$(_dag_leaf_ix(has0))]
-    end""")
+    # Line by line, NOT a `"""` block: neither of these has a column-0 line, so a literal
+    # would have its common 4-space indent stripped and emit the whole pullback at column 0.
+    # See "NOTE ON THE `\"\"\"` LITERALS IN THIS FILE" further down this same function.
+    println(io, "    @inbounds for j in length(DAG_NODES):-1:1")
+    println(io, "        w = ∂AAd[DAG_FIRST - 1 + j]")
+    println(io, "        n1, n2 = DAG_NODES[j]")
+    println(io, "        ∂AAd[n1] = muladd(w, AAd[n2], ∂AAd[n1])")
+    println(io, "        ∂AAd[n2] = muladd(w, AAd[n1], ∂AAd[n2])")
+    println(io, "    end")
+    println(io, "    @inbounds for i in 1:DAG_NUM1")
+    println(io, "        ∂A[i] = ∂AAd[$(_dag_leaf_ix(has0))]")
+    println(io, "    end")
     if dag.num1 < nA
-        println(io, """
-    # A functions $(dag.num1 + 1):$nA appear in no AA function, so their cotangent is
-    # identically zero; ∂A is WRITTEN rather than accumulated, so say so.
-    @inbounds for i in $(dag.num1 + 1):N_A
-        ∂A[i] = 0.0
-    end""")
+        println(io, "    # A functions $(dag.num1 + 1):$nA appear in no AA function, so their cotangent is")
+        println(io, "    # identically zero; ∂A is WRITTEN rather than accumulated, so say so.")
+        println(io, "    @inbounds for i in $(dag.num1 + 1):N_A")
+        println(io, "        ∂A[i] = 0.0")
+        println(io, "    end")
     end
     println(io, """    return Ei
 end
@@ -638,16 +639,28 @@ function site_energy!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
     iz0 = z2i(Z0)
     length(Rs) == 0 && return E0_of(iz0)
     Epair = _embed_val!(ws, Rs, Zs, iz0)""")
-    # NOTE ON THE `"""` LITERALS BELOW, and why these are one-line `println`s.
+    # NOTE ON THE `"""` LITERALS IN THIS FILE, and why these two lines are one-line `println`s.
     #
-    # Julia dedents a triple-quoted string by the common leading whitespace of lines 2..n
-    # WHENEVER LINE 1 CARRIES CONTENT.  `println(io, \"\"\"    B = ...\\n    Emb = 0.0\"\"\")`
-    # therefore emits `    B = ...` followed by `Emb = 0.0` AT COLUMN 0.  That produced the
-    # only textual difference between this generator's `:flat` output and b826c831's, which
-    # is exactly the difference a reviewer has to rule out before believing "unchanged".
-    # A literal whose first line is empty is not dedented (the minimum indent is then taken
-    # over the content lines, and these blocks all contain a column-0 `end`), which is why
-    # the other blocks in this file are safe; these two were not.
+    # THE RULE, verified by running it rather than by reading the manual.  Julia dedents a
+    # triple-quoted literal by the MINIMUM leading whitespace over its lines, and the only
+    # exemption is a first line that shares the line with the opening `"""`: that line is
+    # emitted verbatim and takes no part in the minimum.  So:
+    #
+    #   * first line carries content -> that line is verbatim, lines 2..n are dedented by
+    #     THEIR OWN minimum.  `println(io, \"\"\"    B = ...\\n    Emb = 0.0\"\"\")` emits
+    #     `    B = ...` followed by `Emb = 0.0` AT COLUMN 0.  That produced the only textual
+    #     difference between this generator's `:flat` output and b826c831's, which is exactly
+    #     the difference a reviewer has to rule out before believing "unchanged".
+    #   * first line empty -> ALL content lines are dedented by their common minimum.  A
+    #     leading newline is NOT a defence and never was; an earlier version of this comment
+    #     said it was, which is why the two `:dag` blocks above were emitted at column 0 for
+    #     a whole task after this note was written.
+    #
+    # WHAT ACTUALLY MAKES A BLOCK SAFE is a line at column 0 inside it -- typically the
+    # closing `end` of the function being emitted -- because that pins the minimum at 0 and
+    # nothing is stripped.  Every multi-line literal in this file that is safe is safe for
+    # that reason.  A block with no column-0 line must be emitted line by line (as here) or
+    # given one; there is no third option, and `\"\"\"\\n` is not one.
     if use_dag
         println(io, "    Emb = tensor_energy!(ws.AAd, ws.A, iz0)")
         println(io, "    return (Emb + Epair) + E0_of(iz0)")

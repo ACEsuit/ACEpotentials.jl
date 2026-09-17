@@ -2,6 +2,14 @@
 """summarise_rows.py <rows file> [tag-prefix ...] -- the POOLED-RUN MEDIAN of a set of rows.
 
     export/bench/summarise_rows.py bench_parity/rows_task6_fix3.txt cantor_poly tial_poly
+    export/bench/summarise_rows.py bench_parity/rows_task8.txt --series both
+
+`--series` picks which pair style is summarised: `ace` (the default, and what every earlier
+task quoted), `pace` for the `pair_style pace recursive` comparator, or `both`, which prints
+the two pooled medians and their ratio.  A published RATIO must come from `both`: the
+numerator and the denominator are then pooled over the same included blocks by the same rule,
+whereas an ACE median from here divided by a pace median read off a row by eye is exactly the
+half-tool, half-hand arithmetic this script exists to prevent.
 
 WHAT THE STATISTIC IS.  The sample median over every run of every INCLUDED block, pooled --
 not the median of the block medians, and not a mean.  `bench_parity.sh` reports a per-block
@@ -65,6 +73,23 @@ import sys
 ROW = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
                  r"\bace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
                  r"([-\d. ]+?),\s*spread=([\d.]+)\)")
+
+# The COMPARATOR half of the row, anchored on `pace_us/site=` in exactly the same way.
+#
+# WHY IT IS HERE.  Every published ratio has `pair_style pace recursive` as its denominator,
+# and until Task 8 this tool summarised only the numerator -- so a table that pooled several
+# blocks had a tool-computed ACE median over a HAND-computed pace median.  That is the same
+# split the tool was built to close (a hand-typed 182.28 in the paragraph claiming the figures
+# came from the artefact), just moved into the denominator.  Both halves now come from here,
+# under one pooling rule and one set of exclusions.
+#
+# A row taken with `pace=none` ends `pace_ms/step=-` and simply does not match; such a block
+# contributes to the ACE statistic and to nothing else.  A block excluded for its ACE spread
+# is excluded from BOTH series -- it was taken on a contended core, which is a property of the
+# block, not of one pair style in it.
+PACE = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
+                  r"\bpace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
+                  r"([-\d. ]+?),\s*spread=([\d.]+)\)")
 EXCL = re.compile(r"^#\s*EXCLUDE\s+(\S+)\s+(.*\S)\s*$")
 
 
@@ -83,6 +108,10 @@ def main(argv=None):
                     help="a block whose internal spread exceeds this is excluded (default 0.03)")
     ap.add_argument("--exclude", action="append", default=[], metavar="TAG=REASON",
                     help="exclude one block by exact tag; a reason is required")
+    ap.add_argument("--series", choices=("ace", "pace", "both"), default="ace",
+                    help="which pair style to summarise: the exported library (ace, the "
+                         "default and the historical behaviour), the ML-PACE comparator "
+                         "(pace), or both with the ratio of the two pooled medians (both)")
     a = ap.parse_args(argv)
 
     try:
@@ -107,15 +136,21 @@ def main(argv=None):
             continue
         m = ROW.match(line)
         if m:
+            # The two halves are read from the SAME line, never joined by tag afterwards: a
+            # tag appears once per block and the table takes several blocks per tag, so a
+            # tag->runs dictionary would silently keep only the last block of each.
+            p = PACE.match(line)
             rows.append((m.group(1), int(m.group(2)),
                          [float(x) for x in m.group(3).split() if x != "-"],
-                         float(m.group(4))))
+                         float(m.group(4)),
+                         [float(x) for x in p.group(3).split() if x != "-"] if p else [],
+                         float(p.group(4)) if p else 0.0))
 
     if not rows:
         return die(f"{a.rows_file}: no rows matched the bench_parity.sh row format "
                    f"({len(text.splitlines())} line(s) read). Has the row format changed?")
 
-    tags = {t for t, _, _, _ in rows}
+    tags = {r[0] for r in rows}
     for tag in excluded:
         if tag not in tags:
             return die(f"exclusion names tag {tag!r}, which is not in {a.rows_file}. "
@@ -128,41 +163,95 @@ def main(argv=None):
 
     groups = {}
     order = []
-    for tag, nat, vals, spread in rows:
+    # EACH SERIES IS EXCLUDED ON ITS OWN SPREAD.
+    #
+    # The protocol's 3 % rule is a statement about a series of runs, and the two pair styles
+    # in a block are two series.  Applying only the ACE spread to both was wrong and was
+    # caught the first time this tool met a real mixed block: Task 8's opening `cantor_poly`
+    # block has an ACE spread of 0.08 % and a PACE spread of 8.67 %, because a concurrent
+    # (off-core) job perturbed the comparator -- which streams a 193 MB `.yace` and is far
+    # more sensitive to system load than the pinned exported library is.  Pooling that
+    # comparator series would have moved the published DENOMINATOR while every visible
+    # diagnostic stayed green.
+    #
+    # An EXPLICIT `# EXCLUDE` exclusion still applies to both series: it names a block, and a
+    # reason good enough to drop a block is a reason to drop all of it.
+    for tag, nat, vals, spread, pvals, pspread in rows:
         key = next((w for w in wanted if tag.startswith(w)), None) if wanted else tag
         if key is None:
             continue
         if key not in groups:
-            groups[key] = {"nat": nat, "runs": [], "blocks": []}
+            groups[key] = {"nat": nat, "runs": [], "pace": [], "blocks": []}
             order.append(key)
         if tag in excluded:
-            why = f"EXCLUDED: {excluded[tag]}"
-        elif spread > a.max_spread:
-            why = (f"EXCLUDED: internal spread {spread * 100:.2f} % > "
-                   f"{a.max_spread * 100:.0f} % (protocol)")
+            why = pwhy = f"EXCLUDED: {excluded[tag]}"
         else:
-            why = "included"
-            groups[key]["runs"] += vals
-        groups[key]["blocks"].append((tag, vals, spread, why))
+            if spread > a.max_spread:
+                why = (f"EXCLUDED: internal spread {spread * 100:.2f} % > "
+                       f"{a.max_spread * 100:.0f} % (protocol)")
+            else:
+                why = "included"
+                groups[key]["runs"] += vals
+            if pspread > a.max_spread:
+                pwhy = (f"EXCLUDED: internal spread {pspread * 100:.2f} % > "
+                        f"{a.max_spread * 100:.0f} % (protocol)")
+            else:
+                pwhy = "included"
+                groups[key]["pace"] += pvals
+        groups[key]["blocks"].append((tag, vals, spread, why, pvals, pspread, pwhy))
+
+    def median(xs):
+        v = sorted(xs)
+        n = len(v)
+        return v[n // 2] if n % 2 else 0.5 * (v[n // 2 - 1] + v[n // 2])
 
     rc = 0
     for key in order:
         g = groups[key]
-        v = sorted(g["runs"])
-        n = len(v)
+        n = len(g["runs"])
         if n == 0:
             print(f"{key}: EVERY block excluded -- no statistic")
-            for tag, vals, spread, why in g["blocks"]:
+            for tag, vals, spread, why, _, _, _ in g["blocks"]:
                 print(f"    {tag:<28} {' '.join(f'{x:.3f}' for x in vals)}   {why}")
             rc = 1
             continue
-        med = v[n // 2] if n % 2 else 0.5 * (v[n // 2 - 1] + v[n // 2])
+        med = median(g["runs"])
         nin = sum(1 for b in g["blocks"] if b[3] == "included")
-        print(f"{key}: {nin} of {len(g['blocks'])} block(s) included, {n} run(s), "
-              f"pooled median = {med:.4f} ms/step = {med * 1000 / g['nat']:.1f} us/site")
-        for tag, vals, spread, why in g["blocks"]:
-            print(f"    {tag:<28} {' '.join(f'{x:.3f}' for x in vals)}"
-                  f"   spread={spread * 100:.2f} %   {why}")
+        if a.series in ("ace", "both"):
+            print(f"{key}: {nin} of {len(g['blocks'])} block(s) included, {n} run(s), "
+                  f"pooled median = {med:.4f} ms/step = {med * 1000 / g['nat']:.1f} us/site")
+            for tag, vals, spread, why, _, _, _ in g["blocks"]:
+                print(f"    {tag:<28} {' '.join(f'{x:.3f}' for x in vals)}"
+                      f"   spread={spread * 100:.2f} %   {why}")
+        if a.series in ("pace", "both"):
+            np_ = len(g["pace"])
+            if np_ == 0:
+                # Not an error: `pace=none` is a legitimate way to take a row (every row in
+                # rows_task6_fix3.txt was taken that way).  Say so rather than print nothing.
+                print(f"{key}: pace -- no comparator runs included "
+                      f"({'pace=none' if not any(b[4] for b in g['blocks']) else 'every comparator series excluded'})")
+                # Nonzero in BOTH modes that asked for a comparator: under `--series both` a
+                # group with no usable pace runs has no ratio, and a table row quoted from a
+                # run that exited 0 would be a row with a silently missing denominator.
+                rc = 1
+                continue
+            pmed = median(g["pace"])
+            pin = sum(1 for b in g["blocks"] if b[6] == "included" and b[4])
+            nwith = sum(1 for b in g["blocks"] if b[4])
+            print(f"{key}: pace recursive, {pin} of {nwith} block(s) included, {np_} run(s), "
+                  f"pooled median = {pmed:.4f} ms/step = "
+                  f"{pmed * 1000 / g['nat']:.1f} us/site")
+            for tag, vals, spread, why, pvals, pspread, pwhy in g["blocks"]:
+                if pvals:
+                    print(f"    {tag + ' (pace)':<28} "
+                          f"{' '.join(f'{x:.3f}' for x in pvals)}"
+                          f"   spread={pspread * 100:.2f} %   {pwhy}")
+            if a.series == "both":
+                # The published ratio.  Both medians are pooled over the same included
+                # blocks, so this is the ratio of two numbers this tool printed above -- not
+                # a median of the per-block `ratio=` fields, which would weight a 2-run block
+                # the same as a 3-run one.
+                print(f"    ratio (pooled ace median / pooled pace median) = {med / pmed:.3f}")
     return rc
 
 
