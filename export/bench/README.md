@@ -473,29 +473,68 @@ benchmark's own pinned process), `pace recursive` re-run in the same block on th
 > untouched. Control rows on **the shipped binaries** (`bench_parity/rows_task6_fix3.txt`,
 > core 31, `pace=none`) measure that rather than assert it:
 >
-> | tag | committed row | controls, median of valid blocks | delta |
+> | tag | committed row | controls, pooled-run median over valid blocks | delta |
 > |---|---|---|---|
-> | `cantor_poly_b2` | 117.06 | **116.86** (n = 6) | **−0.17 %** |
-> | `cantor_h50_b2`  | 127.41 | **128.50** (n = 2) | **+0.85 %** |
-> | `tial_poly_b2`   | 182.65 | **182.28** (n = 6) | **−0.20 %** |
-> | `tial_h50_b2`    | 302.76 | **302.81** (n = 4) | **+0.02 %** |
+> | `cantor_poly_b2` | 117.06 | **116.8575** (n = 6) | **−0.173 %** |
+> | `cantor_h50_b2`  | 127.41 | **128.4955** (n = 2) | **+0.852 %** |
+> | `tial_poly_b2`   | 182.65 | **182.1295** (n = 6) | **−0.285 %** |
+> | `tial_h50_b2`    | 302.76 | **302.8085** (n = 4) | **+0.016 %** |
 >
-> Mixed in sign, and each inside its own row's run-to-run spread.
+> Mixed in sign, and each inside its own row's run-to-run spread. The statistic is the
+> **pooled-run median**: the median over every run of every valid block, not the median of the
+> block medians and not a mean. Reproduce it with
+> `export/bench/summarise_rows.py bench_parity/rows_task6_fix3.txt <tag>`, which also flags any
+> block whose internal spread exceeds the protocol's 3 %.
 >
 > **Two blocks were discarded, and by the protocol's own rule rather than by preference.**
 > A `cantor_h50` block read 147.724 / 127.661 / 126.189 (17 % spread) and a `tial_poly` block
 > 208.560 / 247.063 / 205.358 (20 %); the protocol requires two runs within 3 % and forbids
 > timing on a contended core, and a block whose own runs disagree by 17-20 % fails both. The
-> first `cantor_poly` block of the session (128.774 / 130.424) is stated here rather than
-> discarded, because its internal spread is only 1.3 %: it sits 10 % above the six runs that
-> follow it on the same binary in the same session, and it is the first block after a long
-> idle period. It is recorded as unexplained rather than averaged in.
+> first `cantor_poly` block of the session (128.774 / 130.424, 01:11) is stated here rather
+> than discarded, because its internal spread is only 1.3 %: it sits **10 %** above the six
+> runs that follow it on the same binary in the same session. It is recorded as **unexplained**
+> and is not averaged in. **The "first block of a session runs high" hypothesis was tested and
+> did NOT reproduce — see below.**
+
+#### Does the first block of a session run high?  Tested; it does not (Task 6, fix round 4)
+
+The anomaly above suggested a warm-up effect, which would matter far beyond one row: it would
+bias the FIRST block of every timing session, and 10 % is larger than most of the deltas
+Tasks 7 and 8 will be asked to judge. So it was tested rather than assumed, with the same
+harness: two sessions, each preceded by **5 minutes of quiet**, each **4 back-to-back blocks**
+of `cantor_poly_b2` on core 31 (`bench_parity/rows_task6_warmup.txt`).
+
+| session | block 1 | blocks 2-4 (median) | first-block delta |
+|---|---|---|---|
+| A (loadavg 0.09 at start) | 117.376 | 118.386 | **−0.85 %** |
+| B | 119.094 | 117.035 | **+1.76 %** |
+
+**The effect does not reproduce.** The two sessions disagree in SIGN, the magnitudes are ~1 %,
+and all 16 runs lie in 116.772 … 120.052 (2.8 % end to end) — the anomalous block is +10.2 %
+above that median and outside the whole distribution. So:
+
+* **no warm-up run is added to the protocol.** Discarding a first block is only justified by a
+  reproducible effect, and two sessions with opposite signs are not one. Adding it on this
+  evidence would remove a real measurement in exchange for a superstition.
+* the 01:11 block stays recorded as a **one-off anomaly with the check documented**, which is
+  what it is. No cause was established; "cold core" and "frequency scaling" were the
+  hypotheses and neither survived. Note also that the block was NOT preceded by a quiet
+  machine — the gate, suite and parity runs had been loading all 32 cores until minutes
+  before — so if anything the core was warm, which makes the warm-up story less likely rather
+  than more.
+* the four control rows above are **unaffected** and were not re-taken: the anomaly is excluded
+  from `cantor_poly`'s pooled median by block, and the other three tags never contained it.
 >
 > An earlier version of this note reported four deltas taken on an INTERMEDIATE binary
 > (+1.39 / +1.02 / +0.34 / +0.42 %) and described them as "not of one sign", which they were
 > not — all four were positive, which is the shape a small real regression makes. Those rows
 > also predated the `WORKSPACE_TAKEN` load they were quoted as justifying. The table above
 > replaces them: same core, the binaries that ship, and a sign pattern that is actually mixed.
+> The first version of *that* table then reported `tial_poly` as 182.28 / −0.20 %, which is
+> not the pooled-run median of its blocks (182.1295 / −0.285 %) nor any other aggregation of
+> them — it was written by hand rather than computed, in the paragraph whose point is that
+> these figures come from the artefact. `summarise_rows.py` exists so that quoting a number
+> from a rows file means running it and pasting what it prints.
 
 #### The four B2 rows, with `pace recursive` in the same block
 

@@ -483,10 +483,13 @@ print(f'{max_diff:.2e}')
     # THE DECISIVE liveness check, and the one that cannot pass vacuously.
     #
     # It lives in the `python` group, not the `lammps` one, because those are its real
-    # prerequisites: the compiled `.so` and `python3`.  Put in the LAMMPS group it was skipped
-    # on any host without a working `lmp`, even though it needs none -- and a check that exists
-    # to catch a fault every other gate missed is the last one that should be conditional on an
-    # unrelated dependency.
+    # prerequisites: the compiled `.so` and python3.  (The group's own guard,
+    # `check_python_available`, additionally requires `numpy` and `ase` to import -- this
+    # testset needs only numpy, so it inherits one dependency it does not use.  That is a far
+    # smaller condition than a working `lmp`, which is what it was gated on before.)  Put in
+    # the LAMMPS group it was skipped on any host without LAMMPS, even though it needs none --
+    # and a check that exists to catch a fault every other gate missed is the last one that
+    # should be conditional on an unrelated dependency.
     #
     # It drives the library until `ace_gc_count()` says three collections have HAPPENED,
     # requires every energy, force and virial to stay bitwise equal to the first, and FAILS if
