@@ -10,7 +10,7 @@
 #   load_cantor_fixture()        -> (; model, ps, st, E0s, stacked, held, held_xyz, rcut, elements)
 #   cantor_substacks(fx)         -> (onebody_calc, pair_calc, ace_calc)   [by model type name]
 #   cantor_mb_stack(fx)          -> StackedCalculator (E0 + many-body)
-#   cantor_spline_stack(fx;Nspl[, with_pair]) -> StackedCalculator
+#   (cantor_spline_stack was removed with the :hermite_spline export -- see below)
 #                                (E0 + pair + splinified ETACE; with_pair=false drops the pair)
 #   load_cantor_reference(k)     -> (; natoms, E_a, E_amb, E_bmb, E_c50, E_c200, F_a, ...)
 #   read_cantor_lammps_data(fn)  -> periodic_system
@@ -82,6 +82,11 @@ vectors `F_a, F_amb, F_bmb, F_c50, F_c200 :: Vector{SVector{3,Float64}}`, where
   amb   = ACEModel with Wpair = 0  (E0 + many-body)
   bmb   = ET StackedCalculator (ETOneBody + ETACE)
   c50   / c200 = E0 + splinified ETACE with Nspl = 50 / 200
+
+The `c50` / `c200` columns are still PARSED -- they are columns of the file, and a parser
+that skipped them would drift from it -- but nothing reads them any more: their only consumer
+was `test_hermite_cantor.jl`, deleted with the `:hermite_spline` mode
+(`export/bench/FINDINGS_parity.md` §7).
 """
 function load_cantor_reference(k::Integer)
     L = readlines(joinpath(CANTOR_VERIFY, "ref_$k.txt"))
@@ -184,30 +189,8 @@ function cantor_mb_stack(fx)
     return ETM.StackedCalculator((onebody_calc, ace_calc))
 end
 
-"""
-    cantor_spline_stack(fx; Nspl, with_pair = true) -> StackedCalculator
-
-The reference a `:hermite_spline` export must be compared against.
-
-`with_pair = true` (the DEFAULT since Task 2) returns the three-term stack
-`(ETOneBody, ETPairModel, splinified ETACE)`.  `splinify` only replaces the many-body radial
-basis; the pair term is carried over unchanged, and since Task 1 the generator emits it in
-BOTH radial modes.  Comparing a Hermite export against a pair-less stack would therefore
-re-measure exactly the 6.9 eV/Å defect Task 1 removed and misattribute it to Hermite error.
-
-`with_pair = false` returns the two-term `(ETOneBody, splinified ETACE)` stack that
-`chain_cantor.jl:129-136` builds and that columns `c50` / `c200` of `ref_k.txt` record
-(`Nspl = 50` -> `c50`, `Nspl = 200` -> `c200`).  Use it ONLY to check against those columns;
-it is not a valid reference for an exported model.
-
-Components are located with [`cantor_substacks`](@ref), never by index.
-"""
-function cantor_spline_stack(fx; Nspl::Integer, with_pair::Bool = true)
-    onebody_calc, pair_calc, ace_calc = cantor_substacks(fx)
-    m = ETM.splinify(ace_calc.model, ace_calc.ps, ace_calc.st; Nspl = Nspl)
-    p, s = LuxCore.setup(MersenneTwister(1), m)
-    p.readout.W .= ace_calc.ps.readout.W
-    spl_calc = ETM.ETACEPotential(m, p, s, fx.rcut)
-    return with_pair ? ETM.StackedCalculator((onebody_calc, pair_calc, spl_calc)) :
-                       ETM.StackedCalculator((onebody_calc, spl_calc))
-end
+# `cantor_spline_stack` lived here, and built `(ETOneBody, ETPairModel, splinified ETACE)`
+# -- the reference a `:hermite_spline` export had to be compared against.  That mode was
+# removed (export/bench/FINDINGS_parity.md §7), a splinified model can no longer be
+# exported at all, and nothing called this any more.  `ETModels.splinify` is untouched:
+# if you need a splinified stack for an in-Julia experiment, build it at the call site.

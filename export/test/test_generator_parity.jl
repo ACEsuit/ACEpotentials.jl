@@ -29,8 +29,11 @@ previous task, recorded at the top of that task's report in
 `.superpowers/sdd/lammps_export_parity_plan/task-<n>-report.md`.  The resolved SHA and its
 subject line are printed on every run so the row carries its own provenance.
 
-WHICH CASES.  Both benchmark models (Cantor, 5 species, order 3; TiAl, 2 species, order 4) in
-both radial modes, plus a DENSE-`W` model.  The dense case is not decoration: both benchmark
+WHICH CASES.  Both benchmark models (Cantor, 5 species, order 3; TiAl, 2 species, order 4),
+plus a DENSE-`W` model.  There used to be a `:hermite_spline` case beside each -- `cantor_h50`,
+`tial_h50`, `dense_h50` -- and they went with the mode (export/bench/FINDINGS_parity.md §7).
+The published parity rows for them are historical measurements of a mode that no longer
+ships; they are kept, not deleted.  The dense case is not decoration: both benchmark
 models were fitted with `init_Wradial = :onehot` and neither fit touches `Wnlq`, so the
 generator's dense radial-mixing branch has no coverage from them at all.  `dense_model()`
 below asserts that the model it builds really does produce `RBASIS_ONEHOT = false`.
@@ -100,6 +103,9 @@ RESIDUAL RISK, stated rather than discovered later: a TiAl virial regression bet
 a larger one is `check_export_report` below, which compares the NEW file's virial against the
 Julia calculator at an absolute 1e-12 per atom on every case (TiAl measures 6.928e-13).
 """
+# `tial_h50` below is a mode that no longer ships; its measured figures are left in the
+# derivation because they are what the ceiling was set from, and deleting a measurement
+# because its subject was retired would remove the justification for the number that stayed.
 virial_tol(case::AbstractString) = startswith(case, "tial") ? 3e-13 : PARITY_TOL
 #
 # ============================================================================================
@@ -351,8 +357,11 @@ end
     parity_cases() -> Vector of (name, calc, reference_calc, held, rcut, mode)
 
 `calc` is what gets exported; `reference_calc` is what the NEW export is gated against at
-1e-12 (the SPLINIFIED stack for `:hermite_spline`, the fitted stack for `:polynomial` -- the
-same split verify_bench_models.jl makes, and for the same reason).
+1e-12.  They are the same object now that `:polynomial` is the only mode: the split existed
+because a `:hermite_spline` export had to be gated against the SPLINIFIED stack rather than
+the fitted one.  The pair is kept rather than collapsed so that the loop below still reads
+"export this, gate against that" -- the distinction is a property of the gate, not of the
+mode that happens to survive.
 """
 function parity_cases()
     # PARITY_CASES=dense_poly,tial_poly narrows the run while iterating on the generator.
@@ -362,41 +371,20 @@ function parity_cases()
     keep = isempty(want) ? nothing : strip.(split(want, ','; keepempty = false))
     wanted(n) = keep === nothing || n in keep
     cases = Any[]
-    if wanted("cantor_poly") || wanted("cantor_h50")
+    if wanted("cantor_poly")
         cx = load_cantor_fixture()
-        wanted("cantor_poly") &&
-            push!(cases, ("cantor_poly", cx.stacked, cx.stacked, cx.held, cx.rcut, :polynomial))
-        wanted("cantor_h50") &&
-            push!(cases, ("cantor_h50", cantor_spline_stack(cx; Nspl = 50),
-                          cantor_spline_stack(cx; Nspl = 50), cx.held, cx.rcut, :hermite_spline))
+        push!(cases, ("cantor_poly", cx.stacked, cx.stacked, cx.held, cx.rcut, :polynomial))
     end
-    if wanted("tial_poly") || wanted("tial_h50")
+    if wanted("tial_poly")
         tx = load_tial_fixture()
-        wanted("tial_poly") &&
-            push!(cases, ("tial_poly", tx.stacked, tx.stacked, tx.held, tx.rcut, :polynomial))
-        wanted("tial_h50") &&
-            push!(cases, ("tial_h50", tial_spline_stack(tx; Nspl = 50),
-                          tial_spline_stack(tx; Nspl = 50), tx.held, tx.rcut, :hermite_spline))
+        push!(cases, ("tial_poly", tx.stacked, tx.stacked, tx.held, tx.rcut, :polynomial))
     end
-    if wanted("dense_poly") || wanted("dense_h50")
+    if wanted("dense_poly")
         dx = dense_model()
-        wanted("dense_poly") &&
-            push!(cases, ("dense_poly", dx.stacked, dx.stacked, dx.held, dx.rcut, :polynomial))
-        wanted("dense_h50") &&
-            push!(cases, ("dense_h50", dense_spline_stack(dx; Nspl = 50),
-                          dense_spline_stack(dx; Nspl = 50), dx.held, dx.rcut, :hermite_spline))
+        push!(cases, ("dense_poly", dx.stacked, dx.stacked, dx.held, dx.rcut, :polynomial))
     end
     @assert !isempty(cases) "PARITY_CASES=$want selected no case"
     return cases
-end
-
-"`(ETOneBody, ETPairModel, splinified ETACE)` for the dense model, as cantor_spline_stack."
-function dense_spline_stack(dx; Nspl::Integer)
-    onebody, pair, ace = dx.stacked.calcs
-    m = ETM.splinify(ace.model, ace.ps, ace.st; Nspl = Nspl)
-    p, s = LuxCore.setup(MersenneTwister(1), m)
-    p.readout.W .= ace.ps.readout.W
-    return ETM.StackedCalculator((onebody, pair, ETM.ETACEPotential(m, p, s, ace.rcut)))
 end
 
 function _resolved_ref()

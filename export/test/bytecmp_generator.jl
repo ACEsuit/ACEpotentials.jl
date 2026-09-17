@@ -31,9 +31,18 @@
 # comparison that passed while the parity gate failed would mean the harness, not the
 # generator, was broken.  `EXPORT_REF_SHA` is mandatory there and therefore mandatory here.
 #
-# WHAT IT COVERS.  The four benchmark models, `for_library = true` (the form the build stamp
-# gates).  It does NOT cover `aa_products = :dag`, which is off by default and whose emitted
-# source is expected to differ from any commit before Task 8's dedent fix -- see the finding.
+# WHAT IT COVERS.  The two `:polynomial` benchmark models, `for_library = true` (the form the
+# build stamp gates).  It does NOT cover `aa_products = :dag`, which is off by default and
+# whose emitted source is expected to differ from any commit before Task 8's dedent fix --
+# see the finding.
+#
+# IT USED TO COVER FOUR.  `cantor_h50` and `tial_h50` were the `:hermite_spline` exports of
+# the same two models; that mode was removed (export/bench/FINDINGS_parity.md §7), so those
+# models cannot be exported at all any more and the cases are GONE rather than skipped.
+# Their absence is stated in the run's own output, below, so that "two cases" is never read
+# as "two cases silently failed to build".  A reference commit from before the removal still
+# emits them -- `export_with` checks the old generator out of git -- which is exactly why
+# leaving them in would have compared a mode that ships against one that does not.
 using Printf
 
 const ROOT = abspath(joinpath(@__DIR__, "..", ".."))
@@ -45,10 +54,11 @@ const OUTDIR = mkpath(joinpath(@__DIR__, "build", "bytecmp"))
 
 const CASES = [
     ("cantor_poly", () -> load_cantor_fixture().stacked, :polynomial),
-    ("cantor_h50",  () -> cantor_spline_stack(load_cantor_fixture(); Nspl = 50), :hermite_spline),
     ("tial_poly",   () -> load_tial_fixture().stacked, :polynomial),
-    ("tial_h50",    () -> tial_spline_stack(load_tial_fixture(); Nspl = 50), :hermite_spline),
 ]
+
+"The cases this script used to run, and why it does not: printed, never silently absent."
+const RETIRED_CASES = ["cantor_h50", "tial_h50"]
 
 function bytecmp_case(nm, mk, mode)
     calc = mk()
@@ -81,13 +91,16 @@ function bytecmp_case(nm, mk, mode)
 end
 
 println("\nbytecmp_generator.jl -- shipped default vs $REF_SHA, for_library = true\n")
+println("cases: ", join(first.(CASES), ", "))
+println("retired with the :hermite_spline mode, NOT skipped and NOT failed: ",
+        join(RETIRED_CASES, ", "), "\n")
 ok = true
 for (nm, mk, mode) in CASES
     global ok &= bytecmp_case(nm, mk, mode)
 end
 println()
 if ok
-    println("ALL FOUR MODELS BYTE-IDENTICAL, EXPORT_BUILD_ID UNCHANGED vs $REF_SHA.")
+    println("ALL $(length(CASES)) SHIPPED MODELS BYTE-IDENTICAL, EXPORT_BUILD_ID UNCHANGED vs $REF_SHA.")
 else
     println("NOT byte-identical -- see the per-case diff above. Nothing is wrong with the")
     println("generator merely because of this; but any standing timing row or build stamp")

@@ -185,8 +185,10 @@ Every call prints all four figures with unambiguous labels, each tagged `[per at
 `[absolute]`, and the raw `max|dV|` is tagged `[absolute; reported only, never gated]` so it
 cannot be mistaken for a gated quantity.
 
-Use `check_export_report` when the deviation *is* the measurement (e.g. the Hermite-spline
-error against the fitted model, which must never be asserted against a tolerance at all).
+Use `check_export_report` when the deviation *is* the measurement rather than a gate -- the
+case it was written for was the Hermite-spline export's error against the fitted model, which
+had to be reported and never asserted; that mode is gone, but the distinction it forced is
+not, and every 1e-12 gate in the suite is now written as report-then-@test because of it.
 """
 function check_export_report(model_file, calc, held, rcut; label = model_file)
     ex = load_exported(model_file)

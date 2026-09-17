@@ -14,7 +14,7 @@
 #   load_tial_fixture()          -> (; model, ps, st, E0s, stacked, held, rcut, elements, hypers)
 #   tial_substacks(fx)           -> (onebody_calc, pair_calc, ace_calc)   [by model type name]
 #   tial_mb_stack(fx)            -> StackedCalculator (E0 + many-body, pair dropped)
-#   tial_spline_stack(fx; Nspl[, with_pair]) -> StackedCalculator
+#   (tial_spline_stack was removed with the :hermite_spline export -- see below)
 #   load_tial_held()             -> Vector of the 10 export-check configurations
 #
 # `held` is the 10 BULK configurations of the TiAl_tutorial dataset (5 x 128 atoms + 5 x 54
@@ -153,19 +153,8 @@ function tial_mb_stack(fx)
     return ETM.StackedCalculator((onebody_calc, ace_calc))
 end
 
-"""
-    tial_spline_stack(fx; Nspl, with_pair = true) -> StackedCalculator
-
-The reference a `:hermite_spline` export must be compared against: `(ETOneBody, ETPairModel,
-splinified ETACE)`.  `splinify` replaces only the many-body radial basis; the pair term is
-carried over unchanged.  `with_pair = false` drops it and is not a valid export reference.
-"""
-function tial_spline_stack(fx; Nspl::Integer, with_pair::Bool = true)
-    onebody_calc, pair_calc, ace_calc = tial_substacks(fx)
-    m = ETM.splinify(ace_calc.model, ace_calc.ps, ace_calc.st; Nspl = Nspl)
-    p, s = LuxCore.setup(MersenneTwister(1), m)
-    p.readout.W .= ace_calc.ps.readout.W
-    spl_calc = ETM.ETACEPotential(m, p, s, fx.rcut)
-    return with_pair ? ETM.StackedCalculator((onebody_calc, pair_calc, spl_calc)) :
-                       ETM.StackedCalculator((onebody_calc, spl_calc))
-end
+# `tial_spline_stack` lived here, and built `(ETOneBody, ETPairModel, splinified ETACE)`
+# -- the reference a `:hermite_spline` export had to be compared against.  That mode was
+# removed (export/bench/FINDINGS_parity.md §7), a splinified model can no longer be
+# exported at all, and nothing called this any more.  `ETModels.splinify` is untouched:
+# if you need a splinified stack for an in-Julia experiment, build it at the call site.

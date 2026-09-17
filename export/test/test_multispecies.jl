@@ -1,5 +1,13 @@
 #=
-Multi-species export tests -- NZ = 3, both radial modes, gated at 1e-12.
+Multi-species export tests -- NZ = 3, gated at 1e-12.
+
+WAS "both radial modes".  The `:hermite_spline` mode was removed (evidence and the
+maintainer's answer: `export/bench/FINDINGS_parity.md` §7), so the three Hermite cases here
+went with it: the uniform-cutoff Hermite gate against the splinified stack, the
+per-pair-cutoff refusal, and the `@test_throws BoundsError` that locked the upstream
+`EquivariantTensors._spl_grid` crash.  The pair-index coverage those cases carried is not
+lost -- it moved onto the `:uniform` model's `:polynomial` export, which is now gated like
+the `:asym` one.
 
 WHY THESE MODELS.  Every per-pair table in a generated model is addressed by a species-pair
 index, and there are two candidate conventions:
@@ -7,9 +15,8 @@ index, and there are two candidate conventions:
     ordered    k = (iz - 1) * NZ + jz                  (NZ^2 entries, centre species first)
     symmetric  k = symidx(min, max, NZ)                (NZ(NZ+1)/2 entries)
 
-The *model* uses both: `ET.SelectLinL` weights (many-body `RBASIS_W`, the pair `PAIR_C`) and
-the splinified knot tables are per ORDERED pair, while the Agnesi transform parameters are
-stored per SYMMETRIC pair (`ETModels._convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and
+The *model* uses both: `ET.SelectLinL` weights (many-body `RBASIS_W`, the pair `PAIR_C`) are
+per ORDERED pair, while the Agnesi transform parameters are stored per SYMMETRIC pair (`ETModels._convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and
 selects with `ET.catcat2idx_sym`).  The generator resolves the symmetric storage into ordered
 tables at export time, so at RUNTIME there is exactly one convention: `pair_idx(iz, jz)`.
 
@@ -29,22 +36,20 @@ READ THIS BEFORE CHANGING THE CUTOFFS.  Two variants are needed, and the reason 
 upstream limitation, not a preference:
 
   `:asym`     many-body `rin0cuts[i,j].rcut = 4.6 + 0.2i + 0.3j` -- genuinely per-pair
-              cutoffs.  Works in `:polynomial` mode.  In `:hermite_spline` mode the
-              SPLINIFIED ET model itself cannot be evaluated: any edge with
-              `rcut[i,j] <= r <= max(rcut)` transforms to exactly `y = 1`, and
-              `EquivariantTensors`' `_spl_grid` then indexes knot `NX + 1`
-              (`transsplines.jl:200-207`, `BoundsError: ... at index [51, 5]`).  There is
-              therefore no reference to gate a Hermite export against.  That is asserted
-              below so the day upstream fixes it, this file fails and coverage is extended.
+              cutoffs, the harder case for the ordered/symmetric expansion.
   `:uniform`  one cutoff for every pair, with a per-symmetric-pair `r0` instead.  Equally
-              discriminating for the index convention, and evaluable in both modes, so it
-              carries the `:hermite_spline` gate.
+              discriminating for the index convention, and the shape a real multi-element
+              model usually has.  Both are exported and gated; keeping the second is what
+              stops the per-pair-table assertions from having only one subject.
+
+  (Both variants existed because only `:uniform` could be splinified -- the `:asym` model
+  threw a `BoundsError` inside upstream `_spl_grid`.  With the spline export gone that is no
+  longer why there are two, but two discriminating models with different cutoff structures
+  are worth keeping on their own account.)
 
 REFERENCES AND TOLERANCES (metric definitions are in check_export.jl):
-  * `:polynomial`     is compared to the FITTED ET stack at 1e-12.
-  * `:hermite_spline` is compared to the SPLINIFIED stack at 1e-12; its error against the
-    fitted stack is REPORTED and never asserted -- that is model (splinification) error, not
-    export error.  No tolerance in this file may ever be loosened.
+  * `:polynomial` is compared to the FITTED ET stack at 1e-12, on both models.  No tolerance
+    in this file may ever be loosened.
 =#
 
 using Test
@@ -129,22 +134,6 @@ function ms3_configs(n)
     return out
 end
 
-"""
-    ms3_spline_stack(stacked; Nspl) -> StackedCalculator
-
-`(ETOneBody, ETPairModel, splinified ETACE)`.  The pair term is carried over UNSPLINIFIED --
-`splinify` only touches the many-body radial basis, and the exporter emits the pair term in
-both radial modes, so a pair-less reference would re-measure the defect Task 1 removed.
-Built exactly like `cantor_spline_stack` in fixtures/cantor_fixture.jl.
-"""
-function ms3_spline_stack(stacked; Nspl::Integer)
-    onebody, pair, ace = stacked.calcs
-    m = ETM.splinify(ace.model, ace.ps, ace.st; Nspl = Nspl)
-    p, s = LuxCore.setup(MersenneTwister(1), m)
-    p.readout.W .= ace.ps.readout.W
-    return ETM.StackedCalculator((onebody, pair, ETM.ETACEPotential(m, p, s, ace.rcut)))
-end
-
 "The six per-symmetric-pair Agnesi tuples of the many-body / pair branches of a stack."
 ms3_mb_params(stacked) = stacked.calcs[end].model.rembed.layer.trans.refstate.params
 ms3_pair_params(stacked) = stacked.calcs[2].model.rembed.layer.rbasis.trans.refstate.params
@@ -163,7 +152,7 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
     held = ms3_configs(3)
     build = mkpath(joinpath(@__DIR__, "build"))
     f_poly = joinpath(build, "ms3_poly.jl")
-    f_herm = joinpath(build, "ms3_hermite50.jl")
+    f_poly_u = joinpath(build, "ms3_poly_uniform.jl")
 
     @testset "the NZ=3 models discriminate the two pair conventions" begin
         for (tag, stacked, rcut) in (("asym", stacked_a, rcut_a), ("uniform", stacked_u, rcut_u))
@@ -214,59 +203,44 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         @test dV <= 1e-12
     end
 
-    @testset ":hermite_spline (uniform cutoff) vs the SPLINIFIED stack, 1e-12" begin
-        spl = ms3_spline_stack(stacked_u; Nspl = 50)
-        # the SPLINIFIED stack is what gets exported -- export_ace_model will not emit
-        # Hermite tables for an unsplinified model (it warns and demotes to :polynomial),
-        # which would turn this gate into a comparison of two different models
-        Base.invokelatest(export_ace_model, spl, f_herm; radial_basis = :hermite_spline)
-        @test isfile(f_herm)
-        # export_ace_model auto-detects splinification; the file must really be the spline one
-        @test occursin("HERMITE CUBIC SPLINE RADIAL BASIS", read(f_herm, String))
-
-        # as above: check_export_report measures, the @test lines gate.
-        dE, dF, dV = Base.invokelatest(check_export_report, f_herm, spl, held, rcut_u;
-                                       label = "NZ=3 uniform :hermite_spline(Nspl=50) vs SPLINIFIED stack")
+    @testset ":polynomial (uniform cutoff) vs the fitted ET stack, 1e-12" begin
+        # The `:uniform` model used to carry the `:hermite_spline` gate, because it was the
+        # only one of the two that could be splinified at all.  With the spline export gone
+        # it is gated the same way the `:asym` model is.  It is not redundant: its per-pair
+        # Agnesi tuples differ in `r0` rather than in `rcut`, so a wrong ordered -> symmetric
+        # expansion shows up in a different table.
+        Base.invokelatest(export_ace_model, stacked_u, f_poly_u; radial_basis = :polynomial)
+        @test isfile(f_poly_u)
+        dE, dF, dV = Base.invokelatest(check_export_report, f_poly_u, stacked_u, held, rcut_u;
+                                       label = "NZ=3 uniform :polynomial vs FITTED stack")
         @test dE <= 1e-12
         @test dF <= 1e-12
         @test dV <= 1e-12
-
-        # Informational ONLY.  This is splinification (model) error, never export error, and
-        # it must never be compared against any tolerance.
-        fit = Base.invokelatest(check_export_report, f_herm, stacked_u, held, rcut_u;
-                                label = "NZ=3 uniform :hermite_spline(Nspl=50) vs FITTED stack [informational]")
-        @info "Hermite error against the FITTED model -- reported, never gated" dE_atom = fit[1] dF = fit[2] dV_atom = fit[3]
     end
 
-    @testset "upstream: splinified evaluation is impossible with per-pair cutoffs" begin
-        # EquivariantTensors `_spl_grid` (transsplines.jl:200-207) clamps y to [x0, x1] and
-        # then takes knots `il+1, il+2`; at y == x1 that is knot NX+1.  Any edge beyond a
-        # pair's own cutoff but inside the neighbour cutoff transforms to exactly y = 1, so
-        # the splinified ET model throws before the exported model can be compared to it.
-        # The EXPORTED code clamps the segment index and evaluates fine -- it is the
-        # reference, not the export, that is missing.  When this test starts failing,
-        # upstream has been fixed: move the Hermite gate above onto the :asym model.
-        spl_a = ms3_spline_stack(stacked_a; Nspl = 50)
-        @test_throws BoundsError AtomsCalculators.potential_energy(held[1], spl_a)
+    @testset "a splinified model is refused, whatever the keyword" begin
+        # WAS "upstream: splinified evaluation is impossible with per-pair cutoffs", which
+        # locked the `EquivariantTensors._spl_grid` BoundsError because a Hermite export of
+        # the `:asym` model had no evaluable reference.  There is no Hermite export now, so
+        # that lock guarded nothing about this repository's behaviour and went; the upstream
+        # bug is recorded in export/bench/FINDINGS_parity.md §5 instead.
+        #
+        # What replaces it is the thing that IS this repository's behaviour: `splinify` still
+        # exists and still runs, so a user can still hold a splinified model, and the
+        # exporter must refuse it loudly and say what to do -- in the DEFAULT mode, which is
+        # how the refusal will actually be met.
+        spl_u = ETM.splinify(stacked_u.calcs[end].model, stacked_u.calcs[end].ps,
+                             stacked_u.calcs[end].st; Nspl = 50)
+        p, st_s = LuxCore.setup(MersenneTwister(1), spl_u)
+        p.readout.W .= stacked_u.calcs[end].ps.readout.W
+        spl_stack = ETM.StackedCalculator((stacked_u.calcs[1], stacked_u.calcs[2],
+                                           ETM.ETACEPotential(spl_u, p, st_s, rcut_u)))
 
-        # ... and because that reference cannot be evaluated, the exporter must REFUSE to emit
-        # such a model rather than produce an artefact no gate can ever check.
-        #
-        # BOTH keywords must be refused for a SPLINIFIED per-pair-cutoff model, but for two
-        # DIFFERENT reasons, and the tests below pin each one:
-        #
-        #   :hermite_spline -> the per-pair-cutoff refusal (this model cannot be verified);
-        #   :polynomial     -> the splinification refusal (Task 3 / K4: a splinified model has
-        #                      no polynomial recurrence left to emit, and this used to be
-        #                      silently promoted to :hermite_spline behind a @warn).
-        #
-        # Either way no file is produced, and neither message may offer :polynomial as the
-        # remedy for THIS model -- asserted explicitly below.
-        function _refusal(calc, tag, kw)
-            f = joinpath(build, "ms3_hermite_refused_$tag.jl")
+        function _refusal(calc, tag, kw...)
+            f = joinpath(build, "ms3_refused_$tag.jl")
             isfile(f) && rm(f)
             err = try
-                Base.invokelatest(export_ace_model, calc, f; radial_basis = kw)
+                Base.invokelatest(export_ace_model, calc, f; kw...)
                 nothing
             catch e
                 e
@@ -274,47 +248,34 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
             return (; err, msg = err === nothing ? "" : sprint(showerror, err), f)
         end
 
-        # (a) :hermite_spline -- refused because the pairs do not share one cutoff.
-        r = _refusal(spl_a, "hermite", :hermite_spline)
+        # (a) the DEFAULT mode -- no radial_basis keyword at all.
+        r = _refusal(spl_stack, "default")
         @test r.err isa ErrorException
-        @test occursin("radial_basis=:hermite_spline requires every species pair", r.msg)
-        @test occursin("pair 1 = (iz=1, jz=1)", r.msg)   # 5.1 Å, short of RCUT_MAX = 6.1
-        @test isfile(r.f) == false                        # refused before any file opened
-        # the advice must be reachable for a caller who is already splinified
-        @test occursin("passing radial_basis=:polynomial is NOT one of them", r.msg)
-        @test occursin("BEFORE splinify()", r.msg)
-
-        # (b) :polynomial -- refused because the model is splinified.  This is the K4 change:
-        # it used to be PROMOTED to :hermite_spline behind a @warn, so a caller who asked for
-        # the exact mode (or simply took the default) received the approximate one.
-        r = _refusal(spl_a, "splinified_poly", :polynomial)
-        @test r.err isa ErrorException
-        @test occursin("radial_basis=:polynomial cannot export this model", r.msg)
         @test occursin("already been splinified", r.msg)
-        @test occursin(":polynomial is the DEFAULT", r.msg)          # fires with no keyword too
-        @test occursin("BEFORE splinify()", r.msg)                   # remedy 1
-        @test occursin("radial_basis=:hermite_spline explicitly", r.msg)  # remedy 2, the opt-in
-        @test isfile(r.f) == false                                   # no partial file
+        @test occursin("FIT-ON-SPLINES DEPLOYMENT ROUTE IS THEREFORE RETIRED", r.msg)
+        @test occursin("BEFORE splinify()", r.msg)          # the workflow that works
+        @test isfile(r.f) == false                          # refused before any file opened
 
-        # and the default keyword -- no radial_basis at all -- must hit the same refusal.
-        f_def = joinpath(build, "ms3_default_refused.jl")
-        isfile(f_def) && rm(f_def)
-        err_def = try
-            Base.invokelatest(export_ace_model, spl_a, f_def)
-            nothing
-        catch e
-            e
-        end
-        @test err_def isa ErrorException
-        @test occursin("radial_basis=:polynomial cannot export this model",
-                       err_def === nothing ? "" : sprint(showerror, err_def))
-        @test isfile(f_def) == false
+        # (b) :polynomial explicitly -- the same refusal.
+        r = _refusal(spl_stack, "poly", :radial_basis => :polynomial)
+        @test r.err isa ErrorException
+        @test occursin("already been splinified", r.msg)
+        @test isfile(r.f) == false
+
+        # (c) the removed keyword, on an UNSPLINIFIED model.  It used to be demoted to
+        # :polynomial behind a @warn; now the mode does not exist, so it raises and names
+        # the remedy rather than silently exporting a different mode from the one asked for.
+        r = _refusal(stacked_u, "hermite_kw", :radial_basis => :hermite_spline)
+        @test r.err isa ErrorException
+        @test occursin("REMOVED", r.msg)
+        @test occursin("radial_basis=:polynomial", r.msg)
+        @test isfile(r.f) == false
 
         # The reachable remedy actually works: the SAME model, exported as it was before
         # splinify() was applied, in the default mode.  (That export is gated at 1e-12
         # against the fitted stack in the :polynomial testset above.)
-        f_ok = joinpath(build, "ms3_asym_poly_ok.jl")
-        Base.invokelatest(export_ace_model, stacked_a, f_ok; radial_basis = :polynomial)
+        f_ok = joinpath(build, "ms3_uniform_poly_ok.jl")
+        Base.invokelatest(export_ace_model, stacked_u, f_ok)
         @test isfile(f_ok)
     end
 
@@ -371,36 +332,33 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
                   getfield(ex, Symbol("RBASIS_W_$((j - 1) * NZ + i)"))
                   for i in 1:NZ, j in 1:NZ if i != j)
 
-        # --- :hermite_spline export (the :uniform model) ---------------------------------
-        exh = Base.invokelatest(load_exported, f_herm)
-        @test all(Base.invokelatest(exh.pair_idx, i, j) == (i - 1) * NZ + j
+        # --- :polynomial export of the :uniform model ------------------------------------
+        # This half used to check the Hermite knot tables (PAIR_k_F / PAIR_k_ROWS /
+        # PAIR_k_REQ / PAIR_k_B0) of the splinified :uniform model.  Those constants are not
+        # emitted by any mode now.  The claim it was making -- one ordered pair index keys
+        # every per-pair table, and the symmetric Agnesi storage is expanded into it
+        # correctly -- is re-made against the :uniform model's :polynomial export, whose
+        # per-pair tables are TRANSFORM_PARAMS and RBASIS_W.
+        exu = Base.invokelatest(load_exported, f_poly_u)
+        @test exu.NZ == NZ
+        @test all(Base.invokelatest(exu.pair_idx, i, j) == (i - 1) * NZ + j
                   for i in 1:NZ, j in 1:NZ)
-        @test isdefined(exh, :zz2pair_sym) == false
-        @test occursin("zz2pair_sym", read(f_herm, String)) == false
-
-        @test collect(exh.RNL_USED) == sort(unique(first.(exh.ABASIS_SPEC)))
+        @test isdefined(exu, :zz2pair_sym) == false
+        @test occursin("zz2pair_sym", read(f_poly_u, String)) == false
+        @test collect(exu.RNL_USED) == sort(unique(first.(exu.ABASIS_SPEC)))
 
         mb_par_u = ms3_mb_params(stacked_u)
-        F = ms3_spline_stack(stacked_u; Nspl = 50).calcs[end].st.rembed.params.F
-        @test size(F, 2) == NZ^2          # the knot tables are per ORDERED pair
         for i in 1:NZ, j in 1:NZ
             k = (i - 1) * NZ + j
-            @test isdefined(exh, Symbol("PAIR_$(k)_F"))
-            Fk = getfield(exh, Symbol("PAIR_$(k)_F"))
-            @test length(Fk) == size(F, 1)
-            # Since Task 5 the knot tables carry only PAIR_k_ROWS, the rows the A basis reads
-            # AND this pair populates; compare against exactly those rows of the model's F,
-            # and check separately that every row left out really is unread or zero.
-            rows = collect(getfield(exh, Symbol("PAIR_$(k)_ROWS")))
-            @test issubset(rows, collect(exh.RNL_USED))
-            @test all(collect(Fk[t]) ≈ collect(F[t, k])[rows] for t in 1:size(F, 1))
-            @test all(t in rows || !(t in exh.RNL_USED) ||
-                      all(collect(F[s, k])[t] == 0.0 for s in 1:size(F, 1))
-                      for t in 1:exh.N_RNL)
-            p = mb_par_u[ms3_symidx(i, j, NZ)]
-            @test getfield(exh, Symbol("PAIR_$(k)_REQ")) == p.req
-            @test getfield(exh, Symbol("PAIR_$(k)_B0")) == p.b0
+            qq = exu.TRANSFORM_PARAMS[k]
+            pp = mb_par_u[ms3_symidx(i, j, NZ)]
+            @test (qq.rin, qq.req, qq.a, qq.b0, qq.b1) == (pp.rin, pp.req, pp.a, pp.b0, pp.b1)
         end
+        # the :uniform model's six symmetric tuples differ in r0, so a symmetric index into
+        # an ordered table is observable here too
+        @test all(getfield(exu, Symbol("RBASIS_W_$((i - 1) * NZ + j)")) !=
+                  getfield(exu, Symbol("RBASIS_W_$((j - 1) * NZ + i)"))
+                  for i in 1:NZ, j in 1:NZ if i != j)
     end
 
     # Task 6 removed the neighbour cap: there is no MAX_NEIGHBORS constant any more, and the

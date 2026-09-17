@@ -1,22 +1,15 @@
 #!/usr/bin/env julia
 #=
-Hermite spline export accuracy, on a small randomly-parameterised Si model.
+Export accuracy, on a small randomly-parameterised Si model.
 
-WHICH REFERENCE EACH NUMBER IS MEASURED AGAINST -- the whole point of this file.
+WAS `test_hermite_accuracy.jl`.  The `:hermite_spline` radial mode was removed (evidence and
+the maintainer's answer: `export/bench/FINDINGS_parity.md` §7), so this file lost its three
+Hermite testsets -- the two-Nspl gate against the splinified reference, the Hermite
+finite-difference check and the Hermite random-perturbation check.  It was KEPT, and renamed,
+because the rest of it was never about splines: the `:polynomial` gate against the fitted
+model is the strictest small-model check in the suite, and nothing else runs it.
 
-  :hermite_spline  is GATED against the **SPLINIFIED** calculator
-                   (`ETM.splinify(...; Nspl)`), at `atol = 1e-8`.  That is the model the
-                   Hermite tables are a representation OF, so this gate measures the export,
-                   and only the export.  Both Nspl the file exports (50 and 200) are gated.
-
-  :hermite_spline  is additionally REPORTED against the **FITTED** (unsplinified) calculator,
-                   with an `@info` line per Nspl.  That difference is the splinification
-                   error of the model -- approximation error that `splinify` introduced
-                   before any export happened -- and it is *never* asserted against a
-                   tolerance.  It falls with Nspl by construction; on the fitted Cantor model
-                   `verify_cantor/log.chain` records it as 2.3e-4 eV/A at Nspl=50 and 3.0e-6
-                   at Nspl=200.  Gating it would be gating the model, not the export, and the
-                   only way to make such a gate pass is to loosen it.
+WHICH REFERENCE EACH NUMBER IS MEASURED AGAINST -- still the point of this file.
 
   :polynomial      is GATED against the **FITTED** calculator at `1e-12`.  The polynomial
                    export is exact -- it re-emits the same basis, not an approximation of it
@@ -24,8 +17,16 @@ WHICH REFERENCE EACH NUMBER IS MEASURED AGAINST -- the whole point of this file.
                    used to be checked at `atol=1e-8 rtol=1e-6`, four orders of magnitude
                    looser than the mode can actually achieve (measured: 3.2e-15 eV/A).
 
-The finite-difference testsets check the exported derivative against the exported energy;
-they say nothing about either reference above.
+  the REFUSALS     are checked against no model at all: a splinified model can no longer be
+                   exported by any route, and `radial_basis=:hermite_spline` raises.  Both
+                   messages are asserted to name the workflow that works, because a removal
+                   message that only says "that is gone" costs the reader the same search
+                   twice.  This is the only place the splinified-model refusal is checked
+                   since `test_hermite_spline_export.jl` was deleted, and that file's step
+                   [6a] is where the assertion comes from.
+
+The finite-difference testset checks the exported derivative against the exported energy; it
+says nothing about either reference above.
 =#
 
 using Test
@@ -53,17 +54,15 @@ const TEST_DIR = @__DIR__
 include(joinpath(EXPORT_DIR, "src", "export_ace_model.jl"))
 
 """
-Create a splinified ETACE model for testing.
+Create an ETACE model for testing, and a splinified copy of it.
 Returns `(calc_splined, calc_unsplined, rcut)`:
 
   * `calc_unsplined` is the **FITTED** model -- the reference the `:polynomial` export is
-    gated against, and the reference the Hermite export's *reported* (never gated) error is
-    measured against;
-  * `calc_splined` is `splinify(..., Nspl)` of it -- the **SPLINIFIED** reference the Hermite
-    export is gated against.
-
-`Nspl` is a keyword so the caller can exercise more than one spline resolution; the
-difference between the two calculators is the splinification error and grows as `Nspl` falls.
+    gated against, and the only one of the two that can be exported at all;
+  * `calc_splined` is `splinify(..., Nspl)` of it.  It exists ONLY so that the refusal
+    testset has a splinified model to be refused.  `splinify` itself is untouched by the
+    removal of the spline export; it is still a callable, working function, which is exactly
+    why the exporter has to refuse its output loudly rather than rely on nobody producing it.
 """
 function setup_splinified_model(; elements=(:Si,), order=2, max_level=8, maxl=2, rcut=5.5,
                                   Nspl=50)
@@ -200,83 +199,18 @@ function compute_exported_forces(sys, exported_module, rcut)
     return F_total
 end
 
-@testset "Hermite Spline Export Accuracy" verbose=true begin
+@testset "Export Accuracy (:polynomial)" verbose=true begin
 
     println("\n" * "="^80)
-    println("Testing Hermite Spline Export Accuracy")
+    println("Testing export accuracy (:polynomial) and the removed spline path's refusals")
     println("="^80)
 
     # Setup
     build_dir = joinpath(TEST_DIR, "build")
     mkpath(build_dir)
 
-    """
-    `(max |dE|, max_i ||dF_i||)` of an exported module against an AtomsCalculators calculator
-    on `sys`.  Energy in eV (this system has 4 atoms, so per-atom and total differ only by a
-    factor 4 and the absolute figure is the stricter one); forces in eV/Å, absolute.
-    """
-    function export_vs_calc(mod, sys, calc, rcut)
-        E_ref = ustrip(u"eV", AtomsCalculators.potential_energy(sys, calc))
-        F_ref = [SVector{3}(ustrip.(u"eV/Å", f)) for f in AtomsCalculators.forces(sys, calc)]
-        E = compute_exported_energy(sys, mod, rcut)
-        F = compute_exported_forces(sys, mod, rcut)
-        return (abs(E - E_ref), maximum(norm(F[i] - F_ref[i]) for i in 1:length(sys)))
-    end
-
-    # Both spline resolutions the file exports.  50 is the coarse one used everywhere else in
-    # the suite; 200 is included so that the REPORTED error against the fitted model can be
-    # seen to fall with Nspl, which is what distinguishes splinification error from an export
-    # bug (an export bug would not care about Nspl).
-    for Nspl in (50, 200)
-        @testset "Hermite (Nspl=$Nspl) vs the SPLINIFIED reference, atol 1e-8 (Si)" begin
-            println("\n[1] Hermite export, Nspl=$Nspl ...")
-
-            calc_splined, calc_unsplined, rcut = setup_splinified_model(; Nspl = Nspl)
-            sys = create_test_system()
-
-            E_ref = ustrip(u"eV", AtomsCalculators.potential_energy(sys, calc_splined))
-            F_ref_val = [SVector{3}(ustrip.(u"eV/Å", f))
-                         for f in AtomsCalculators.forces(sys, calc_splined)]
-            println("   Reference energy (SPLINIFIED calc, Nspl=$Nspl): $E_ref eV")
-
-            hermite_file = joinpath(build_dir, "hermite_accuracy_test_$(Nspl).jl")
-            export_ace_model(calc_splined, hermite_file; for_library=false,
-                             radial_basis=:hermite_spline)
-            @test isfile(hermite_file)
-
-            hermite_mod = Module(Symbol("HermiteExport", Nspl))
-            Base.include(hermite_mod, hermite_file)
-
-            E_hermite = Base.invokelatest(compute_exported_energy, sys, hermite_mod, rcut)
-            F_hermite = Base.invokelatest(compute_exported_forces, sys, hermite_mod, rcut)
-            max_force_diff = maximum(norm(F_hermite[i] - F_ref_val[i]) for i in 1:length(sys))
-
-            println("   Hermite export energy:  $E_hermite eV")
-            println("   |dE| vs SPLINIFIED:     $(abs(E_hermite - E_ref)) eV")
-            println("   max|dF| vs SPLINIFIED:  $max_force_diff eV/Å")
-
-            # GATE.  Reference: the SPLINIFIED calculator -- the model these Hermite tables
-            # represent.  atol 1e-8 is the plan's tolerance for this comparison and is NOT
-            # loosened anywhere; the measured value is ~7e-15, seven orders inside it.
-            @test E_hermite ≈ E_ref atol=1e-8 rtol=0
-            for i in 1:length(sys)
-                @test F_hermite[i] ≈ F_ref_val[i] atol=1e-8 rtol=0
-            end
-
-            # REPORTED, NEVER GATED.  Reference: the FITTED calculator.  This is the error
-            # `splinify` introduced into the model before any export took place; asserting it
-            # would be asserting the model's own approximation error.  It must fall with Nspl.
-            dE_fit, dF_fit = Base.invokelatest(export_vs_calc, hermite_mod, sys,
-                                               calc_unsplined, rcut)
-            @info("Hermite export error against the FITTED model -- reported, never gated",
-                  Nspl, dE_eV = dE_fit, dF_eV_per_A = dF_fit)
-            println("   |dE| vs FITTED (splinification error, reported only):    $dE_fit eV")
-            println("   max|dF| vs FITTED (splinification error, reported only): $dF_fit eV/Å")
-        end
-    end
-
     @testset "Polynomial vs the FITTED reference, 1e-12 (Si)" begin
-        println("\n[2] Polynomial export ...")
+        println("\n[1] Polynomial export ...")
 
         _, calc_unsplined, rcut = setup_splinified_model()
         sys = create_test_system()
@@ -309,63 +243,8 @@ end
         end
     end
 
-    @testset "Finite Difference Verification (Hermite)" begin
-        println("\n[3] Verifying Hermite forces with finite differences...")
-
-        calc_splined, _, rcut = setup_splinified_model()
-
-        hermite_file = joinpath(build_dir, "hermite_fd_test.jl")
-        export_ace_model(calc_splined, hermite_file; for_library=false, radial_basis=:hermite_spline)
-
-        hermite_mod = Module(:HermiteFD)
-        Base.include(hermite_mod, hermite_file)
-
-        # Test configuration
-        Z0 = 14
-        Rs = [
-            SVector(2.35, 0.0, 0.0),
-            SVector(0.0, 2.35, 0.0),
-            SVector(0.0, 0.0, 2.35),
-            SVector(1.5, 1.5, 1.5),
-        ]
-        Zs = [14, 14, 14, 14]
-
-        # Analytic forces
-        _, F_analytic = hermite_mod.site_energy_forces(Rs, Zs, Z0)
-
-        # Finite difference
-        h = 1e-6
-        max_fd_error = 0.0
-        for j in 1:length(Rs)
-            F_fd = zeros(3)
-            for α in 1:3
-                e_α = zeros(3)
-                e_α[α] = h
-
-                Rs_p = copy(Rs)
-                Rs_m = copy(Rs)
-                Rs_p[j] = Rs[j] + SVector{3}(e_α)
-                Rs_m[j] = Rs[j] - SVector{3}(e_α)
-
-                Ep = hermite_mod.site_energy(Rs_p, Zs, Z0)
-                Em = hermite_mod.site_energy(Rs_m, Zs, Z0)
-
-                F_fd[α] = -(Ep - Em) / (2h)
-            end
-
-            fd_error = norm(F_fd - F_analytic[j])
-            max_fd_error = max(max_fd_error, fd_error)
-
-            # With analytical derivatives, FD error should be O(h^2) ≈ 1e-12
-            # Allow some margin for numerical effects
-            @test fd_error < 1e-5
-        end
-        println("   Max FD error: $max_fd_error eV/Å")
-        println("   Finite difference verification passed")
-    end
-
     @testset "Finite Difference Verification (Polynomial)" begin
-        println("\n[4] Verifying Polynomial forces with finite differences...")
+        println("\n[2] Verifying Polynomial forces with finite differences...")
 
         _, calc_unsplined, rcut = setup_splinified_model()
 
@@ -417,16 +296,22 @@ end
         println("   Polynomial FD verification passed")
     end
 
-    @testset "Random Perturbation Tests (Hermite)" begin
-        println("\n[5] Testing Hermite export with random perturbations...")
+    @testset "Random Perturbation Tests (Polynomial)" begin
+        println("\n[3] Testing the :polynomial export with random perturbations...")
 
-        calc_splined, _, rcut = setup_splinified_model()
+        # Was the Hermite random-perturbation testset, at atol 1e-8 against the SPLINIFIED
+        # calculator.  Re-pointed at the FITTED calculator and TIGHTENED to the 1e-12 the
+        # exact mode actually achieves -- the 1e-8 was the spline interpolation's tolerance,
+        # and carrying it over to a mode that is four orders better would have been a gate
+        # that could not fail.
+        _, calc_unsplined, rcut = setup_splinified_model()
 
-        hermite_file = joinpath(build_dir, "hermite_random_test.jl")
-        export_ace_model(calc_splined, hermite_file; for_library=false, radial_basis=:hermite_spline)
+        poly_file = joinpath(build_dir, "poly_random_test.jl")
+        export_ace_model(calc_unsplined, poly_file; for_library=false,
+                         radial_basis=:polynomial)
 
-        hermite_mod = Module(:HermiteRandom)
-        Base.include(hermite_mod, hermite_file)
+        poly_mod = Module(:PolyRandom)
+        Base.include(poly_mod, poly_file)
 
         rng = MersenneTwister(42)
 
@@ -449,15 +334,72 @@ end
             )
 
             # Compare exported energy to reference
-            E_ref = ustrip(u"eV", AtomsCalculators.potential_energy(sys_perturbed, calc_splined))
-            E_hermite = compute_exported_energy(sys_perturbed, hermite_mod, rcut)
+            E_ref = ustrip(u"eV", AtomsCalculators.potential_energy(sys_perturbed,
+                                                                    calc_unsplined))
+            E_poly = Base.invokelatest(compute_exported_energy, sys_perturbed, poly_mod, rcut)
 
-            @test E_hermite ≈ E_ref atol=1e-8 rtol=0
+            @test E_poly ≈ E_ref atol=1e-12 rtol=0
         end
         println("   5 random perturbation tests passed")
     end
 
+    @testset "the removed spline export path refuses, and says what to do" begin
+        println("\n[4] :hermite_spline and splinified models must be REFUSED...")
+
+        calc_splined, calc_unsplined, _ = setup_splinified_model()
+
+        # (a) the keyword.  It is kept, accepting :polynomial only, because every existing
+        # call site passes it; asking for the removed mode must raise rather than silently
+        # give the caller a different mode from the one they named.
+        f = joinpath(build_dir, "refused_hermite_keyword.jl")
+        isfile(f) && rm(f)
+        e1 = try
+            export_ace_model(calc_unsplined, f; for_library=false,
+                             radial_basis=:hermite_spline)
+            nothing
+        catch e
+            e
+        end
+        @test e1 isa ErrorException
+        m1 = sprint(showerror, e1)
+        @test occursin("REMOVED", m1)
+        @test occursin("radial_basis=:polynomial", m1)   # the remedy, named
+        @test isfile(f) == false                          # refused before any file was opened
+        println("   ✓ radial_basis=:hermite_spline refused, no file written")
+
+        # (b) an unknown mode still raises its own error, not the removal one.
+        e2 = try
+            export_ace_model(calc_unsplined, f; for_library=false, radial_basis=:banana)
+            nothing
+        catch e
+            e
+        end
+        @test e2 isa ErrorException
+        @test occursin("unknown radial_basis", sprint(showerror, e2))
+
+        # (c) the splinified model.  Inherited from test_hermite_spline_export.jl step [6a],
+        # which used to check that :polynomial was refused rather than PROMOTED to the spline
+        # mode.  Now there is no mode to promote to and nothing exports such a model at all,
+        # so what the message has to carry is the retirement of the fit-on-splines route and
+        # the workflow that replaces it.
+        g = joinpath(build_dir, "refused_splinified.jl")
+        isfile(g) && rm(g)
+        e3 = try
+            export_ace_model(calc_splined, g; for_library=false)   # the DEFAULT mode
+            nothing
+        catch e
+            e
+        end
+        @test e3 isa ErrorException
+        m3 = sprint(showerror, e3)
+        @test occursin("already been splinified", m3)
+        @test occursin("BEFORE splinify()", m3)                  # the workflow that works
+        @test occursin("FIT-ON-SPLINES DEPLOYMENT ROUTE IS THEREFORE RETIRED", m3)
+        @test isfile(g) == false
+        println("   ✓ splinified model refused in the default mode, no file written")
+    end
+
     println("\n" * "="^80)
-    println("All Hermite Spline Accuracy Tests Passed!")
+    println("All export accuracy tests passed!")
     println("="^80 * "\n")
 end

@@ -3,7 +3,8 @@ Export Test Suite - Main Test Runner
 
 This file orchestrates all export-related tests for ETACE models:
 1. ETACE export functionality (polynomial radial basis)
-2. Hermite spline export (approximate splined radial basis; incl. the fitted Cantor model)
+2. Export accuracy on a small Si model (:polynomial vs the fitted model at 1e-12, plus the
+   refusals that replaced the removed spline export)
 3. Multi-species model tests
 4. Pair-potential export (ETOneBody + ETPairModel + ETACE, Cantor fixture)
 4b. AA product DAG (Task 7 / B3), both benchmark models
@@ -15,7 +16,7 @@ This file orchestrates all export-related tests for ETACE models:
 Usage:
     julia --project=.. runtests.jl              # Run all available tests
     julia --project=.. runtests.jl etace        # Run ETACE polynomial export tests
-    julia --project=.. runtests.jl hermite      # Run Hermite spline export tests
+    julia --project=.. runtests.jl accuracy     # Run the small-Si accuracy + refusal tests
     julia --project=.. runtests.jl multispecies # Run multi-species tests
     julia --project=.. runtests.jl pair         # Run pair-potential export tests (Cantor fixture)
     julia --project=.. runtests.jl dag          # Run AA-DAG tests (both benchmark models)
@@ -27,6 +28,19 @@ Usage:
                                                 # Generator-to-generator parity at 1e-13
                                                 # RELATIVE against the generator at <sha>.
                                                 # OPT-IN: never runs under `all`.
+
+GROUPS THAT NO LONGER EXIST, named here rather than left as an absence.  `:hermite_spline`
+was removed (`export/bench/FINDINGS_parity.md` §7), and with it three groups:
+
+    hermite           test_hermite_spline_export.jl   -- DELETED with the mode
+    hermite_cantor    test_hermite_cantor.jl          -- DELETED with the mode
+    hermite_accuracy  test_hermite_accuracy.jl        -- RENAMED to the `accuracy` group
+                                                         (test_export_accuracy.jl), which
+                                                         keeps its :polynomial gates and adds
+                                                         the removal's refusals
+
+A caller who passes `hermite` gets the unknown-selection path, not a silent no-op; and
+`ACE_REQUIRE_GROUPS=hermite` FAILS, because no group by that name ever records a status.
 
 THE `parity` GROUP, AND WHY IT IS OPT-IN.  The plan's global constraints bind every
 performance step (Tasks 5-7) to the PREVIOUS generator's exported model: "any force differing
@@ -374,13 +388,32 @@ function required_check(cond::Bool, group::AbstractString, reason::AbstractStrin
     return false
 end
 
+"""
+    KNOWN_GROUPS
+
+Every group name `main` can dispatch on.  It exists so that a name that USED to select a
+group -- `hermite`, `hermite_accuracy`, `hermite_cantor`, all retired with the
+`:hermite_spline` mode -- fails loudly instead of selecting nothing and reporting a clean
+run of zero tests.  `ACE_REQUIRE_GROUPS` already catches the CI form of that mistake; this
+catches the command-line form.  Add a name here in the same edit that adds its group.
+"""
+const KNOWN_GROUPS = (:all, :etace, :accuracy, :multispecies, :dag, :pair,
+                      :python, :lammps, :mpi, :parity)
+
 # Parse command line args for selective testing
 function get_test_selection()
     if length(ARGS) == 0
         return [:all]
-    else
-        return [Symbol(arg) for arg in ARGS]
     end
+    sel = [Symbol(arg) for arg in ARGS]
+    bad = [g for g in sel if !(g in KNOWN_GROUPS)]
+    isempty(bad) || error("""
+        unknown test group(s): $(join(bad, ", ")).
+        Known groups: $(join(KNOWN_GROUPS, ", ")).
+        `hermite`, `hermite_accuracy` and `hermite_cantor` were retired with the
+        :hermite_spline radial mode (export/bench/FINDINGS_parity.md §7); the surviving
+        :polynomial half of `hermite_accuracy` is now the `accuracy` group.""")
+    return sel
 end
 
 function should_run_test(selection, test_name)
@@ -412,35 +445,18 @@ function main()
             end
         end
 
-        # Hermite spline export tests
-        if should_run_test(selection, :hermite) || should_run_test(selection, :all)
-            run_group("hermite") do
-                @info "Running Hermite spline export tests..."
-                include(joinpath(TEST_DIR, "test_hermite_spline_export.jl"))
-            end
-
-            # test_hermite_accuracy.jl states which reference each of its numbers uses
-            # (:hermite_spline gated against the SPLINIFIED model at 1e-8, its error against
-            # the FITTED model reported only; :polynomial gated against the FITTED model at
-            # 1e-12).  It was a standalone script that nothing ran -- so its tolerances were
-            # never enforced by anything.  It is part of the `hermite` group now.
-            run_group("hermite_accuracy") do
-                @info "Running Hermite/polynomial export accuracy tests..."
-                include(joinpath(TEST_DIR, "test_hermite_accuracy.jl"))
-            end
-
-            # Hermite export of the fitted multi-species Cantor model, gated against the
-            # SPLINIFIED stack.  Guarded exactly like the pair group: the fitted parameters
-            # and the held-out geometries are host-local, untracked data, and an absent gate
-            # must be visible in the summary rather than look like a pass.
-            if check_cantor_fixture_available()
-                run_group("hermite_cantor") do
-                    @info "Running Cantor Hermite export tests..."
-                    include(joinpath(TEST_DIR, "test_hermite_cantor.jl"))
-                end
-            else
-                skip_group("hermite_cantor", "Cantor fixture data missing";
-                           details = cantor_missing())
+        # Export accuracy on a small randomly-parameterised Si model.
+        #
+        # test_export_accuracy.jl states which reference each of its numbers uses
+        # (:polynomial gated against the FITTED model at 1e-12).  It was a standalone script
+        # that nothing ran -- so its tolerances were never enforced by anything -- and it
+        # was the `hermite_accuracy` group until the spline mode was removed.  It also
+        # carries the refusals that removal introduced: a splinified model, and the
+        # :hermite_spline keyword.
+        if should_run_test(selection, :accuracy) || should_run_test(selection, :all)
+            run_group("accuracy") do
+                @info "Running export accuracy tests (:polynomial + refusals)..."
+                include(joinpath(TEST_DIR, "test_export_accuracy.jl"))
             end
         end
 
@@ -557,8 +573,8 @@ Print the status of every group this run touched, then -- if `ACE_REQUIRE_GROUPS
 assert that each required group actually executed.
 
 `ACE_REQUIRE_GROUPS=all` requires every group that was selected and reached a decision;
-otherwise it is a comma-separated list of group names (`etace`, `hermite`,
-`hermite_cantor`, `multispecies`, `dag`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
+otherwise it is a comma-separated list of group names (`etace`, `accuracy`,
+`multispecies`, `dag`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
 was skipped, or that was never reached because the selection excluded it, fails.
 """
 function report_group_status(selection)
