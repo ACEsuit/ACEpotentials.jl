@@ -126,68 +126,106 @@ Added by Tasks 6-8:
 
 | step | Cantor µs/site | vs `pace` | TiAl µs/site | vs `pace` |
 |---|---|---|---|---|
-| baseline (Task 4 generator) | 512.2 | **7.93x** | 424.6 | **2.27x** |
-| B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.49x** | 278.8 | **1.49x** |
-| **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.89x** | **92.8** | **0.50x** |
-| `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.97x | 152.5 | 0.82x |
-| `pair_style pace recursive` (the comparator, re-run in every block) | 64.8 | 1.00 | 186.5 | 1.00 |
+| baseline (Task 4 generator) | 511.8 | **7.918x** | 429.6 | **2.300x** |
+| B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.488x** | 281.7 | **1.504x** |
+| **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.893x** | **94.0** | **0.505x** |
+| `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.967x | 152.5 | 0.816x |
+| `pair_style pace recursive` (comparator, pooled over every block on that box) | 64.6 | 1.00 | 186.8 | 1.00 |
 
-**The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.89x and 0.50x** — and
-three of the four shipped configurations are faster than `pair_style pace recursive` outright.
+**The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.893x and 0.505x** —
+and all four shipped configurations are faster than `pair_style pace recursive` outright.
+
+Each ratio is that tag's own pooled ACE median over its own pooled comparator median, so
+numerator and denominator come from the same blocks on the same core minutes apart; the
+comparator row is pooled over every block on that box and is informational.
 
 Taken 2026-09-17 on `moriarty`, core 31, `taskset`, `OMP_NUM_THREADS=1`, `timestep 0.0`, 100
-steps per run, `/proc/loadavg` 0.29–1.69 (this benchmark's own single pinned process is ~1.0).
-Every figure is the pooled median that `summarise_rows.py --series both` prints, numerator and
-denominator alike; every library passed its source, library, LAMMPS and 2-rank gates before it
-was timed, enforced by a content-based interlock (`gate=OK[...]` in every row).
+steps per run; 29 blocks, 68 runs; `/proc/loadavg` 0.27–1.82 over the blocks that count (this
+benchmark's own single pinned process is ~1.0). Every library passed its source, library,
+LAMMPS and 2-rank gates before it was timed, enforced by a content-based interlock
+(`gate=OK[...]` in every row). One block is excluded by name, with its reason in the rows file
+— see below.
 
-These reproduce the per-task rows they supersede — 8.15 → 7.93, 3.51 → 3.49, 0.90 → 0.89,
-0.97 → 0.97, 2.27 → 2.27, 1.54 → 1.49, 0.49 → 0.50, 0.82 → 0.82 — on a different day with the
-whole chain re-measured in one session.
-
-Rows: `artefacts/rows_task8.txt` (also in the untracked
-`bench_parity/rows_task8.txt`), session transcript `artefacts/task8_table.txt`,
-driver `run_task8_table.sh`. Quote it with
+Every figure above is what
 
 ```
 export/bench/summarise_rows.py export/bench/artefacts/rows_task8.txt --series both
 ```
 
-**Pass the tags as nothing at all**, so the tool groups by EXACT tag. Passing
-`cantor_poly` as a prefix also matches `cantor_poly_b1` and `cantor_poly_b2` and pools
-three different binaries into one statistic — it is the one trap in the interface.
+prints, numerator and denominator alike. **Pass no tag arguments**, so the tool groups by
+exact tag: passing `cantor_poly` as a prefix also matches `cantor_poly_b1` and `_b2` and pools
+three different binaries into one statistic. That is the one trap in the interface.
 
-#### A protocol/tool interaction found while taking this table, and what it costs
+These reproduce the per-task rows they supersede — 8.15 → 7.92, 3.51 → 3.49, 0.90 → 0.89,
+0.97 → 0.97, 2.27 → 2.30, 1.54 → 1.50, 0.49 → 0.51, 0.82 → 0.82 — on a different day with the
+whole chain re-measured in one session.
 
-The protocol says *"two runs must agree within 3 %; otherwise take a third run and report
-the median"*. `summarise_rows.py` excludes any block whose spread exceeds 3 %. **Those two
-rules contradict each other**: a third run is taken only when the first two already differ
-by more than 3 %, and a third value can only widen the min-max — so *every* block that goes
-to three runs is then discarded by the tool, and the median the protocol asked for is never
-reported. On the TiAl box, whose ±7 % block-to-block scatter Task 4 documented, that is most
-blocks: `tial_poly` took 16 runs across 6 blocks and the tool admitted 4 of them.
+Rows: `artefacts/rows_task8.txt` (a copy of `bench_parity/rows_task8.txt` with one
+`# EXCLUDE` line prepended — see below), session transcript `artefacts/task8_table.txt`,
+driver `run_task8_table.sh`.
 
-It is disclosed rather than fixed, because changing the rule now would silently move
-figures already published above (Task 6's four controls and Task 7's rows). **It changes
-nothing here.** Re-running the same rows with every block admitted (`--max-spread 1.0`,
-which is *not* how a figure should be quoted) gives:
+#### THE SELECTION RULE WAS WRONG, AND THESE FIGURES ARE THE RESTATEMENT
 
-| tag | protocol (3 % rule) | all blocks | runs | difference |
-|---|---|---|---|---|
-| `cantor_poly` | 7.932 | 7.890 | 4 → 7 | 0.5 % |
-| `cantor_poly_b1` | 3.488 | 3.488 | 6 → 6 | 0 |
-| `cantor_poly_b2` | 0.893 | 0.893 | 4 → 4 | 0 |
-| `cantor_h50_b2` | 0.967 | 0.967 | 4 → 4 | 0 |
-| `tial_poly` | 2.273 | 2.292 | 4 → 16 | 0.8 % |
-| `tial_poly_b1` | 1.488 | 1.504 | 4 → 7 | 1.1 % |
-| `tial_poly_b2` | 0.504 | 0.505 | 8 → 14 | 0.2 % |
-| `tial_h50_b2` | 0.816 | 0.816 | 4 → 4 | 0 |
+`summarise_rows.py` used to exclude any block whose runs spanned more than 3 %. That
+**contradicted the protocol it cited**. `bench_parity.sh` takes two runs and, only if they
+disagree by more than 3 %, a third — so a 2-run block is inside 3 % by construction, and a
+3-run block is exactly one whose first two were not. "Exclude spread > 3 %" therefore meant
+*discard every block for which the protocol's own remedy was invoked*, and the median the
+protocol tells you to report was never reported. On the TiAl box, whose ±7 % block-to-block
+scatter Task 4 documented, that is most blocks: `tial_poly` took **22 runs across 8 blocks**
+and four of them were admitted.
 
-No figure moves by more than 1.1 % and no verdict changes. **The recommended fix**, for
-whoever takes the next table: apply the 3 % test to the block's FIRST TWO runs (the
-protocol's own trigger) and admit a 3-run block with its median. That would move the
-published controls above by under 1.5 %, so it should be done deliberately and the moved
-figures restated, not slipped in.
+**And the selection was not neutral.** All three TiAl figures moved the flattering way under
+it. Reporting the magnitude of the movement without its sign, and leaving the rule for
+"whoever takes the next table" — the one person who would not know the history — was the wrong
+call, and it has been reversed.
+
+**The rule now:** every block counts. A 2-run block contributes both runs; a 3-run block
+contributes one value, its **median**, which is what the protocol says that block measured —
+its three runs are not three samples but one measurement plus the remedy for their
+disagreement. `--max-spread` now catches only a 2-run block over threshold *with no third
+run*, i.e. a block the escalation was never applied to, which `bench_parity.sh` cannot
+produce.
+
+Everything the change moved, with the sign:
+
+| figure | old rule | **fixed rule** | change |
+|---|---|---|---|
+| Task 8 `cantor_poly` | 7.932 | **7.918** | −0.2 % |
+| Task 8 `cantor_poly_b1` | 3.488 | **3.488** | — |
+| Task 8 `cantor_poly_b2` | 0.893 | **0.893** | — |
+| Task 8 `cantor_h50_b2` | 0.967 | **0.967** | — |
+| Task 8 `tial_poly` | 2.273 | **2.300** | **+1.2 %, against us** |
+| Task 8 `tial_poly_b1` | 1.488 | **1.504** | **+1.1 %, against us** |
+| Task 8 `tial_poly_b2` | 0.504 | **0.505** | **+0.2 %, against us** |
+| Task 8 `tial_h50_b2` | 0.816 | **0.816** | — |
+| Task 8 TiAl B2 µs/site | 92.8 | **94.0** | +1.3 %, against us |
+| Task 6 control `cantor_h50` | 128.4955 | **127.6610** | −0.65 % |
+| Task 6 control `tial_poly` | 182.1295 | **182.2060** | +0.04 % |
+| Task 6 controls `cantor_poly`, `tial_h50` | 116.8575, 302.8085 | **unchanged** | — |
+| Task 7 `cantor_h50_b3` | 163.4005 ms/step, 79.8 µs/site, 1.24x | **162.6110, 79.4, 1.234x** | −0.5 % |
+| Task 7 `cantor_poly_b3`, `cantor_poly_b2`, `cantor_h50_b2` | — | **unchanged** | — |
+
+Nothing changes a verdict: the gate is met at 0.893x and 0.505x, the DAG still loses, and
+Hermite is still the slower mode on both models. **The two Task 6 controls and the one Task 7
+cell above are restated by this commit** — the sections below now carry the fixed figures.
+Task 5's published numbers are per-block medians printed by `bench_parity.sh` itself, not
+pooled by this tool, and are unaffected.
+
+#### The block that is excluded by name, and what excluding it costs
+
+`tial_poly` at 09:24:43 was taken **under host contention that I caused**: `loadavg 2.82` in
+its own row, and the file mtimes show its runs overlapping the unpinned 4-rank `mpi_sanity.sh`
+runs I started at 09:27:35, believing the pass had finished. It reads 9 % high with 9.67 %
+internal spread. It is excluded by a named `# EXCLUDE tial_poly@09:24:43` line carrying that
+reason, rather than left to a spread rule, because the cause is known and is not internal
+scatter.
+
+**What the exclusion costs, stated rather than left implicit:** the block's *comparator*
+series has a 1.42 % spread and would otherwise have been admitted into the TiAl denominator.
+Admitting the whole block moves the TiAl baseline from 2.300x to **2.297x** and its ACE median
+from 429.6 to 430.1 µs/site — i.e. the exclusion is worth 0.1 % and does not act in our
+favour.
 
 #### The comparator is more load-sensitive than the code under test
 
@@ -583,12 +621,20 @@ benchmark's own pinned process), `pace recursive` re-run in the same block on th
 > untouched. Control rows on **the shipped binaries** (`bench_parity/rows_task6_fix3.txt`,
 > core 31, `pace=none`) measure that rather than assert it:
 >
-> | tag | committed row | controls, pooled-run median over valid blocks | delta |
+> | tag | committed row | controls, pooled over every block | delta |
 > |---|---|---|---|
-> | `cantor_poly_b2` | 117.06 | **116.8575** (n = 6) | **−0.173 %** |
-> | `cantor_h50_b2`  | 127.41 | **128.4955** (n = 2) | **+0.852 %** |
-> | `tial_poly_b2`   | 182.65 | **182.1295** (n = 6) | **−0.285 %** |
-> | `tial_h50_b2`    | 302.76 | **302.8085** (n = 4) | **+0.016 %** |
+> | `cantor_poly_b2` | 117.06 | **116.8575** (6 runs, 3 of 4 blocks) | **−0.173 %** |
+> | `cantor_h50_b2`  | 127.41 | **127.6610** (3 values, 2 blocks) | **+0.197 %** |
+> | `tial_poly_b2`   | 182.65 | **182.2060** (7 values, 4 blocks) | **−0.244 %** |
+> | `tial_h50_b2`    | 302.76 | **302.8085** (4 runs, 2 blocks) | **+0.016 %** |
+>
+> **RESTATED by Task 8's fix round.** Two of these four moved when `summarise_rows.py`'s
+> selection rule was corrected: it had been discarding every block that went to three runs,
+> which is exactly the block the protocol says to report the median of. `cantor_h50_b2` was
+> 128.4955 and `tial_poly_b2` 182.1295 under the old rule; the other two are unchanged to the
+> last digit. See "THE SELECTION RULE WAS WRONG" near the top of the Results section for the
+> full restatement and its direction. The conclusion of this paragraph is unaffected — the
+> deltas are still mixed in sign and still inside each row's run-to-run spread.
 >
 > Mixed in sign, and each inside its own row's run-to-run spread. The statistic is the
 > **pooled-run median**: the median over every run of every INCLUDED block, not the median of
@@ -665,8 +711,9 @@ applies to Tasks 7 and 8 as written, not only to Task 6's controls.
 > also predated the `WORKSPACE_TAKEN` load they were quoted as justifying. The table above
 > replaces them: same core, the binaries that ship, and a sign pattern that is actually mixed.
 > The first version of *that* table then reported `tial_poly` as 182.28 / −0.20 %, which is
-> not the pooled-run median of its blocks (182.1295 / −0.285 %) nor any other aggregation of
-> them — it was written by hand rather than computed, in the paragraph whose point is that
+> not the pooled-run median of its blocks (182.1295 under the selection rule of the time, and
+> 182.2060 under the corrected one — the tool prints the latter today) nor any other
+> aggregation of them — it was written by hand rather than computed, in the paragraph whose point is that
 > these figures come from the artefact. `summarise_rows.py` exists so that quoting a number
 > from a rows file means running it and pasting what it prints.
 
@@ -778,7 +825,7 @@ tensor step — is bit-identical to `b826c831` on all six parity cases.
 |---|---|---|---|---|---|---|---|
 | `cantor_poly_b3` | 2048-atom fcc CrMnFeCoNi | **156.5325** | 8 | **76.4** | **1.32x SLOWER** | 132.10 | **1.19** |
 | `cantor_poly_b2` (re-measured) | same | **118.4775** | 6 | 57.9 | — | (same blocks) | 0.90 |
-| `cantor_h50_b3` | 2048-atom fcc CrMnFeCoNi | **163.4005** | 4 | **79.8** | **1.26x SLOWER** | 131.74 | **1.24** |
+| `cantor_h50_b3` | 2048-atom fcc CrMnFeCoNi | **162.6110** | 5 | **79.4** | **1.26x SLOWER** | 131.74 | **1.234** |
 | `cantor_h50_b2` (re-measured) | same | **129.4170** | 6 | 63.2 | — | (same blocks) | 0.98 |
 
 Quoted from
@@ -824,7 +871,12 @@ them line by line and states the rule that holds. **Consequences, in order of wh
   demonstrated — by reproducing every gate figure digit for digit — that this class of change
   moves nothing. Re-export before quoting a *new* `:dag` number.
 
-The B2 re-measurements reproduce Task 6's controls (116.8575 / 128.4955) to 1.4 % and 0.7 %,
+**RESTATED by Task 8's fix round:** `cantor_h50_b3` read 163.4005 / 79.8 / 1.24 under
+`summarise_rows.py`'s old selection rule, which discarded a three-run block the protocol says
+to take the median of; the corrected figures are above and the verdict (1.26x slower, the DAG
+loses) is unchanged. The other three rows are unaffected.
+
+The B2 re-measurements reproduce Task 6's controls (116.8575 / 127.6610) to 1.4 % and 1.4 %,
 and `pace recursive` in the three blocks that carried it (133.224 / 131.737 / 132.103) is
 within 1.1 % of Task 4's, Task 5's and Task 6's, so the comparator has not moved and the ratio
 column is comparable with every earlier table. One `cantor_h50_b3` block is excluded by the

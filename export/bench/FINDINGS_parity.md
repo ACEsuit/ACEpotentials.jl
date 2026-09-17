@@ -5,11 +5,53 @@
 checkout *if that checkout is available on this host*. It is not: `~/si-ace/ACEpotentials` is
 an rsync'd copy with no git. This is the plan's own stated fallback location.
 
-**What it updates.** [`plan/FINDINGS_lammps_export.md`](../../plan/FINDINGS_lammps_export.md)
-(correctness, 2026-09-15) and
-[`plan/FINDINGS_lammps_export_perf.md`](../../plan/FINDINGS_lammps_export_perf.md) (where the
-time goes, 2026-09-15). Every defect those two named is now closed, or is listed below as
-open, by name.
+**What it updates.** Two findings of 2026-09-15 — one on correctness, one on where the time
+goes — written against `acesuit/lammps-export` at 075d3859. **They are quoted inline below
+rather than linked**: they live in the controller's working directory, which is not part of
+this repository, so a link would be dead for every reader of this branch. Every defect they
+named is closed here, or is listed in §5 as open, by name.
+
+> **From the correctness finding (2026-09-15), the four conclusions this document answers:**
+>
+> 2. *"The `:polynomial` export is exact."* Energies and forces of the E0 + many-body part
+>    agree with the ETACE calculator and with the fitted classic `ACEModel` to
+>    **max |dF| = 6.7e-14 eV/Å, |dE|/atom = 1.5e-13 eV** on forces of 3–6.7 eV/Å.
+> 3. *"The `:hermite_spline` export — the README's recommended mode — is broken for any
+>    multi-element model at the branch tip"*: one spline table per ordered species pair,
+>    dispatched on a *symmetric* pair index, so for NZ ≥ 2 most neighbour species read the
+>    wrong table. As-is: **13.5 eV/Å, 7.2 eV/atom** errors in LAMMPS. *"The branch's
+>    multi-species test only exercises `:polynomial`, so CI cannot see this."*
+> 4. *"Even fixed, `:hermite_spline` is not exact against the fitted model"*, because
+>    `ETModels.splinify` is the inexact step: **2.7e-4 eV/Å at the default `Nspl = 50`,
+>    3.0e-6 at `Nspl = 200`**. *"So the README's 'machine precision' claim is true only
+>    relative to the splined model."*
+> 5. *"The pair potential is not carried."* `export_ace_model(::StackedCalculator)` picks out
+>    `ETOneBody` and `ETACE` and silently ignores an `ETPairModel`. *"The export of the
+>    (E0, pair, ACE) stack is byte-identical to that of the (E0, ACE) stack… the E0 +
+>    many-body part alone is attractive on every dimer (−1.5 eV at 3.0 Å, Cr–Cr) and changes
+>    held-out forces by up to 6.9 eV/Å."*
+>
+> **From the performance finding (2026-09-15):**
+>
+> *"Measured on the five-element Cantor model (moriarty, one pinned core, loadavg 5–6):
+> `pair_style ace` = 522 µs/atom (`:polynomial`), 195 µs/atom (`:hermite_spline`, dispatch
+> fixed); `pair_style pace` (fork, same 1348-function basis, 1e4-node yace) = 75 µs/atom. So
+> the exact mode is 7.0x and the recommended mode 2.6x behind ML-PACE on this host. In
+> `:polynomial` mode 84 % of the site time is the dense radial mixing… None of this is
+> architectural: every item is a code-generator change (days each, ~2 weeks in total), none
+> needs EquivariantTensors or the C++ plugin to change… After all of it the per-site cost
+> should land at roughly 30–40 µs on this host against ML-PACE's 75 — i.e. parity is
+> plausible."*
+>
+> And, on multi-rank behaviour — the claim §4 sets out to test:
+>
+> *"In `benchmark/results/` the ETACE runs show `%varavg` on `Pair` of 34 % (Hermite,
+> 2 ranks), 22 % (4), 8 % (8), 24.5 % (poly, 4 ranks), 2.4 % (poly, 8), while on the same
+> 2000-atom B2 box the `pace` runs show 1.1–1.4 % at 2, 4 and 8 ranks… The decomposition is
+> therefore balanced; the ETACE numbers are erratic in rank count and consistent with a
+> shared, loaded host… One thing worth ruling out when it is re-measured: the embedded Julia
+> runtime in each rank starts its own GC threads, so eight ranks on eight cores may
+> oversubscribe (`ps -T` on a running rank would show it)."*
 
 ---
 
@@ -35,9 +77,9 @@ Both predictions held.
   Cantor `:polynomial` went from **512.2 to 58.1 µs/site**, past the plan's own 150 µs/site
   target; TiAl `:polynomial` from 424.6 to 92.8.
 - **The blindness is gone too**, and that is the half of this work that will age best. The
-  export suite went from 43 tests, several of which asserted nothing, to **380 passing across
-  nine groups with every group required to have actually run** (32 549 with the DAG group's
-  exhaustive assertions); four pieces of "looked green, asserted nothing"
+  export suite went from 43 tests, several of which asserted nothing, to **32 549 passing across
+  ten groups, with every group required to have actually run** (380 of them outside the DAG
+  group's exhaustive sweep); four pieces of "looked green, asserted nothing"
   coverage were found and fixed *inside the tasks whose job was to remove that class*.
 
 One thing did not pay, and ships off:
@@ -64,23 +106,38 @@ protocol is in [`README.md`](README.md); the rows are in
 
 | step | Cantor µs/site | vs `pace` | TiAl µs/site | vs `pace` |
 |---|---|---|---|---|
-| baseline (Task 4 generator) | 512.2 | **7.93x** | 424.6 | **2.27x** |
-| B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.49x** | 278.8 | **1.49x** |
-| **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.89x** | **92.8** | **0.50x** |
-| `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.97x | 152.5 | 0.82x |
-| `pair_style pace recursive` (the comparator, re-run in every block) | 64.8 | 1.00 | 186.5 | 1.00 |
+| baseline (Task 4 generator) | 511.8 | **7.918x** | 429.6 | **2.300x** |
+| B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.488x** | 281.7 | **1.504x** |
+| **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.893x** | **94.0** | **0.505x** |
+| `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.967x | 152.5 | 0.816x |
+| `pair_style pace recursive` (comparator, pooled over every block on that box) | 64.6 | 1.00 | 186.8 | 1.00 |
 
-**The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.89x and 0.50x** — and
-three of the four shipped configurations are faster than `pair_style pace recursive` outright.
+**The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.893x and 0.505x** —
+and all four shipped configurations are faster than `pair_style pace recursive` outright.
+
+Each ratio is that tag's own pooled ACE median over its own pooled comparator median, so
+numerator and denominator come from the same blocks on the same core minutes apart; the
+comparator row is pooled over every block on that box and is informational.
 
 Taken 2026-09-17 on `moriarty`, core 31, `taskset`, `OMP_NUM_THREADS=1`, `timestep 0.0`, 100
-steps per run, `/proc/loadavg` 0.29–1.69 (this benchmark's own single pinned process is ~1.0).
-Every figure is the pooled median that `summarise_rows.py --series both` prints, numerator and
-denominator alike; every library passed its source, library, LAMMPS and 2-rank gates before it
-was timed, enforced by a content-based interlock (`gate=OK[...]` in every row).
+steps per run; 29 blocks, 68 runs; `/proc/loadavg` 0.27–1.82 over the blocks that count (this
+benchmark's own single pinned process is ~1.0). Every library passed its source, library,
+LAMMPS and 2-rank gates before it was timed, enforced by a content-based interlock
+(`gate=OK[...]` in every row). One block is excluded by name, with its reason in the rows file
+— see below.
 
-These reproduce the per-task rows they supersede — 8.15 → 7.93, 3.51 → 3.49, 0.90 → 0.89,
-0.97 → 0.97, 2.27 → 2.27, 1.54 → 1.49, 0.49 → 0.50, 0.82 → 0.82 — on a different day with the
+Every figure above is what
+
+```
+export/bench/summarise_rows.py export/bench/artefacts/rows_task8.txt --series both
+```
+
+prints, numerator and denominator alike. **Pass no tag arguments**, so the tool groups by
+exact tag: passing `cantor_poly` as a prefix also matches `cantor_poly_b1` and `_b2` and pools
+three different binaries into one statistic. That is the one trap in the interface.
+
+These reproduce the per-task rows they supersede — 8.15 → 7.92, 3.51 → 3.49, 0.90 → 0.89,
+0.97 → 0.97, 2.27 → 2.30, 1.54 → 1.50, 0.49 → 0.51, 0.82 → 0.82 — on a different day with the
 whole chain re-measured in one session.
 
 ### Step by step
@@ -391,9 +448,11 @@ against survives. The decision is the maintainer's; here is the evidence.**
 
 The plan required this to be *shown*, so it was. Task 5 added a dense `RBASIS_W_k` branch, and
 the parity suite carries a `dense_model()` case built with `init_Wradial = :glorot_normal` and
-`Winit = :glorot_normal` — a genuinely learned, fully populated, per-ordered-pair asymmetric
-weight tensor. That case (`dense_poly`) exports through **`:polynomial`**, is gated at 1e-12
-against its own fitted stack, and is **bit-identical** across generator revisions.
+`Winit = :glorot_normal` — an **arbitrary dense** weight tensor, fully populated and asymmetric
+per ordered pair. (Random, not fitted: what it exercises is the dense code path, and the
+structural argument below is what carries the claim to genuinely learned weights.) That case,
+`dense_poly`, exports through **`:polynomial`**, is gated at 1e-12 against its own stack, and
+is **bit-identical** across generator revisions.
 
 The structure guarantees it in general, not just for that fixture. The ETACE radial embedding
 that `ace_learnable_Rnlrzz` builds is `EmbedDP(agnesi transform, orthogonal-polynomial

@@ -19,16 +19,20 @@ documented calls for.
 
 WHAT IT EXCLUDES, AND WHAT IT DOES NOT -- read this before quoting a number:
 
-  * EXCLUDED automatically: any block whose own runs disagree by more than `--max-spread`
-    (default 3 %).  That is the protocol's rule in `README.md` -- two runs must agree within
-    3 %, and a block that fails it was taken on a contended core and is not a measurement.
-  * EXCLUDED explicitly: any block named by a `# EXCLUDE <tag> <reason>` line in the ROWS FILE
-    itself, or by `--exclude <tag>=<reason>` on the command line.  A reason is REQUIRED.  This
-    is how a block is dropped for something the spread rule does not capture -- an outlier
-    whose internal spread is fine.
-  * NOT excluded by anything else.  There is no outlier rejection, no trimming, no "drop the
-    first block", no smoothing.  A number this tool prints is the median of every run it was
-    given minus the two categories above, both of which it lists by name in its own output.
+  * EVERY BLOCK COUNTS unless it is explicitly excluded.  `bench_parity.sh` takes two runs and,
+    only if they disagree by more than 3 %, a third; a 2-run block contributes both runs, a
+    3-run block contributes ONE value -- its MEDIAN, which is what the protocol says that block
+    measured.
+  * EXCLUDED automatically: only a 2-run block whose runs disagree by more than `--max-spread`
+    AND which has no third run, i.e. a block the protocol's escalation was never applied to.
+    `bench_parity.sh` cannot produce one; a hand-edited or truncated rows file can.
+  * EXCLUDED explicitly: any block named by a `# EXCLUDE <key> <reason>` line in the ROWS FILE
+    itself, or by `--exclude <key>=<reason>`.  A reason is REQUIRED.  `<key>` is `TAG` (every
+    block of that tag) or `TAG@HH:MM:SS` (one block -- necessary as soon as a tag is repeated
+    across passes, which is how any table with replicate blocks is taken).
+  * NOT excluded by anything else.  No outlier rejection, no trimming, no "drop the first
+    block", no smoothing.  A number this tool prints is built from every run it was given
+    minus the two categories above, both of which it lists by name in its own output.
 
 WHY IT EXISTS, AND WHY IT IS BUILT THIS WAY.  A control figure in `export/bench/README.md`
 (`tial_poly` 182.28) was written by hand instead of computed, in the paragraph whose point was
@@ -43,20 +47,16 @@ are applied, not printed; they are named in the output; and an exclusion for a r
 spread rule does not capture has to be WRITTEN DOWN, in the rows file or the invocation, where
 the next reader will see it.
 
-KNOWN INTERACTION WITH THE PROTOCOL, disclosed rather than fixed.  The protocol says "two runs
-must agree within 3 %; otherwise take a third run and report the median".  This tool excludes
-any block whose spread exceeds 3 %.  Those rules contradict each other: a third run is taken
-only when the first two ALREADY differ by more than 3 %, and a third value can only widen the
-min-max, so EVERY 3-run block is discarded here and the median the protocol asked for is never
-reported.  On the TiAl box, whose +-7 % block-to-block scatter Task 4 documented, that is most
-blocks -- `tial_poly` took 16 runs across 6 blocks in Task 8's table and 4 were admitted.
-
-It is not fixed here because changing the rule would silently move figures already published in
-README.md (Task 6's four controls, Task 7's rows).  It changes no conclusion: with every block
-admitted, Task 8's eight figures move by at most 1.1 %.  Both columns are tabulated in
-README.md.  THE RECOMMENDED FIX, for whoever takes the next table: apply the 3 % test to the
-block's FIRST TWO runs -- the protocol's own trigger -- and admit a 3-run block with its median.
-Do it deliberately and restate the moved figures; do not slip it in.
+THE RULE ABOVE REPLACED ONE THAT CONTRADICTED THE PROTOCOL, and the replacement is the reason
+some figures in README.md were restated.  The old rule excluded any block whose runs spanned
+more than 3 %.  But a 2-run block is within 3 % by construction and a 3-run block is precisely
+one whose first two runs were not -- so "exclude spread > 3 %" meant "discard every block for
+which the protocol's own remedy was invoked", and the median the protocol tells you to report
+was never reported.  On the TiAl box that was most blocks: Task 8's `tial_poly` took 19 runs
+across 7 blocks and 4 were admitted.  It was also not neutral -- all three TiAl figures moved
+the flattering way under it.  Task 6's four published controls are unchanged by the fix (every
+one of its included blocks has two runs); Task 8's figures are restated in README.md with the
+movement and its sign shown.
 
 IT FAILS LOUDLY.  A malformed file, an empty file, a tag matching no rows, a `# EXCLUDE` line
 naming a tag that is not there, or a group left with no included blocks are all errors with a
@@ -85,7 +85,7 @@ import sys
 # instead of quietly picking whichever `runs(...)` it finds first.  Every row that has ever
 # carried `runs(exec order)` also carries `ace_us/site=`; Task 4's pre-fix rows carry neither
 # and were already not matched.
-ROW = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
+ROW = re.compile(r"^(\S+)\s+\d{4}-\d{2}-\d{2}\s+(\d{2}:\d{2}:\d{2})\s.*?natoms=(\d+).*?"
                  r"\bace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
                  r"([-\d. ]+?),\s*spread=([\d.]+)\)")
 
@@ -101,8 +101,7 @@ ROW = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
 # A row taken with `pace=none` ends `pace_ms/step=-` and simply does not match; such a block
 # contributes to the ACE statistic and to nothing else.  Each series is then excluded on ITS
 # OWN spread -- see the loop below for why that is not the same as excluding the block.
-PACE = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
-                  r"\bpace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
+PACE = re.compile(r"^\S+\s.*?\bpace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
                   r"([-\d. ]+?),\s*spread=([\d.]+)\)")
 EXCL = re.compile(r"^#\s*EXCLUDE\s+(\S+)\s+(.*\S)\s*$")
 
@@ -119,9 +118,12 @@ def main(argv=None):
     ap.add_argument("prefixes", nargs="*",
                     help="tag prefixes to group by; default is one group per exact tag")
     ap.add_argument("--max-spread", type=float, default=0.03,
-                    help="a block whose internal spread exceeds this is excluded (default 0.03)")
-    ap.add_argument("--exclude", action="append", default=[], metavar="TAG=REASON",
-                    help="exclude one block by exact tag; a reason is required")
+                    help="a 2-run block whose runs disagree by more than this, and which has "
+                         "no third run, is excluded -- the protocol's escalation was not "
+                         "applied to it (default 0.03)")
+    ap.add_argument("--exclude", action="append", default=[], metavar="TAG[@HH:MM:SS]=REASON",
+                    help="exclude one block (TAG@HH:MM:SS) or every block of a tag (TAG); "
+                         "a reason is required")
     ap.add_argument("--series", choices=("ace", "pace", "both"), default="ace",
                     help="which pair style to summarise: the exported library (ace, the "
                          "default and the historical behaviour), the ML-PACE comparator "
@@ -154,21 +156,30 @@ def main(argv=None):
             # tag appears once per block and the table takes several blocks per tag, so a
             # tag->runs dictionary would silently keep only the last block of each.
             p = PACE.match(line)
-            rows.append((m.group(1), int(m.group(2)),
-                         [float(x) for x in m.group(3).split() if x != "-"],
-                         float(m.group(4)),
-                         [float(x) for x in p.group(3).split() if x != "-"] if p else [],
-                         float(p.group(4)) if p else 0.0))
+            rows.append((m.group(1), m.group(2), int(m.group(3)),
+                         [float(x) for x in m.group(4).split() if x != "-"],
+                         float(m.group(5)),
+                         [float(x) for x in p.group(1).split() if x != "-"] if p else [],
+                         float(p.group(2)) if p else 0.0))
 
     if not rows:
         return die(f"{a.rows_file}: no rows matched the bench_parity.sh row format "
                    f"({len(text.splitlines())} line(s) read). Has the row format changed?")
 
+    # An exclusion names either a TAG (every block carrying it) or ONE BLOCK, as `TAG@HH:MM:SS`.
+    #
+    # The per-block form had to be added: this table repeats a tag across passes, so a tag-keyed
+    # exclusion aimed at one bad block silently takes out all seven of `tial_poly`'s.  Task 6
+    # avoided the problem by giving every block a unique tag (`..._fix3r1`, `_fix3r2`), which
+    # works but makes the rows file unreadable and splits a tag's blocks across groups.  The
+    # timestamp is already in every row and is unique per block.
     tags = {r[0] for r in rows}
+    keys = tags | {f"{r[0]}@{r[1]}" for r in rows}
     for tag in excluded:
-        if tag not in tags:
-            return die(f"exclusion names tag {tag!r}, which is not in {a.rows_file}. "
-                       f"A stale exclusion silently changes a statistic; fix or remove it.")
+        if tag not in keys:
+            return die(f"exclusion names {tag!r}, which is not in {a.rows_file}. "
+                       f"A stale exclusion silently changes a statistic; fix or remove it. "
+                       f"(Name one block as TAG@HH:MM:SS, or a whole tag as TAG.)")
 
     wanted = a.prefixes
     for w in wanted:
@@ -177,41 +188,65 @@ def main(argv=None):
 
     groups = {}
     order = []
-    # EACH SERIES IS EXCLUDED ON ITS OWN SPREAD.
+    # WHICH BLOCKS COUNT, AND WHY THE RULE CHANGED.
     #
-    # The protocol's 3 % rule is a statement about a series of runs, and the two pair styles
-    # in a block are two series.  Applying only the ACE spread to both was wrong and was
-    # caught the first time this tool met a real mixed block: Task 8's opening `cantor_poly`
-    # block has an ACE spread of 0.08 % and a PACE spread of 8.67 %, because a concurrent
-    # (off-core) job perturbed the comparator -- which streams a 193 MB `.yace` and is far
-    # more sensitive to system load than the pinned exported library is.  Pooling that
-    # comparator series would have moved the published DENOMINATOR while every visible
-    # diagnostic stayed green.
+    # The rule used to be "exclude any block whose runs span more than --max-spread".  That
+    # CONTRADICTED the protocol it cited.  `bench_parity.sh` takes two runs and, only if they
+    # disagree by more than 3 %, a third -- so a 2-run block is within 3 % by construction, and
+    # a 3-run block is one whose first two were not.  "Exclude spread > 3 %" therefore meant
+    # "discard every block for which the protocol's own remedy was invoked", and the median the
+    # protocol says to report was never reported.  On the TiAl box that was most blocks:
+    # Task 8's `tial_poly` took 19 runs across 7 blocks and 4 were admitted.
     #
-    # An EXPLICIT `# EXCLUDE` exclusion still applies to both series: it names a block, and a
-    # reason good enough to drop a block is a reason to drop all of it.
-    for tag, nat, vals, spread, pvals, pspread in rows:
+    # It also was not neutral.  All three TiAl figures moved the flattering way under it.  A
+    # selection rule that discards the protocol's own output and whose bias favours the author
+    # is not a disclosure item; it is a defect.
+    #
+    # THE RULE NOW.  Every block counts unless it is explicitly excluded.  A 2-run block
+    # contributes both runs, exactly as before.  A 3-run block contributes ONE value, its
+    # MEDIAN -- which is what the protocol says that block measured; its three runs are not
+    # three independent samples but one measurement plus the remedy for their disagreement.
+    # `--max-spread` now flags a block whose FIRST TWO runs disagree by more than it AND which
+    # has no third run, i.e. a block the protocol's escalation was not applied to; such a block
+    # is excluded, because it is the one case the protocol leaves unresolved.
+    #
+    # WHAT THIS MOVED.  Nothing in any all-2-run rows file, which is every figure Task 6
+    # published -- verified by re-running its four controls, which are unchanged to the last
+    # digit.  Task 8's own figures are restated with the movement and its sign shown, in
+    # README.md.
+    #
+    # Each SERIES is judged on its own runs.  Caught on the first real mixed block: Task 8's
+    # opening `cantor_poly` block has an ACE spread of 0.08 % and a PACE spread of 8.67 %,
+    # because an off-core job perturbed the comparator -- which streams a 193 MB `.yace` and is
+    # far more sensitive to system load than the pinned exported library is.  An EXPLICIT
+    # exclusion still applies to both series: a reason good enough to drop a block drops all
+    # of it.
+    def contribution(vals, spread):
+        """(values this block contributes, why) -- see the rule above."""
+        if len(vals) >= 3:
+            v = sorted(vals)
+            return [v[len(v) // 2]], f"included (median of {len(vals)} runs, protocol escalation)"
+        if len(vals) == 2 and spread > a.max_spread:
+            return [], (f"EXCLUDED: 2 runs spanning {spread * 100:.2f} % > "
+                        f"{a.max_spread * 100:.0f} % and no third run -- the protocol's "
+                        f"escalation was not applied to this block")
+        return list(vals), "included"
+
+    for tag, when, nat, vals, spread, pvals, pspread in rows:
         key = next((w for w in wanted if tag.startswith(w)), None) if wanted else tag
         if key is None:
             continue
         if key not in groups:
             groups[key] = {"nat": nat, "runs": [], "pace": [], "blocks": []}
             order.append(key)
-        if tag in excluded:
-            why = pwhy = f"EXCLUDED: {excluded[tag]}"
+        ex = excluded.get(f"{tag}@{when}", excluded.get(tag))
+        if ex is not None:
+            why = pwhy = f"EXCLUDED: {ex}"
         else:
-            if spread > a.max_spread:
-                why = (f"EXCLUDED: internal spread {spread * 100:.2f} % > "
-                       f"{a.max_spread * 100:.0f} % (protocol)")
-            else:
-                why = "included"
-                groups[key]["runs"] += vals
-            if pspread > a.max_spread:
-                pwhy = (f"EXCLUDED: internal spread {pspread * 100:.2f} % > "
-                        f"{a.max_spread * 100:.0f} % (protocol)")
-            else:
-                pwhy = "included"
-                groups[key]["pace"] += pvals
+            add, why = contribution(vals, spread)
+            groups[key]["runs"] += add
+            padd, pwhy = contribution(pvals, pspread) if pvals else ([], "no comparator run")
+            groups[key]["pace"] += padd
         groups[key]["blocks"].append((tag, vals, spread, why, pvals, pspread, pwhy))
 
     def median(xs):
@@ -230,7 +265,7 @@ def main(argv=None):
             rc = 1
             continue
         med = median(g["runs"])
-        nin = sum(1 for b in g["blocks"] if b[3] == "included")
+        nin = sum(1 for b in g["blocks"] if b[3].startswith("included"))
         if a.series in ("ace", "both"):
             print(f"{key}: {nin} of {len(g['blocks'])} block(s) included, {n} run(s), "
                   f"pooled median = {med:.4f} ms/step = {med * 1000 / g['nat']:.1f} us/site")
@@ -250,7 +285,7 @@ def main(argv=None):
                 rc = 1
                 continue
             pmed = median(g["pace"])
-            pin = sum(1 for b in g["blocks"] if b[6] == "included" and b[4])
+            pin = sum(1 for b in g["blocks"] if b[6].startswith("included") and b[4])
             nwith = sum(1 for b in g["blocks"] if b[4])
             print(f"{key}: pace recursive, {pin} of {nwith} block(s) included, {np_} run(s), "
                   f"pooled median = {pmed:.4f} ms/step = "
