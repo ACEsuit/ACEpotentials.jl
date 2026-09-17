@@ -66,83 +66,69 @@ using ACEpotentials.Models, ACEpotentials.ETModels
 ace_model = Models.ace_model(elements=(:Si,), order=3, ...)
 acefit!(data, ACEPotential(ace_model, ps, st))
 
-# Convert to ETACE.  Do NOT splinify: the default :polynomial mode exports the recurrence
-# itself, exactly, and splinify() removes the recurrence it needs.
+# Convert to ETACE.  Do NOT splinify: the export emits the polynomial recurrence itself,
+# exactly, and splinify() removes the recurrence it needs.
 et_model = ETModels.convert2et(ace_model)
 
-# Export (default: :polynomial, exact to 1e-12 against the fitted model)
+# Export (exact to 1e-12 against the fitted model)
 export_ace_model(et_calc, "model.jl")
 ```
 
-`splinify()` is **not** a step in this workflow, and exporting a splinified model with the
-default mode is a hard error rather than a silent substitution — see
-[Radial Basis Export Options](#radial-basis-export-options). It belongs only to the
-`:hermite_spline` path:
-
-```julia
-# The :hermite_spline path -- approximate, slower, and needed only if the model was FITTED
-# after splinification.  See the mode table below before choosing it.
-et_model_splined = ETModels.splinify(et_model, et_ps, et_st; Nspl=50)
-export_ace_model(et_calc_splined, "model.jl"; radial_basis=:hermite_spline)
-```
+`splinify()` is **not** a step in this workflow, and a splinified model **cannot be exported
+at all** — the attempt is a hard error naming the workflow above. See
+[Radial Basis Export Options](#radial-basis-export-options).
 
 See [`examples/etace_lammps_tutorial.jl`](examples/etace_lammps_tutorial.jl) for a complete walkthrough.
 
 ## Radial Basis Export Options
 
-When exporting, choose the radial basis representation:
+There is one mode. The `radial_basis` keyword is **vestigial**: it is kept because every
+existing call site passes it, it accepts `:polynomial` and nothing else, and new code should
+simply omit it.
 
-| Mode | Accuracy | Reference it reproduces | Speed, µs/site (Cantor / TiAl) | Status | Use case |
-|------|----------|-------------------------|---|--------|----------|
-| `:polynomial` | **exact** (1e-12 in energy, forces and virial) | the **fitted** model | **58.1 / 94.0** | **default** | any model that has not been splinified |
-| `:hermite_spline` | approximate: 2.7e-4 eV/Å at `Nspl=50`, 3e-6 eV/Å at `Nspl=200` on the Cantor model; **1.6e-2 eV/Å** on the TiAl order-4 model | the **splinified** model | 62.5 / 152.5 (**7 % / 62 % slower**) | opt-in | a model that was *fitted after* `splinify()` — the only case it can be exported at all |
-
-> **Do not choose `:hermite_spline` for speed.** As of the per-neighbour kernel it is the
-> **slower** mode on both reference models *and* the approximate one. The speed column is
-> measured — one pinned core, 2048- and 2000-atom boxes, `timestep 0.0`, 100 steps; the
-> protocol, the rows and the artefacts are in [`bench/README.md`](bench/README.md). Its old
-> justification, "learned radials with a small `N_POLYS`", no longer holds either:
-> `:polynomial` now emits an arbitrary dense (i.e. genuinely learned) radial-mixing tensor
-> exactly, and emits the recurrence only at the width a model actually reads. What remains is
-> that `:polynomial` **cannot** export an already-splinified model — `splinify()` leaves no
-> recurrence to emit — so `:hermite_spline` is the only route for one. See
-> [`bench/FINDINGS_parity.md`](bench/FINDINGS_parity.md) §7, which puts the question of
-> retiring this mode to the maintainer.
+| Mode | Accuracy | Reference it reproduces | Speed, µs/site (Cantor / TiAl) | Status |
+|------|----------|-------------------------|---|--------|
+| `:polynomial` (**default**) | **exact** (1e-12 in energy, forces and virial) | the **fitted** model | **58.1 / 94.0** | the only mode |
+| `:hermite_spline` | — | — | — | **REMOVED**; raises |
 
 `:polynomial` re-evaluates the polynomial recurrence at runtime and reproduces the model it
-was exported from to double-precision roundoff.
+was exported from to double-precision roundoff. It handles an arbitrary dense (i.e. genuinely
+learned) radial-mixing tensor and per-pair cutoffs exactly, and emits the recurrence only at
+the width a model actually reads.
 
-`:hermite_spline` emits the knot tables of a model that was already splinified with
-`ETModels.splinify`, and evaluates a piecewise cubic.  It reproduces *that splinified model*
-to 1e-12 — but the splinified model is not the fitted one, and the numbers in the table above
-are that model error (from `verify_cantor/log.chain`), not export error.  Splinify **before**
-fitting if you intend to deploy this mode, so the fit absorbs the spline discretisation into
-its coefficients — the recipe is written out in the header of `export/src/splinify.jl`.  Note
-that no runnable example here follows it: both `examples/etace_lammps_tutorial.jl` and
-`verify_cantor/chain_cantor.jl` fit first and splinify afterwards, so the Hermite models they
-produce do carry the error quoted above (the tutorial says so at its Step 6).  Two further
-constraints:
+### `:hermite_spline` was removed, and splinify-for-export went with it
 
-* every species pair must share one cutoff — with per-pair cutoffs the splinified model
-  itself throws a `BoundsError` at `y = 1` (upstream `EquivariantTensors._spl_grid`);
-* never compare a `:hermite_spline` export against the fitted model and call the difference
-  an export error.
+It emitted the knot tables of a model already splinified with `ETModels.splinify`. By the
+time the per-neighbour kernel landed it had lost every advantage it was kept for:
 
-`:hermite_spline` is an **explicit opt-in**.  Exporting a model that has already been
-splinified without asking for it is an error, not a substitution: `splinify()` leaves no
-polynomial recurrence to emit, so the exporter cannot honour `:polynomial` — and because
-`:polynomial` is the default, silently substituting the spline mode would hand a caller who
-never chose it an approximate model.  Either export the model as it was *before* `splinify()`
-(exact, gated at 1e-12), or pass `radial_basis=:hermite_spline` to say that the approximate
-mode is what you want.  The reverse mismatch, `:hermite_spline` on an unsplinified model, is
-only warned about: substituting the exact mode there cannot make a result wrong.
+* **slower** — 62.5 vs 58.1 µs/site on Cantor and 152.5 vs 94.0 on TiAl, one pinned core
+  (protocol, rows and artefacts in [`bench/README.md`](bench/README.md));
+* **approximate by construction** — 2.7e-4 eV/Å on Cantor at `Nspl=50` (3e-6 at `Nspl=200`)
+  and **1.6e-2 eV/Å** on the TiAl order-4 model, against a mode gated at 1e-12;
+* **unusable with per-pair cutoffs** — the *splinified reference model* throws a
+  `BoundsError` in upstream `EquivariantTensors._spl_grid`, so such an export could not be
+  verified at all;
+* its stated justification, "learned radials with a small `N_POLYS`", was **empty**:
+  `:polynomial` emits an arbitrary dense `W` exactly.
+
+The evidence, and the question as it was put to the maintainer, are in
+[`bench/FINDINGS_parity.md`](bench/FINDINGS_parity.md) §7. The answer was "remove".
+
+**Consequence, stated plainly: a splinified model can no longer be exported by any route, and
+the fit-on-splines deployment workflow is retired.** `:polynomial` never could export one —
+`splinify()` leaves no recurrence to emit — and `:hermite_spline` was its only path.
+`ACEpotentials.ETModels.splinify` itself is untouched and still usable for in-Julia work; it
+is only the export path for its output that is gone.
+
+**If you hold a splinified model:** export the model as it was *before* `splinify()` was
+applied, with the default. That export is exact, gated at 1e-12 against the fitted model
+throughout this project's test suite, and faster than the spline export was. If your
+parameters were fitted *after* `splinify()`, so that no unsplinified model carries them, the
+representation they belong to has no exporter any more and the model must be refitted.
 
 ```julia
-# Polynomial (default, exact) — the model must NOT be splinified
+# The only export there is.  The model must NOT be splinified.
 export_ace_model(calc, "model.jl")
-
-# Hermite cubic splines (opt-in; the model must already be splinified)
-export_ace_model(calc, "model.jl"; radial_basis=:hermite_spline)
 ```
 
 ## Directory Structure
@@ -152,8 +138,8 @@ export/
 ├── src/                          # the generator
 │   ├── export_ace_model.jl       # entry point: model -> trim-compatible code
 │   ├── write_radial.jl           #   radial basis + pair term (:polynomial)
-│   ├── codegen.jl                #   solid harmonics + Hermite spline tables
-│   ├── splinify.jl               #   spline extraction and shared pair-index helpers
+│   ├── codegen.jl                #   solid harmonics
+│   ├── pair_index.jl             #   ordered/symmetric pair index + scatter helper
 │   ├── write_evaluation.jl       #   the per-neighbour evaluation kernel and Workspace
 │   ├── write_c_interface.jl      #   the @ccallable C ABI (workspace pool, handles)
 │   └── build_stamp.jl            #   EXPORT_BUILD_ID / ace_build_id provenance
@@ -385,17 +371,16 @@ Typical deployment sizes (measured on `libace_cantor_poly_b2.so`, a 5-species or
    contiguous buffer before calling the library. That copy is per-site and unavoidable across the C boundary in the
    current ABI; it is inside every timing row in [`bench/README.md`](bench/README.md), so the
    published throughput already includes it.
-3. **`:hermite_spline` is approximate by construction, and since B2 it is also the slower
-   mode.** See the table above. It cannot be used at all when species pairs have different
-   cutoffs (an upstream `EquivariantTensors._spl_grid` `BoundsError`), and the export refuses
-   that combination rather than emitting it.
+3. **A splinified model cannot be exported.** See the section above: `:hermite_spline` was
+   removed and it was the only path such a model had. Export the unsplinified model instead.
 4. **One workspace per concurrent caller, from a pool of 32.** Not a physical limit — see the
    C API section — but it is fixed when the library is built.
-5. **The minimal-export path is inoperable.** `pair_ace_minimal.cpp` looks for
-   `ace_c_interface_minimal.jl` through `ACE_C_INTERFACE_PATH`; that file was deleted in
-   `0372f90d`. Use the compiled-library path. Whether the minimal path is restored against the
-   current ABI or removed is an open question for the maintainer — see
-   [`bench/FINDINGS_parity.md`](bench/FINDINGS_parity.md).
+5. **The minimal-export path is gone.** It was inoperable — `pair_ace_minimal.cpp` looked for
+   `ace_c_interface_minimal.jl` through `ACE_C_INTERFACE_PATH`, and that file was deleted in
+   `0372f90d`, before any of this work began. The maintainer's answer to
+   [`bench/FINDINGS_parity.md`](bench/FINDINGS_parity.md) §8 was to remove it; the compiled
+   library is the only C path. See [`docs/C_INTERFACE_API.md`](docs/C_INTERFACE_API.md) for
+   what went and why reviving it would be a rewrite rather than a restoration.
 
 ## Verification
 
@@ -405,7 +390,7 @@ being true, and the protocol and the full measurement table are in
 
 | level | reference | tolerance |
 |---|---|---|
-| generated Julia vs the fitted `ETACEPotential`/`StackedCalculator` | the model as fitted (or as splinified, for `:hermite_spline`) | 1e-12 energies, forces, virial |
+| generated Julia vs the fitted `ETACEPotential`/`StackedCalculator` | the model as fitted | 1e-12 energies, forces, virial |
 | compiled `.so` via the Python C API vs Julia | the generated Julia | 1e-12 |
 | `pair_style ace` in LAMMPS vs Julia | the compiled library | 1e-10 |
 | the LAMMPS virial, all six Voigt components, rattled cell — **the Si test model only**, since that is the model the LAMMPS group builds; the multi-species virial is gated at the Julia and compiled-library levels above, not through LAMMPS | the Julia reference | 1e-10 relative |

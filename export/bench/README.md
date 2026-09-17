@@ -8,6 +8,17 @@ close-out table — every step of the plan, both reference models, one session, 
 the first thing under "Results"**; the per-task sections after it are the working record that
 produced it. Do not add numbers here that were not measured.
 
+> **EVERY `:hermite_spline` / `*_h50` ROW AND COMMAND BELOW IS A HISTORICAL MEASUREMENT OF A
+> MODE THAT NO LONGER SHIPS.** `:hermite_spline` was removed on 2026-09-17 — see
+> [`FINDINGS_parity.md`](FINDINGS_parity.md) §7 — and a splinified model can no longer be
+> exported, so none of those rows can be re-taken and the shell snippets that name an `h50`
+> tag will now be refused by `verify_bench_models.jl` rather than silently produce a
+> `:polynomial` model under an approximate-mode name. **They are kept deliberately: the
+> Hermite rows are the evidence the mode was removed on** — that it was the *slower* mode as
+> well as the approximate one — and deleting a measurement because its subject was retired
+> would destroy the justification for retiring it. Read them; do not try to reproduce them.
+> Everything not marked `h50` or `hermite` is current.
+
 Two standing rules, stated once and applying to everything below:
 
 * **Quote a number by running `summarise_rows.py`, never by reading a line by eye.** The
@@ -37,9 +48,10 @@ time for a build that has not passed its accuracy gate:
 | a performance step vs the previous step's exported model (forces) | `1e-13` relative |
 
 Tolerances are never loosened. A force differing by more than `1e-13` relative between two
-performance steps is a bug, not a speed-up. `:hermite_spline` is compared to the
-**splinified** model at `1e-12`; its (much larger) error against the **fitted** model is
-*reported*, not asserted. Every recorded result states which reference it used.
+performance steps is a bug, not a speed-up. (`:hermite_spline`, while it existed, was compared
+to the **splinified** model at `1e-12`, with its much larger error against the **fitted** model
+*reported* and not asserted; that split is why the historical Hermite rows below name two
+references.) Every recorded result states which reference it used.
 
 ### Timing conditions
 
@@ -459,6 +471,7 @@ export/bench/compile_bench_libs.sh
 julia --project=export export/bench/gate_bench_libs.jl
 
 # 4. the rows (check /proc/loadavg first; never time on a contended core)
+# (as run at the time; cantor_h50 / tial_h50 are now refused -- the mode was removed)
 for tag in cantor_poly cantor_h50 tial_poly tial_h50; do
   case $tag in cantor*) pace=~/si-ace/spike_yace/cantor/cantor_n10000_exact.yace ;;
                *)       pace=$PWD/bench_parity/tial_o4_pace.yace ;; esac
@@ -500,7 +513,8 @@ exhaustive, so the branch is never taken, and the library grew by 8 136 B (+0.27
 strings. Nothing below was re-timed.
 
 The libraries are `bench_parity/libace_<tag>_b1.so`, exported by
-`verify_bench_models.jl cantor_poly_b1 cantor_h50_b1 tial_poly_b1 tial_h50_b1`
+`verify_bench_models.jl cantor_poly_b1 cantor_h50_b1 tial_poly_b1 tial_h50_b1` (as run at the
+time; the two `h50` tags are now refused)
 (source gate, `bench_parity/verify_b1.log`) and gated by
 `gate_bench_libs.jl` on the same tags (library gates, `bench_parity/gate_libs_b1.log`),
 **both before any of them was timed** — `bench_parity.sh`'s interlock enforces it and every row

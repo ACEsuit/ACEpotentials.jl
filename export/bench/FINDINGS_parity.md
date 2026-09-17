@@ -5,6 +5,13 @@
 checkout *if that checkout is available on this host*. It is not: `~/si-ace/ACEpotentials` is
 an rsync'd copy with no git. This is the plan's own stated fallback location.
 
+**BOTH OPEN QUESTIONS WERE PUT TO THE MAINTAINER AND ANSWERED (2026-09-17).** §7 asked
+whether `:hermite_spline` should be retired and §8 what to do with the inoperable
+minimal-export path. The answer to both was **remove**. Both removals are implemented on this
+branch; §7 and §8 below now carry the answer and what was removed, above the evidence that
+was put to the maintainer. **The evidence is kept, not deleted** — including every Hermite
+measurement, row and gate manifest, which is what the decision rests on.
+
 **What it updates.** Two findings of 2026-09-15 — one on correctness, one on where the time
 goes — written against `acesuit/lammps-export` at 075d3859. **They are quoted inline below
 rather than linked**: they live in the controller's working directory, which is not part of
@@ -69,9 +76,11 @@ Both predictions held.
 
 - **The pair term is exported.** `max|dF|` against the full `(E0, pair, ETACE)` stack went
   from **6.878706 eV/Å to 2.966e-14 eV/Å**.
-- **`:hermite_spline` dispatches correctly for `NZ ≥ 2`**, is labelled approximate everywhere
-  it is documented, and now **refuses** the one configuration (per-pair cutoffs) whose
-  reference model cannot even be evaluated.
+- **`:hermite_spline` dispatched correctly for `NZ ≥ 2`**, was labelled approximate everywhere
+  it was documented, and refused the one configuration (per-pair cutoffs) whose reference
+  model cannot even be evaluated. **It has since been removed outright** (§7) — the figures
+  quoted for it throughout this document are historical measurements of a mode that no longer
+  ships, and they are what the removal was decided on.
 - **The plan's acceptance gate — ≤ 1.2x `pace recursive` per core, both reference models,
   exact `:polynomial` — is met with margin, a task early.** Cantor and TiAl figures are in §1.
   Cantor `:polynomial` went from **511.8 to 58.1 µs/site**, past the plan's own 150 µs/site
@@ -90,8 +99,13 @@ One thing did not pay, and ships off:
   `aa_products=:dag` is opt-in. **The negative result is the deliverable**, not a failure to
   hide: it is the clearest instance of the rule that an optimisation must show on both boxes.
 
-Two questions are put to the maintainer rather than decided here: whether `:hermite_spline`
+Two questions were put to the maintainer rather than decided here: whether `:hermite_spline`
 should be **retired** (§7), and what to do with the **inoperable minimal-export path** (§8).
+**Both were answered "remove", and both removals are on this branch.** `:hermite_spline` and
+with it the splinify-for-export route are gone; the minimal C ABI, its LAMMPS plugin, its two
+committed `.o` files and the half of `docs/C_INTERFACE_API.md` that documented it are gone.
+The `:polynomial` generated source is **byte-identical** across the removal, with
+`EXPORT_BUILD_ID` unchanged on both benchmark models, so nothing above needs re-timing.
 
 ---
 
@@ -109,7 +123,7 @@ protocol is in [`README.md`](README.md); the rows are in
 | baseline (Task 4 generator) | 511.8 | **7.918x** | 429.6 | **2.300x** |
 | B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.488x** | 281.7 | **1.504x** |
 | **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.893x** | **94.0** | **0.505x** |
-| `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.967x | 152.5 | 0.816x |
+| `:hermite_spline`, `Nspl = 50`, at B2 *(historical — mode since REMOVED, §7)* | 62.5 | 0.967x | 152.5 | 0.816x |
 | `pair_style pace recursive` (comparator, the **baseline tag's** own pool) | 64.6 | 1.00 | 186.8 | 1.00 |
 
 **The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.893x and 0.505x** —
@@ -437,14 +451,23 @@ garbage collector from the hot path whether or not it is the cause here.
 1. **The Julia runtime ships beside LAMMPS.** ~20 MB of `libjulia` and support libraries on
    `LD_LIBRARY_PATH`. No Julia process starts and no Julia code is interpreted, but the runtime
    is not removable. Unchanged by this work and not addressable inside it.
-2. **`:hermite_spline` is approximate by construction** (§2) — and, since B2, also *slower*
-   than the exact mode on both reference models. See §7.
+2. ~~**`:hermite_spline` is approximate by construction** (§2) — and, since B2, also *slower*
+   than the exact mode on both reference models.~~ **CLOSED by removal (§7).** One thing went
+   with it that was not a Hermite property: `test_multispecies.jl` carried a
+   `@test_throws BoundsError` locking the upstream `EquivariantTensors._spl_grid` crash —
+   splinifying a model with per-pair cutoffs produces a model that cannot be EVALUATED, not
+   merely one that cannot be exported. That test existed only because a Hermite export needed
+   an evaluable reference, so it was deleted with the rest; **the upstream bug is real,
+   unfixed, and now has nothing in this repository guarding it.** It is recorded here so it
+   is not lost: `_spl_grid` (`embed/transsplines.jl:200-207`) clamps `y` to `[x0, x1]` and
+   then reads knots `il+1, il+2`, which at `y == x1` is knot `NX + 1`. Worth raising
+   upstream; out of scope here, where `EquivariantTensors` may not be modified.
 3. **`ace_site_basis` is kept and works.** Task 7 proposed dropping it; it was kept, because
    the ABI is consumed by `ase-ace` and the plugin and silently removing an exported symbol is
    a breaking change the spec did not authorise. The `A2BMAP_*`/`WB_*` constants it needs are
    emitted **only** when `for_library = true`, and the energy/force path no longer goes through
    `B` at all. Cost: a few KB of unused constants in libraries that never call it.
-4. **The minimal-export path is inoperable.** See §8 — a maintainer decision.
+4. ~~**The minimal-export path is inoperable.**~~ **CLOSED by removal (§8).**
 5. **The CI changes were verified locally, never on a hosted runner.** Every CI fix in Task 3 —
    including the artifact gap that made the pair-bearing 1e-10 LAMMPS gate *error* rather than
    run — was checked on this host by moving files aside and watching the job fail with a named
@@ -461,15 +484,13 @@ garbage collector from the hot path whether or not it is the cause here.
      committed and re-run, while the `:flat` column reproduced within run-to-run spread. The
      correction *strengthened* the conclusion. **Quote protocol rows, not the micro-profile**:
      its ratios are stable, its absolutes are not.
-7. **`export/examples/etace_lammps_tutorial.jl:310` still lists "Splinify BEFORE export" as a
-   key step.** The tutorial is internally consistent — it exports with
-   `radial_basis=:hermite_spline`, so it does not error — but that generic imperative now
-   contradicts `export/README.md`, whose quick start was corrected precisely because the
-   splinify-then-default-export sequence is a hard error. It is a pre-existing line, and which
-   way it should read depends on the answer to §7: if the fit-on-splines workflow is kept, the
-   imperative wants qualifying; if `:hermite_spline` is retired, the tutorial goes with it.
-   **Recorded rather than edited, so the maintainer decides it alongside the retirement
-   question.**
+7. ~~**`export/examples/etace_lammps_tutorial.jl:310` still lists "Splinify BEFORE export" as a
+   key step.**~~ **CLOSED by the §7 removal**, which is the branch this item said the answer
+   depended on. The tutorial no longer splinifies at all: its Step 6 now explains why
+   `splinify()` must NOT be called before an export, its Step 7 exports with no
+   `radial_basis` keyword, and its summary step 4 reads "Do NOT splinify". Its deployment
+   path is now exact end to end, where before it carried the splinification error and said
+   so.
 8. **`benchmark/accuracy_test.jl:69` and `benchmark/julia_benchmark.jl:77`** call
    `export_ace_model` with `radial_basis=:spline` and `n_spline_samples` — neither the symbol
    nor the keyword exists, and both scripts fail immediately. Pre-existing rot; `benchmark/` is
@@ -528,7 +549,7 @@ branch; **ship** items are real but do not block a merge. None is dropped silent
 | 4 | an in-code comment said the 1e-12 gate is "~20x" the measured divergence; it is ~23.5x | **fixed** — the text no longer makes the claim. |
 | 5 | `export/ase-ace/README.md:255` "Unix Sockets (Faster for Local)" — an unmeasured comparative heading | **ship, but flagged.** Same genre as the "3–4x faster" claim Task 2 deleted repo-wide. Pre-existing, and socket-vs-JuliaCall was never in scope to measure. It should either be measured or lose the word. |
 | 6 | `@test s.d_se == snp.d_se` — exact equality between two independently measured maxima | **ship.** Correct today; it will break on an unrelated SpheriCart or compiler change rather than on the regression it guards. Worth relaxing to a relative comparison when someone next touches that file. |
-| 7 | `test_multispecies.jl:265` asserts on a literal error-message substring | **ship.** A reword breaks the test loudly, which is the acceptable direction. |
+| 7 | `test_multispecies.jl:265` asserts on a literal error-message substring | **ship, and it did exactly what was predicted.** The §7 removal reworded both refusals; the assertions broke loudly and were updated with them, which is the whole reason the direction is acceptable. The rewritten file still asserts on substrings, for the same reason. |
 | 8 | `verify_bench_models.jl` wrote a literal `source_gate=PASS` | **fixed.** Now derived from the three measured maxima. `check_export` throws first, so the literal was in fact always true — but "printed rather than computed" is the shape of two real defects already found here, and deriving it is one line. |
 | 9 | `model_sha256` is recorded in the gate manifest and read by nothing | **ship.** Library↔source provenance is carried by `EXPORT_BUILD_ID`/`ace_build_id`, which *is* checked (`runtests.jl` refuses the library groups on a mismatch); `model_sha256` is a human-readable duplicate. |
 | 10 | a failed series emits empty statistic fields beside its `FAILED` marker | **ship.** The row says `FAILED`, `bench_parity.sh` exits nonzero, and `summarise_rows.py` does not match such a row at all. |
@@ -542,7 +563,7 @@ branch; **ship** items are real but do not block a merge. None is dropped silent
 | 18 | the README provenance note sits ~107 lines below the rows it describes | **fixed.** Moved to the rows. |
 | 19 | Task 7's report quotes a third, unlogged profile run in its µs table | **ship.** The committed log holds two runs and the README quotes ranges across all three; the conclusion does not depend on which is quoted, and §5.6 tells readers not to quote the profile's absolutes at all. |
 | 20 | CI changes never confirmed on a hosted runner | **ship — but see §5.5.** It cannot be closed without pushing, and nothing is pushed. |
-| 21 | the minimal-export path is inoperable | **maintainer's call — §8.** |
+| 21 | the minimal-export path is inoperable | **fixed — removed.** The maintainer chose §8's option 2; see §8. |
 | 22 | `_bad_handle()` has no rate limit | **ship — §5.8.** |
 
 Three further deferrals from the ledger were closed inside the plan and are recorded here only
@@ -554,10 +575,68 @@ in this tree and the new stamp caught it).
 
 ---
 
-## 7. Question 1 for the maintainer: should `:hermite_spline` be retired?
+## 7. Question 1: should `:hermite_spline` be retired? — **ANSWERED: REMOVE**
 
-**The case for retiring it is far stronger than it was, and exactly one structural argument
-against survives. The decision is the maintainer's; here is the evidence.**
+**The maintainer read this section and answered "remove", taking the second horn of the
+question as it is stated below: the mode goes, and splinify-for-export goes with it. The
+removal is implemented on this branch. The evidence below is unchanged — it is why.**
+
+### What was removed, and what a user with a splinified model should do
+
+The mode. `radial_basis=:hermite_spline` now raises a removal error naming the remedy;
+`radial_basis` survives, accepting `:polynomial` only, because every existing call site
+passes it, and it is documented as vestigial. Anything else raises the unknown-mode error it
+always did.
+
+With it: `generate_hermite_spline_code` / `hermite_pair_rows` (codegen.jl),
+`extract_hermite_spline_data` / `HermiteSplineData` (the file that held them, `splinify.jl`,
+is renamed `pair_index.jl` — what survived was never about splines), and
+`_check_hermite_uniform_cutoffs` / `_agnesi_pair_rcut` / `_write_spline_radial_basis_header`
+(write_radial.jl). Three test groups (`hermite`, `hermite_cantor`, `hermite_accuracy`), the
+Hermite cases inside `test_multispecies.jl` and `test_generator_parity.jl`, the `*_h50` bench
+tags, and eleven Hermite-only scratch scripts. `ACEpotentials.ETModels.splinify` is
+**untouched**: it is only its export path that is gone.
+
+**A splinified model can no longer be exported at all**, and the refusal says so in those
+words. That is not a new restriction on `:polynomial` — it always refused, because
+`splinify()` leaves no recurrence to emit — it is the loss of the one route such a model had.
+
+> **What to do if you hold a splinified model.** Export the model **as it was before
+> `splinify()` was applied**, with the default. That export is exact, is gated at 1e-12
+> against the fitted model throughout the test suite, handles a dense/learned radial-mixing
+> tensor and per-pair cutoffs, and is **faster** than the spline export was (58.1 vs 62.5
+> µs/site on Cantor, 94.0 vs 152.5 on TiAl). Keep the unsplinified model and its fitted
+> parameters; that pair is what you deploy.
+>
+> If your parameters were fitted *after* `splinify()` — the fit-on-splines workflow, so that
+> no unsplinified model carries them — **that representation has no exporter any more and the
+> model must be refitted unsplinified.** This is the one real cost of the decision, and it is
+> the cost the question below priced: the fit-on-splines route was the single argument that
+> survived, and retiring it was the answer.
+
+**Byte-identity.** The shipped `:polynomial` generated source is byte-identical across the
+removal and `EXPORT_BUILD_ID` is unchanged on both benchmark models (`cantor_poly` 383506 B
+`0x2cfebebf9f5051cb`, `tial_poly` 541808 B `0x06bb278d69cdd0f8`), so every timing row and
+every compiled library above still measures the current generator.
+
+One thing was left deliberately wrong: generated model files carry a comment naming "the
+Hermite knot tables PAIR_k_F / PAIR_k_G", tables that no longer exist. Correcting one
+character of emitted text changes `EXPORT_BUILD_ID` for every model file and invalidates the
+committed gate manifests and the rows taken against libraries compiled from the old id — and
+byte-identity is the acceptance condition for a removal whose whole claim is that it moved
+nothing. It is flagged in place, to be fixed by the next change that legitimately moves the
+build id.
+
+**Nothing measured was deleted.** `bench/artefacts/`, the `*_h50_*` gate manifests, the
+Hermite rows in the tables here and in `README.md`, the `tial_h50` figures inside
+`test_generator_parity.jl`'s `virial_tol` derivation and `gate_bench_libs.jl`'s
+measured-headroom block: all kept, all labelled as historical measurements of a mode that no
+longer ships. They are the evidence the removal rests on, and in `virial_tol`'s case they
+also justify a ceiling that is still enforced.
+
+---
+
+**The evidence, as it was put to the maintainer, follows unchanged.**
 
 ### It has lost every advantage it was kept for
 
@@ -611,7 +690,8 @@ than substituting silently, which is correct. So:
 > dropping support for deploying splinified models.**
 
 And there is one workflow where that matters and the approximation vanishes entirely: **fitting
-*after* splinification**, the recipe written out in the header of `export/src/splinify.jl`. Fit
+*after* splinification**, the recipe that was written out in the header of
+`export/src/splinify.jl` (that file is now `pair_index.jl` and the recipe went with the mode). Fit
 on the splines and the splinified model *is* the fitted model — the Hermite export then
 reproduces its own reference at 1e-12 and there is no model error at all. (No runnable example
 in this repository follows that order: `examples/etace_lammps_tutorial.jl` and
@@ -633,19 +713,45 @@ faster than the approximate one. So the question is narrower than "retire or kee
 > - **If no:** retire `:hermite_spline` and `splinify`-for-export together, in one deprecation.
 >   Retiring the mode alone would leave `splinify()` producing models that nothing can export.
 
-**Nothing here retires it.** Removing a documented, exported mode is a product decision, and
-the spec explicitly chose to keep it fixed and non-default — so it is kept. What *was* required
-and is done: the README, the mode table **and `export_ace_model`'s own docstring** — the copy a
-user reads at the REPL — state plainly, with the measured numbers, that as of B2 Hermite is
-**both slower and approximate** on both reference models, so that nobody selects it for speed.
-(The docstring was the last to be fixed: until this round it still recommended Hermite for
-"learned radials with a small `N_POLYS`", the justification §7 establishes is empty, and
-carried no speed figure at all — so this claim was true of the README and false of the
-docstring at the time it was first written.)
+**As this section stood when it went to the maintainer, nothing here retired it** — removing
+a documented, exported mode is a product decision, and the spec had explicitly chose to keep
+it fixed and non-default. What the branch did instead was make the README, the mode table and
+`export_ace_model`'s own docstring state plainly, with the measured numbers, that Hermite was
+both slower and approximate, so nobody would select it for speed.
+
+**The maintainer answered "no" to the question above — the fit-on-splines workflow is not to
+be kept as a deployable path — and both halves of the second bullet are therefore done in one
+change: the mode and `splinify`-for-export are retired together.** See the top of this
+section for exactly what was removed and what a user with a splinified model should do.
 
 ---
 
-## 8. Question 2 for the maintainer: the minimal-export path
+## 8. Question 2: the minimal-export path — **ANSWERED: REMOVE**
+
+**The maintainer read this section and chose option 2 below: remove the whole minimal path.
+It is implemented on this branch.**
+
+Removed: `export/lammps/plugin/src/pair_ace_minimal.{cpp,h}`, `aceplugin_minimal.cpp`,
+`CMakeLists_minimal.txt`, `build_minimal.sh`, the two **committed `.o` build products**
+beside them (`lib/aceplugin_minimal.o`, `lib/pair_ace_minimal.o` — the only tracked binaries
+this work has touched), `export/lammps/examples/in.ace_minimal_test`,
+`export/lammps/test/test_lammps_minimal.jl`, and the
+"C Interface API for Minimal Export" half of [`../docs/C_INTERFACE_API.md`](../docs/C_INTERFACE_API.md),
+whose surviving header now records that a second ABI existed and what happened to it.
+
+One file was removed that this section had not listed:
+**`export/lammps/test/test_lammps_direct.jl`**. Its docstring says "Direct LAMMPS test for
+ACE/Minimal plugin"; checked before deleting, it `include`s `src/export_ace_model_minimal.jl`
+(absent since `0372f90d`), calls `export_ace_model_minimal`, loads `libaceminimal.so` and
+runs `pair_style ace/minimal`. It is minimal-only in every line that matters and could not
+have run.
+
+Nothing that works referenced any of it: the main plugin's `CMakeLists.txt` never mentioned
+the minimal sources, and no surviving file references a deleted one (checked per file).
+
+---
+
+**The evidence, as it was put to the maintainer, follows unchanged.**
 
 **It does not work in this tree, and it did not work before this plan started.**
 
@@ -657,7 +763,7 @@ nothing, carrying a copy of the `ace_site_*` entry points **without the workspac
 precisely the stale ABI that the tagged handles now exist to reject. Leaving it in place was a
 standing invitation to copy the wrong signatures into new code.
 
-Two coherent outcomes, and it is the maintainer's choice which:
+Two coherent outcomes were put, and the second was chosen:
 
 1. **Restore it against the current ABI.** Every evaluation entry point takes `void *ws` first;
    `ace_workspace_new` / `ace_workspace_free` / `ace_max_workspaces` must exist; handles are
@@ -670,8 +776,7 @@ Two coherent outcomes, and it is the maintainer's choice which:
    [`../docs/C_INTERFACE_API.md`](../docs/C_INTERFACE_API.md). It is a separate build that the
    main plugin's CMake does not reference, so removing it touches nothing that works.
 
-Until that is decided, the documentation says at the top of that file that there are two ABIs
-and that the second one's implementation is gone. **Nothing in this branch depends on it.**
+Nothing in this branch depended on it, which is why removing it touched nothing that works.
 
 ---
 
