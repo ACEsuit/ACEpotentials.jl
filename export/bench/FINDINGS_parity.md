@@ -74,8 +74,8 @@ Both predictions held.
   reference model cannot even be evaluated.
 - **The plan's acceptance gate — ≤ 1.2x `pace recursive` per core, both reference models,
   exact `:polynomial` — is met with margin, a task early.** Cantor and TiAl figures are in §1.
-  Cantor `:polynomial` went from **512.2 to 58.1 µs/site**, past the plan's own 150 µs/site
-  target; TiAl `:polynomial` from 424.6 to 92.8.
+  Cantor `:polynomial` went from **511.8 to 58.1 µs/site**, past the plan's own 150 µs/site
+  target; TiAl `:polynomial` from 429.6 to 94.0.
 - **The blindness is gone too**, and that is the half of this work that will age best. The
   export suite went from 43 tests, several of which asserted nothing, to **32 549 passing across
   ten groups, with every group required to have actually run** (380 of them outside the DAG

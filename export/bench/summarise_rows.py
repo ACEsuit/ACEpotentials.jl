@@ -196,7 +196,7 @@ def main(argv=None):
     # a 3-run block is one whose first two were not.  "Exclude spread > 3 %" therefore meant
     # "discard every block for which the protocol's own remedy was invoked", and the median the
     # protocol says to report was never reported.  On the TiAl box that was most blocks:
-    # Task 8's `tial_poly` took 19 runs across 7 blocks and 4 were admitted.
+    # Task 8's `tial_poly` took 22 runs across 8 blocks and four were admitted.
     #
     # It also was not neutral.  All three TiAl figures moved the flattering way under it.  A
     # selection rule that discards the protocol's own output and whose bias favours the author

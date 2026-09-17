@@ -82,8 +82,8 @@ When exporting, choose the radial basis representation:
 
 | Mode | Accuracy | Reference it reproduces | Speed, µs/site (Cantor / TiAl) | Status | Use case |
 |------|----------|-------------------------|---|--------|----------|
-| `:polynomial` | **exact** (1e-12 in energy, forces and virial) | the **fitted** model | **58.1 / 92.8** | **default** | any model that has not been splinified |
-| `:hermite_spline` | approximate: 2.7e-4 eV/Å at `Nspl=50`, 3e-6 eV/Å at `Nspl=200` on the Cantor model; **1.6e-2 eV/Å** on the TiAl order-4 model | the **splinified** model | 62.5 / 152.5 (**7 % / 64 % slower**) | opt-in | a model that was *fitted after* `splinify()` — the only case it can be exported at all |
+| `:polynomial` | **exact** (1e-12 in energy, forces and virial) | the **fitted** model | **58.1 / 94.0** | **default** | any model that has not been splinified |
+| `:hermite_spline` | approximate: 2.7e-4 eV/Å at `Nspl=50`, 3e-6 eV/Å at `Nspl=200` on the Cantor model; **1.6e-2 eV/Å** on the TiAl order-4 model | the **splinified** model | 62.5 / 152.5 (**7 % / 62 % slower**) | opt-in | a model that was *fitted after* `splinify()` — the only case it can be exported at all |
 
 > **Do not choose `:hermite_spline` for speed.** As of the per-neighbour kernel it is the
 > **slower** mode on both reference models *and* the approximate one. The speed column is
