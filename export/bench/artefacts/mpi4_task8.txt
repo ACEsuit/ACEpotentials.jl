@@ -1,30 +1,293 @@
-mpi_sanity.sh  2026-09-17 09:27:35  tag=tial_poly_b2 ranks=4 steps=100
-  loadavg 2.37 2.43 1.67 2/667 600867
+###############################################################################
+# Multi-rank sanity, RE-TAKEN 2026-09-17 on a verified quiet host.
+# The first set was invalid: it ran concurrently with a pinned benchmark block of
+# my own (loadavg 2.37/2.96 in its own header), i.e. under exactly the host load it
+# was meant to rule out.  Nothing of mine is running now; mpstat reports 99.7% idle
+# across all cores and loadavg is 0.10.
+###############################################################################
+--- MPI_BIND='<defaults>' repeat 1
+mpi_sanity.sh  2026-09-17 10:04:03  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.31 0.32 0.60 1/667 610728
+  MPI_BIND '<mpirun defaults>'
   lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
   sha256  68742ed29200c8c5
   plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
   mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
   box     box_tial.lmp
-  pair_style ace : procs=4  loop=6.94664s  Pair %varavg=35.1  %total=79.15  Comm %varavg=68.5
+  pair_style ace : procs=4  loop=7.33579s  Pair %varavg=15.8  %total=76.15  Comm %varavg=28.2
     Nlocal:            500 ave         507 max         496 min
     FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:04:03
+    # loadavg 0.31 0.32 0.60 2/668 610737
+    pid 610742: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 610743: 5 thread(s)  cores:   1  17  17  17  17 
+    pid 610744: 5 thread(s)  cores:   2  18  18  18  18 
+    pid 610745: 5 thread(s)  cores:  19   3   3   3   3 
+    # (a count of 0 means the run had already finished -- take more steps)
   mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
-  pace recursive : procs=4  loop=10.6056s  Pair %varavg=5.8  %total=97.79  Comm %varavg=38.7
+  pace recursive : procs=4  loop=10.6968s  Pair %varavg=7.2  %total=96.68  Comm %varavg=39.1
     Nlocal:            500 ave         507 max         496 min
     FullNghs:        56065 ave       56835 max       55618 min
-  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_pace.log
-mpi_sanity.sh  2026-09-17 09:27:58  tag=tial_poly_b2 ranks=4 steps=100
-  loadavg 2.96 2.56 1.73 2/667 601099
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100403_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100403_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100403_psT.txt
+--- MPI_BIND='<defaults>' repeat 2
+mpi_sanity.sh  2026-09-17 10:04:25  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 1.15 0.51 0.65 1/668 610967
+  MPI_BIND '<mpirun defaults>'
   lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
   sha256  68742ed29200c8c5
   plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
   mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
   box     box_tial.lmp
-  pair_style ace : procs=4  loop=6.99181s  Pair %varavg=24.6  %total=79.45  Comm %varavg=48.5
+  pair_style ace : procs=4  loop=7.24803s  Pair %varavg=5.2  %total=76.93  Comm %varavg=9.4
     Nlocal:            500 ave         507 max         496 min
     FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:04:26
+    # loadavg 1.15 0.51 0.65 2/669 610976
+    pid 610980: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 610981: 5 thread(s)  cores:  17  17   1  17  17 
+    pid 610982: 5 thread(s)  cores:   2   2  18   2   2 
+    pid 610983: 5 thread(s)  cores:   3   3  19   3   3 
+    # (a count of 0 means the run had already finished -- take more steps)
   mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
-  pace recursive : procs=4  loop=10.6266s  Pair %varavg=6.3  %total=97.72  Comm %varavg=41.3
+  pace recursive : procs=4  loop=10.5033s  Pair %varavg=0.9  %total=99.42  Comm %varavg=12.6
     Nlocal:            500 ave         507 max         496 min
     FullNghs:        56065 ave       56835 max       55618 min
-  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_pace.log
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100425_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100425_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100425_psT.txt
+--- MPI_BIND='--bind-to core --map-by core' repeat 1
+mpi_sanity.sh  2026-09-17 10:04:48  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 2.12 0.79 0.74 1/667 611204
+  MPI_BIND '--bind-to core --map-by core'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=7.42569s  Pair %varavg=21.8  %total=76.35  Comm %varavg=39.3
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='--bind-to core --map-by core', 2026-09-17 10:04:48
+    # loadavg 2.12 0.79 0.74 2/668 611213
+    pid 611217: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 611218: 5 thread(s)  cores:  17   1   1   1   1 
+    pid 611219: 5 thread(s)  cores:   2  18  18  18  18 
+    pid 611220: 5 thread(s)  cores:  19   3   3   3   3 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.4971s  Pair %varavg=7.3  %total=97.57  Comm %varavg=46.7
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100448_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100448_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100448_psT.txt
+--- MPI_BIND='--bind-to core --map-by core' repeat 2
+mpi_sanity.sh  2026-09-17 10:05:11  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 2.73 1.02 0.82 1/667 611455
+  MPI_BIND '--bind-to core --map-by core'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=7.53632s  Pair %varavg=27.9  %total=75.23  Comm %varavg=48.6
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='--bind-to core --map-by core', 2026-09-17 10:05:11
+    # loadavg 2.73 1.02 0.82 2/668 611464
+    pid 611468: 5 thread(s)  cores:  16  16   0  16  16 
+    pid 611469: 5 thread(s)  cores:   1   1  17   1   1 
+    pid 611470: 5 thread(s)  cores:  18   2   2   2   2 
+    pid 611471: 5 thread(s)  cores:  19   3   3   3   3 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.4931s  Pair %varavg=6.3  %total=98.08  Comm %varavg=45.3
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100511_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100511_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100511_psT.txt
+--- rep 1  MPI_BIND='<defaults>'  settled loadavg=0.31 0.79 0.78 1/668 612588
+mpi_sanity.sh  2026-09-17 10:08:15  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.31 0.79 0.78 1/669 612610
+  MPI_BIND '<mpirun defaults>'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=7.35485s  Pair %varavg=32.1  %total=76.65  Comm %varavg=58.2
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:08:15
+    # loadavg 0.31 0.79 0.78 1/670 612619
+    pid 612623: 5 thread(s)  cores:  16   0   0   0   0 
+    pid 612624: 5 thread(s)  cores:  17   1   1   1   1 
+    pid 612625: 5 thread(s)  cores:   2  18  18  18  18 
+    pid 612626: 5 thread(s)  cores:   3  19  19  19  19 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.4711s  Pair %varavg=4.9  %total=98.12  Comm %varavg=35.4
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100815_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100815_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T100815_psT.txt
+--- rep 1  MPI_BIND='--bind-to core --map-by core'  settled loadavg=0.36 0.75 0.78 1/667 613333
+mpi_sanity.sh  2026-09-17 10:10:38  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.36 0.75 0.78 1/668 613355
+  MPI_BIND '--bind-to core --map-by core'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=7.38947s  Pair %varavg=28.9  %total=75.62  Comm %varavg=50.9
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='--bind-to core --map-by core', 2026-09-17 10:10:38
+    # loadavg 0.36 0.75 0.78 1/669 613364
+    pid 613368: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 613369: 5 thread(s)  cores:  17   1   1   1   1 
+    pid 613370: 5 thread(s)  cores:   2  18  18  18  18 
+    pid 613371: 5 thread(s)  cores:   3   3  19   3   3 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.5188s  Pair %varavg=7.7  %total=96.98  Comm %varavg=44.0
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101038_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101038_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101038_psT.txt
+--- rep 2  MPI_BIND='<defaults>'  settled loadavg=0.36 0.72 0.77 1/667 613941
+mpi_sanity.sh  2026-09-17 10:12:31  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.36 0.72 0.77 1/668 613963
+  MPI_BIND '<mpirun defaults>'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=6.85956s  Pair %varavg=34.3  %total=79.26  Comm %varavg=67.1
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:12:31
+    # loadavg 0.36 0.72 0.77 2/669 613972
+    pid 613976: 5 thread(s)  cores:  16  16   0  16  16 
+    pid 613977: 5 thread(s)  cores:   1  17  17  17  17 
+    pid 613978: 5 thread(s)  cores:  18  18   2  18  18 
+    pid 613979: 5 thread(s)  cores:   3  19  19  19  19 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.616s  Pair %varavg=6.0  %total=97.31  Comm %varavg=36.3
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101231_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101231_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101231_psT.txt
+--- rep 2  MPI_BIND='--bind-to core --map-by core'  settled loadavg=0.32 0.71 0.77 1/669 614589
+mpi_sanity.sh  2026-09-17 10:14:38  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.32 0.71 0.77 1/670 614611
+  MPI_BIND '--bind-to core --map-by core'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=7.05008s  Pair %varavg=35.6  %total=77.45  Comm %varavg=66.0
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='--bind-to core --map-by core', 2026-09-17 10:14:38
+    # loadavg 0.32 0.71 0.77 1/671 614620
+    pid 614624: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 614625: 5 thread(s)  cores:   1   1  17   1   1 
+    pid 614626: 5 thread(s)  cores:  18   2   2   2   2 
+    pid 614627: 5 thread(s)  cores:   3  19  19  19  19 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.4619s  Pair %varavg=5.9  %total=97.65  Comm %varavg=38.1
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101438_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101438_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101438_psT.txt
+--- rep 3  MPI_BIND='<defaults>'  settled loadavg=0.38 0.72 0.78 1/673 615348
+mpi_sanity.sh  2026-09-17 10:17:01  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.38 0.72 0.78 1/674 615370
+  MPI_BIND '<mpirun defaults>'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=6.89208s  Pair %varavg=23.8  %total=79.30  Comm %varavg=46.7
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:17:01
+    # loadavg 0.38 0.72 0.78 1/675 615379
+    pid 615383: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 615384: 5 thread(s)  cores:   1  17  17  17  17 
+    pid 615385: 5 thread(s)  cores:   2   2  18   2   2 
+    pid 615386: 5 thread(s)  cores:   3  19  19  19  19 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.3624s  Pair %varavg=4.6  %total=98.60  Comm %varavg=38.4
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101701_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101701_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101701_psT.txt
+--- rep 3  MPI_BIND='--bind-to core --map-by core'  settled loadavg=0.34 0.71 0.77 1/675 615954
+mpi_sanity.sh  2026-09-17 10:19:08  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 0.34 0.71 0.77 2/676 615976
+  MPI_BIND '--bind-to core --map-by core'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=7.15124s  Pair %varavg=26.1  %total=76.70  Comm %varavg=47.4
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='--bind-to core --map-by core', 2026-09-17 10:19:08
+    # loadavg 0.34 0.71 0.77 1/677 615985
+    pid 615989: 5 thread(s)  cores:   0   0  16   0   0 
+    pid 615990: 5 thread(s)  cores:  17   1   1   1   1 
+    pid 615991: 5 thread(s)  cores:   2  18  18  18  18 
+    pid 615992: 5 thread(s)  cores:   3  19  19  19  19 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.4589s  Pair %varavg=7.0  %total=97.54  Comm %varavg=44.5
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101908_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101908_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T101908_psT.txt
+--- 400-step check, settled
+mpi_sanity.sh  2026-09-17 10:24:43  tag=tial_poly_b2 ranks=4 steps=400
+  loadavg 0.12 0.34 0.59 1/675 617371
+  MPI_BIND '<mpirun defaults>'
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=25.5892s  Pair %varavg=14.8  %total=83.37  Comm %varavg=33.1
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  ps -T census:
+    # ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:24:43
+    # loadavg 0.12 0.34 0.59 2/676 617380
+    pid 617384: 5 thread(s)  cores:   0  16  16  16  16 
+    pid 617385: 5 thread(s)  cores:   1  17  17  17  17 
+    pid 617386: 5 thread(s)  cores:  18  18   2  18  18 
+    pid 617387: 5 thread(s)  cores:   3   3  19   3   3 
+    # (a count of 0 means the run had already finished -- take more steps)
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=42.7774s  Pair %varavg=10.6  %total=97.37  Comm %varavg=64.9
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T102443_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T102443_pace.log
+  ps -T log:   /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_20260917T102443_psT.txt

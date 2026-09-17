@@ -115,7 +115,13 @@ Added by Tasks 6-8:
 * `run_task8_table.sh` — the close-out table in one command. Chooses the plugin per library
   from the library's own symbol table (a pre-B2 library needs the pre-workspace plugin, and
   the two mismatches are loud in opposite directions).
-* `mpi_sanity.sh` — the multi-rank `%varavg` load-balance check, for both pair styles.
+* `mpi_sanity.sh` — the multi-rank `%varavg` load-balance check, for both pair styles, with a
+  `ps -T` thread census of the ranks written beside each screen log. **Run it on a quiet HOST,
+  not merely a quiet core** — it is deliberately unpinned, and Task 8's first attempt was
+  invalidated by running it concurrently with one of this directory's own pinned benchmark
+  blocks. Wait for `/proc/loadavg` to settle between runs; each 4-rank run leaves the 1-minute
+  average above 2 for several minutes afterwards. Result and the three retractions it forced:
+  `FINDINGS_parity.md` §4.
 * `export/test/bytecmp_generator.jl` — generated source vs a reference commit, **byte for
   byte**, with `EXPORT_BUILD_ID` from each.
 * `artefacts/` — the committed copies of the files the close-out numbers are quoted from.

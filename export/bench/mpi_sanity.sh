@@ -74,11 +74,16 @@ mpirun_for() {   # mpirun_for <lmp binary>
 MPIRUN=${ACE_MPIRUN:-$(mpirun_for "$LMP_ACE")}
 [ -x "$MPIRUN" ] || { echo "mpi_sanity.sh: no usable mpirun ($MPIRUN)" >&2; exit 2; }
 
-OUT=${OUT:-$LIBDIR/mpi_sanity_${TAG}.log}
 export OMP_NUM_THREADS=1
+# EVERY RUN KEEPS ITS OWN LOG.  The first version reused two fixed names, so a second
+# invocation overwrote the first and the two runs this script is meant to CONTRAST -- one with
+# mpirun's defaults, one with explicit binding -- were identical in every retained field.  A
+# stamp per invocation makes the retained evidence match the reported claim.
+STAMP=$(date +%Y%m%dT%H%M%S)
 
 echo "mpi_sanity.sh  $(date '+%Y-%m-%d %H:%M:%S')  tag=$TAG ranks=$RANKS steps=$STEPS"
 echo "  loadavg $(cat /proc/loadavg)"
+echo "  MPI_BIND '${MPI_BIND:-<mpirun defaults>}'"
 echo "  lib     $LIB"
 echo "  sha256  $(sha256sum "$LIB" | cut -c1-16)"
 echo "  plugin  $PLUGIN"
@@ -119,15 +124,32 @@ report() {   # report <label> <screen log>
 
 BASE_LD=${LD_LIBRARY_PATH:-}
 export LD_LIBRARY_PATH="$(dirname "$LIB"):/software/easybuild/software/GCCcore/14.3.0/lib64:$HOME/miniconda3/envs/noteable_base_chemistry/lib:/software/easybuild/software/CUDA/12.9.1/lib64:$BASE_LD"
-ACE_LOG=$LIBDIR/mpi_sanity_${TAG}_ace.log
+ACE_LOG=$LIBDIR/mpi_sanity_${TAG}_${STAMP}_ace.log
+PS_LOG=$LIBDIR/mpi_sanity_${TAG}_${STAMP}_psT.txt
 rm -f "$ACE_LOG"
 "$MPIRUN" ${MPI_BIND:-} -np "$RANKS" "$LMP_ACE" -in "$HERE/in.bench_ace" -log none -screen "$ACE_LOG" \
-    -var box "$BOX" -var steps "$STEPS" -var lib "$LIB" -var plugin "$PLUGIN" >/dev/null 2>&1
+    -var box "$BOX" -var steps "$STEPS" -var lib "$LIB" -var plugin "$PLUGIN" >/dev/null 2>&1 &
+ACE_PID=$!
+# THE THREAD CENSUS, CAPTURED RATHER THAN ASSERTED.  `OMP_NUM_THREADS=1` does not make a rank
+# single-threaded: the model library embeds the Julia runtime, which starts threads of its own,
+# and mpirun places them by its own policy.  Whether that is happening is the first question to
+# ask about a Pair-time imbalance on balanced work, so the evidence is written to a file beside
+# the screen log instead of being quoted from a terminal.
+{ echo "# ps -T census of the $RANKS ranks, MPI_BIND='${MPI_BIND:-<defaults>}', $(date '+%F %T')"
+  echo "# loadavg $(cat /proc/loadavg)"
+  sleep 6
+  for pid in $(pgrep -P $ACE_PID -f "$(basename "$LMP_ACE")" 2>/dev/null || pgrep -f "$(basename "$LMP_ACE") -in $HERE/in.bench_ace" | head -"$RANKS"); do
+    printf '%s\n' "pid $pid: $(ps -T -p "$pid" --no-headers 2>/dev/null | wc -l) thread(s)  cores: $(ps -T -p "$pid" -o psr= 2>/dev/null | tr '\n' ' ')"
+  done
+  echo "# (a count of 0 means the run had already finished -- take more steps)"
+} > "$PS_LOG" 2>&1
+wait $ACE_PID
 report "pair_style ace " "$ACE_LOG"; RC=$?
+echo "  ps -T census:"; sed 's/^/    /' "$PS_LOG"
 
 if [ -f "$PACEFILE" ]; then
   export LD_LIBRARY_PATH="$(dirname "$LMP_PACE"):$VENV/lib:/software/easybuild/software/CUDA/12.9.1/lib64:/software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/lib:$BASE_LD"
-  PACE_LOG=$LIBDIR/mpi_sanity_${TAG}_pace.log
+  PACE_LOG=$LIBDIR/mpi_sanity_${TAG}_${STAMP}_pace.log
   rm -f "$PACE_LOG"
   PACE_MPIRUN=${ACE_MPIRUN:-$(mpirun_for "$LMP_PACE")}
   echo "  mpirun (pace) $PACE_MPIRUN"
@@ -139,4 +161,5 @@ else
 fi
 
 echo "  screen logs: $ACE_LOG ${PACE_LOG:-}"
+echo "  ps -T log:   $PS_LOG"
 exit $RC

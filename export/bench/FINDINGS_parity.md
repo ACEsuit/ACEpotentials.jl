@@ -146,6 +146,11 @@ whole chain re-measured in one session.
 optimised was the right computation, and every performance step keeps the previous generator's
 exported model as its reference at **1e-13 relative**.
 
+The ratios in the next table are **the per-task figures as each task reported them on its own
+day** — they are the history, not a second measurement of the same thing. The close-out table
+above supersedes all of them and is the one to quote; the two agree to about 1 % (8.15 → 7.92,
+3.51 → 3.49, 0.90 → 0.89, 2.27 → 2.30, 1.54 → 1.50, 0.49 → 0.51).
+
 | step | what it did | Cantor `:polynomial` | TiAl `:polynomial` |
 |---|---|---|---|
 | Task 1 | export the `ETPairModel` term (it had been silently dropped) | correctness; costs **+6.5 %** | — |
@@ -193,9 +198,16 @@ than being deleted.
 
 ## 2. Exactness at every level
 
-Measured on the shipped generator, `aa_products=:flat`, read from the gate manifests
-(`bench_parity/<tag>.gated`, written by `verify_bench_models.jl` and `gate_bench_libs.jl`).
-Forces are absolute eV/Å; energies are per atom unless marked relative.
+Measured on the shipped generator, `aa_products=:flat`. Every figure in the first four rows is
+read from a gate manifest, and those four manifests are committed at
+[`artefacts/gates/`](artefacts/gates/) — written by `verify_bench_models.jl` and
+`gate_bench_libs.jl`, one per shipped library, each naming the library sha256 it belongs to.
+The in-Julia thread row is not a manifest field; its artefact is
+[`artefacts/omp_task8.txt`](artefacts/omp_task8.txt), re-run at this commit (10 assertions,
+bitwise identical, one workspace per task). The LAMMPS-level `OMP_NUM_THREADS=4` row is Task
+6's measurement, recorded in its section of [`README.md`](README.md); it was not re-taken here
+and no Task 8 artefact backs it. Forces are absolute eV/Å; energies are
+per atom unless marked relative.
 
 | level | reference | tol | Cantor `:polynomial` | TiAl `:polynomial` |
 |---|---|---|---|---|
@@ -203,7 +215,8 @@ Forces are absolute eV/Å; energies are per atom unless marked relative.
 | compiled `.so` (Python C API) | the generated Julia | 1e-12 | dE 1.819e-15, dF 4.232e-14 | dE 6.985e-13, dF 5.946e-13 |
 | `pair_style ace` in LAMMPS | the compiled library | 1e-10 | dE 1.273e-14, dF 1.539e-14 | dE 1.513e-12, dF 5.818e-13 |
 | 2 MPI ranks vs 1 | the serial run | 1e-13 rel / 1e-12 abs | dE **0.0**, dF 3.210e-15 | dE **0.0**, dF 5.595e-14 |
-| `OMP_NUM_THREADS=4` vs serial | the serial run | bitwise | dE **exactly 0**, dF 2.96e-15 | dE **exactly 0**, dF 8.59e-14 |
+| 4 threads vs serial, in Julia | the serial run | bitwise | **0.0 / 0.0 / 0.0**, 0 of 48 sites differ | (same test, one model) |
+| `OMP_NUM_THREADS=4` vs serial, through LAMMPS | the serial dump | 1e-12 | dE **exactly 0**, dF 2.96e-15 | dE **exactly 0**, dF 8.59e-14 |
 | generator vs previous generator | the previous commit's export | 1e-13 rel | **bit-identical** | **bit-identical** |
 
 And for `:hermite_spline` (`Nspl = 50`), against the **splinified** model, which is the only
@@ -286,52 +299,70 @@ collection lands at 43.1 MiB — Julia's default collect interval.
 
 ## 4. Multi-rank sanity
 
-4 ranks, the 2000-atom TiAl box, 100 steps, `pair_style ace` against `pair_style pace
-recursive` on the identical box and decomposition. Artefact:
-[`artefacts/mpi4_task8.txt`](artefacts/mpi4_task8.txt); script `export/bench/mpi_sanity.sh`.
+**The imbalance is real and is not host load. Its cause is NOT established, and three claims
+an earlier draft of this section made are withdrawn below.**
 
-| | `Pair` %varavg | `Pair` %total | `Comm` %varavg | loop |
+4 ranks, the 2000-atom TiAl box, `pair_style ace` against `pair_style pace recursive` on the
+identical box and decomposition, each run preceded by a wait for `/proc/loadavg` to fall below
+0.40 so that no run is taken under the decaying load of the one before it. Artefacts:
+[`artefacts/mpi4_task8.txt`](artefacts/mpi4_task8.txt) (the session),
+[`artefacts/mpi_psT/`](artefacts/mpi_psT/) (the thread censuses), script
+`export/bench/mpi_sanity.sh`.
+
+| 100 steps, settled | `Pair` %varavg, three repeats | median | `Pair` %total | loop |
 |---|---|---|---|---|
-| `pair_style ace`, mpirun defaults | **30.9, 35.1** | 73–79 % | 51, 68 | 6.9–7.8 s |
-| `pair_style ace`, `--bind-to core --map-by core` | **12.3, 22.1, 24.6** | 79–85 % | 37–49 | 5.8–7.0 s |
-| `pace recursive`, same box | **4.0, 5.2, 5.8, 6.3, 6.8** | 98 % | 29–42 | 10.6 s |
+| `pair_style ace`, mpirun defaults | **23.8, 32.1, 34.3** | 32.1 | 77–79 % | 6.86–7.35 s |
+| `pair_style ace`, `--bind-to core --map-by core` | **26.1, 28.9, 35.6** | 28.9 | 75–77 % | 7.05–7.39 s |
+| `pace recursive`, defaults | **4.6, 4.9, 6.0** | 4.9 | 97–99 % | 10.36–10.62 s |
+| `pace recursive`, bound | **5.9, 7.0, 7.7** | 7.0 | 98 % | 10.46–10.52 s |
 
-**The plan expected "a few percent, like `pace`'s". It is not a few percent, and the earlier
-finding's attribution of 22–34 % to host load does not survive being tested** — this host was
-quiet and the figure reproduces across runs and rank bindings.
+**What is established.** At 100 steps the exported pair style's `Pair` time varies about **5x
+more across ranks than `pace`'s** on the same box, and this reproduces on a host that is
+demonstrably quiet. **It is not the decomposition**: both styles report `Nlocal` 496–507 and
+`FullNghs` 55 618–56 835, balanced to 1.1 %. So the earlier finding's attribution of its 22–34 %
+to "a shared, loaded host" does not survive: the load was removed and the figure stayed.
 
-**It is not the decomposition.** Both pair styles report the same work split, balanced to
-1.1 %: `Nlocal` 496–507 (ave 500) and `FullNghs` 55 618–56 835 (ave 56 065). The domain
-decomposition is even; what varies is how long a rank spends inside `Pair`.
+**What is not established — and three retractions.** An earlier draft of this section, and the
+commit that introduced it, rested on runs I had taken *concurrently with a pinned benchmark
+block of my own* (`loadavg` 2.37 and 2.96 in their own headers). That is the exact confound
+this section exists to remove. Those runs are discarded and everything above replaces them.
+With the clean data:
 
-**What it is, as far as the evidence goes.** Two things, one demonstrated and one strongly
-indicated:
+1. **"Binding removes about a third of the effect" is WITHDRAWN.** It does not: 28.9 % median
+   bound against 32.1 % unbound, with overlapping ranges. The apparent improvement was an
+   artefact of which contaminated run was compared with which.
+2. **"It does not average out over more steps" is WITHDRAWN.** At 400 steps, settled, `ace`
+   falls to **14.8 %** while `pace` rises to 10.6 % (`Pair` %total rises 77 → 83 %). Much of
+   the 100-step figure therefore looks like a *fixed* per-run cost inside `Pair` — first-touch
+   of the library's tables, or the first collection — rather than a steady-state per-step
+   imbalance. Named as a hypothesis, not a conclusion.
+3. **The "runtime threads collide with other ranks' cores" mechanism is WITHDRAWN as an
+   explanation.** What is retained is the observation that produced it, which is solid: **every
+   rank carries 5 threads at `OMP_NUM_THREADS=1`** — the embedded Julia runtime's — in all ten
+   captured censuses. But on the quiet host those four extra threads sit on a core *distinct*
+   from the rank's own (rank on core 0, threads on 16; rank on 1, threads on 17), not on another
+   rank's. The one census showing two ranks' threads on one core was taken during the
+   contaminated runs.
 
-1. **The ranks are not single-threaded, even at `OMP_NUM_THREADS=1`.** `ps -T` on a live
-   4-rank run shows **1, 3, 5 and 5 threads** across the four ranks — the embedded Julia
-   runtime's own — placed by mpirun's default policy on cores it has also handed to other
-   ranks (two ranks' threads were observed on core 0 simultaneously). This is exactly the
-   check the earlier finding said was worth doing and had not been done. Binding removes about
-   a third of the effect (30.9 → 22.1 %) and takes ~10 % off the loop time.
-2. **The residue looks like independent per-rank garbage collection.** Each rank's library
-   allocates ~`56n + 208` bytes per site call and collects on its own schedule (first
-   collection at 43.1 MiB — measured, §3), with nothing synchronising the four. A pause inside
-   `Pair` on one rank leaves the others waiting in `Comm`, and that is precisely the shape of
-   the data: the per-rank times are **complementary to the millisecond** — min `Pair` 4.989 +
-   max `Comm` 2.832 = 7.82 s = max `Pair` 6.592 + min `Comm` 1.229. The `%varavg` figure is
-   also not stable run to run (12.3 / 22.1 / 24.6 under identical conditions) and does not
-   average out over 4x more steps, which random pauses explain and a systematic per-rank cost
-   difference does not. Restricting the runtime's GC threads (`JULIA_NUM_GC_THREADS=1`) gave
-   18.5 %, the lowest bound figure seen, but on a slower loop — suggestive, not conclusive.
+**The one structural clue that survives**, and the place to start looking: per-rank `Pair` and
+`Comm` times are **complementary to about 0.1 ms**. From the retained log of the third bound
+repeat (`mpi_sanity_tial_poly_b2_20260917T101908_ace.log`): min `Pair` 4.8701 + max `Comm`
+2.2791 = 7.1492 s, max `Pair` 6.1202 + min `Comm` 1.0291 = 7.1493 s, against a loop of
+7.15124 s. Every rank spends the same total time; what differs is how it splits. That is what a
+pause landing on a different rank each time looks like from the others, and each rank's library
+allocates ~`56n + 208` bytes per site call and collects on its own schedule with nothing
+synchronising the four (first collection at 43.1 MiB — measured, §3). **That is a hypothesis
+with a mechanism, not a demonstrated cause**, and the experiment that would settle it is to
+export per-rank `ace_gc_count()` at the end of a run and correlate it with each rank's `Pair`
+time.
 
-**What it does and does not mean.** It is a *throughput* item, not a correctness one: the
-2-rank gate is exact (energy 0.0 relative, forces 5.6e-14) and the 4-rank run computes the same
-physics. Even carrying a 25–35 % imbalance, `pair_style ace` completes the 4-rank loop in 6.9 s
-against `pace`'s 10.6 s. But it will get worse with rank count on a fixed box, and it is the
-clearest remaining performance item after B2 — a bigger one than anything left in the kernel.
-**Recommended next step:** run with explicit binding, and investigate whether the library can
-be made to allocate nothing per site call (the workspace already exists; the ~`56n` is
-per-call temporaries), which would remove the GC from the hot path entirely.
+**What it does and does not mean.** A throughput item, not a correctness one: the 2-rank gate
+is exact (energy 0.0 relative, forces 5.6e-14) and the 4-rank run computes the same physics.
+Even carrying the imbalance, `pair_style ace` completes the 4-rank loop in 6.9–7.4 s against
+`pace`'s 10.4–10.6 s. It should be expected to matter more as rank count rises on a fixed box.
+**Recommended next step:** the per-rank `ace_gc_count()` correlation above, and — independent
+of the diagnosis — reducing the ~`56n` of per-call temporaries to zero, which would remove the
+garbage collector from the hot path whether or not it is the cause here.
 
 ---
 
@@ -368,12 +399,13 @@ per-call temporaries), which would remove the GC from the hot path entirely.
    `export_ace_model` with `radial_basis=:spline` and `n_spline_samples` — neither the symbol
    nor the keyword exists, and both scripts fail immediately. Pre-existing rot; `benchmark/` is
    outside this work's `export/`-only scope, so it is reported, not fixed.
-8. **Multi-rank load balance: `Pair` %varavg is 12–35 %, against `pace`'s 4–7 %** on the same
-   box with the same decomposition (§4). The work is balanced to 1.1 %, so it is the pair
-   style's *time*, not its share of atoms. Demonstrated contributor: the embedded Julia
-   runtime's per-rank threads sharing cores. Indicated contributor: unsynchronised per-rank
-   GC. **This is now the largest performance item left**, larger than anything remaining in
-   the kernel, and it is a throughput cost only — the 2-rank correctness gate is exact.
+8. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
+   5–8 %** on the same box with the same decomposition, on a verified quiet host (§4). The work
+   is balanced to 1.1 %, so it is the pair style's *time*, not its share of atoms. **The cause
+   is not established** — binding does not help, and at 400 steps it falls to 14.8 %. The
+   surviving clue is that per-rank `Pair` and `Comm` are complementary to 0.1 ms. It is a
+   throughput cost only; the 2-rank correctness gate is exact. **It is the largest open
+   performance item**, and §4 names the experiment that would diagnose it.
 9. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
    mismatched-ABI plugin that is a per-atom flood. It is a loud failure rather than a silent one
    — Task 6 confirmed the mismatch surfaces as a clean LAMMPS stop — but it should rate-limit.
@@ -398,7 +430,7 @@ branch; **ship** items are real but do not block a merge. None is dropped silent
 | 9 | `model_sha256` is recorded in the gate manifest and read by nothing | **ship.** Library↔source provenance is carried by `EXPORT_BUILD_ID`/`ace_build_id`, which *is* checked (`runtests.jl` refuses the library groups on a mismatch); `model_sha256` is a human-readable duplicate. |
 | 10 | a failed series emits empty statistic fields beside its `FAILED` marker | **ship.** The row says `FAILED`, `bench_parity.sh` exits nonzero, and `summarise_rows.py` does not match such a row at all. |
 | 11 | `export/lammps/test/compare_dump.py` keeps the absolute per-atom energy convention that gate C rejected | **ship — already documented.** The file carries the derivation of why per-atom is right *for the boxes its callers use*, and what would change it. |
-| 12 | every artefact backing the published rows is untracked | **fixed.** `export/bench/artefacts/` now holds the close-out rows, the session transcript, the byte-comparison log and the MPI log, with a README saying what produced each. The historical `rows_task4…7.txt` remain in the untracked `bench_parity/`; every number quoted from them is superseded by the committed close-out table. |
+| 12 | every artefact backing the published rows is untracked | **fixed for this document's own claims, and only those.** `export/bench/artefacts/` holds the close-out rows, the session transcript, the four shipped gate manifests (§2), the in-Julia thread test (§2), the byte comparison (§3), the MPI session and its `ps -T` censuses and screen logs (§4), and the suite log. **Still untracked:** the historical `rows_task4…7.txt` and every `.gated` manifest for the non-shipped tags, in `bench_parity/`. The per-task sections of `README.md` therefore still quote figures whose artefacts live only on this host; the close-out table supersedes those figures, and §2's numbers are now backed in-tree. |
 | 13 | `M2`'s assertion compares the *emitted* `RNL_USED` against the *emitted* `ABASIS_SPEC`, both derived from one source | **ship.** Recorded at the time as catching a codegen/round-trip divergence, not as proving pruning safety; the parity gate and the 1e-12 export gates do that. |
 | 14 | the `:dag` dedent was not actually fixed, and its comment stated a **false rule** | **fixed** (first commit of this task). The rule is now the one that holds, verified by running it: a leading newline is no defence, because Julia strips the *common* indent; only a column-0 line inside the literal pins it at zero. |
 | 15 | `1.306e-12` should read `1.307e-12` in the three gate comment blocks | **fixed.** It is the number the whole comment turns on. |
