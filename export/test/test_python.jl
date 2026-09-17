@@ -479,4 +479,33 @@ print(f'{max_diff:.2e}')
         max_diff = parse(Float64, strip(result))
         @test max_diff < 1e-10
     end
+
+    # THE DECISIVE liveness check, and the one that cannot pass vacuously.
+    #
+    # It lives in the `python` group, not the `lammps` one, because those are its real
+    # prerequisites: the compiled `.so` and `python3`.  Put in the LAMMPS group it was skipped
+    # on any host without a working `lmp`, even though it needs none -- and a check that exists
+    # to catch a fault every other gate missed is the last one that should be conditional on an
+    # unrelated dependency.
+    #
+    # It drives the library until `ace_gc_count()` says three collections have HAPPENED,
+    # requires every energy, force and virial to stay bitwise equal to the first, and FAILS if
+    # the collections never occur.  ~1.7 s.  `test_lammps.jl`'s 100-step NVE run covers the
+    # real `pair_style ace` path; this covers the lifetime property directly.
+    @testset "library survives its own garbage collector (bitwise, >= 3 collections)" begin
+        script = joinpath(TEST_DIR, "python", "liveness_gc.py")
+        @test isfile(script)
+        out = try
+            read(setenv(`python3 $script $lib_path --gcs 3`, env), String)
+        catch e
+            "LIVENESS_GC FAIL (could not run: $e)"
+        end
+        for line in split(strip(out), '\n')
+            startswith(line, "LIVENESS_GC") && println(line)
+        end
+        @test occursin("LIVENESS_GC PASS", out)
+        # The run must SAY it collected: a `0 collection(s)` line that still printed PASS
+        # would mean the script's own non-triviality gate had been removed.
+        @test !occursin("0 collection(s)", out)
+    end
 end

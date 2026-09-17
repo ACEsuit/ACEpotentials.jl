@@ -426,27 +426,4 @@ include(joinpath(@__DIR__, "check_export.jl"))
         @test std(energies) / natoms < 5.0 / 64
     end
 
-    # THE DECISIVE liveness check, and the one that cannot pass vacuously.  The NVE run above
-    # is sized so that a collection is LIKELY; this one drives the library until
-    # `ace_gc_count()` says three have HAPPENED, requires every result to stay bitwise equal
-    # to the first, and FAILS if the collections never occur.  That non-triviality condition
-    # is the whole point: a liveness check that silently never collected is what let the Task
-    # 6 fault through every gate in this plan.  ~1.7 s.
-    @testset "library survives its own garbage collector (bitwise, >= 3 collections)" begin
-        script = joinpath(TEST_DIR, "python", "liveness_gc.py")
-        @test isfile(script)
-        s = lammps_setup()
-        out = try
-            read(setenv(`python3 $script $(s.lib_path) --gcs 3`, s.env), String)
-        catch e
-            "LIVENESS_GC FAIL (could not run: $e)"
-        end
-        for line in split(strip(out), '\n')
-            startswith(line, "LIVENESS_GC") && println(line)
-        end
-        @test occursin("LIVENESS_GC PASS", out)
-        # The run must SAY it collected; a `0 collection(s)` line that still printed PASS
-        # would mean the script's own gate had been removed.
-        @test !occursin("0 collection(s)", out)
-    end
 end

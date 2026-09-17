@@ -125,8 +125,14 @@ export_ace_model(calc, "model.jl"; radial_basis=:hermite_spline)
 
 ```
 export/
-├── src/                          # Core export functionality
-│   ├── export_ace_model.jl       # Model → trim-compatible code
+├── src/                          # the generator
+│   ├── export_ace_model.jl       # entry point: model -> trim-compatible code
+│   ├── write_radial.jl           #   radial basis + pair term (:polynomial)
+│   ├── codegen.jl                #   solid harmonics + Hermite spline tables
+│   ├── splinify.jl               #   spline extraction and shared pair-index helpers
+│   ├── write_evaluation.jl       #   the per-neighbour evaluation kernel and Workspace
+│   ├── write_c_interface.jl      #   the @ccallable C ABI (workspace pool, handles)
+│   └── build_stamp.jl            #   EXPORT_BUILD_ID / ace_build_id provenance
 │
 ├── lammps/                       # LAMMPS integration
 │   ├── plugin/                   # pair_style ace plugin source

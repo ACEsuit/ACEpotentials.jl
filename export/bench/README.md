@@ -461,34 +461,41 @@ benchmark's own pinned process), `pace recursive` re-run in the same block on th
 > **THESE ROWS PREDATE TASK 6'S FIX ROUNDS, AND THE LIBRARIES HAVE SINCE BEEN REBUILT.**
 > Read this before comparing any row here against an on-disk artefact.
 >
-> The fix rounds added a tagged-and-validated workspace handle to every `ace_site_*` entry,
-> an `ace_gc_count()` diagnostic, and a liveness gate. The libraries in `bench_parity/` were
-> therefore re-exported and re-compiled, so **their `lib_sha256` no longer matches the one
-> recorded in these rows** and their manifests now read `gates=src,lib,lammps,mpi2,live`
-> rather than the `mpi2` the rows quote. That is expected; the rows are tied to the binaries
-> named by the `lib_sha256` *in the row itself*, which is why that field is there.
+> The fix rounds added a tagged, live-slot-validated workspace handle to every `ace_site_*`
+> entry and an `ace_gc_count()` diagnostic. The libraries in `bench_parity/` were therefore
+> re-exported and re-compiled, so **their `lib_sha256` no longer matches the one recorded in
+> these rows** and their manifests now read `gates=src,lib,lammps,mpi2,live` rather than the
+> `mpi2` the rows quote. That is expected; a row is tied to the binary named by the
+> `lib_sha256` **in the row itself**, which is why that field exists.
 >
-> The rows were NOT re-taken, because the handle check is one AND and two compares **once per
-> site** (<1e-5 of ~57 µs). That is measured, not assumed: four control rows on the rebuilt
-> libraries, on the same core, are in **`bench_parity/rows_task6_fix1.txt`** and move
-> **+1.39 % (`cantor_poly`), +1.02 % (`tial_poly`), +0.34 % (`cantor_h50`), +0.42 %
-> (`tial_h50`)** — each inside its own row's run-to-run spread, and not of one sign. The
-> headline speed-ups below are unaffected.
-
-| tag | source gate max&#124;dE&#124;/at / max&#124;dF&#124; / max&#124;dV&#124;/at | A LAMMPS vs Julia | B lib vs Julia | C 2-vs-1 rank (rel E / abs F) |
-|---|---|---|---|---|
-| `cantor_poly_b2` | 1.658e-14 / 1.840e-14 / 1.557e-13 | 1.273e-14, 1.539e-14 | 1.819e-15, 4.232e-14 | 0.000e+00 / 3.210e-15 |
-| `cantor_h50_b2`  | 1.895e-14 / 1.931e-14 / 1.794e-13 | 5.457e-15, 1.690e-14 | 9.095e-15, 3.902e-14 | 0.000e+00 / 2.515e-15 |
-| `tial_poly_b2`   | 2.274e-13 / 5.799e-13 / 6.928e-13 | 1.513e-12, 5.818e-13 | 6.985e-13, 5.946e-13 | 0.000e+00 / 5.595e-14 |
-| `tial_h50_b2`    | 2.695e-13 / 5.357e-13 / 7.379e-13 | 1.746e-12, 5.695e-13 | 0.000e+00, 6.011e-13 | 0.000e+00 / 7.054e-14 |
-
-**TWO PLUGIN BINARIES, and why.** B2 changes the C ABI (every `ace_site_*` takes a workspace
-handle), so the Task 5 plugin cannot call a B2 library and the B2 plugin refuses to load a
-Task 5 one. The B1 rows below are therefore taken with `verify_cantor/plugin_build`
-(Task 5's binary, unchanged) and the B2 rows with `verify_cantor/plugin_build_b2` — the same
-sources except for the ABI change, the same cmake flags, `-DBUILD_OMP=OFF` in both, so the
-comparison is not confounded by an OpenMP scaffolding difference. Every row carries its
-`plugin=` path.
+> The rows were not re-taken. The added per-call work is a tag compare, a range compare and
+> one `WORKSPACE_TAKEN` load, **once per site** (<1e-5 of ~57 µs); the per-edge kernel is
+> untouched. Control rows on **the shipped binaries** (`bench_parity/rows_task6_fix3.txt`,
+> core 31, `pace=none`) measure that rather than assert it:
+>
+> | tag | committed row | controls, median of valid blocks | delta |
+> |---|---|---|---|
+> | `cantor_poly_b2` | 117.06 | **116.86** (n = 6) | **−0.17 %** |
+> | `cantor_h50_b2`  | 127.41 | **128.50** (n = 2) | **+0.85 %** |
+> | `tial_poly_b2`   | 182.65 | **182.28** (n = 6) | **−0.20 %** |
+> | `tial_h50_b2`    | 302.76 | **302.81** (n = 4) | **+0.02 %** |
+>
+> Mixed in sign, and each inside its own row's run-to-run spread.
+>
+> **Two blocks were discarded, and by the protocol's own rule rather than by preference.**
+> A `cantor_h50` block read 147.724 / 127.661 / 126.189 (17 % spread) and a `tial_poly` block
+> 208.560 / 247.063 / 205.358 (20 %); the protocol requires two runs within 3 % and forbids
+> timing on a contended core, and a block whose own runs disagree by 17-20 % fails both. The
+> first `cantor_poly` block of the session (128.774 / 130.424) is stated here rather than
+> discarded, because its internal spread is only 1.3 %: it sits 10 % above the six runs that
+> follow it on the same binary in the same session, and it is the first block after a long
+> idle period. It is recorded as unexplained rather than averaged in.
+>
+> An earlier version of this note reported four deltas taken on an INTERMEDIATE binary
+> (+1.39 / +1.02 / +0.34 / +0.42 %) and described them as "not of one sign", which they were
+> not — all four were positive, which is the shape a small real regression makes. Those rows
+> also predated the `WORKSPACE_TAKEN` load they were quoted as justifying. The table above
+> replaces them: same core, the binaries that ship, and a sign pattern that is actually mixed.
 
 #### The four B2 rows, with `pace recursive` in the same block
 

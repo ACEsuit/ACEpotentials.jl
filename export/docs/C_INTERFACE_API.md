@@ -4,7 +4,7 @@
 
 | | exported/compiled library | minimal export |
 |---|---|---|
-| produced by | `export_ace_model(...; for_library = true)` + `juliac --trim=safe` | *no longer in the tree* -- see the note below |
+| produced by | `export_ace_model(...; for_library = true)` + `juliac --trim=safe` | *no longer in the tree* — see the note below |
 | one model per | shared library (`libace_<model>.so`) | `model_id`, several per process |
 | consumed by | the LAMMPS `pair_style ace` plugin, `ase_ace.ACELibraryCalculator` | in-process Julia embedding |
 | documented in | **[the section immediately below](#compiled-library-abi-ccallable)** | the rest of this file |
@@ -14,13 +14,16 @@ are writing a LAMMPS pair style or a ctypes wrapper against a `.so`, the first i
 want.
 
 **The minimal export's implementation was deleted in Task 6 and its documentation is kept for
-reference only.** `export/src/ace_c_interface.jl` was `include`d by nothing, and the minimal
-plugin (`pair_ace_minimal.cpp`) looks for a differently-named `ace_c_interface_minimal.jl`
-that has never existed in this tree. What it carried was a copy of the `ace_site_*` entry
-points **without the workspace handle** -- precisely the stale ABI that the tagged handles in
-the compiled library now exist to reject -- so leaving it there was a standing invitation to
-copy the wrong signatures. If the minimal path is revived, write it against the ABI documented
-above.
+reference only.** `export/src/ace_c_interface.jl` was `include`d by nothing. The minimal
+plugin (`pair_ace_minimal.cpp`) does not look for it either: it wants
+`ace_c_interface_minimal.jl` via `ACE_C_INTERFACE_PATH`, a *different* file, which did exist
+(added in `728107ac` / `1e88c697`) and was deleted in `0372f90d` — so the minimal path was
+already inoperable in this tree before Task 6 touched anything. What the remaining file
+carried was a copy of the `ace_site_*` entry points **without the workspace handle** —
+precisely the stale ABI that the tagged handles in the compiled library now exist to reject —
+so leaving it there was a standing invitation to copy the wrong signatures. Whether the
+minimal path is restored against the ABI documented above or removed entirely is a
+maintainer's decision, not this task's.
 
 ---
 
@@ -119,6 +122,33 @@ int    ace_get_species(int idx);  /* 1-based; atomic number, or -1 out of range 
 int    ace_get_n_basis(void);
 unsigned long long ace_build_id(void);   /* provenance; see below */
 ```
+
+## Diagnostics (not part of the evaluation contract)
+
+```c
+long long ace_gc_count(void);     /* collections the library's runtime has performed */
+long long ace_alloc_bytes(void);  /* bytes it has allocated */
+```
+
+**These are DIAGNOSTIC. Do not build on them.** They are read-only and cost nothing per call,
+which is why they are exported unconditionally rather than behind a build flag — a gate whose
+precondition depended on how the library was configured would be a worse gate. But their
+meaning is Julia's, not this API's: `ace_gc_count` returns `Base.gc_num().pause`, whose exact
+semantics belong to the Julia version the library was compiled with and may change under it.
+Treat them as "has this number moved?", never as a quantity with a contract.
+
+They exist for one reason. The fault that Task 6's kernel introduced was a workspace reclaimed
+by the library's own garbage collector: it passed every single-evaluation accuracy gate and
+then died in a real run. So "has this test driven the library hard enough to collect at all?"
+is a question a liveness check must be able to *ask*, and no amount of arithmetic about
+bytes-per-site answers it reliably — two attempts at that arithmetic were wrong, in opposite
+directions. `export/test/python/liveness_gc.py` drives the library until `ace_gc_count()`
+reports N collections, requires every result to stay bitwise identical, and fails if the
+collections never happen.
+
+Measured on `libace_cantor_poly_b2.so`: a site call at 72–88 neighbours allocates about
+`56n + 208` bytes, and the first collection lands at **43.1 MiB** — which is Julia's default
+collect interval, `5600 · 1024 · sizeof(void*)` = 43.75 MiB.
 
 ## Version and provenance checks
 

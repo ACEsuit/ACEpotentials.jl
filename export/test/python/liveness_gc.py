@@ -24,7 +24,15 @@ WHAT IT ASSERTS
      occasionally wrong, and only an exact comparison catches the occasional one reliably.
   3. The workspace handle is still accepted at the end (it was not invalidated by a GC).
 
-    liveness_gc.py <libace.so> [--gcs N] [--neigh N] [--max-calls N]
+    liveness_gc.py <libace.so> [--gcs N] [--neigh N] [--max-calls N] [--max-seconds S]
+
+WHAT IT DOES NOT COVER, because a gate is more useful when its blind spots are written down.
+It calls only `ace_site_energy_forces_virial`, with ONE workspace, ONE geometry and a FIXED
+`n = 72`.  A lifetime fault confined to `ace_site_energy`, `ace_site_basis` or `ace_batch_*`,
+one that needs two workspaces live at once, or one that only appears at a neighbour count in a
+different allocation size class, would not be seen here.  Gates A/B/C and the LAMMPS NVE run
+(L2) cover the other entry points and a real trajectory; the OpenMP comparison covers
+concurrent workspaces.
 
 Prints one `LIVENESS_GC PASS` / `FAIL` line last, greppable by a caller that wants a verdict.
 """
@@ -45,35 +53,48 @@ def main(argv=None) -> int:
     ap.add_argument("--gcs", type=int, default=3, help="collections to require (default 3)")
     ap.add_argument("--neigh", type=int, default=72, help="neighbours per synthetic site")
     ap.add_argument("--max-calls", type=int, default=20_000_000)
+    # A wall-clock bound as well as a call bound.  Without it a library that never collects
+    # spends 15-20 minutes reaching --max-calls before failing; the whole point of this gate
+    # is that it answers in seconds (3 collections take 1.7 s on the Cantor library).
+    ap.add_argument("--max-seconds", type=float, default=120.0)
     ap.add_argument("--label", default="LIVENESS_GC")
     a = ap.parse_args(argv)
 
     lib = ctypes.CDLL(a.library)
-    for name, (res, args) in {
+
+    # Resolve EVERY symbol first, and report a missing one as a verdict rather than as a
+    # traceback.  The first version bound the required symbols in a bare loop and only
+    # guarded ace_gc_count, so a pre-workspace library raised
+    # `AttributeError: undefined symbol: ace_workspace_new` before the message explaining
+    # what to do could ever print.  It failed closed, but unhelpfully.
+    wanted = {
         "ace_workspace_new": (ctypes.c_void_p, []),
         "ace_workspace_free": (None, [ctypes.c_void_p]),
         "ace_get_cutoff": (ctypes.c_double, []),
         "ace_get_n_species": (ctypes.c_int, []),
         "ace_get_species": (ctypes.c_int, [ctypes.c_int]),
-    }.items():
-        f = getattr(lib, name)
+        "ace_gc_count": (ctypes.c_longlong, []),
+        "ace_alloc_bytes": (ctypes.c_longlong, []),
+        "ace_site_energy_forces_virial": (ctypes.c_double, [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
+            ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_double),
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]),
+    }
+    missing = []
+    for name, (res, args) in wanted.items():
+        try:
+            f = getattr(lib, name)
+        except AttributeError:
+            missing.append(name)
+            continue
         f.restype, f.argtypes = res, args
-    try:
-        lib.ace_gc_count.restype = ctypes.c_longlong
-        lib.ace_gc_count.argtypes = []
-        lib.ace_alloc_bytes.restype = ctypes.c_longlong
-        lib.ace_alloc_bytes.argtypes = []
-    except AttributeError:
-        print(f"{a.label}: library exports no ace_gc_count() -- it predates the liveness "
-              f"diagnostic; re-export and re-compile it")
+    if missing:
+        print(f"{a.label}: {a.library} exports none of: {', '.join(missing)}.  A library that "
+              f"predates the workspace API or the liveness diagnostic cannot be checked by "
+              f"this gate -- re-export and re-compile it with the current "
+              f"export_ace_model.jl.")
         print(f"{a.label} FAIL")
         return 2
-
-    lib.ace_site_energy_forces_virial.restype = ctypes.c_double
-    lib.ace_site_energy_forces_virial.argtypes = [
-        ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
-        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_double),
-        ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
 
     ws = lib.ace_workspace_new()
     if not ws:
@@ -121,7 +142,8 @@ def main(argv=None) -> int:
     t0 = time.time()
     calls = 0
     bad = 0
-    while lib.ace_gc_count() - gc0 < a.gcs and calls < a.max_calls:
+    while (lib.ace_gc_count() - gc0 < a.gcs and calls < a.max_calls
+           and time.time() - t0 < a.max_seconds):
         E = call()
         calls += 1
         if E != E0 or not np.array_equal(F, F0) or not np.array_equal(V, V0):
@@ -138,7 +160,9 @@ def main(argv=None) -> int:
           f"{gcs} collection(s), {dt:.2f} s")
     ok = True
     if gcs < a.gcs:
-        print(f"{a.label}: the library collected {gcs} time(s) in {calls} calls -- "
+        why = ("hit --max-seconds" if dt >= a.max_seconds else
+               "hit --max-calls" if calls >= a.max_calls else "loop ended early")
+        print(f"{a.label}: the library collected {gcs} time(s) in {calls} calls ({why}) -- "
               f"asked for {a.gcs}.  A run that never collected CANNOT see the fault this "
               f"gate exists for, so this is a FAILURE of the check, not a pass.")
         ok = False

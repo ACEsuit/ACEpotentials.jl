@@ -115,6 +115,37 @@ function model_of(tag)
           do NOT let a new tag fall through to an existing model's geometry.""")
 end
 
+raw"""
+    output_is_finite(out) -> Bool
+
+Whether a LAMMPS run's output contains no `nan` / `inf` VALUE.
+
+Deliberately scans the WHOLE output rather than a filtered thermo block, and the history is
+the reason it is a named function with its own test cases (`export/bench/test_assert_ranks.jl`)
+rather than a regex inline at the call site:
+
+  * v1 was `!occursin(r"nan|inf"i, out)`.  A bare `inf` matches LAMMPS' `Neighbor list
+    **inf**o ...`, which every run prints, so it FAILED four healthy libraries.
+  * v2 restricted the scan to lines matching `^\s*\d+(\s+-?[\d.eE+-]+)+\s*$` to keep echoed
+    paths out of it.  That character class contains none of `n`, `a`, `i`, `f`, so it dropped
+    precisely the lines the scan exists to find: a thermo block containing
+    `"        20         nan          nan"` produced no match at all, and the clause became an
+    assertion that could not fail.  Two opposite failures of the same three lines of regex.
+
+v3 is the whole output with lookarounds that exclude letters AND digits on both sides, which
+is what the second review pointed out would have answered the original complaint by itself:
+
+  * `Neighbor list info` -- `inf` is followed by `o`, a letter: no match.
+  * `jl_3nan7` (a mktempdir name) -- `nan` is preceded by `3` and followed by `7`: no match.
+  * `        20         nan          nan` -- surrounded by spaces: MATCH.
+  * `-inf`, `-nan`, `NaN`, `INF` -- match (case-insensitive, and `-` is not excluded).
+
+Every one of those is a case in `test_assert_ranks.jl`; the two historical failures are cases
+too, so neither can come back unnoticed.
+"""
+output_is_finite(out::AbstractString) =
+    match(r"(?<![A-Za-z0-9])(nan|inf)(?![A-Za-z0-9])"i, out) === nothing
+
 const PLUGIN = get(ENV, "PLUGIN", joinpath(REPO, "verify_cantor", "plugin_build", "aceplugin.so"))
 const MPIRUN = let c = get(ENV, "ACE_MPIRUN", "")
     !isempty(c) ? c :
@@ -306,23 +337,16 @@ for tag in TAGS
     run 100
     """
     outL = run_lmp(exe, env, live_input, joinpath(work, "liveness.lmp"))
-    # The finiteness scan is restricted to the THERMO BLOCK.  Scanning the whole output is
-    # doubly wrong: a bare `inf` matches LAMMPS' "Neighbor list **inf**o ...", which every run
-    # prints (the first version of this check failed four healthy libraries for that reason
-    # alone), and a `mktempdir` path echoed into the log can contain the letters by accident.
-    thermo = join([l for l in split(outL, '\n')
-                   if occursin(r"^\s*\d+(\s+-?[\d.eE+-]+)+\s*$", l)], "\n")
-    live_nonfinite = match(r"(?<![A-Za-z0-9])(nan|inf)(?![A-Za-z0-9])"i, thermo)
     l2_ok = !occursin("ERROR", outL) && !occursin("LAMMPS_EXIT_NONZERO", outL) &&
-            occursin("Loop time of", outL) && live_nonfinite === nothing
+            occursin("Loop time of", outL) && output_is_finite(outL)
     l2_ok || error("""[$tag] LIVENESS (L2) FAILED -- the library did not survive 100 NVE steps
-          through pair_style ace on the $(CELLS)^3 cell.
+          through pair_style ace on the $(CELLS)^3 cell, or its energies went non-finite.
           LAMMPS output:
           $outL""")
-    @printf("[%s] L2 liveness (LAMMPS) : 100 NVE steps completed, thermo energies finite\n", tag)
+    @printf("[%s] L2 liveness (LAMMPS) : 100 NVE steps completed, energies finite\n", tag)
     live_ok = l1_ok && l2_ok
 
-    # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------    # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------
+    # ---------------- B. the library through the Python C API vs Julia, 1e-12 ------------
     penv = copy(env)
     penv["ACE_LIB_PATH"] = lib
     penv["ACE_GEOM"] = geom
