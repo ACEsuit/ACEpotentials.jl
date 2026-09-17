@@ -112,9 +112,18 @@ const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolu
 # fails, and an old generator that never `include`s it does not want it.  This cannot hide a
 # real omission -- the NEW generator runs from the working tree, not from git, and an old
 # generator missing a file it does `include` fails loudly on that `include`.
+#
+# `build_stamp.jl` IS ONE OF THEM, and its absence from this list was a live defect until
+# Task 7 hit it.  `export_ace_model.jl` has `include("build_stamp.jl")` as its FIRST include
+# since commit 9af0a438; that commit is a DESCENDANT of ff1d87a0, the reference Task 6 used,
+# so the omission was invisible then and made this gate unrunnable against every commit from
+# 9af0a438 onward:
+#     LoadError: SystemError: opening file "/tmp/acegen_XXXXXX/build_stamp.jl"
+# i.e. all six cases ERROR before a single number is compared.  A gate that cannot construct
+# its own reference is the failure mode this file's header warns about, one level down.
 const GENERATOR_FILES = ("export_ace_model.jl", "write_radial.jl", "write_evaluation.jl",
                          "write_c_interface.jl", "codegen.jl", "splinify.jl",
-                         "symmprod_dag.jl")
+                         "build_stamp.jl", "symmprod_dag.jl")
 
 """
     parity_ref_sha() -> String
