@@ -126,6 +126,94 @@ end
     @info "tial DAG" nodes=length(dt.nodes) leaves=dt.num1 flat_AA=length(acet.model.basis.aabasis)
 end
 
+"""
+Flat AA values and the flat pullback, for an arbitrary spec (`Int[]` allowed).  Independent of
+`symmprod_dag.jl` -- it is the thing the DAG has to reproduce.
+"""
+function flat_ref(spec, A::Vector{T}, ct::Vector{T}) where {T}
+    AA = [isempty(b) ? one(T) : prod(A[i] for i in b) for b in spec]
+    E = sum(ct[k] * AA[k] for k in eachindex(spec))
+    ∂A = zeros(T, length(A))
+    for (k, b) in enumerate(spec), (t, i) in enumerate(b)
+        p = ct[k]
+        for (u, j) in enumerate(b); u == t || (p *= A[j]); end
+        ∂A[i] += p
+    end
+    return AA, E, ∂A
+end
+
+@testset "has0 (a CONSTANT AA term): the paths no real model reaches" begin
+    # WHY THIS EXISTS.  `SparseSymmProd.hasconst` is true only when the AA specification
+    # contains the empty tuple, and no ACEpotentials model construction emits a 0-correlation
+    # AA term -- so both benchmark models, and every model in this suite, are `hasconst =
+    # false`.  The DAG's constant node, its `+has0` leaf offset and `reconstruct_dag_spec`'s
+    # `n1 - has0` therefore have NO coverage from anything else here, and a future model with
+    # a constant term would exercise an off-by-one with nothing to notice.
+    #
+    # WHAT THIS DOES AND DOES NOT COVER.  It covers the BUILDER and the reference kernels --
+    # which are written to mirror the emitted loops statement for statement -- plus the one
+    # `has0`-dependent index expression the generator emits (`_dag_leaf_ix`).  It does NOT
+    # cover a compiled library with a constant AA term, because no model in this repository
+    # can produce one; that remains uncovered and is stated as such in the task report.
+
+    # the emitted index expression, both values
+    @test _dag_leaf_ix(0) == "i"
+    @test _dag_leaf_ix(1) == "1 + i"
+
+    rng = MersenneTwister(11)
+    for (label, spec) in (
+        ("hasconst", [Int[], [1], [2], [3], [4], [1,1], [1,2], [2,3], [3,4], [4,4],
+                      [1,1,2], [1,2,3], [2,3,4], [1,2,3,4], [2,2,3,3]]),
+        ("no const",         [[1], [2], [3], [4], [1,1], [1,2], [2,3], [3,4], [4,4],
+                      [1,1,2], [1,2,3], [2,3,4], [1,2,3,4], [2,2,3,3]]))
+        dag = SymmProdDAG(spec)
+        has0 = dag.has0 ? 1 : 0
+        @test dag.has0 == (label == "hasconst")
+        @test dag.num1 == 4
+        @testset "$label: layout" begin
+            has0 == 1 && @test dag.nodes[1] == (0, 0)
+            for i in 1:dag.num1
+                @test dag.nodes[has0 + i] == (has0 + i, 0)
+            end
+            for i in (has0 + dag.num1 + 1):length(dag.nodes)
+                n1, n2 = dag.nodes[i]
+                @test 1 <= n1 < i
+                @test 1 <= n2 < i
+                # the constant node is never a parent: partition blocks are non-empty, so no
+                # node is ever built out of the empty multiset.
+                has0 == 1 && @test n1 != 1 && n2 != 1
+            end
+        end
+        @testset "$label: reconstruct_dag_spec (the n1 - has0 path)" begin
+            rspec = reconstruct_dag_spec(dag)
+            has0 == 1 && @test rspec[1] == Int[]
+            for i in 1:dag.num1
+                @test rspec[has0 + i] == [i]        # the off-by-one this guards
+            end
+            for k in eachindex(spec)
+                @test rspec[dag.projection[k]] == spec[k]
+            end
+        end
+        @testset "$label: forward, energy and pullback" begin
+            for _ in 1:20
+                A = randn(rng, 4)
+                ct_flat = randn(rng, length(spec))
+                AA, E, ∂A = flat_ref(spec, A, ct_flat)
+                AAd = evaluate_dag(dag, A)
+                has0 == 1 && @test AAd[1] == 1.0
+                for i in 1:dag.num1
+                    @test AAd[has0 + i] == A[i]     # the leaf offset _dag_leaf_ix emits
+                end
+                @test maximum(abs.(AA .- AAd[dag.projection])) <= 1e-12 * maximum(abs.(AA))
+                ct = dag_ctilde(dag, ct_flat)
+                @test abs(dot(ct, AAd) - E) <= 1e-12 * max(abs(E), 1.0)
+                ∂A_dag = pullback_dag(dag, ct, AAd)
+                @test maximum(abs.(∂A_dag .- ∂A)) <= 1e-12 * max(maximum(abs.(∂A)), 1.0)
+            end
+        end
+    end
+end
+
 @testset "aa_products = :flat is the default and emits no DAG" begin
     fx = load_cantor_fixture()
     f = joinpath(DAG_BUILD, "cantor_flat_default.jl")

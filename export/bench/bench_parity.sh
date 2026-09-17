@@ -70,7 +70,12 @@ case "$BOX" in
 esac
 [ -f "$BOXFILE" ] || { echo "bench_parity.sh: no such box file: $BOXFILE" >&2; exit 2; }
 
-PLUGIN=${PLUGIN:-$REPO/verify_cantor/plugin_build/aceplugin.so}
+# plugin_build_b2, NOT plugin_build: the latter predates the workspace C ABI (Task 6) and
+# makes every ace_site_* call fail the handle check -- `E_pair = nan`, run aborted.  Safe to
+# change: every row since 9af0a438 records `plugin=` explicitly, so no recorded result depends
+# on this default.  See gate_bench_libs.jl for the long version.
+PLUGIN=${PLUGIN:-$REPO/verify_cantor/plugin_build_b2/aceplugin.so}
+[ -f "$PLUGIN" ] || { echo "bench_parity.sh: no plugin at $PLUGIN; set PLUGIN=<aceplugin.so>" >&2; exit 2; }
 LMP_ACE=${LMP_ACE:-$HOME/lammps/lammps-22Jul2025/build/lmp}
 # The ML-PACE comparator build.  NOTE: this is `-acejl`, not the `-mlpace` build the plan's
 # environment notes name.  The -mlpace build's newer ace-evaluator rejects BOTH comparator

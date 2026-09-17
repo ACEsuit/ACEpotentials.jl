@@ -146,7 +146,28 @@ too, so neither can come back unnoticed.
 output_is_finite(out::AbstractString) =
     match(r"(?<![A-Za-z0-9])(nan|inf)(?![A-Za-z0-9])"i, out) === nothing
 
-const PLUGIN = get(ENV, "PLUGIN", joinpath(REPO, "verify_cantor", "plugin_build", "aceplugin.so"))
+# The plugin default is `plugin_build_b2/`, NOT `plugin_build/`.
+#
+# `verify_cantor/plugin_build/aceplugin.so` was built 2026-09-15 and PREDATES the workspace C
+# ABI that landed with Task 6 (b2): it passes no workspace handle, so every `ace_site_*` call
+# in a current library fails the handle check and LAMMPS prints `E_pair = nan` with the run
+# aborting on "Non-numeric variable value".  That is the tagged handle doing its job -- but as
+# a DEFAULT it turns a healthy library into an unexplained gate failure, and it cost Task 7 a
+# full gate round.
+#
+# Changing it invalidates nothing: every row taken since the plugin path became a row field
+# (9af0a438) records `plugin=` EXPLICITLY -- 18/18 in rows_task6.txt, 12/12 in
+# rows_task6_fix3.txt, 13/13 in rows_task7.txt -- so no recorded result depends on this
+# default, and rows_task5.txt predates both the field and the ABI and used the old default
+# correctly for the libraries of its day.
+const PLUGIN = get(ENV, "PLUGIN", joinpath(REPO, "verify_cantor", "plugin_build_b2", "aceplugin.so"))
+isfile(PLUGIN) || error("""
+    no LAMMPS ACE plugin at $PLUGIN.
+    Set PLUGIN=<path to aceplugin.so>.  It must be a build that carries the WORKSPACE C ABI
+    (it calls ace_workspace_new() and passes the handle as the first argument of every
+    ace_site_*/ace_batch_* call).  A pre-Task-6 plugin links and loads, then makes every call
+    fail the handle check: the symptom is `E_pair = nan` and
+    `ERROR: Variable e: Non-numeric variable value in variable formula`.""")
 const MPIRUN = let c = get(ENV, "ACE_MPIRUN", "")
     !isempty(c) ? c :
     something(Sys.which("mpirun"),

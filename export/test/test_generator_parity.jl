@@ -101,6 +101,39 @@ a larger one is `check_export_report` below, which compares the NEW file's viria
 Julia calculator at an absolute 1e-12 per atom on every case (TiAl measures 6.928e-13).
 """
 virial_tol(case::AbstractString) = startswith(case, "tial") ? 3e-13 : PARITY_TOL
+#
+# ============================================================================================
+# THE 1e-12 ABSOLUTE FORCE GATE IS BELOW DOUBLE-PRECISION RESOLUTION ON ILL-CONDITIONED MODELS
+# ============================================================================================
+#
+# READ THIS BEFORE CONCLUDING THAT A CHANGE WHICH JUST MISSES THIS GATE IS WRONG.
+#
+# Measured (Task 7, and re-derived independently by review at 256-bit): on the TiAl order-4
+# benchmark model, evaluated against a BigFloat evaluation of the SAME expressions,
+#
+#   * the intermediate `dA = dE/dA` carries ~1.2e-12 of ABSOLUTE error in Float64 whatever the
+#     association -- its cancellation condition number kappa = sum|contributions| / |dA| is
+#     18.8 (Ti) and 37.7 (Al) on |dA| of 317 and 152, so the floor kappa*eps*|dA| is
+#     1.154e-12 / 1.228e-12;
+#   * the SHIPPED generator's own error against exact arithmetic is 1.306e-12 (Ti) --
+#     LARGER THAN THE 1e-12 GATE IT PASSES.
+#
+# It passes because it shares EquivariantTensors' product association and the two identical
+# roundings cancel.  So on this model the gate measures AGREEMENT WITH THE REFERENCE'S
+# ASSOCIATION, not accuracy: any correctly re-associated evaluation disagrees with the
+# reference by the SUM of two independent ~1.2e-12 errors and reads ~1.7e-12 here.
+#
+# The gate is deliberately UNCHANGED (plan ruling, Task 7 fix round 1): the shipped default
+# passes it, and the only thing it rejects is an evaluation route that was not adopted for
+# independent (performance) reasons.  This note exists so the next person who hits it does not
+# have to re-derive the analysis.  The measurement, the per-species table and the regenerating
+# script are in `.superpowers/sdd/lammps_export_parity_plan/task-7-report.md` section 4b,
+# `export/bench/README.md` ("The TiAl :dag libraries were NOT built and NOT timed") and
+# `export/bench/diag_dA_conditioning.jl`.
+#
+# By contrast the Cantor model's kappa is 2.5-7.1 on |dA| of 10-30, so its floor is ~1e-14 and
+# this gate has three orders of magnitude of headroom there.  The defect is a property of the
+# MODEL, not of the metric everywhere.
 const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolute
 
 # Every source file the generator is made of, ACROSS the commits this gate is ever pointed
@@ -169,12 +202,30 @@ function generator_module(sha::AbstractString)
     tmp = mktempdir(; prefix = "acegen_")
     missing_files = String[]
     for f in GENERATOR_FILES
-        src = try
-            read(`git -C $PARITY_REPO show $sha:export/src/$f`, String)
-        catch
+        # ONLY "this path does not exist at this commit" is tolerated.  A bare `catch` here
+        # would report a bad object, a corrupt repository or a permissions failure as "absent
+        # at this commit" and then run the reference generator with a file silently missing --
+        # which is the same class of defect as the omission this list was widened to fix.
+        err = IOBuffer()
+        out = IOBuffer()
+        ok = success(pipeline(`git -C $PARITY_REPO show $sha:export/src/$f`;
+                              stdout = out, stderr = err))
+        if !ok
+            msg = String(take!(err))
+            # Exactly the two PATH-absent forms git emits.  A bad revision
+            # ("fatal: invalid object name ...") is deliberately NOT in this list: it would
+            # otherwise make every file "absent" and the failure would surface as a confusing
+            # missing-include rather than as "your EXPORT_REF_SHA is wrong".
+            occursin(r"does not exist in|exists on disk, but not in", msg) ||
+                error("""
+                    git show $sha:export/src/$f failed, and NOT because the path is absent at
+                    that commit.  Refusing to treat this as "not part of that generator":
+
+                    $msg""")
             push!(missing_files, f)
             continue        # see GENERATOR_FILES: absent at this commit, so not part of it
         end
+        src = String(take!(out))
         write(joinpath(tmp, f), src)
     end
     isempty(missing_files) ||

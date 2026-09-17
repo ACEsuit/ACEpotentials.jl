@@ -25,6 +25,39 @@
 # |V|) and the residual risk this leaves are in the `check_export_report` docstring below.
 # Both virial figures are printed on every call, each labelled with whether it is gated.
 #
+#
+# ============================================================================================
+# THE 1e-12 ABSOLUTE FORCE GATE IS BELOW DOUBLE-PRECISION RESOLUTION ON ILL-CONDITIONED MODELS
+# ============================================================================================
+#
+# READ THIS BEFORE CONCLUDING THAT A CHANGE WHICH JUST MISSES THIS GATE IS WRONG.
+#
+# Measured (Task 7, and re-derived independently by review at 256-bit): on the TiAl order-4
+# benchmark model, evaluated against a BigFloat evaluation of the SAME expressions,
+#
+#   * the intermediate `dA = dE/dA` carries ~1.2e-12 of ABSOLUTE error in Float64 whatever the
+#     association -- its cancellation condition number kappa = sum|contributions| / |dA| is
+#     18.8 (Ti) and 37.7 (Al) on |dA| of 317 and 152, so the floor kappa*eps*|dA| is
+#     1.154e-12 / 1.228e-12;
+#   * the SHIPPED generator's own error against exact arithmetic is 1.306e-12 (Ti) --
+#     LARGER THAN THE 1e-12 GATE IT PASSES.
+#
+# It passes because it shares EquivariantTensors' product association and the two identical
+# roundings cancel.  So on this model the gate measures AGREEMENT WITH THE REFERENCE'S
+# ASSOCIATION, not accuracy: any correctly re-associated evaluation disagrees with the
+# reference by the SUM of two independent ~1.2e-12 errors and reads ~1.7e-12 here.
+#
+# The gate is deliberately UNCHANGED (plan ruling, Task 7 fix round 1): the shipped default
+# passes it, and the only thing it rejects is an evaluation route that was not adopted for
+# independent (performance) reasons.  This note exists so the next person who hits it does not
+# have to re-derive the analysis.  The measurement, the per-species table and the regenerating
+# script are in `.superpowers/sdd/lammps_export_parity_plan/task-7-report.md` section 4b,
+# `export/bench/README.md` ("The TiAl :dag libraries were NOT built and NOT timed") and
+# `export/bench/diag_dA_conditioning.jl`.
+#
+# By contrast the Cantor model's kappa is 2.5-7.1 on |dA| of 10-30, so its floor is ~1e-14 and
+# this gate has three orders of magnitude of headroom there.  The defect is a property of the
+# MODEL, not of the metric everywhere.
 # The neighbour-set construction follows verify_cantor/chain_cantor.jl:117-123 / 179-194, which
 # is the code that produced verify_cantor/ref_{1..10}.txt -- that script, not any sketch, is the
 # reference for units (plain Å, no Unitful), ordering (NeighbourLists.neigs order) and for the

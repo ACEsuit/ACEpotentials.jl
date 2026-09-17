@@ -121,7 +121,7 @@ Arguments:
 | mode | tensor step | Cantor (order 3, 201 neigh) | TiAl (order 4, 112 neigh) |
 |---|---|---|---|
 | `:flat` (**default**) | flat AA products, sparse `A2Bmap`, `dot(B, WB_iz)`, flat pullback | **57.9 µs/site** | (gated; see below) |
-| `:dag` | binary product DAG + per-species `CTILDE` (the readout folded at export time) | 76.4 µs/site (**1.32x SLOWER**) | not gateable at 1e-12 |
+| `:dag` | binary product DAG + per-species `CTILDE` (the readout folded at export time) | 76.4 µs/site (**1.32x SLOWER**) | not gateable at 1e-12; would be ~1.8x FASTER |
 
 `:dag` replaces the flat AA products with `EquivariantTensors`' `SparseSymmProdDAG`
 construction (ported into `export/src/symmprod_dag.jl` -- read its header for why it is ported
@@ -136,10 +136,13 @@ models:
 
 | phase | Cantor `:flat` | Cantor `:dag` | TiAl `:flat` | TiAl `:dag` |
 |---|---|---|---|---|
-| embed (pass 1) | 20.94 µs | 26.68 | 10.41 | 10.41 |
-| **tensor step** | 13.57 | **8.54** | 59.43 | **25.62** |
-| forces (pass 2) | 28.46 | 36.77 | 15.71 | 15.73 |
-| whole site | 49.64 | 56.37 | 79.90 | **46.70** |
+| embed (pass 1) | 20.82 µs | 31.39 | 10.64 | 10.27 |
+| **tensor step** | 13.49 | **10.98** | 61.92 | **25.18** |
+| forces (pass 2) | 28.50 | 42.67 | 16.70 | 15.54 |
+| whole site | 49.60 | 65.18 | 83.57 | **46.00** |
+
+Regenerated with `export/bench/profile_tensor_step.jl` (log
+`bench_parity/profile_tensor_step.log`).
 
 Passes 1 and 2 are BYTE-IDENTICAL code in the two exports. On TiAl they do not move at all;
 on Cantor they get 27-29 % slower, because a 201-neighbour site runs them either side of the

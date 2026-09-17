@@ -278,6 +278,28 @@ function evaluate_dag(dag::SymmProdDAG, A::AbstractVector{T}) where {T}
 end
 
 """
+    pullback_dag(dag, ct, AAd) -> ∂A
+
+Reference BACKWARD pass, written to mirror `tensor_energy_and_∂A!`'s emitted loops statement
+for statement — seeded by the same `ct` the energy used, two FMAs per node, descending node
+order, and the same `has0` leaf offset.  Test-side only; its purpose is that
+`export/test/test_dag.jl` can exercise the `has0 = true` offsets, which no model in this
+repository reaches (see `_dag_leaf_ix` in `write_evaluation.jl`).
+"""
+function pullback_dag(dag::SymmProdDAG, ct::AbstractVector{T}, AAd::AbstractVector{T}) where {T}
+    n = length(dag.nodes)
+    has0 = dag.has0 ? 1 : 0
+    ∂AAd = collect(T, ct)
+    @inbounds for i = n:-1:(has0 + dag.num1 + 1)
+        w = ∂AAd[i]
+        n1, n2 = dag.nodes[i]
+        ∂AAd[n1] = muladd(w, AAd[n2], ∂AAd[n1])
+        ∂AAd[n2] = muladd(w, AAd[n1], ∂AAd[n2])
+    end
+    return [∂AAd[has0 + i] for i = 1:dag.num1]
+end
+
+"""
     dag_ctilde(dag, ct_flat) -> Vector{Float64}
 
 Scatter a flat readout covector (`A2Bmap' * WB_iz`, one entry per FLAT AA function) onto the

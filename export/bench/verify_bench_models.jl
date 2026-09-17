@@ -38,6 +38,47 @@ include(joinpath(REPO, "export", "test", "fixtures", "tial_fixture.jl"))
 include(joinpath(REPO, "export", "src", "export_ace_model.jl"))
 
 const TAGS = isempty(ARGS) ? ["cantor_poly", "cantor_h50", "tial_poly", "tial_h50"] : ARGS
+
+# Which TENSOR STEP to export.  `:flat` (the generator's default, and the only mode that meets
+# the 1e-12 gate on every benchmark model) unless AA_PRODUCTS=dag is set in the environment.
+# It is an env var and not a tag convention because the tag names are the keys the timing rows
+# and the gate manifests are filed under, and those must not change meaning; the value is
+# written INTO the manifest so a library can never be mistaken for the other variant.
+const AA_PRODUCTS = Symbol(get(ENV, "AA_PRODUCTS", "flat"))
+AA_PRODUCTS in (:flat, :dag) || error("AA_PRODUCTS must be flat or dag, got $AA_PRODUCTS")
+#
+# ============================================================================================
+# THE 1e-12 ABSOLUTE FORCE GATE IS BELOW DOUBLE-PRECISION RESOLUTION ON ILL-CONDITIONED MODELS
+# ============================================================================================
+#
+# READ THIS BEFORE CONCLUDING THAT A CHANGE WHICH JUST MISSES THIS GATE IS WRONG.
+#
+# Measured (Task 7, and re-derived independently by review at 256-bit): on the TiAl order-4
+# benchmark model, evaluated against a BigFloat evaluation of the SAME expressions,
+#
+#   * the intermediate `dA = dE/dA` carries ~1.2e-12 of ABSOLUTE error in Float64 whatever the
+#     association -- its cancellation condition number kappa = sum|contributions| / |dA| is
+#     18.8 (Ti) and 37.7 (Al) on |dA| of 317 and 152, so the floor kappa*eps*|dA| is
+#     1.154e-12 / 1.228e-12;
+#   * the SHIPPED generator's own error against exact arithmetic is 1.306e-12 (Ti) --
+#     LARGER THAN THE 1e-12 GATE IT PASSES.
+#
+# It passes because it shares EquivariantTensors' product association and the two identical
+# roundings cancel.  So on this model the gate measures AGREEMENT WITH THE REFERENCE'S
+# ASSOCIATION, not accuracy: any correctly re-associated evaluation disagrees with the
+# reference by the SUM of two independent ~1.2e-12 errors and reads ~1.7e-12 here.
+#
+# The gate is deliberately UNCHANGED (plan ruling, Task 7 fix round 1): the shipped default
+# passes it, and the only thing it rejects is an evaluation route that was not adopted for
+# independent (performance) reasons.  This note exists so the next person who hits it does not
+# have to re-derive the analysis.  The measurement, the per-species table and the regenerating
+# script are in `.superpowers/sdd/lammps_export_parity_plan/task-7-report.md` section 4b,
+# `export/bench/README.md` ("The TiAl :dag libraries were NOT built and NOT timed") and
+# `export/bench/diag_dA_conditioning.jl`.
+#
+# By contrast the Cantor model's kappa is 2.5-7.1 on |dA| of 10-30, so its floor is ~1e-14 and
+# this gate has three orders of magnitude of headroom there.  The defect is a property of the
+# MODEL, not of the metric everywhere.
 const TOL = 1e-12
 
 results = Dict{String, Any}()
@@ -61,7 +102,8 @@ function do_tag(tag)
     mode = hermite ? :hermite_spline : :polynomial
     file = joinpath(OUT, "$(tag)_model.jl")
 
-    Base.invokelatest(export_ace_model, calc, file; for_library = true, radial_basis = mode)
+    Base.invokelatest(export_ace_model, calc, file; for_library = true, radial_basis = mode,
+                      aa_products = AA_PRODUCTS)
     @printf("[%s] exported %s (%.1f MB, %.0f s)\n", tag, basename(file),
             filesize(file) / 2^20, time() - t0)
     flush(stdout)
@@ -89,6 +131,7 @@ function do_tag(tag)
         println(io, "date=", Dates.format(Dates.now(), "yyyy-mm-ddTHH:MM:SS"))
         println(io, "model_file=$file")
         println(io, "model_sha256=", bytes2hex(open(sha256, file)))
+        println(io, "aa_products=", AA_PRODUCTS)
         println(io, "source_gate_reference=$ref")
         println(io, "source_gate_tol=$TOL")
         @printf(io, "source_gate_dE_per_atom=%.6e\n", dE)

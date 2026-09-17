@@ -74,6 +74,23 @@
 # that indexes the wrong radial slot and is wrong by a smooth, plausible-looking amount.
 
 """
+    _dag_leaf_ix(has0) -> String
+
+The index expression for DAG leaf `i` — i.e. where `A[i]` lives in `AAd`, and where `∂A[i]` is
+read back from `∂AAd`.  ONE function because it is emitted in two places (`dag_forward!` and
+the tail of `tensor_energy_and_∂A!`) and an off-by-one in either is a silently wrong model.
+
+It exists as a named function because it is the ONLY `has0`-dependent index in the generated
+code, and `has0` has no end-to-end coverage: `SparseSymmProd.hasconst` is true only when the
+AA specification contains the empty tuple, and no ACEpotentials model construction produces a
+0-correlation AA term, so neither benchmark model — nor any model in this test suite — reaches
+it.  `export/test/test_dag.jl` therefore tests this function directly against both values and
+exercises the builder and the reference kernels on a SYNTHETIC `hasconst = true` spec.  See
+that file's `has0` testset for what is and is not covered.
+"""
+_dag_leaf_ix(has0::Integer) = has0 == 0 ? "i" : "$has0 + i"
+
+"""
     _ablocks(tensor, pair_rows) -> Vector{Vector{Tuple{Int,Int,Int}}}
 
 For each ORDERED species pair `k`, the list of `(a, s, y)` triples driving both the forward
@@ -473,7 +490,7 @@ end
         println(io, "        AAd[1] = 1.0")
     end
     println(io, """        for i in 1:DAG_NUM1
-            AAd[$(has0 == 0 ? "i" : "$has0 + i")] = A[i]
+            AAd[$(_dag_leaf_ix(has0))] = A[i]
         end
         for j in eachindex(DAG_NODES)
             n1, n2 = DAG_NODES[j]
@@ -504,18 +521,20 @@ end
         "Ei = dot(CTILDE_$iz, AAd)",
         "copyto!(∂AAd, CTILDE_$iz)",
     ])
-    println(io, """    @inbounds for j in length(DAG_NODES):-1:1
+    println(io, """
+    @inbounds for j in length(DAG_NODES):-1:1
         w = ∂AAd[DAG_FIRST - 1 + j]
         n1, n2 = DAG_NODES[j]
         ∂AAd[n1] = muladd(w, AAd[n2], ∂AAd[n1])
         ∂AAd[n2] = muladd(w, AAd[n1], ∂AAd[n2])
     end
     @inbounds for i in 1:DAG_NUM1
-        ∂A[i] = ∂AAd[$(has0 == 0 ? "i" : "$has0 + i")]
+        ∂A[i] = ∂AAd[$(_dag_leaf_ix(has0))]
     end""")
     if dag.num1 < nA
-        println(io, """    # A functions $(dag.num1 + 1):$nA appear in no AA function, so their
-    # cotangent is identically zero; ∂A is WRITTEN rather than accumulated, so say so.
+        println(io, """
+    # A functions $(dag.num1 + 1):$nA appear in no AA function, so their cotangent is
+    # identically zero; ∂A is WRITTEN rather than accumulated, so say so.
     @inbounds for i in $(dag.num1 + 1):N_A
         ∂A[i] = 0.0
     end""")
@@ -532,10 +551,21 @@ end
         # rather than through a ∂B copy.  Folding `A2Bmapᵀ · WB` into a per-species constant
         # is what aa_products = :dag does; it is deliberately NOT done here, so that this path
         # stays the exact expression, in the exact order, that every gate in Tasks 4-6 timed.
+        # EMITTED VERBATIM, COMMENT AND ALL.  This block is what b826c831 emitted; keeping it
+        # character-for-character is what makes the `:flat` output BYTE-IDENTICAL to that
+        # commit's, which in turn keeps `EXPORT_BUILD_ID` stable and every already-compiled
+        # B2 library in step with a regenerated `.jl`.  (Its last sentence now reads as
+        # history -- `ctilde` exists, behind `aa_products = :dag` -- but rewording it would
+        # change the build id for nothing.  Do not tidy it.)
         println(io, """
 # ============================================================================
 # TENSOR STEP: energy readout, and ∂A for the force pass
 # ============================================================================
+#
+# ∂Ei/∂B is the readout weight vector WB itself, so the transposed A2B product is taken
+# directly against WB rather than through a ∂B copy of it.  (Folding A2Bmap' * WB into a
+# per-species constant is Task 7's `ctilde`; it is deliberately NOT done here, so that this
+# task's parity figures attribute only to the kernel restructuring.)
 @inline function _energy_and_∂A!(ws::Workspace, iz0::Int)
     B = _tensor_B!(ws)
     ∂AA = ws.∂AA
@@ -608,16 +638,26 @@ function site_energy!(ws::Workspace, Rs::AbstractVector{SVector{3, Float64}},
     iz0 = z2i(Z0)
     length(Rs) == 0 && return E0_of(iz0)
     Epair = _embed_val!(ws, Rs, Zs, iz0)""")
+    # NOTE ON THE `"""` LITERALS BELOW, and why these are one-line `println`s.
+    #
+    # Julia dedents a triple-quoted string by the common leading whitespace of lines 2..n
+    # WHENEVER LINE 1 CARRIES CONTENT.  `println(io, \"\"\"    B = ...\\n    Emb = 0.0\"\"\")`
+    # therefore emits `    B = ...` followed by `Emb = 0.0` AT COLUMN 0.  That produced the
+    # only textual difference between this generator's `:flat` output and b826c831's, which
+    # is exactly the difference a reviewer has to rule out before believing "unchanged".
+    # A literal whose first line is empty is not dedented (the minimum indent is then taken
+    # over the content lines, and these blocks all contain a column-0 `end`), which is why
+    # the other blocks in this file are safe; these two were not.
     if use_dag
-        println(io, """    Emb = tensor_energy!(ws.AAd, ws.A, iz0)
-    return (Emb + Epair) + E0_of(iz0)
-end""")
+        println(io, "    Emb = tensor_energy!(ws.AAd, ws.A, iz0)")
+        println(io, "    return (Emb + Epair) + E0_of(iz0)")
+        println(io, "end")
     else
-        println(io, """    B = _tensor_B!(ws)
-    Emb = 0.0""")
+        println(io, "    B = _tensor_B!(ws)")
+        println(io, "    Emb = 0.0")
         _emit_species_dispatch_multi(io, NZ, "    ", iz -> ["Emb = dot(B, WB_$iz)"])
-        println(io, """    return (Emb + Epair) + E0_of(iz0)
-end""")
+        println(io, "    return (Emb + Epair) + E0_of(iz0)")
+        println(io, "end")
     end
     println(io, """
 
