@@ -44,7 +44,27 @@ import argparse
 import re
 import sys
 
-ROW = re.compile(r"^(\S+)\s.*natoms=(\d+).*runs\(exec order\)=\s*([-\d. ]+?),\s*spread=([\d.]+)")
+# The ACE half of the row, anchored on `ace_us/site=`.
+#
+# THE ANCHOR IS THE WHOLE POINT, and it was missing.  A row that carries a `pace` comparator
+# ends `... ace_us/site=X (n=2 runs(exec order)= A B, spread=S)  pace_recursive_ms/step(...)=Y
+# pace_us/site=Z (n=3 runs(exec order)= C D E, spread=T)`, and the original pattern's greedy
+# `.*runs\(exec order\)=` matched the LAST one -- so on any row with a comparator this tool
+# reported the ML-PACE runs as if they were the exported code's.  Nothing caught it because
+# `rows_task6_fix3.txt`, the only file the tool was validated against, was taken with
+# `pace=none` on every row; `rows_task5.txt`, `rows_task6.txt` and `rows_task6_full.txt` all
+# contain rows it would have mis-read, and it had never been run on them.  Found by Task 7,
+# whose first block was `cantor_poly_b3` WITH the comparator and came back reading 132 ms/step
+# (the comparator) against a row saying 155.98.
+#
+# Requiring `ace_us/site=` rather than merely making the wildcard lazy means a future row
+# format that moves or renames the ACE half makes this tool FAIL LOUDLY ("no rows matched")
+# instead of quietly picking whichever `runs(...)` it finds first.  Every row that has ever
+# carried `runs(exec order)` also carries `ace_us/site=`; Task 4's pre-fix rows carry neither
+# and were already not matched.
+ROW = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
+                 r"\bace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
+                 r"([-\d. ]+?),\s*spread=([\d.]+)\)")
 EXCL = re.compile(r"^#\s*EXCLUDE\s+(\S+)\s+(.*\S)\s*$")
 
 

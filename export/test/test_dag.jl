@@ -126,10 +126,26 @@ end
     @info "tial DAG" nodes=length(dt.nodes) leaves=dt.num1 flat_AA=length(acet.model.basis.aabasis)
 end
 
+@testset "aa_products = :flat is the default and emits no DAG" begin
+    fx = load_cantor_fixture()
+    f = joinpath(DAG_BUILD, "cantor_flat_default.jl")
+    Base.invokelatest(export_ace_model, fx.stacked, f; radial_basis = :polynomial)
+    src = read(f, String)
+    # The DEFAULT must be the gated, faster :flat tensor step (Task 7 measured :dag at 1.32x
+    # SLOWER on this model end to end, even though its tensor step is 1.6x faster).
+    @test !occursin("const DAG_NODES", src)
+    @test !occursin("const CTILDE_1", src)
+    @test occursin("pullback_aabasis!", src)
+    @test occursin("WB_1", src)
+    @test_throws ErrorException Base.invokelatest(export_ace_model, fx.stacked, f;
+                                                  aa_products = :nonsense)
+end
+
 @testset "exported DAG evaluator is exact" begin
     fx = load_cantor_fixture()
     f = joinpath(DAG_BUILD, "cantor_dag.jl")
-    Base.invokelatest(export_ace_model, fx.stacked, f; radial_basis = :polynomial)
+    Base.invokelatest(export_ace_model, fx.stacked, f;
+                      radial_basis = :polynomial, aa_products = :dag)
     src = read(f, String)
 
     # the DAG constants are there ...

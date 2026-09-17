@@ -114,6 +114,49 @@ Arguments:
 - `filename`: Output filename
 - `for_library=false`: If true, generate a shared library with C interface instead of executable
 - `radial_basis=:polynomial`: Radial basis evaluation method -- see the table below.
+- `aa_products=:flat`: how the AA (symmetric product) step is evaluated -- see below.
+
+# AA product modes (`aa_products`), and why `:flat` is the default
+
+| mode | tensor step | Cantor (order 3, 201 neigh) | TiAl (order 4, 112 neigh) |
+|---|---|---|---|
+| `:flat` (**default**) | flat AA products, sparse `A2Bmap`, `dot(B, WB_iz)`, flat pullback | **57.9 µs/site** | (gated; see below) |
+| `:dag` | binary product DAG + per-species `CTILDE` (the readout folded at export time) | 76.4 µs/site (**1.32x SLOWER**) | not gateable at 1e-12 |
+
+`:dag` replaces the flat AA products with `EquivariantTensors`' `SparseSymmProdDAG`
+construction (ported into `export/src/symmprod_dag.jl` -- read its header for why it is ported
+rather than imported) and folds `A2Bmapᵀ · WB_iz`, a per-species CONSTANT the `:flat` kernel
+recomputes at every site, into `CTILDE_iz`.  The site energy becomes `dot(CTILDE_iz, AAd)` and
+the backward pass is two FMAs per node seeded by the same vector, so `B`, the A2B maps and
+`WB` leave the energy/force path entirely.
+
+**It makes the tensor step much faster and the Cantor model slower, and both were measured**
+(Task 7; `export/bench/README.md`). Per-phase, pinned, pure Julia, one site of the benchmark
+models:
+
+| phase | Cantor `:flat` | Cantor `:dag` | TiAl `:flat` | TiAl `:dag` |
+|---|---|---|---|---|
+| embed (pass 1) | 20.94 µs | 26.68 | 10.41 | 10.41 |
+| **tensor step** | 13.57 | **8.54** | 59.43 | **25.62** |
+| forces (pass 2) | 28.46 | 36.77 | 15.71 | 15.73 |
+| whole site | 49.64 | 56.37 | 79.90 | **46.70** |
+
+Passes 1 and 2 are BYTE-IDENTICAL code in the two exports. On TiAl they do not move at all;
+on Cantor they get 27-29 % slower, because a 201-neighbour site runs them either side of the
+DAG, whose 48 kB of gathered/scattered `AAd`/`∂AAd`/`CTILDE` traffic evicts the per-edge
+tables they depend on. TiAl has 112 neighbours and a tensor step that is 73 % of the site, so
+the DAG's 2.3x there wins outright.
+
+`:dag` additionally cannot be gated at the plan's 1e-12 absolute force tolerance on the TiAl
+order-4 model: re-associating the products moves the exported forces by ~1.7e-12 eV/Å against
+the `ETACEPotential` reference. That is NOT a defect of the DAG -- measured against a BigFloat
+evaluation of the same expressions, both routes' `∂A` sits at `Σ|terms|·eps ≈ 1.2e-12` for
+that model, and `:flat` meets the gate only because it shares the reference's association.
+On Cantor, whose `∂A` conditioning is 5-10x milder, `:dag` is measurably the MORE accurate of
+the two (0.5-2.1x the cancellation floor against `:flat`'s 2.3-3.4x).
+
+So: `:dag` is the right structure for a high-order, many-function, modest-neighbour-count
+model and the wrong one here, and it is available but off.
 
 # Radial basis modes
 
@@ -170,8 +213,11 @@ export_ace_model(calc, "my_model.jl"; for_library=true, radial_basis=:hermite_sp
 function export_ace_model(calc::ETACEPotential, filename::String;
                           for_library::Bool=false,
                           radial_basis::Symbol=:polynomial,
+                          aa_products::Symbol=:flat,
                           E0_dict::Union{Dict{Int,Float64},Nothing}=nothing,
                           pair_calc=nothing)
+    aa_products in (:flat, :dag) ||
+        error("export_ace_model: aa_products must be :flat or :dag, got $aa_products")
 
     # Extract ETACE components from the calculator
     # WrappedSiteCalculator has fields: model, ps, st, rcut
@@ -317,8 +363,10 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # gates measured.  `export/test/runtests.jl:library_build_id` recomputes the id from the
     # `.jl` and refuses to run the library groups against a mismatch.
     # The AA product DAG and the folded readout.  Built once here and handed to both writers
-    # so the constants and the kernel cannot be built from two different DAGs.
-    dag = SymmProdDAG(aa_flat_spec(tensor.aabasis))
+    # so the constants and the kernel cannot be built from two different DAGs.  Built only
+    # when it is going to be emitted: on the TiAl order-4 model it is a few hundred ms of
+    # partition search that a :flat export has no use for.
+    dag = (aa_products == :dag) ? SymmProdDAG(aa_flat_spec(tensor.aabasis)) : nothing
 
     let io = IOBuffer()
         _write_header(io, for_library)
@@ -367,7 +415,8 @@ function export_ace_model(calc::ETACEPotential, filename::String;
 
         _write_spherical_harmonics(io, maxl)
         _write_etace_weights(io, W_readout, NZ, E0_dict, _i2z)
-        _write_evaluation_functions(io, tensor, dag, NZ, pair_calc !== nothing, pair_rows)
+        _write_evaluation_functions(io, tensor, dag, NZ, pair_calc !== nothing, pair_rows;
+                                    aa_products = aa_products)
         if for_library
             _write_c_interface(io, NZ)
         else
@@ -503,7 +552,7 @@ function _write_tensor(io, tensor, dag, W_readout, NZ)
     end
     println(io)
 
-    _write_dag(io, tensor, dag, W_readout, NZ)
+    dag === nothing || _write_dag(io, tensor, dag, W_readout, NZ)
 end
 
 function _write_dag(io, tensor, dag, W_readout, NZ)
