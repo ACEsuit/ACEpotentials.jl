@@ -14,14 +14,13 @@ ACEpotentials.jl is a Julia package for creating and using atomic cluster expans
 
 ### Development Setup
 
-The package requires the ACEregistry to be added before use:
+`ACEpotentials` and all of its dependencies are registered in the `General` registry;
+no additional registry is required (the `ACEregistry` that older versions needed is obsolete,
+and its stale entries break dependency resolution on Julia 1.13+):
 
 ```bash
 # Activate the project
 julia --project=.
-
-# In Julia REPL, add the ACE registry
-] registry add https://github.com/ACEsuit/ACEregistry
 
 # Install dependencies
 ] instantiate

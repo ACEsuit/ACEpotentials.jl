@@ -137,14 +137,12 @@ def setup_julia_environment(
     if julia_project is None:
         julia_project = str(get_julia_project_path())
 
+    # ACEpotentials and every other dependency of the ase-ace Julia project are
+    # registered in General, so no extra registry is added here. The obsolete
+    # ACEregistry used to be added at this point; its stale entries break
+    # dependency resolution on Julia 1.13+.
     setup_code = '''
     using Pkg
-    println("Adding ACE registry...")
-    try
-        Pkg.Registry.add(Pkg.RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-    catch e
-        println("Registry may already exist: ", e)
-    end
     println("Instantiating project...")
     Pkg.instantiate()
     println("Precompiling...")

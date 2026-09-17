@@ -44,10 +44,6 @@ jobs:
       - uses: actions/setup-python@v2
         with: 
           python-version: ${{ matrix.python-version }}
-      - run: |
-          using Pkg
-          Pkg.pkg"registry add https://github.com/ACEsuit/ACEregistry"
-        shell: bash -c "julia --color=yes {0}"
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
@@ -140,10 +136,6 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - run: |
-          using Pkg
-          Pkg.pkg"registry add https://github.com/ACEsuit/ACEregistry"
-        shell: bash -c "julia --color=yes {0}"
       - uses: actions/setup-python@v2
         with:
           python-version: '3.11'

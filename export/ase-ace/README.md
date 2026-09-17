@@ -52,11 +52,10 @@ Install the required Julia packages in the ase-ace Julia environment:
 # Navigate to the ase-ace directory
 cd path/to/ACEpotentials.jl/export/ase-ace
 
-# Install Julia dependencies
+# Install Julia dependencies (all of them are in the General registry;
+# no additional registry is required)
 julia --project=julia -e '
     using Pkg
-    println("Adding ACE registry...")
-    Pkg.Registry.add(Pkg.RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
     println("Installing packages...")
     Pkg.instantiate()
     println("Precompiling (this may take a few minutes)...")

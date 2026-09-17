@@ -8,7 +8,7 @@ If these instructions don't make sense please see the detailed instructions belo
 
 1. Install Julia (1.10) if you haven't already. Make sure the `General` registry is installed and up to date. (or uncomment the relevant line in the script below)
 
-2. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACEpotentials` code requires. Start julia, activate the project and add `ACEregistry` that includes `ACEpotentials`, which is the package that we want to install:
+2. Setup a new project: create a folder to develop your new project, and `cd` into the folder. This folder will track the packages and versions which the `ACEpotentials` code requires. Start julia, activate the project and add `ACEpotentials`, which is the package that we want to install. `ACEpotentials` is registered in the `General` registry, so no additional registry is required:
 
    ```julia
    using Pkg
@@ -16,7 +16,6 @@ If these instructions don't make sense please see the detailed instructions belo
    # uncomment the next line if the General registry is not yet installed,
    # e.g. if using Julia for the first time.
    # Pkg.Registry.add("General")  
-   Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
    Pkg.add("ACEpotentials")
    ```
 
@@ -39,11 +38,11 @@ If you have any difficulties with the following setup process, please file an is
 
 Download and unpack [Julia](https://julialang.org). We require v1.10 or upwards. Add the `julia` executable to your path with something like `export PATH=<julia-directory>/bin:$PATH`.
 
-Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then install the General registry and the [`ACE` registry](https://github.com/ACEsuit/ACEregistry):
+Start the Julia REPL (type `julia` followed by Enter), switch to package manager by typing `]`, then make sure the General registry is installed (it normally is, on a fresh Julia install):
 ```julia
 registry add https://github.com/JuliaRegistries/General
-registry add https://github.com/ACEsuit/ACEregistry
 ```
+`ACEpotentials` and its dependencies are all registered in `General`; no additional registry is needed.
 Press Backspace or `Ctrl-c` to exit the package manager. Use `Ctrl-d`, or `exit()` followed by Enter, to close the Julia REPL.
 
 #### Setting up a new `ACEpotentials.jl` project

@@ -26,10 +26,9 @@ Pkg.add(["LaTeXStrings", "MultivariateStats", "Plots", "PrettyTables",
          ])
 
 ## ACEpotentials installation:  
-## If ACEpotentials has not been installed yet, uncomment the following lines
+## ACEpotentials is registered in the General registry, so no additional
+## registry is needed. If it has not been installed yet, uncomment these lines:
 ## using Pkg; Pkg.activate(".")
-## Add the ACE registry, which stores the ACEpotential package information 
-## Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
 ## Pkg.add("ACEpotentials")
 
 #   We can check the status of the installed packages.
