@@ -223,7 +223,8 @@ ms3_symidx(i, j, NZ) = ET.symidx(i, j, NZ)
         # locked the `EquivariantTensors._spl_grid` BoundsError because a Hermite export of
         # the `:asym` model had no evaluable reference.  There is no Hermite export now, so
         # that lock guarded nothing about this repository's behaviour and went; the upstream
-        # bug is recorded in export/bench/FINDINGS_parity.md §5 instead.
+        # bug is recorded in export/bench/FINDINGS_parity.md §5 item 3 instead, as its OWN open
+        # item rather than a footnote to a closed one -- it is a real unfixed upstream crash.
         #
         # What replaces it is the thing that IS this repository's behaviour: `splinify` still
         # exists and still runs, so a user can still hold a splinified model, and the

@@ -541,7 +541,7 @@ end
 #  * the Agnesi transform parameters are stored per SYMMETRIC pair
 #    (`_convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and the selector is
 #    `catcat2idx_sym`), i.e. NZ*(NZ+1)/2 entries addressed by `symidx`.  The ordered ->
-#    symmetric mapping below goes through the shared `_sym_pair_index` helper (splinify.jl),
+#    symmetric mapping below goes through the shared `_sym_pair_index` helper (pair_index.jl),
 #    exactly as TRANSFORM_PARAMS does.
 #  * the readout weight Wread is per CENTRE species only (shape (1, n_pairbasis, NZ)).
 #
@@ -719,6 +719,13 @@ function _write_no_pair_basis(io)
 end
 
 
+# UNREACHABLE LEGACY -- `_write_radial_basis` (this method and the fallback ~300 lines below)
+# has ZERO CALLERS anywhere in export/.  It is the classic-`ACEModel` spline export from
+# before the ETACE generator; the live path is `_write_etace_radial_basis`.  Its deletion has
+# been put to the maintainer and is NOT part of the :hermite_spline removal
+# (export/bench/FINDINGS_parity.md §7), which took the ETACE spline mode and nothing else.
+# Read the note on the fallback method before touching either: its error message currently
+# gives advice that is the exact OPPOSITE of §7's decision.
 function _write_radial_basis(io, rbasis::ACEpotentials.Models.SplineRnlrzzBasis, NZ)
     println(io, """
 # ============================================================================
@@ -1019,7 +1026,21 @@ function _write_spherical_harmonics(io, maxl)
     println(io)
 end
 
-# Fallback for non-spline basis
+# UNREACHABLE LEGACY -- fallback for the classic-`ACEModel` `_write_radial_basis` above, which
+# has ZERO CALLERS.  Its deletion is with the maintainer; see the marker on the other method.
+#
+# READ THE MESSAGE BELOW BEFORE QUOTING IT ANYWHERE.  It says "Use splinify_first=true or call
+# splinify() on your model first", and BOTH halves are wrong today:
+#
+#   * `splinify_first` has never been a keyword of anything in this repository;
+#   * "call splinify() on your model first" is the exact OPPOSITE of the decision recorded in
+#     export/bench/FINDINGS_parity.md §7 -- a splinified model can no longer be exported at
+#     all, and `export_ace_model` refuses one in a message ~700 lines above this that says so.
+#
+# It is unreachable, so no user can meet it; but anyone grepping `splinify` under export/src/
+# meets it immediately, which is why it is marked rather than left bare.  It is deliberately
+# NOT reworded: this method is a deletion candidate, and rewriting the message of something
+# that is probably about to be deleted would only make the diff harder to read.
 function _write_radial_basis(io, rbasis, NZ)
     error("Only SplineRnlrzzBasis is currently supported for export. Use splinify_first=true or call splinify() on your model first.")
 end

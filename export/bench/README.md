@@ -66,7 +66,7 @@ references.) Every recorded result states which reference it used.
   the first collection — is a visible fraction of a 100-step run. The ratios in this file are
   unaffected, because both pair styles pay their own startup in the same block and the verdicts
   rest on the ratios. But the **µs/site absolutes should not be quoted as steady-state
-  throughput**, for the same reason §5.6 of the finding says not to quote the micro-profile's
+  throughput**, for the same reason §5.7 of the finding says not to quote the micro-profile's
   absolutes. A long-run figure would need a longer run.
 * `cat /proc/loadavg` is recorded immediately before each timing block and quoted with the
   result. This is a shared host: yield to other users, and never time on a contended core.

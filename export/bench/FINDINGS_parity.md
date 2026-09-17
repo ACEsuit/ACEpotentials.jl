@@ -86,10 +86,14 @@ Both predictions held.
   Cantor `:polynomial` went from **511.8 to 58.1 µs/site**, past the plan's own 150 µs/site
   target; TiAl `:polynomial` from 429.6 to 94.0.
 - **The blindness is gone too**, and that is the half of this work that will age best. The
-  export suite went from 43 tests, several of which asserted nothing, to **32 562 passing across
-  ten groups, with every group required to have actually run** (393 of them outside the DAG
+  export suite went from 43 tests, several of which asserted nothing, to **32 462 passing across
+  eight groups, with every group required to have actually run** (293 of them outside the DAG
   group's exhaustive sweep); four pieces of "looked green, asserted nothing"
   coverage were found and fixed *inside the tasks whose job was to remove that class*.
+  (It peaked at **32 562 across ten groups**; the §7 removal took 100 assertions and two
+  groups with it, every one of them Hermite-only -- reconciled testset by testset against
+  `artefacts/suite_task8.txt`, with no non-Hermite assertion lost. The figure above is the
+  current one, because it is the one a reader will re-measure.)
 
 One thing did not pay, and ships off:
 
@@ -452,28 +456,42 @@ garbage collector from the hot path whether or not it is the cause here.
    `LD_LIBRARY_PATH`. No Julia process starts and no Julia code is interpreted, but the runtime
    is not removable. Unchanged by this work and not addressable inside it.
 2. ~~**`:hermite_spline` is approximate by construction** (§2) — and, since B2, also *slower*
-   than the exact mode on both reference models.~~ **CLOSED by removal (§7).** One thing went
-   with it that was not a Hermite property: `test_multispecies.jl` carried a
-   `@test_throws BoundsError` locking the upstream `EquivariantTensors._spl_grid` crash —
-   splinifying a model with per-pair cutoffs produces a model that cannot be EVALUATED, not
-   merely one that cannot be exported. That test existed only because a Hermite export needed
-   an evaluable reference, so it was deleted with the rest; **the upstream bug is real,
-   unfixed, and now has nothing in this repository guarding it.** It is recorded here so it
-   is not lost: `_spl_grid` (`embed/transsplines.jl:200-207`) clamps `y` to `[x0, x1]` and
-   then reads knots `il+1, il+2`, which at `y == x1` is knot `NX + 1`. Worth raising
-   upstream; out of scope here, where `EquivariantTensors` may not be modified.
-3. **`ace_site_basis` is kept and works.** Task 7 proposed dropping it; it was kept, because
+   than the exact mode on both reference models.~~ **CLOSED by removal (§7).** It leaves one
+   thing behind that is NOT closed — see item 3, which is new.
+3. **OPEN, AND NEW: an unfixed upstream `EquivariantTensors` crash now has nothing in this
+   repository guarding it.** `ETModels.splinify` applied to a model with PER-PAIR CUTOFFS
+   produces a model that cannot be **evaluated at all** — not merely one that cannot be
+   exported. `_spl_grid` (`embed/transsplines.jl:200-207`) clamps `y` to `[x0, x1]` and then
+   reads knots `il+1, il+2`; at `y == x1` that is knot `NX + 1`, so any edge beyond a pair's
+   own cutoff but inside the neighbour cutoff throws a `BoundsError`. This is plain Julia
+   behaviour of a function that is still exported and still supported; no export is involved.
+
+   `test_multispecies.jl` carried a `@test_throws BoundsError` that locked it — deliberately,
+   so that the day upstream fixed it the suite would fail and say so. **That test was deleted
+   with the `:hermite_spline` mode** (§7), and correctly: it existed only because a Hermite
+   export of such a model had no evaluable reference to be gated against, and with no Hermite
+   export it asserted nothing about this repository's behaviour. But the bug it described did
+   not go anywhere, and nothing now watches it.
+
+   **This is filed as its own open item, not as a footnote to a struck-out closed one**, on
+   the reviewer's point that a maintainer skimming "what remains open" skips a `CLOSED` entry
+   — and the live claim here is a real unfixed upstream crash, which is not the kind of thing
+   that should be reachable only by reading through a strike-through. Worth raising upstream.
+   It cannot be fixed here: `EquivariantTensors` is outside this work's constraints, and a
+   test for it would belong beside `splinify` in the top-level `src/`, which is also outside
+   them.
+4. **`ace_site_basis` is kept and works.** Task 7 proposed dropping it; it was kept, because
    the ABI is consumed by `ase-ace` and the plugin and silently removing an exported symbol is
    a breaking change the spec did not authorise. The `A2BMAP_*`/`WB_*` constants it needs are
    emitted **only** when `for_library = true`, and the energy/force path no longer goes through
    `B` at all. Cost: a few KB of unused constants in libraries that never call it.
-4. ~~**The minimal-export path is inoperable.**~~ **CLOSED by removal (§8).**
-5. **The CI changes were verified locally, never on a hosted runner.** Every CI fix in Task 3 —
+5. ~~**The minimal-export path is inoperable.**~~ **CLOSED by removal (§8).**
+6. **The CI changes were verified locally, never on a hosted runner.** Every CI fix in Task 3 —
    including the artifact gap that made the pair-bearing 1e-10 LAMMPS gate *error* rather than
    run — was checked on this host by moving files aside and watching the job fail with a named
    reason. Nothing has been pushed, so nothing has run on GitHub. **This is the largest
    unverified item on the branch.**
-6. **Two unexplained timing observations**, both recorded rather than smoothed away, and both
+7. **Two unexplained timing observations**, both recorded rather than smoothed away, and both
    conservative in direction:
    - a single `cantor_poly` block that ran ~10.9 % above the six-run median that followed it,
      with only 1.28 % internal spread. The cold-start hypothesis was **tested over two sessions
@@ -484,18 +502,18 @@ garbage collector from the hot path whether or not it is the cause here.
      committed and re-run, while the `:flat` column reproduced within run-to-run spread. The
      correction *strengthened* the conclusion. **Quote protocol rows, not the micro-profile**:
      its ratios are stable, its absolutes are not.
-7. ~~**`export/examples/etace_lammps_tutorial.jl:310` still lists "Splinify BEFORE export" as a
+8. ~~**`export/examples/etace_lammps_tutorial.jl:310` still lists "Splinify BEFORE export" as a
    key step.**~~ **CLOSED by the §7 removal**, which is the branch this item said the answer
    depended on. The tutorial no longer splinifies at all: its Step 6 now explains why
    `splinify()` must NOT be called before an export, its Step 7 exports with no
    `radial_basis` keyword, and its summary step 4 reads "Do NOT splinify". Its deployment
    path is now exact end to end, where before it carried the splinification error and said
    so.
-8. **`benchmark/accuracy_test.jl:69` and `benchmark/julia_benchmark.jl:77`** call
+9. **`benchmark/accuracy_test.jl:69` and `benchmark/julia_benchmark.jl:77`** call
    `export_ace_model` with `radial_basis=:spline` and `n_spline_samples` — neither the symbol
    nor the keyword exists, and both scripts fail immediately. Pre-existing rot; `benchmark/` is
    outside this work's `export/`-only scope, so it is reported, not fixed.
-9. **`lammps-export` carries nine committed binaries under `benchmark/`, and `main` has none.**
+10. **`lammps-export` carries nine committed binaries under `benchmark/`, and `main` has none.**
    An observation about the base branch, not a defect of this work — but a PR from here into
    `main` would carry them, so it is better seen now than in a diff:
 
@@ -523,14 +541,14 @@ garbage collector from the hot path whether or not it is the cause here.
    outside this plan's `export/`-only scope, and removing someone's committed binaries uninvited
    is not an execution agent's call. The decision — keep, drop, or move to a release artefact —
    belongs to the maintainer, and is worth making before a push rather than after.
-10. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
+11. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
    5–8 %** on the same box with the same decomposition, on a verified quiet host (§4). The work
    is balanced to 1.1 %, so it is the pair style's *time*, not its share of atoms. **The cause
    is not established** — binding does not help, and at 400 steps it falls to 14.8 %. The
    surviving clue is that per-rank `Pair` and `Comm` are complementary to 0.1 ms. It is a
    throughput cost only; the 2-rank correctness gate is exact. **It is the largest open
    performance item**, and §4 names the experiment that would diagnose it.
-11. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
+12. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
    mismatched-ABI plugin that is a per-atom flood. It is a loud failure rather than a silent one
    — Task 6 confirmed the mismatch surfaces as a clean LAMMPS stop — but it should rate-limit.
 
@@ -561,10 +579,10 @@ branch; **ship** items are real but do not block a merge. None is dropped silent
 | 16 | "the `:flat` column reproduces exactly" overstates | **fixed.** It reproduces *within run-to-run spread* — three of four phases inside the tool's own two-run range — while the `:dag` whole-site figure is **3.3x outside** it. |
 | 17 | the byte-comparison script proving byte-identity was never committed | **fixed.** `export/test/bytecmp_generator.jl`, with its log in `artefacts/`. |
 | 18 | the README provenance note sits ~107 lines below the rows it describes | **fixed.** Moved to the rows. |
-| 19 | Task 7's report quotes a third, unlogged profile run in its µs table | **ship.** The committed log holds two runs and the README quotes ranges across all three; the conclusion does not depend on which is quoted, and §5.6 tells readers not to quote the profile's absolutes at all. |
-| 20 | CI changes never confirmed on a hosted runner | **ship — but see §5.5.** It cannot be closed without pushing, and nothing is pushed. |
+| 19 | Task 7's report quotes a third, unlogged profile run in its µs table | **ship.** The committed log holds two runs and the README quotes ranges across all three; the conclusion does not depend on which is quoted, and §5.7 tells readers not to quote the profile's absolutes at all. |
+| 20 | CI changes never confirmed on a hosted runner | **ship — but see §5.6.** It cannot be closed without pushing, and nothing is pushed. |
 | 21 | the minimal-export path is inoperable | **fixed — removed.** The maintainer chose §8's option 2; see §8. |
-| 22 | `_bad_handle()` has no rate limit | **ship — §5.8.** |
+| 22 | `_bad_handle()` has no rate limit | **ship — §5.12.** (It read §5.8 and pointed at the wrong item; that was already wrong before the §7 renumbering, not caused by it.) |
 
 Three further deferrals from the ledger were closed inside the plan and are recorded here only
 so the list is complete: the silent `:polynomial → :hermite_spline` promotion (made a hard

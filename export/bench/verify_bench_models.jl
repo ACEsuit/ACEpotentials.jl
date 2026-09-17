@@ -90,6 +90,21 @@ results = Dict{String, Any}()
 
 function do_tag(tag)
     t0 = time()
+    # REFUSE BEFORE LOADING THE FIXTURE.  `occursin`, not `endswith`: the suffixed tags Tasks
+    # 5-7 introduced (cantor_h50_b1) must be caught too.  This check used to SELECT the
+    # Hermite mode; it now REFUSES, because exporting an h50 tag as :polynomial would file an
+    # exact model's numbers under a name whose whole meaning is "the approximate mode", and
+    # every committed h50 row would then be comparable to it by name and not by content.
+    #
+    # It sits ABOVE the fixture load deliberately: loading the Cantor fixture reads a 1000-
+    # configuration .xyz and is the most expensive thing this script does, and a tag that is
+    # going to be refused should not pay for it.
+    occursin("_h50", tag) && error("""
+        tag '$tag' names the :hermite_spline mode, which was REMOVED
+        (export/bench/FINDINGS_parity.md §7).  A splinified model can no longer be exported,
+        so this tag cannot be regenerated.  The *_h50 rows and .gated manifests already in
+        export/bench/artefacts/ are historical measurements of a mode that no longer ships --
+        read them, do not try to reproduce them.  Use $(replace(tag, "_h50" => "_poly")).""")
     if startswith(tag, "cantor")
         fx = load_cantor_fixture()
     elseif startswith(tag, "tial")
@@ -97,17 +112,6 @@ function do_tag(tag)
     else
         error("unknown tag $tag")
     end
-    # `occursin`, not `endswith`: the suffixed tags Tasks 5-7 introduced (cantor_h50_b1) must
-    # be caught too.  This used to SELECT the Hermite mode; it now REFUSES, because exporting
-    # an h50 tag as :polynomial would file an exact model's numbers under a name whose whole
-    # meaning is "the approximate mode", and every committed h50 row would then be comparable
-    # to it by name and not by content.
-    occursin("_h50", tag) && error("""
-        tag '$tag' names the :hermite_spline mode, which was REMOVED
-        (export/bench/FINDINGS_parity.md §7).  A splinified model can no longer be exported,
-        so this tag cannot be regenerated.  The *_h50 rows and .gated manifests already in
-        export/bench/artefacts/ are historical measurements of a mode that no longer ships --
-        read them, do not try to reproduce them.  Use $(replace(tag, "_h50" => "_poly")).""")
     calc = fx.stacked
     mode = :polynomial
     file = joinpath(OUT, "$(tag)_model.jl")

@@ -11,8 +11,8 @@
 #   cantor_substacks(fx)         -> (onebody_calc, pair_calc, ace_calc)   [by model type name]
 #   cantor_mb_stack(fx)          -> StackedCalculator (E0 + many-body)
 #   (cantor_spline_stack was removed with the :hermite_spline export -- see below)
-#                                (E0 + pair + splinified ETACE; with_pair=false drops the pair)
 #   load_cantor_reference(k)     -> (; natoms, E_a, E_amb, E_bmb, E_c50, E_c200, F_a, ...)
+#                                  NOTE: no callers -- see its docstring before using it
 #   read_cantor_lammps_data(fn)  -> periodic_system
 #
 # `held` is the set of 10 *rotated* held-out geometries read from
@@ -83,10 +83,19 @@ vectors `F_a, F_amb, F_bmb, F_c50, F_c200 :: Vector{SVector{3,Float64}}`, where
   bmb   = ET StackedCalculator (ETOneBody + ETACE)
   c50   / c200 = E0 + splinified ETACE with Nspl = 50 / 200
 
-The `c50` / `c200` columns are still PARSED -- they are columns of the file, and a parser
-that skipped them would drift from it -- but nothing reads them any more: their only consumer
-was `test_hermite_cantor.jl`, deleted with the `:hermite_spline` mode
-(`export/bench/FINDINGS_parity.md` §7).
+**THIS FUNCTION HAS NO CALLERS.** Not "some of its columns are unread" -- nothing in the
+repository calls `load_cantor_reference` at all. Its one caller was `test_hermite_cantor.jl`,
+deleted with the `:hermite_spline` mode (`export/bench/FINDINGS_parity.md` §7), and that
+caller read only `c50`/`c200`; the `a`/`amb`/`bmb` columns were already unread before the
+removal, so NO COVERAGE WAS LOST HERE -- what changed is that the last live column went.
+
+It is kept rather than deleted because `verify_cantor/ref_*.txt` is host-local reference data
+that `chain_cantor.jl` still writes, and this is the only parser for it: someone
+re-establishing a reference chain wants it, and re-deriving a 17-significant-digit column
+layout from scratch is exactly the kind of thing that gets a column silently wrong. It parses
+every column for the same reason -- a parser that skipped the unread ones would drift from the
+file it reads. If a later pass decides host-local reference data has no future here, this
+function goes with it; it is a deliberate keep, not an oversight.
 """
 function load_cantor_reference(k::Integer)
     L = readlines(joinpath(CANTOR_VERIFY, "ref_$k.txt"))

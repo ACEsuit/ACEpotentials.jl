@@ -142,27 +142,104 @@ virial_tol(case::AbstractString) = startswith(case, "tial") ? 3e-13 : PARITY_TOL
 # MODEL, not of the metric everywhere.
 const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolute
 
-# Every source file the generator is made of, ACROSS the commits this gate is ever pointed
-# at.  `export_ace_model.jl` `include`s the others by relative path, so writing them all into
-# one directory is enough to run an old generator unmodified.
+# WHICH SOURCE FILES ARE "THE GENERATOR" AT A GIVEN COMMIT -- DERIVED, NOT LISTED.
 #
-# A file that does not exist at the reference commit is SKIPPED rather than fatal:
-# `symmprod_dag.jl` was added by Task 7, so `git show b826c831:export/src/symmprod_dag.jl`
-# fails, and an old generator that never `include`s it does not want it.  This cannot hide a
-# real omission -- the NEW generator runs from the working tree, not from git, and an old
-# generator missing a file it does `include` fails loudly on that `include`.
+# This was a hand-maintained tuple and it was WRONG TWICE, both times the same way and both
+# times only discovered by a later task:
 #
-# `build_stamp.jl` IS ONE OF THEM, and its absence from this list was a live defect until
-# Task 7 hit it.  `export_ace_model.jl` has `include("build_stamp.jl")` as its FIRST include
-# since commit 9af0a438; that commit is a DESCENDANT of ff1d87a0, the reference Task 6 used,
-# so the omission was invisible then and made this gate unrunnable against every commit from
-# 9af0a438 onward:
-#     LoadError: SystemError: opening file "/tmp/acegen_XXXXXX/build_stamp.jl"
-# i.e. all six cases ERROR before a single number is compared.  A gate that cannot construct
-# its own reference is the failure mode this file's header warns about, one level down.
-const GENERATOR_FILES = ("export_ace_model.jl", "write_radial.jl", "write_evaluation.jl",
-                         "write_c_interface.jl", "codegen.jl", "splinify.jl",
-                         "build_stamp.jl", "symmprod_dag.jl")
+#   * `build_stamp.jl` (Task 7).  `export_ace_model.jl` has `include("build_stamp.jl")` as its
+#     first include since 9af0a438, a DESCENDANT of the reference Task 6 used -- so the
+#     omission was invisible then and made this gate unrunnable against every commit from
+#     9af0a438 onward.
+#   * `pair_index.jl` (the :hermite_spline removal).  `splinify.jl` was renamed to it, the
+#     tuple still said `splinify.jl`, and pointing this gate at any commit from f0e6a129
+#     onward would have failed the same way.
+#
+# Both failures look like this, on EVERY case, before a single number is compared:
+#
+#     LoadError: SystemError: opening file "/tmp/acegen_XXXXXX/<name>.jl"
+#
+# A gate that cannot construct its own reference is the failure mode this file's header warns
+# about, one level down -- so the list is no longer a list.  `generator_files(sha)` reads
+# `export_ace_model.jl` AT THAT COMMIT and follows its `include("...")` lines transitively.
+# The set is then correct by construction for every commit this gate is ever pointed at,
+# including ones that do not exist yet, and it cannot go stale because there is nothing to
+# keep in step.
+#
+# Consequences of deriving rather than listing, both of which are improvements:
+#
+#   * The "absent at this commit is tolerated" rule is GONE.  It existed so that
+#     `symmprod_dag.jl`, added by Task 7, would not be demanded of older commits.  Under
+#     derivation an old generator that never `include`s it is never asked for it, and a file
+#     that IS included and IS missing is a hard error -- which is what it always should have
+#     been.
+#   * A file sitting in `export/src/` that the generator does not include (a diagnostic
+#     script, say) is no longer copied in.  It never belonged in the reference.
+#
+# Only same-directory includes can be honoured, because every file is written flat into one
+# temporary directory; anything else raises rather than being silently skipped.
+
+"""
+    _include_targets(src) -> Vector{String}
+
+The `include` targets of one source file, as bare strings.  A COMMENTED-OUT include does not
+match: the pattern is anchored at `^[ \t]*`, which a leading `#` does not satisfy -- and
+`export_ace_model.jl`'s own header has `#   include("export_ace_model.jl")` in it, so this is
+load-bearing rather than defensive.
+"""
+_include_targets(src::AbstractString) =
+    [m.captures[1] for m in eachmatch(r"^[ \t]*include\(\"([^\"]+)\"\)"m, src)]
+
+"`git show sha:export/src/f`, or `nothing` if and only if that path is absent at that commit."
+function _git_show_src(sha::AbstractString, f::AbstractString)
+    out = IOBuffer(); err = IOBuffer()
+    if success(pipeline(`git -C $PARITY_REPO show $sha:export/src/$f`;
+                        stdout = out, stderr = err))
+        return String(take!(out))
+    end
+    msg = String(take!(err))
+    # Exactly the two PATH-absent forms git emits.  A bad revision ("fatal: invalid object
+    # name ...") is deliberately NOT in this list: it would otherwise read as "that file is
+    # not part of that generator" and surface as a confusing missing-include rather than as
+    # "your EXPORT_REF_SHA is wrong".
+    occursin(r"does not exist in|exists on disk, but not in", msg) || error("""
+        git show $sha:export/src/$f failed, and NOT because the path is absent at that
+        commit.  Refusing to guess:
+
+        $msg""")
+    return nothing
+end
+
+"""
+    generator_files(sha) -> Dict{String,String}
+
+Every source file of the generator at `sha`, mapped to its contents: `export_ace_model.jl`
+plus the transitive closure of its `include("...")` targets. Derived, never listed -- see the
+block above for the two defects that motivated it.
+"""
+function generator_files(sha::AbstractString)
+    files = Dict{String,String}()
+    queue = ["export_ace_model.jl"]
+    while !isempty(queue)
+        f = popfirst!(queue)
+        haskey(files, f) && continue
+        (occursin('/', f) || occursin('\\', f) || startswith(f, ".")) && error("""
+            $sha's generator has include("$f"), which is not a bare same-directory filename.
+            This gate flattens every source file into one temporary directory, so only bare
+            filenames can be honoured.  Teach generator_files about the new layout rather
+            than dropping the file -- a skipped include is the exact defect this function
+            was written to make impossible.""")
+        src = _git_show_src(sha, f)
+        src === nothing && error("""
+            $sha's generator includes "$f", but export/src/$f does not exist at that commit.
+            That is a broken reference, not a file this gate may skip: the reference
+            generator cannot be constructed, so no parity number from it would mean anything.""")
+        files[f] = src
+        append!(queue, _include_targets(src))
+    end
+    @assert haskey(files, "export_ace_model.jl")
+    return files
+end
 
 """
     parity_ref_sha() -> String
@@ -197,50 +274,26 @@ const REF_SHA = parity_ref_sha()
 """
     generator_module(sha) -> Module
 
-A `Module` containing the generator as it was at `sha`.  The six source files are extracted
-with `git show` into a temporary directory (the working tree is never touched, so this is
-safe to run with uncommitted changes -- indeed that is the normal case) and
-`export_ace_model.jl` is `include`d into a fresh module.  Memoised per SHA.
+A `Module` containing the generator as it was at `sha`.  Its source files -- whichever they
+are at that commit; see `generator_files` -- are extracted with `git show` into a temporary
+directory (the working tree is never touched, so this is safe to run with uncommitted changes
+-- indeed that is the normal case) and `export_ace_model.jl` is `include`d into a fresh
+module.  Memoised per SHA.
 """
 const _GEN_CACHE = Dict{String, Module}()
 function generator_module(sha::AbstractString)
     haskey(_GEN_CACHE, sha) && return _GEN_CACHE[sha]
     tmp = mktempdir(; prefix = "acegen_")
-    missing_files = String[]
-    for f in GENERATOR_FILES
-        # ONLY "this path does not exist at this commit" is tolerated.  A bare `catch` here
-        # would report a bad object, a corrupt repository or a permissions failure as "absent
-        # at this commit" and then run the reference generator with a file silently missing --
-        # which is the same class of defect as the omission this list was widened to fix.
-        err = IOBuffer()
-        out = IOBuffer()
-        ok = success(pipeline(`git -C $PARITY_REPO show $sha:export/src/$f`;
-                              stdout = out, stderr = err))
-        if !ok
-            msg = String(take!(err))
-            # Exactly the two PATH-absent forms git emits.  A bad revision
-            # ("fatal: invalid object name ...") is deliberately NOT in this list: it would
-            # otherwise make every file "absent" and the failure would surface as a confusing
-            # missing-include rather than as "your EXPORT_REF_SHA is wrong".
-            occursin(r"does not exist in|exists on disk, but not in", msg) ||
-                error("""
-                    git show $sha:export/src/$f failed, and NOT because the path is absent at
-                    that commit.  Refusing to treat this as "not part of that generator":
-
-                    $msg""")
-            push!(missing_files, f)
-            continue        # see GENERATOR_FILES: absent at this commit, so not part of it
-        end
-        src = String(take!(out))
+    files = generator_files(sha)
+    for (f, src) in files
         write(joinpath(tmp, f), src)
     end
-    isempty(missing_files) ||
-        @info "generator at $sha does not contain $(join(missing_files, ", ")) -- skipped"
+    @info "generator at $sha: $(length(files)) source files" files = join(sort(collect(keys(files))), ", ")
     m = Module(Symbol("Gen_", replace(string(sha), r"[^A-Za-z0-9]" => "_")))
     # `Module(name)` does NOT bring `eval`/`include` with it on Julia 1.12, and
-    # export_ace_model.jl's first act is `include("splinify.jl")`.  Bind them explicitly; the
-    # relative path then resolves against the *including file* (Base's task-local include
-    # stack), i.e. against `tmp`, which is what makes an old generator run unmodified.
+    # export_ace_model.jl's first act is an `include`.  Bind them explicitly; the relative
+    # path then resolves against the *including file* (Base's task-local include stack), i.e.
+    # against `tmp`, which is what makes an old generator run unmodified.
     Core.eval(m, :(eval(x) = Core.eval($m, x)))
     Core.eval(m, :(include(p::AbstractString) = Base.include($m, p)))
     Base.include(m, joinpath(tmp, "export_ace_model.jl"))

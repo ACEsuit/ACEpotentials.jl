@@ -400,6 +400,17 @@ catches the command-line form.  Add a name here in the same edit that adds its g
 const KNOWN_GROUPS = (:all, :etace, :accuracy, :multispecies, :dag, :pair,
                       :python, :lammps, :mpi, :parity)
 
+"""
+    OPT_IN_GROUPS
+
+Groups that `:all` deliberately does NOT select, so that `dispatch_check` below does not
+demand them of a default run. `parity` is the only one: it needs `EXPORT_REF_SHA`, both
+host-local fixtures and ~2.5 minutes, and the header says at length why it is opt-in.
+Adding a name here is how a group opts out of the completeness check -- which is a visible,
+reviewable edit rather than an omission.
+"""
+const OPT_IN_GROUPS = (:parity,)
+
 # Parse command line args for selective testing
 function get_test_selection()
     if length(ARGS) == 0
@@ -559,11 +570,45 @@ function main()
             end
         end
 
-        # K3: turn "the gate never ran" into a test failure when CI asks for it.
+        # Every known group is wired to a dispatch branch (see dispatch_check), then:
+        # K3, turn "the gate never ran" into a test failure when CI asks for it.
+        dispatch_check(selection)
         report_group_status(selection)
     end
 
     @info "Test suite completed!"
+end
+
+"""
+    dispatch_check(selection)
+
+The OTHER direction of `KNOWN_GROUPS`, and the one that is easy to forget.
+
+`get_test_selection` stops an unknown name from selecting nothing. It does not stop the
+reverse: a name that is IN `KNOWN_GROUPS` but that `main` no longer dispatches -- a stale
+entry left behind by a future removal -- would be accepted on the command line and then
+silently run zero tests, which is exactly the failure mode the `:hermite_spline` removal had
+to fix in the first place. The two checks only close the hole together.
+
+So: every known, non-opt-in group must have RECORDED A STATUS by the end of an `:all` run,
+and every explicitly selected known group must have recorded one in any run. Recording a
+status is what `run_group`/`skip_group` do, so this asserts the name is actually wired to a
+dispatch branch -- not that it passed, which is `ACE_REQUIRE_GROUPS`' job.
+"""
+function dispatch_check(selection)
+    expected = :all in selection ?
+        [g for g in KNOWN_GROUPS if g !== :all && !(g in OPT_IN_GROUPS)] :
+        [g for g in selection if g !== :all]
+    @testset "every selected group reached a dispatch branch" begin
+        for g in expected
+            recorded = haskey(GROUP_STATUS, String(g))
+            recorded || @error("""
+                group `$g` is in KNOWN_GROUPS but recorded no status: no branch in main()
+                dispatches it, so selecting it would run zero tests and report success.
+                Either wire it up or delete it from KNOWN_GROUPS.""")
+            @test (g, recorded) == (g, true)
+        end
+    end
 end
 
 """
