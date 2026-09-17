@@ -117,28 +117,38 @@ jobs:
       # hosted runner CAN run, and the suite fails if any of them did not execute; `pair` is
       # then dealt with explicitly by the step after this one.
       #
-      # `hermite` pulls in test_hermite_spline_export.jl AND test_hermite_accuracy.jl
-      # (:hermite_spline vs the SPLINIFIED model at 1e-8, :polynomial vs the FITTED model at
-      # 1e-12); `multispecies` runs both radial-basis modes of test_multispecies.jl.
-      - name: Run ETACE export tests (polynomial, hermite, multispecies, pair)
+      # `accuracy` is test_export_accuracy.jl (:polynomial vs the FITTED model at 1e-12, plus
+      # the refusals that replaced the removed :hermite_spline mode); `multispecies` gates
+      # both NZ=3 models' :polynomial exports at 1e-12.
+      #
+      # It used to read `etace,hermite,hermite_accuracy,multispecies`.  `hermite` and
+      # `hermite_cantor` went with the mode (export/bench/FINDINGS_parity.md §7), and
+      # `hermite_accuracy` is now `accuracy`.  Passing a retired name here would FAIL the run
+      # at runtests.jl's group check rather than quietly select nothing -- which is why the
+      # names below were changed rather than left to rot.
+      - name: Run ETACE export tests (polynomial, accuracy, multispecies, pair)
         env:
-          ACE_REQUIRE_GROUPS: etace,hermite,hermite_accuracy,multispecies
+          ACE_REQUIRE_GROUPS: etace,accuracy,multispecies
         run: |
           set -o pipefail
-          julia --project=export export/test/runtests.jl etace hermite multispecies pair \
+          julia --project=export export/test/runtests.jl etace accuracy multispecies pair \
             2>&1 | tee export-tests.log
 
       # K3: a gate that did not execute must never be reported as a gate that passed.
       #
-      # EVERY fixture-guarded group is checked here, not just `pair`.  Both of them compare an
-      # exported model against the FITTED Cantor model and need
-      # verify_cantor/cantor_v010_params.jld2 plus the held-out geometries, which are
-      # host-local data that is not in this repository:
+      # EVERY fixture-guarded group is checked here.  It compares an exported model against
+      # the FITTED Cantor model and needs verify_cantor/cantor_v010_params.jld2 plus the
+      # held-out geometries, which are host-local data that is not in this repository:
       #
       #   pair            test_pair_export.jl     -- the plan's only pair-parity gate
-      #   hermite_cantor  test_hermite_cantor.jl  -- Hermite vs the SPLINIFIED stack at 1e-12
       #
-      # A GitHub-hosted runner cannot run either, so this step says so in the job summary and
+      # `hermite_cantor` (test_hermite_cantor.jl, Hermite vs the SPLINIFIED stack at 1e-12)
+      # was the second entry and went with the :hermite_spline mode
+      # (export/bench/FINDINGS_parity.md §7).  It is REMOVED from FIXTURE_GATES rather than
+      # left there: a name in that list that no group can ever report would annotate every
+      # run with a gate that is not merely unrun but nonexistent.
+      #
+      # A GitHub-hosted runner cannot run `pair`, so this step says so in the job summary and
       # as a workflow annotation rather than letting a green tick imply otherwise.  If a
       # future group is fixture-guarded, add its name to FIXTURE_GATES below -- forgetting to
       # is how hermite_cantor went uncovered in the first place.
@@ -150,7 +160,7 @@ jobs:
         if: always()
         env:
           PAIR_GATE_REQUIRED: ${{ vars.ACE_PAIR_GATE_REQUIRED || 'false' }}
-          FIXTURE_GATES: "pair hermite_cantor"
+          FIXTURE_GATES: "pair"
         run: |
           missing=""
           for g in $FIXTURE_GATES; do
@@ -168,11 +178,10 @@ jobs:
             echo ""
             echo "\`test_pair_export.jl\` (group \`pair\`) is the only check in this repository"
             echo "that compares an exported model *including its pair term* against the fitted"
-            echo "Cantor model; \`test_hermite_cantor.jl\` (group \`hermite_cantor\`) is the only"
-            echo "one that gates a Hermite export against the splinified Cantor stack at 1e-12."
-            echo "Both need \`verify_cantor/cantor_v010_params.jld2\` and the held-out geometries,"
-            echo "neither of which is in the repository, so neither can run on a GitHub-hosted"
-            echo "runner. **A green tick on this job does not mean those gates were checked.**"
+            echo "Cantor model. It needs \`verify_cantor/cantor_v010_params.jld2\` and the held-out"
+            echo "geometries, neither of which is in the repository, so it cannot run on a"
+            echo "GitHub-hosted runner. **A green tick on this job does not mean that gate was"
+            echo "checked.**"
           } >> $GITHUB_STEP_SUMMARY
           echo "::warning title=fixture-guarded gates skipped::$missing did not run (Cantor fixture absent); those gates were NOT checked by this job"
           if [ "$PAIR_GATE_REQUIRED" = "true" ]; then
@@ -736,10 +745,11 @@ jobs:
   # ---------------------------------------------------------------------------------------
   # The pair-parity gate, where it can actually run.
   #
-  # `test_pair_export.jl` and `test_hermite_cantor.jl` both check an exported model against
-  # the FITTED Cantor model, using `verify_cantor/cantor_v010_params.jld2` and the held-out
-  # LAMMPS geometries.  Neither file is in this repository -- they are host-local data -- so
-  # these are the only two groups no GitHub-hosted runner can execute.
+  # `test_pair_export.jl` checks an exported model against the FITTED Cantor model, using
+  # `verify_cantor/cantor_v010_params.jld2` and the held-out LAMMPS geometries.  Neither file
+  # is in this repository -- they are host-local data -- so `pair` is the only group no
+  # GitHub-hosted runner can execute.  (`hermite_cantor` was the second; it went with the
+  # :hermite_spline mode -- export/bench/FINDINGS_parity.md §7.)
   #
   # Point the repository variable ACE_PAIR_GATE_RUNNER at a self-hosted runner that has that
   # data and this job runs there with ACE_REQUIRE_GROUPS set, so a missing fixture FAILS
@@ -758,8 +768,8 @@ jobs:
         run: |
           julia --project=export -e 'using Pkg; Pkg.instantiate()'
 
-      - name: Run the Cantor-fixture groups (pair + Cantor Hermite)
+      - name: Run the Cantor-fixture group (pair)
         env:
-          ACE_REQUIRE_GROUPS: pair,hermite_cantor
+          ACE_REQUIRE_GROUPS: pair
         run: |
-          julia --project=export export/test/runtests.jl pair hermite
+          julia --project=export export/test/runtests.jl pair

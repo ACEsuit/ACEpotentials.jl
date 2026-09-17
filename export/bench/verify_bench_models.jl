@@ -18,15 +18,20 @@
 #
 #   cd <repo> && julia --project=export export/bench/verify_bench_models.jl [tags...]
 #
-# Tags (default: all four):
-#   cantor_poly  cantor_h50  tial_poly  tial_h50
+# Tags (default: both):
+#   cantor_poly  tial_poly
 #
-# Each tag writes bench_parity/<tag>_model.jl and compares it, at tol = 1e-12, against the
-# reference its mode requires:
-#   *_poly  -> fx.stacked                     = (ETOneBody, ETPairModel, ETACE)
-#   *_h50   -> <model>_spline_stack(fx; 50)   = (ETOneBody, ETPairModel, splinified ETACE)
-# and additionally REPORTS (never asserts) the Hermite error against the fitted stack, which is
-# model error, not export error.
+# Each tag writes bench_parity/<tag>_model.jl and compares it, at tol = 1e-12, against
+#   fx.stacked = (ETOneBody, ETPairModel, ETACE)
+#
+# THE `*_h50` TAGS ARE GONE.  They exported the same two models through `:hermite_spline`,
+# gated against the SPLINIFIED stack, and REPORTED (never asserted) the splinification error
+# against the fitted one.  That mode was removed -- export/bench/FINDINGS_parity.md §7 -- so
+# those models cannot be exported at all and the tags cannot be regenerated.  The `*_h50`
+# rows and `.gated` manifests already in export/bench/ are HISTORICAL measurements of a mode
+# that no longer ships; they are kept because they are the evidence the mode was removed on,
+# and passing such a tag here now fails at the tag check below rather than silently exporting
+# a :polynomial model under an h50 name.
 
 using Printf, SHA, Dates
 
@@ -37,7 +42,7 @@ include(joinpath(REPO, "export", "test", "check_export.jl"))          # pulls in
 include(joinpath(REPO, "export", "test", "fixtures", "tial_fixture.jl"))
 include(joinpath(REPO, "export", "src", "export_ace_model.jl"))
 
-const TAGS = isempty(ARGS) ? ["cantor_poly", "cantor_h50", "tial_poly", "tial_h50"] : ARGS
+const TAGS = isempty(ARGS) ? ["cantor_poly", "tial_poly"] : ARGS
 
 # Which TENSOR STEP to export.  `:flat` (the generator's default, and the only mode that meets
 # the 1e-12 gate on every benchmark model) unless AA_PRODUCTS=dag is set in the environment.
@@ -87,19 +92,24 @@ function do_tag(tag)
     t0 = time()
     if startswith(tag, "cantor")
         fx = load_cantor_fixture()
-        spline = Nspl -> cantor_spline_stack(fx; Nspl = Nspl)
     elseif startswith(tag, "tial")
         fx = load_tial_fixture()
-        spline = Nspl -> tial_spline_stack(fx; Nspl = Nspl)
     else
         error("unknown tag $tag")
     end
-    # `occursin`, not `endswith`: Tasks 5-7 add suffixed tags of their own (cantor_h50_b1),
-    # and an `endswith("_h50")` test would silently export those as :polynomial and then gate
-    # them against the WRONG reference -- an exact export compared to a splinified stack.
-    hermite = occursin("_h50", tag)
-    calc = hermite ? spline(50) : fx.stacked
-    mode = hermite ? :hermite_spline : :polynomial
+    # `occursin`, not `endswith`: the suffixed tags Tasks 5-7 introduced (cantor_h50_b1) must
+    # be caught too.  This used to SELECT the Hermite mode; it now REFUSES, because exporting
+    # an h50 tag as :polynomial would file an exact model's numbers under a name whose whole
+    # meaning is "the approximate mode", and every committed h50 row would then be comparable
+    # to it by name and not by content.
+    occursin("_h50", tag) && error("""
+        tag '$tag' names the :hermite_spline mode, which was REMOVED
+        (export/bench/FINDINGS_parity.md §7).  A splinified model can no longer be exported,
+        so this tag cannot be regenerated.  The *_h50 rows and .gated manifests already in
+        export/bench/artefacts/ are historical measurements of a mode that no longer ships --
+        read them, do not try to reproduce them.  Use $(replace(tag, "_h50" => "_poly")).""")
+    calc = fx.stacked
+    mode = :polynomial
     file = joinpath(OUT, "$(tag)_model.jl")
 
     Base.invokelatest(export_ace_model, calc, file; for_library = true, radial_basis = mode,
@@ -108,16 +118,10 @@ function do_tag(tag)
             filesize(file) / 2^20, time() - t0)
     flush(stdout)
 
-    ref = hermite ? "E0 + pair + splinified(Nspl=50) ETACE" : "E0 + pair + ETACE (the fitted stack)"
+    ref = "E0 + pair + ETACE (the fitted stack)"
     @printf("[%s] accuracy gate, reference = %s, tol = %.0e\n", tag, ref, TOL)
     dE, dF, dV = check_export(file, calc, fx.held, fx.rcut; tol = TOL, label = "$tag vs $ref")
-    extra = nothing
-    if hermite
-        println("[$tag] REPORTED ONLY (model error of splinification, never asserted):")
-        extra = check_export_report(file, fx.stacked, fx.held, fx.rcut;
-                                    label = "$tag vs the FITTED stack")
-    end
-    results[tag] = (; file, dE, dF, dV, ref, extra, natoms = sum(length, fx.held))
+    results[tag] = (; file, dE, dF, dV, ref, natoms = sum(length, fx.held))
 
     # The gate MANIFEST.  bench_parity.sh refuses to time a library whose manifest is
     # missing or whose sha256 does not match, so a gate that was never run, or a library
@@ -144,10 +148,6 @@ function do_tag(tag)
         # printed and not applied), and the cost of computing it is one line.
         println(io, "source_gate=",
                 (dE <= TOL && dF <= TOL && dV <= TOL) ? "PASS" : "FAIL")
-        if extra !== nothing
-            @printf(io, "# reported only, never asserted: vs the FITTED stack dE/atom=%.3e dF=%.3e dV/atom=%.3e\n",
-                    extra...)
-        end
     end
     @printf("[%s] wrote %s\n", tag, joinpath(OUT, "$(tag).gated"))
     @printf("[%s] OK in %.0f s\n\n", tag, time() - t0); flush(stdout)
@@ -163,11 +163,5 @@ println("VERIFICATION SUMMARY (all gates at tol = $TOL; a row may be timed only 
 for tag in TAGS
     r = results[tag]
     @printf("%-12s  %-42s  %11.3e  %11.3e  %11.3e\n", tag, r.ref, r.dE, r.dF, r.dV)
-end
-for tag in TAGS
-    r = results[tag]
-    r.extra === nothing && continue
-    @printf("%-12s  %-42s  %11.3e  %11.3e  %11.3e   (reported, not gated)\n",
-            tag, "vs the FITTED stack", r.extra...)
 end
 println("DONE verify_bench_models.jl")

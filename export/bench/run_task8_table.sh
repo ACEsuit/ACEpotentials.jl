@@ -10,10 +10,15 @@
 # is the rows file; export/bench/summarise_rows.py is what turns one into the other.
 #
 # WHAT IT MEASURES.  Both reference models in :polynomial at every step of the plan
-# (baseline = Task 4, B1 = Task 5, B2 = Task 6 = shipped), plus one :hermite_spline row per
-# model at the shipped generator, each against `pair_style pace recursive` run here, now, on
-# the same core -- the comparator is re-run inside every block, so no row is compared against
-# a pace number taken on another day.
+# (baseline = Task 4, B1 = Task 5, B2 = Task 6 = shipped), each against
+# `pair_style pace recursive` run here, now, on the same core -- the comparator is re-run
+# inside every block, so no row is compared against a pace number taken on another day.
+#
+# IT USED TO TAKE ONE `:hermite_spline` ROW PER MODEL TOO (cantor_h50_b2, tial_h50_b2).  Those
+# rows are what showed the mode was the SLOWER one, which is half of why it was removed
+# (export/bench/FINDINGS_parity.md §7).  They stay in the committed rows file and in the
+# published tables, as historical measurements; they are no longer RE-TAKEN, because a
+# splinified model can no longer be exported and the libraries behind them cannot be rebuilt.
 #
 # WHAT IT DOES NOT MEASURE.  B3 (aa_products=:dag) is not in the table.  It is off by default
 # and its libraries are gone from disk; its numbers stay in Task 7's section of the README.
@@ -88,8 +93,8 @@ run_block() {   # run_block <tag>
   CORE=$CORE OUT=$OUT PLUGIN=$plug "$HERE/bench_parity.sh" "$tag" "$lib" "$pace" 100
 }
 
-PASS_ALL="cantor_poly cantor_poly_b1 cantor_poly_b2 cantor_h50_b2 \
-          tial_poly tial_poly_b1 tial_poly_b2 tial_h50_b2"
+PASS_ALL="cantor_poly cantor_poly_b1 cantor_poly_b2 \
+          tial_poly tial_poly_b1 tial_poly_b2"
 PASS_TIAL="tial_poly tial_poly_b1 tial_poly_b2"
 
 echo "### run_task8_table.sh  start $(date '+%Y-%m-%d %H:%M:%S')  core=$CORE"

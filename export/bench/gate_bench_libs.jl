@@ -36,7 +36,11 @@ const OUT = joinpath(REPO, "bench_parity")
 include(joinpath(REPO, "export", "test", "lammps_harness.jl"))
 include(joinpath(REPO, "export", "test", "check_export.jl"))
 
-const TAGS = isempty(ARGS) ? ["cantor_poly", "cantor_h50", "tial_poly", "tial_h50"] : ARGS
+# cantor_h50 / tial_h50 were the :hermite_spline libraries.  That mode was removed
+# (export/bench/FINDINGS_parity.md §7), verify_bench_models.jl refuses those tags, and the
+# libraries cannot be rebuilt -- so they are out of the default set.  Their measured
+# headroom is quoted in the block above as a historical figure, not deleted.
+const TAGS = isempty(ARGS) ? ["cantor_poly", "tial_poly"] : ARGS
 const CELLS = parse(Int, get(ENV, "ACE_GATE_CELLS", "5"))
 const TOL_LAMMPS = 1e-10
 const TOL_LIB = 1e-12
@@ -70,9 +74,11 @@ const TOL_LIB = 1e-12
 #  comparison in order to make it pass, which is the weakening the plan's constraints forbid.
 #  Keeping E0 in and changing the metric's DIMENSION is the honest fix.
 #
-#  MEASURED HEADROOM under the relative gate (2026-09-16, this host):
-#      tial_poly    4.581e-15   (22x inside 1e-13)     tial_h50    0.0
-#      cantor_poly  1.478e-15   (68x inside 1e-13)     cantor_h50  0.0
+#  MEASURED HEADROOM under the relative gate (2026-09-16, this host).  The *_h50 columns are
+#  a HISTORICAL measurement of the :hermite_spline mode, which has since been removed; they
+#  are kept because they are part of what the ceiling was judged against:
+#      tial_poly    4.581e-15   (22x inside 1e-13)     tial_h50    0.0   [historical]
+#      cantor_poly  1.478e-15   (68x inside 1e-13)     cantor_h50  0.0   [historical]
 #  A real 1-vs-2-rank discrepancy -- a ghost atom missing from one domain -- is an eV-scale
 #  effect, i.e. 1e-5 relative here, ten orders of magnitude above the gate.
 #

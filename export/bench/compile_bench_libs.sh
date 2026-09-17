@@ -4,14 +4,17 @@
 # Reads  bench_parity/<tag>_model.jl   (written and GATED by verify_bench_models.jl)
 # Writes bench_parity/libace_<tag>.so  (consumed by bench_parity.sh)
 #
-# Default tags: cantor_poly cantor_h50 tial_poly tial_h50
+# Default tags: cantor_poly tial_poly
+# (cantor_h50 / tial_h50 are gone: the :hermite_spline mode was removed -- see
+#  export/bench/FINDINGS_parity.md §7 -- so verify_bench_models.jl cannot write their sources.
+#  Their committed rows are historical measurements of a mode that no longer ships.)
 # CPU_TARGET (default "native") is passed through to verify_cantor/compile_lib.jl.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 OUT=$REPO/bench_parity
 CPU_TARGET=${CPU_TARGET:-native}
-TAGS=${@:-"cantor_poly cantor_h50 tial_poly tial_h50"}
+TAGS=${@:-"cantor_poly tial_poly"}
 rc=0
 for tag in $TAGS; do
   src=$OUT/${tag}_model.jl
