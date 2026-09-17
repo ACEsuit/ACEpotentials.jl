@@ -481,10 +481,23 @@ benchmark's own pinned process), `pace recursive` re-run in the same block on th
 > | `tial_h50_b2`    | 302.76 | **302.8085** (n = 4) | **+0.016 %** |
 >
 > Mixed in sign, and each inside its own row's run-to-run spread. The statistic is the
-> **pooled-run median**: the median over every run of every valid block, not the median of the
-> block medians and not a mean. Reproduce it with
-> `export/bench/summarise_rows.py bench_parity/rows_task6_fix3.txt <tag>`, which also flags any
-> block whose internal spread exceeds the protocol's 3 %.
+> **pooled-run median**: the median over every run of every INCLUDED block, not the median of
+> the block medians and not a mean. Reproduce all four, exactly, with
+>
+> ```
+> export/bench/summarise_rows.py bench_parity/rows_task6_fix3.txt cantor_poly cantor_h50 tial_poly tial_h50
+> ```
+>
+> **What that tool excludes, and what it does not.** It excludes (a) any block whose own runs
+> disagree by more than 3 % — the protocol's rule, applied automatically — and (b) any block
+> named by a `# EXCLUDE <tag> <reason>` line in the rows file or `--exclude tag=reason` on the
+> command line, where a reason is mandatory. **Nothing else**: no outlier rejection, no
+> trimming, no warm-up discard. Every exclusion is printed by name with its reason, and the
+> tool exits nonzero on a missing, empty or malformed file, a tag matching no rows, a stale
+> `# EXCLUDE`, or a group left with no blocks. `rows_task6_fix3.txt` carries one `# EXCLUDE`
+> line, for the anomalous block described below — which passes the 3 % rule, so excluding it is
+> a judgement and is written down as one rather than achieved by choosing a tag prefix that
+> happens to miss it.
 >
 > **Two blocks were discarded, and by the protocol's own rule rather than by preference.**
 > A `cantor_h50` block read 147.724 / 127.661 / 126.189 (17 % spread) and a `tial_poly` block
@@ -506,7 +519,7 @@ of `cantor_poly_b2` on core 31 (`bench_parity/rows_task6_warmup.txt`).
 
 | session | block 1 | blocks 2-4 (median) | first-block delta |
 |---|---|---|---|
-| A (loadavg 0.09 at start) | 117.376 | 118.386 | **−0.85 %** |
+| A (loadavg `0.00 0.08 0.39` at start) | 117.376 | 118.386 | **−0.85 %** |
 | B | 119.094 | 117.035 | **+1.76 %** |
 
 **The effect does not reproduce.** The two sessions disagree in SIGN, the magnitudes are ~1 %,
@@ -523,7 +536,18 @@ above that median and outside the whole distribution. So:
   before — so if anything the core was warm, which makes the warm-up story less likely rather
   than more.
 * the four control rows above are **unaffected** and were not re-taken: the anomaly is excluded
-  from `cantor_poly`'s pooled median by block, and the other three tags never contained it.
+  from `cantor_poly`'s pooled median by an explicit `# EXCLUDE` line in the rows file, and the
+  other three tags never contained it.
+
+**A STANDING RULE FOR EVERY LATER TIMING RESULT, because of this anomaly.** This host has now
+produced one **double-digit-percent single-block outlier of unknown cause** whose internal
+spread was a healthy 1.3 % — i.e. a block that looks perfectly well-behaved from the inside and
+is 10 % wrong from the outside. The protocol's "two runs within 3 %" test cannot see that, and
+neither can `summarise_rows.py`. So: **replicate any surprising or borderline timing result
+across at least two separate blocks before reporting it.** One block that agrees with itself is
+not evidence, and a difference of a few per cent measured in a single block is within the
+distance this machine has been observed to move for no reason anyone has identified. This
+applies to Tasks 7 and 8 as written, not only to Task 6's controls.
 >
 > An earlier version of this note reported four deltas taken on an INTERMEDIATE binary
 > (+1.39 / +1.02 / +0.34 / +0.42 %) and described them as "not of one sign", which they were
