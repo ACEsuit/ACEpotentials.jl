@@ -10,7 +10,11 @@ whether `:hermite_spline` should be retired and §8 what to do with the inoperab
 minimal-export path. The answer to both was **remove**. Both removals are implemented on this
 branch; §7 and §8 below now carry the answer and what was removed, above the evidence that
 was put to the maintainer. **The evidence is kept, not deleted** — including every Hermite
-measurement, row and gate manifest, which is what the decision rests on.
+measurement, row and gate manifest, which is what the decision rests on. A **third** removal
+was put the same way and answered the same way, but in code markers rather than in a §-section
+of this document: the ~330 unreachable lines of classic-`ACEModel` radial export in
+`write_radial.jl`. It is recorded as **§6 item 23**, with its evidence, because that is where
+it was filed — not because it is smaller.
 
 **What it updates.** Two findings of 2026-09-15 — one on correctness, one on where the time
 goes — written against `acesuit/lammps-export` at 075d3859. **They are quoted inline below
@@ -116,7 +120,10 @@ should be **retired** (§7), and what to do with the **inoperable minimal-export
 **Both were answered "remove", and both removals are on this branch.** `:hermite_spline` and
 with it the splinify-for-export route are gone; the minimal C ABI, its LAMMPS plugin, its two
 committed `.o` files and the half of `docs/C_INTERFACE_API.md` that documented it are gone.
-The `:polynomial` generated source is **byte-identical** across the removal, with
+A third removal was put the same way and answered the same way — the unreachable
+classic-`ACEModel` radial exporter, **§6 item 23** — but it was filed in code markers, not as a
+§-section, which is why it is not a "Question 3".
+The `:polynomial` generated source is **byte-identical** across all three removals, with
 `EXPORT_BUILD_ID` unchanged on both benchmark models, so nothing above needs re-timing.
 
 ---
@@ -591,6 +598,36 @@ branch; **ship** items are real but do not block a merge. None is dropped silent
 | 20 | CI changes never confirmed on a hosted runner | **ship — but see §5.6.** It cannot be closed without pushing, and nothing is pushed. |
 | 21 | the minimal-export path is inoperable | **fixed — removed.** The maintainer chose §8's option 2; see §8. |
 | 22 | `_bad_handle()` has no rate limit | **ship — §5.12.** (It read §5.8 and pointed at the wrong item; that was already wrong before the §7 renumbering, not caused by it.) |
+| 23 | ~330 unreachable lines of classic-`ACEModel` radial export in `write_radial.jl`, carrying advice that contradicts §7 | **fixed — removed.** The maintainer answered "remove"; see the note below this table. |
+
+**Item 23, the third question put to the maintainer, and the last dead feature on this branch.**
+It was raised in code markers and in `4dee6c8d`'s message rather than in this document, which is
+why it has no §-section of its own; the answer came with §7's and §8's. **What was removed** (one
+commit, `export/src/write_radial.jl` only): both methods of `_write_radial_basis` — the
+`SplineRnlrzzBasis` exporter for the *classic* `ACEModel` and its erroring fallback — together
+with the three helpers only that exporter called, `_write_transform`
+(`Models.NormalizedTransform`), `_write_envelope` (`Models.PolyEnvelope2sX`, and its erroring
+fallback) and `_write_spline`. **The evidence it was dead:** `_write_radial_basis` had zero
+callers anywhere in the tree — the live path is `_write_etace_radial_basis`, reached from
+`export_ace_model.jl`, and nothing dispatched to either method; the three helpers were called
+only from inside the deleted method (lines 760/769/778 of the pre-removal file). `SplineRnlrzzBasis`
+itself is a top-level `src/` type and is untouched — it is only this exporter's use of it that is
+gone. `_write_spherical_harmonics`, which sat *between* the two dead blocks, IS live
+(`export_ace_model.jl:373`) and was kept, so the deletion is two ranges rather than one.
+**Why it was worth deleting rather than keeping.** Its fallback's error message read *"Only
+SplineRnlrzzBasis is currently supported for export. Use `splinify_first=true` or call
+`splinify()` on your model first."* Both halves misdirect a reader of `export/`: `splinify_first`
+is not, and never was, a keyword of `export/src/export_ace_model.jl` — it is a real keyword of a
+*different* exporter, `benchmark/fair_comparison/export_ace_model_oldace.jl:32`, whose line 1401
+carries this identical string and which is plainly where these lines were copied from; and
+"call `splinify()` first" is the exact opposite of §7's decision, ~700 lines from the refusal
+that says a splinified model cannot be exported at all. Unreachable code cannot mislead a user,
+but it misled everyone who grepped `splinify` under `export/src/`.
+**Byte-identity, the acceptance condition.** The shipped `:polynomial` generated source is
+byte-identical across the removal and `EXPORT_BUILD_ID` is unchanged on both benchmark models
+(`cantor_poly` 383506 B `0x2cfebebf9f5051cb`, `tial_poly` 541808 B `0x06bb278d69cdd0f8`,
+`EXPORT_REF_SHA=9a4c86b3`) — the same pair of figures §7 records, so every timing row and every
+compiled library on this branch still measures the current generator.
 
 Three further deferrals from the ledger were closed inside the plan and are recorded here only
 so the list is complete: the silent `:polynomial → :hermite_spline` promotion (made a hard
