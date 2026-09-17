@@ -314,6 +314,99 @@ include(joinpath(@__DIR__, "check_export.jl"))
         end
     end
 
+    @testset "Virial vs Julia (rattled cell, all six components, tol 1e-10)" begin
+        # THE ONE QUANTITY WHOSE WHOLE PATH HAD NO ASSERTION.  The virial travels Julia ->
+        # `ace_site_energy_forces_virial`'s Voigt packing -> the plugin's remap into LAMMPS'
+        # `virial[6]` -> LAMMPS' pressure tensor, and this branch changed two of those links
+        # (the per-neighbour kernel builds the virial from the same `∂A` as the forces, and the
+        # plugin gained a `need_virial` branch that calls a different entry point on steps that
+        # do not need it).  The testset below asserts `isfinite` and cubic symmetry on a perfect
+        # diamond cell, under which an off-diagonal transposition, a global sign error or the
+        # wrong `need_virial` entry are ALL invisible: every off-diagonal is zero and the three
+        # diagonals are equal by symmetry, so the assertions pass on numbers that carry no
+        # information about those defects.
+        #
+        # This one uses a RATTLED cell, so all six components are large and distinct, and
+        # compares each against the Julia reference on the identical geometry.
+        #
+        # THE UNITS CONSTANT IS LAMMPS', NOT CODATA'S.  With zero velocities, LAMMPS reports
+        # `P_ab = virial_ab / V`, converting eV/Å³ to bar with `force->nktv2p`, which in `metal`
+        # units is **1.6021765e6** (src/update.cpp:197) -- the pre-2019 value.  Using CODATA
+        # 2018's 1.602176634e6 instead leaves a constant 8.36e-8 relative offset on all six
+        # components, which is exactly the ratio of the two constants and nothing to do with
+        # the potential.  That was measured before this gate was written, not guessed.
+        #
+        # THE MAPPING WAS ESTABLISHED BY MEASUREMENT, NOT DERIVED.  `P_ab = V_ab / vol` with no
+        # sign flip and no transposition, where `V` is the 3x3 returned by `exported_efv`
+        # (itself `-Σ R ⊗ ∂E/∂R` summed over sites).  Worth stating because it is easy to derive
+        # the opposite sign on paper: LAMMPS' virial is `Σ r ⊗ f` and `f = -∂E/∂R`, so the two
+        # minus signs cancel.  If this gate ever fails on sign alone, check that reasoning
+        # before changing the generator.
+        vgeom = joinpath(lammps_test_dir, "virial_geom.data")
+        out = run_lmp("""
+        units metal
+        atom_style atomic
+        boundary p p p
+        lattice diamond 5.43
+        region box block 0 1 0 1 0 1
+        create_box 1 box
+        create_atoms 1 box
+        mass 1 28.0855
+
+        # 0.05 Å, not the 0.01 Å of the force gate: the off-diagonals must be far enough from
+        # zero that agreeing with the reference is a real constraint.  Asserted below.
+        displace_atoms all random 0.05 0.05 0.05 4242
+        write_data $(vgeom)
+
+        plugin load $(plugin_path)
+        pair_style ace
+        pair_coeff * * $(lib_path) Si
+
+        variable e equal pe
+        variable v equal vol
+        thermo_style custom step pe pxx pyy pzz pxy pxz pyz
+        run 0
+        print "ACE_VOL \$(v_v:%.17g)"
+        print "ACE_P \$(pxx:%.17g) \$(pyy:%.17g) \$(pzz:%.17g) \$(pxy:%.17g) \$(pxz:%.17g) \$(pyz:%.17g)"
+        """, "test_virial_parity.lmp")
+
+        @test !occursin("ERROR", out)
+        @test !occursin("LAMMPS_EXIT_NONZERO", out)
+        mP = match(r"ACE_P\s+(.*)", out)
+        mV = match(r"ACE_VOL\s+(\S+)", out)
+        @test mP !== nothing && mV !== nothing
+        if mP !== nothing && mV !== nothing && isfile(vgeom)
+            P = parse.(Float64, split(strip(mP.captures[1])))       # bar: xx yy zz xy xz yz
+            vol = parse(Float64, mV.captures[1])
+            @test length(P) == 6
+            @test all(isfinite, P)
+
+            exv = load_exported(model_file)
+            sysv = read_lammps_data(vgeom, (:Si,))
+            _, _, Vjl = Base.invokelatest(exported_efv, exv, sysv, exv.RCUT_MAX)
+
+            # The reference is symmetric by construction (R ⊗ ∂E/∂R summed both ways); if it
+            # ever is not, the six-component comparison below is comparing the wrong thing.
+            @test maximum(abs.(Vjl - Vjl')) < 1e-12
+
+            nktv2p = 1.6021765e6
+            ref = [Vjl[1, 1], Vjl[2, 2], Vjl[3, 3], Vjl[1, 2], Vjl[1, 3], Vjl[2, 3]] ./ vol .* nktv2p
+            names = ("pxx", "pyy", "pzz", "pxy", "pxz", "pyz")
+
+            # NOT VACUOUS: every component, the off-diagonals included, must be far from zero
+            # BEFORE it is compared -- otherwise this gate degrades into the cubic smoke test
+            # it was added to replace.  On this geometry the off-diagonals are ~1e5-1e6 bar.
+            @test minimum(abs.(ref)) > 1e4
+
+            for k in 1:6
+                rel = abs(P[k] - ref[k]) / abs(ref[k])
+                @info @sprintf("virial %s: LAMMPS %+.10e bar, Julia %+.10e bar, rel %.3e",
+                               names[k], P[k], ref[k], rel)
+                @test rel <= 1e-10
+            end
+        end
+    end
+
     @testset "Stress/Virial (smoke: cubic symmetry only)" begin
         out = run_lmp("""
         units metal

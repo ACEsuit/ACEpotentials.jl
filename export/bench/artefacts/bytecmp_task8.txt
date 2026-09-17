@@ -225,13 +225,13 @@ dense_h50 NEW vs its reference calculator:
 [ Info: Extracting Hermite cubic spline data for exact trim-safe export...
 [ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/tial_h50_new.jl (radial_basis=hermite_spline)
 Test Summary:                 | Pass  Total     Time
-generator parity vs b826c831  |   39     39  3m26.8s
-  cantor_poly (polynomial)    |    7      7    58.8s
-  cantor_h50 (hermite_spline) |    6      6    25.5s
-  tial_poly (polynomial)      |    7      7    24.9s
-  tial_h50 (hermite_spline)   |    6      6    19.5s
-  dense_poly (polynomial)     |    7      7    10.2s
-  dense_h50 (hermite_spline)  |    6      6     7.8s
+generator parity vs b826c831  |   39     39  3m17.1s
+  cantor_poly (polynomial)    |    7      7    56.1s
+  cantor_h50 (hermite_spline) |    6      6    24.2s
+  tial_poly (polynomial)      |    7      7    23.9s
+  tial_h50 (hermite_spline)   |    6      6    18.5s
+  dense_poly (polynomial)     |    7      7     9.7s
+  dense_h50 (hermite_spline)  |    6      6     7.2s
 
 bytecmp_generator.jl -- shipped default vs b826c831, for_library = true
 

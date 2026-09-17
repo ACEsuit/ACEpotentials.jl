@@ -54,9 +54,12 @@ one whose first two runs were not -- so "exclude spread > 3 %" meant "discard ev
 which the protocol's own remedy was invoked", and the median the protocol tells you to report
 was never reported.  On the TiAl box that was most blocks: Task 8's `tial_poly` took 22 runs
 across 8 blocks and four were admitted.  It was also not neutral -- all three TiAl figures moved
-the flattering way under it.  Task 6's four published controls are unchanged by the fix (every
-one of its included blocks has two runs); Task 8's figures are restated in README.md with the
-movement and its sign shown.
+the flattering way under it.  TWO of Task 6's four published controls moved and are
+restated in README.md alongside Task 8's, with the movement and its sign shown: `cantor_h50`
+128.4955 -> 127.6610 and `tial_poly` 182.1295 -> 182.2060, because each had a block that ran
+to three runs.  (An earlier version of this paragraph claimed all four were unchanged "because
+every one of its included blocks has two runs".  Both halves were false, and running the tool
+is what shows it -- which is the whole point of the tool.)
 
 IT FAILS LOUDLY.  A malformed file, an empty file, a tag matching no rows, a `# EXCLUDE` line
 naming a tag that is not there, or a group left with no included blocks are all errors with a

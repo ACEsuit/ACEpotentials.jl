@@ -531,6 +531,17 @@ void PairACE::compute(int eflag, int vflag)
     // init_style; a nested or resized team could in principle make tid exceed it, and two
     // threads sharing one workspace is exactly the corruption this API exists to prevent --
     // so this ERRORS rather than wrapping the index into range.
+    //
+    // KNOWN HAZARD IN THIS ONE LINE, left as it is deliberately.  `error->one()` calls
+    // MPI_Abort and is not a safe call from inside an OpenMP parallel region: the other
+    // threads in the team are not unwound, and on some MPI/OpenMP combinations aborting from
+    // a non-master thread hangs instead of exiting.  It is UNREACHABLE today -- n_workspaces
+    // is omp_get_max_threads() at init_style time and LAMMPS does not resize the team
+    // afterwards -- and if it ever does become reachable, aborting is the right response,
+    // because the alternative is two threads silently sharing one workspace.  Anyone enabling
+    // nested parallelism or resizing the team should move this check OUT of the region: do it
+    // in init_style, or hoist it to a flag set here and tested by the master thread after the
+    // region closes.
     if (tid >= n_workspaces)
       error->one(FLERR, "Pair style ace: more OpenMP threads than ACE workspaces");
     void *ace_ws = workspaces[tid];

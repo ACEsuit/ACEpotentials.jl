@@ -77,8 +77,8 @@ Both predictions held.
   Cantor `:polynomial` went from **511.8 to 58.1 µs/site**, past the plan's own 150 µs/site
   target; TiAl `:polynomial` from 429.6 to 94.0.
 - **The blindness is gone too**, and that is the half of this work that will age best. The
-  export suite went from 43 tests, several of which asserted nothing, to **32 549 passing across
-  ten groups, with every group required to have actually run** (380 of them outside the DAG
+  export suite went from 43 tests, several of which asserted nothing, to **32 562 passing across
+  ten groups, with every group required to have actually run** (393 of them outside the DAG
   group's exhaustive sweep); four pieces of "looked green, asserted nothing"
   coverage were found and fixed *inside the tasks whose job was to remove that class*.
 
@@ -110,14 +110,18 @@ protocol is in [`README.md`](README.md); the rows are in
 | B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.488x** | 281.7 | **1.504x** |
 | **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.893x** | **94.0** | **0.505x** |
 | `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.967x | 152.5 | 0.816x |
-| `pair_style pace recursive` (comparator, pooled over every block on that box) | 64.6 | 1.00 | 186.8 | 1.00 |
+| `pair_style pace recursive` (comparator, the **baseline tag's** own pool) | 64.6 | 1.00 | 186.8 | 1.00 |
 
 **The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.893x and 0.505x** —
 and all four shipped configurations are faster than `pair_style pace recursive` outright.
 
 Each ratio is that tag's own pooled ACE median over its own pooled comparator median, so
-numerator and denominator come from the same blocks on the same core minutes apart; the
-comparator row is pooled over every block on that box and is informational.
+numerator and denominator come from the same blocks on the same core minutes apart. **The
+comparator row is the `cantor_poly` / `tial_poly` tag's own comparator pool**, not a pool over
+the whole box. The two differ in the third digit — 64.635 against 64.625 µs/site on Cantor,
+186.803 against 186.801 on TiAl — so the row reads the same to one decimal either way, but it
+is labelled because which pool a number came from should not have to be inferred. The row is
+informational; no ratio in the table is computed from it.
 
 Taken 2026-09-17 on `moriarty`, core 31, `taskset`, `OMP_NUM_THREADS=1`, `timestep 0.0`, 100
 steps per run; 29 blocks, 68 runs; `/proc/loadavg` 0.27–1.82 over the blocks that count (this
@@ -214,6 +218,7 @@ per atom unless marked relative.
 | generated Julia | the fitted `(E0, pair, ETACE)` stack | 1e-12 | dE 1.658e-14, **dF 1.840e-14**, dV 1.557e-13 | dE 2.274e-13, **dF 5.799e-13**, dV 6.928e-13 |
 | compiled `.so` (Python C API) | the generated Julia | 1e-12 | dE 1.819e-15, dF 4.232e-14 | dE 6.985e-13, dF 5.946e-13 |
 | `pair_style ace` in LAMMPS | the compiled library | 1e-10 | dE 1.273e-14, dF 1.539e-14 | dE 1.513e-12, dF 5.818e-13 |
+| `pair_style ace` **virial**, all six Voigt components, rattled cell | the Julia reference on the same geometry | 1e-10 relative | **1.9e-16 – 5.4e-15** (Si test model) | — |
 | 2 MPI ranks vs 1 | the serial run | 1e-13 rel / 1e-12 abs | dE **0.0**, dF 3.210e-15 | dE **0.0**, dF 5.595e-14 |
 | 4 threads vs serial, in Julia | the serial run | bitwise | **0.0 / 0.0 / 0.0**, 0 of 48 sites differ | (same test, one model) |
 | `OMP_NUM_THREADS=4` vs serial, through LAMMPS | the serial dump | 1e-12 | dE **exactly 0**, dF 2.96e-15 | dE **exactly 0**, dF 8.59e-14 |
@@ -265,6 +270,42 @@ changing the *metric* or by *documenting* — never by loosening a number:
    shipping is pure downside. There is a comment at all three sites that apply it, opening
    "READ THIS BEFORE CONCLUDING THAT A CHANGE WHICH JUST MISSES THIS GATE IS WRONG".
    **A change that just misses 1e-12 on the TiAl order-4 model is not automatically wrong.**
+
+### The virial had no end-to-end assertion until this round
+
+The virial travels Julia → the C ABI's Voigt packing → the plugin's remap → LAMMPS' pressure
+tensor, and this work changed two of those links. The only LAMMPS-level check was a **cubic**
+diamond cell asserting `isfinite` and `pxx ≈ pyy ≈ pzz` — under which every off-diagonal is
+zero and the three diagonals are equal by symmetry, so an off-diagonal transposition, a global
+sign error, or the new `need_virial` branch taking the wrong entry point are all invisible. It
+was honestly labelled a smoke test and it was not load-bearing, but it was the one quantity
+whose whole path had no assertion.
+
+**Closed.** `test_lammps.jl` now runs a **rattled** 8-atom cell, where all six components are
+1e5–1e6 bar and distinct, and compares each against the Julia reference on the identical
+geometry (handed over as a file, not rebuilt) at **1e-10 relative**. Measured: **1.9e-16 to
+5.4e-15**, five orders inside the gate. Two things about it are worth recording:
+
+* **The mapping was established by measurement, not derived.** `P_ab = V_ab / vol`, no sign
+  flip, no transposition — the two minus signs in "LAMMPS' virial is `Σ r ⊗ f`" and
+  "`f = −∂E/∂R`" cancel against our `−Σ R ⊗ ∂E/∂R`. It is easy to get the opposite sign on
+  paper; the reviewer of this branch did, and so the comment at the gate says so.
+* **The units constant is LAMMPS', not CODATA's.** `metal` units use
+  `force->nktv2p = 1.6021765e6` (`src/update.cpp:197`), the pre-2019 value. Using CODATA 2018's
+  1.602176634e6 leaves a constant **8.36e-8** relative offset on all six components — exactly
+  the ratio of the two constants, and nothing to do with the potential. Measured before the
+  gate was written.
+* **It is falsifiable, and that was checked rather than assumed.** Swapping the `xy` and `xz`
+  entries of the reference — precisely the Voigt permutation the cubic test cannot see —
+  produces **7 failures** in that testset.
+
+Independent of the gate, the branch's final reviewer verified the same path against **physics**
+rather than against our own reference, which no assertion here does: forces through the whole
+stack on a rattled 16-atom Si cell, reported `fx` on atom 1 = **5.7294242 eV/Å** against a
+central difference of the LAMMPS potential energy at ±0.001 Å = **5.730**; and stress on Si
+diamond at a = 5.40 and 5.46 Å, reported pressures −552 974 and −565 085 bar **bracketing**
+−dE/dV = **−558 100 bar**. So the sign and magnitude are right in absolute terms, not merely
+self-consistent.
 
 **No tolerance was loosened anywhere in this work.** Several were tightened: every Hermite `≈`
 gate lacked `rtol=0`, so `isapprox`'s default *relative* tolerance had made `atol=1e-12`
@@ -574,9 +615,13 @@ faster than the approximate one. So the question is narrower than "retire or kee
 
 **Nothing here retires it.** Removing a documented, exported mode is a product decision, and
 the spec explicitly chose to keep it fixed and non-default — so it is kept. What *was* required
-and is done: the README, the mode table and the docstring state plainly, with the measured
-numbers, that as of B2 Hermite is **both slower and approximate** on both reference models, so
-that nobody selects it for speed.
+and is done: the README, the mode table **and `export_ace_model`'s own docstring** — the copy a
+user reads at the REPL — state plainly, with the measured numbers, that as of B2 Hermite is
+**both slower and approximate** on both reference models, so that nobody selects it for speed.
+(The docstring was the last to be fixed: until this round it still recommended Hermite for
+"learned radials with a small `N_POLYS`", the justification §7 establishes is empty, and
+carried no speed figure at all — so this claim was true of the README and false of the
+docstring at the time it was first written.)
 
 ---
 

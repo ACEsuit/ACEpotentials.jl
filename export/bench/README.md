@@ -48,6 +48,14 @@ performance steps is a bug, not a speed-up. `:hermite_spline` is compared to the
 * Two runs must agree within **3 %**; otherwise take a third run and report the median.
 * The `pace recursive` (ML-PACE) comparator is re-run **the same day on the same core** as
   the ACE numbers it is compared with. A cross-day or cross-core comparison is not reported.
+* **100 steps measures a throughput RATIO, not a steady-state absolute.** The multi-rank work
+  in `FINDINGS_parity.md` §4 found that a 4-rank run's `Pair` imbalance falls from ~30 % at 100
+  steps to 14.8 % at 400, i.e. a fixed per-run cost — first-touch of the library's tables, or
+  the first collection — is a visible fraction of a 100-step run. The ratios in this file are
+  unaffected, because both pair styles pay their own startup in the same block and the verdicts
+  rest on the ratios. But the **µs/site absolutes should not be quoted as steady-state
+  throughput**, for the same reason §5.6 of the finding says not to quote the micro-profile's
+  absolutes. A long-run figure would need a longer run.
 * `cat /proc/loadavg` is recorded immediately before each timing block and quoted with the
   result. This is a shared host: yield to other users, and never time on a contended core.
   (`nproc` reports 1 here because `OMP_NUM_THREADS=1` is inherited; the host really has 32

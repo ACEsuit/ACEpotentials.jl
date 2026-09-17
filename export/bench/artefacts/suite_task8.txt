@@ -145,7 +145,13 @@ site-function cross-check over 384 sites (pair export / pair-less export of the 
     max|Ylm(value route) - Ylm(derivative route)| = 3.552713678800501e-15 / 3.552713678800501e-15  [SpheriCart, not gated to 0]
 /home/eng/essswb/.local/lib/python3.9/site-packages/ase/io/lammpsdata.py:51: FutureWarning: "style" is deprecated; please use "atom_style".
   warnings.warn(
-LIVENESS_GC: 31261 calls, 72 neighbours, 129.3 MB allocated, 3 collection(s), 1.99 s
+WARNING: Detected access to binding `Exported_6769433145112826836.RCUT_MAX` in a world prior to its definition world.
+  Julia 1.12 has introduced more strict world age semantics for global bindings.
+  !!! This code may malfunction under Revise.
+  !!! This code will error in future versions of Julia.
+Hint: Add an appropriate `invokelatest` around the access to this binding.
+To make this warning an error, and hence obtain a stack trace, use `julia --depwarn=error`.
+LIVENESS_GC: 31261 calls, 72 neighbours, 129.3 MB allocated, 3 collection(s), 2.01 s
 LIVENESS_GC PASS
 TWO_RANK_PARITY: 64 atoms   max|F| = 5.118419e+01 eV/A   min-force gate = 1.0e-03
 TWO_RANK_PARITY: max|dF| = 1.475553e-14 eV/A   mean|dF| = 2.401642e-15   tol = 1.0e-12   [absolute, per atom vector norm]
@@ -183,19 +189,19 @@ ACE_GROUP_STATUS python=ran
 [ Info: Cantor fixture available: true
 [ Info: Parity gate runnable: false  EXPORT_REF_SHA is not set (this gate has no default)
 [ Info: Python available: true
-┌ Info:   lmp candidate rejected: /home/eng/essswb/.local/bin/lmp ([moriarty:601974] *** Process received signal ***
-│ [moriarty:601974] Signal: Segmentation fault (11)
-│ [moriarty:601974] Signal code: Address not mapped (1)
-│ [moriarty:601974] Failing at address: 0x44000098
-│ [moriarty:601974] [ 0] /lib64/libc.so.6(+0x3fb30)[0x14d40e03fb30]
-│ [moriarty:601974] [ 1] /software/easybuild/software/CASA/5.3.0-143.el7/lib64/libmpi.so.12(PMPI_Comm_rank+0x3e)[0x14d40ea22b9e]
-│ [moriarty:601974] [ 2] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS8UniverseC1EPNS_6LAMMPSEi+0x12f)[0x14d40fa4190f]
-│ [moriarty:601974] [ 3] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS6LAMMPSC1EiPPci+0xaf)[0x14d40f82d0af]
-│ [moriarty:601974] [ 4] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(main+0x3f)[0x4023ff]
-│ [moriarty:601974] [ 5] /lib64/libc.so.6(+0x2a610)[0x14d40e02a610]
-│ [moriarty:601974] [ 6] /lib64/libc.so.6(__libc_start_main+0x80)[0x14d40e02a6c0]
-│ [moriarty:601974] [ 7] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(_start+0x2e)[0x40249e]
-└ [moriarty:601974] *** End of error message ***)
+┌ Info:   lmp candidate rejected: /home/eng/essswb/.local/bin/lmp ([moriarty:631514] *** Process received signal ***
+│ [moriarty:631514] Signal: Segmentation fault (11)
+│ [moriarty:631514] Signal code: Address not mapped (1)
+│ [moriarty:631514] Failing at address: 0x44000098
+│ [moriarty:631514] [ 0] /lib64/libc.so.6(+0x3fb30)[0x14b2be83fb30]
+│ [moriarty:631514] [ 1] /software/easybuild/software/CASA/5.3.0-143.el7/lib64/libmpi.so.12(PMPI_Comm_rank+0x3e)[0x14b2bf202b9e]
+│ [moriarty:631514] [ 2] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS8UniverseC1EPNS_6LAMMPSEi+0x12f)[0x14b2c022190f]
+│ [moriarty:631514] [ 3] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS6LAMMPSC1EiPPci+0xaf)[0x14b2c000d0af]
+│ [moriarty:631514] [ 4] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(main+0x3f)[0x4023ff]
+│ [moriarty:631514] [ 5] /lib64/libc.so.6(+0x2a610)[0x14b2be82a610]
+│ [moriarty:631514] [ 6] /lib64/libc.so.6(__libc_start_main+0x80)[0x14b2be82a6c0]
+│ [moriarty:631514] [ 7] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(_start+0x2e)[0x40249e]
+└ [moriarty:631514] *** End of error message ***)
 [ Info: LAMMPS available: true
 [ Info: MPI available: true
 [ Info: 
@@ -380,18 +386,24 @@ ACE_GROUP_STATUS python=ran
 [ Info: library pair term at r = 2.35 Å: V = -2.341248e-01 eV, dV/dr = -2.002127e+00 eV/Å
 [ Info: LAMMPS vs Julia: |dE|/atom = 1.776e-15 eV/atom, max|dF| = 8.054e-14 eV/Å (tol 1e-10)
 [ Info: library vs Julia: |dE|/atom = 1.776e-15 eV/atom, max|dF| = 8.294e-14 eV/Å (tol 1e-12)
+[ Info: virial pxx: LAMMPS -2.0679535110e+06 bar, Julia -2.0679535110e+06 bar, rel 3.603e-15
+[ Info: virial pyy: LAMMPS -1.9981888311e+06 bar, Julia -1.9981888311e+06 bar, rel 2.680e-15
+[ Info: virial pzz: LAMMPS -2.0853290901e+06 bar, Julia -2.0853290901e+06 bar, rel 2.791e-15
+[ Info: virial pxy: LAMMPS +4.8523857606e+05 bar, Julia +4.8523857606e+05 bar, rel 5.398e-15
+[ Info: virial pxz: LAMMPS -5.2471935644e+05 bar, Julia -5.2471935644e+05 bar, rel 0.000e+00
+[ Info: virial pyz: LAMMPS +1.2037289440e+06 bar, Julia +1.2037289440e+06 bar, rel 1.934e-16
 [ Info: Running MPI tests...
 [ Info: Using LAMMPS: /home/eng/essswb/lammps/lammps-22Jul2025/build/lmp with /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
 [ Info: MPI force consistency: max|F| = 5.118e+01 eV/Å, max|dF| (4 ranks vs serial) = 1.476e-14 eV/Å
 [ Info: Test suite completed!
 Test Summary:                                                                  |  Pass  Total     Time
-ACE Export Tests                                                               | 32549  32549  4m45.0s
-  ETACE Export                                                                 |    26     26  1m23.2s
-    Model Export                                                               |    11     11    36.4s
+ACE Export Tests                                                               | 32562  32562  4m49.5s
+  ETACE Export                                                                 |    26     26  1m24.0s
+    Model Export                                                               |    11     11    36.8s
     Energy Correctness                                                         |     1      1    10.8s
-    Force Correctness                                                          |     4      4    22.6s
-    Virial Correctness                                                         |     1      1     3.5s
-    Finite Difference Verification                                             |     3      3     3.6s
+    Force Correctness                                                          |     4      4    22.9s
+    Virial Correctness                                                         |     1      1     4.0s
+    Finite Difference Verification                                             |     3      3     3.1s
     Multi-species Export                                                       |     6      6     6.3s
   Hermite Spline Export                                                        |    10     10    12.2s
   Hermite Spline Export Accuracy                                               |    31     31    11.0s
@@ -401,21 +413,21 @@ ACE Export Tests                                                               |
     Finite Difference Verification (Hermite)                                   |     4      4     0.6s
     Finite Difference Verification (Polynomial)                                |     4      4     0.7s
     Random Perturbation Tests (Hermite)                                        |     5      5     0.5s
-  Hermite export of the fitted Cantor model (NZ=5)                             |    24     24  1m08.2s
-  Multi-Species ETACE Export                                                   |   182    182    28.0s
+  Hermite export of the fitted Cantor model (NZ=5)                             |    24     24  1m08.9s
+  Multi-Species ETACE Export                                                   |   182    182    28.1s
     the NZ=3 models discriminate the two pair conventions                      |    26     26     0.4s
-    :polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12               |     4      4    10.9s
-    :hermite_spline (uniform cutoff) vs the SPLINIFIED stack, 1e-12            |     5      5    10.2s
-    upstream: splinified evaluation is impossible with per-pair cutoffs        |    18     18     0.2s
+    :polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12               |     4      4    11.0s
+    :hermite_spline (uniform cutoff) vs the SPLINIFIED stack, 1e-12            |     5      5    10.3s
+    upstream: splinified evaluation is impossible with per-pair cutoffs        |    18     18     0.3s
     one ordered pair index keys every per-pair table                           |   123    123     1.3s
     a 300-neighbour site evaluates; the cap and the global scratch are gone    |     6      6     1.8s
   set partitions                                                               |  3479   3479     0.6s
-  DAG reproduces the flat AA basis and the readout                             | 28269  28269    13.5s
+  DAG reproduces the flat AA basis and the readout                             | 28269  28269    13.0s
   has0 (a CONSTANT AA term): the paths no real model reaches                   |   403    403     0.3s
-  aa_products = :flat is the default and emits no DAG                          |     5      5     2.4s
-  exported DAG evaluator is exact                                              |    12     12     5.9s
-  Pair potential is exported                                                   |    12     12     8.9s
-  site_energy / _forces / _forces_virial agree, with a live pair term          |    12     12    11.3s
+  aa_products = :flat is the default and emits no DAG                          |     5      5     2.5s
+  exported DAG evaluator is exact                                              |    12     12     6.6s
+  Pair potential is exported                                                   |    12     12     9.0s
+  site_energy / _forces / _forces_virial agree, with a live pair term          |    12     12    11.5s
   Unknown calculator in the stack is refused                                   |     2      2     0.0s
   Python Calculator                                                            |    20     20     6.2s
     Library Loading                                                            |     1      1     0.1s
@@ -430,11 +442,12 @@ ACE Export Tests                                                               |
     Get Descriptors via Calculator                                             |     3      3     0.5s
     Descriptor Supercell Consistency                                           |     1      1     0.5s
     library survives its own garbage collector (bitwise, >= 3 collections)     |     3      3     2.2s
-  LAMMPS Plugin                                                                |    27     27    15.4s
+  LAMMPS Plugin                                                                |    40     40    17.9s
     Plugin Loading                                                             |     2      2     1.6s
     LAMMPS vs Julia (reference: exported model in Julia, tol 1e-10)            |    14     14     3.5s
     Python library vs Julia (reference: exported model in Julia, tol 1e-12)    |     4      4     0.8s
-    two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)          |     1      1     4.8s
+    two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)          |     1      1     4.7s
+    Virial vs Julia (rattled cell, all six components, tol 1e-10)              |    13     13     2.6s
     Stress/Virial (smoke: cubic symmetry only)                                 |     3      3     1.7s
     NVE runs (liveness: 512 atoms, ~103 MB allocated, 2.4x the first-GC point) |     3      3     3.0s
   MPI Parallelization                                                          |    25     25    11.5s

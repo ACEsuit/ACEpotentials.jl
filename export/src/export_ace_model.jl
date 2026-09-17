@@ -120,7 +120,7 @@ Arguments:
 
 | mode | tensor step | Cantor (order 3, 201 neigh) | TiAl (order 4, 112 neigh) |
 |---|---|---|---|
-| `:flat` (**default**) | flat AA products, sparse `A2Bmap`, `dot(B, WB_iz)`, flat pullback | **57.9 µs/site** | (gated; see below) |
+| `:flat` (**default**) | flat AA products, sparse `A2Bmap`, `dot(B, WB_iz)`, flat pullback | **58.1 µs/site** | **94.0 µs/site** |
 | `:dag` | binary product DAG + per-species `CTILDE` (the readout folded at export time) | 76.4 µs/site (**1.32x SLOWER**) | not gateable at 1e-12; would be ~1.8x FASTER |
 
 `:dag` replaces the flat AA products with `EquivariantTensors`' `SparseSymmProdDAG`
@@ -166,7 +166,17 @@ model and the wrong one here, and it is available but off.
 | mode | reproduces | accuracy | when to use |
 |---|---|---|---|
 | `:polynomial` (**default**) | the fitted model | exact: 1e-12 in energies, forces and virial | any model |
-| `:hermite_spline` | the **splinified** model | approximate; the splinification error is a property of the model, not of the export | learned radials with a small `N_POLYS`, where the spline table is cheaper than the recurrence |
+| `:hermite_spline` | the **splinified** model | approximate: 2.7e-4 eV/Å (Cantor) and 1.6e-2 eV/Å (TiAl order 4) at `Nspl = 50` -- the splinification error is a property of the model, not of the export | a model that was *fitted after* `splinify()`, which is the only case it can be exported at all |
+
+**DO NOT CHOOSE `:hermite_spline` FOR SPEED.** Since the per-neighbour kernel it is the
+**slower** mode as well as the approximate one: **62.5 vs 58.1 µs/site on Cantor and 152.5 vs
+94.0 on TiAl** (one pinned core, `export/bench/README.md`). Its old justification -- "learned
+radials with a small `N_POLYS`, where the spline table is cheaper than the recurrence" -- no
+longer holds either: `:polynomial` emits an arbitrary dense (i.e. learned) radial-mixing tensor
+exactly, and emits the recurrence only at the width a model actually reads (45 -> 6 terms on
+Cantor, 33 -> 11 on TiAl), which is the work the spline table existed to avoid. What remains is
+that `:polynomial` *cannot* export an already-splinified model, because `splinify()` leaves no
+recurrence to emit. See `export/bench/FINDINGS_parity.md` §7.
 
 `:polynomial` re-evaluates the orthogonal polynomial recurrence at runtime and reproduces the
 model it was exported from to double-precision roundoff.  It is the default and the mode every

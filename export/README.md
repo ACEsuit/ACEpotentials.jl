@@ -66,12 +66,24 @@ using ACEpotentials.Models, ACEpotentials.ETModels
 ace_model = Models.ace_model(elements=(:Si,), order=3, ...)
 acefit!(data, ACEPotential(ace_model, ps, st))
 
-# Convert to ETACE and splinify (CRITICAL: before export)
+# Convert to ETACE.  Do NOT splinify: the default :polynomial mode exports the recurrence
+# itself, exactly, and splinify() removes the recurrence it needs.
 et_model = ETModels.convert2et(ace_model)
-et_model_splined = ETModels.splinify(et_model, et_ps, et_st; Nspl=50)
 
 # Export (default: :polynomial, exact to 1e-12 against the fitted model)
 export_ace_model(et_calc, "model.jl")
+```
+
+`splinify()` is **not** a step in this workflow, and exporting a splinified model with the
+default mode is a hard error rather than a silent substitution — see
+[Radial Basis Export Options](#radial-basis-export-options). It belongs only to the
+`:hermite_spline` path:
+
+```julia
+# The :hermite_spline path -- approximate, slower, and needed only if the model was FITTED
+# after splinification.  See the mode table below before choosing it.
+et_model_splined = ETModels.splinify(et_model, et_ps, et_st; Nspl=50)
+export_ace_model(et_calc_splined, "model.jl"; radial_basis=:hermite_spline)
 ```
 
 See [`examples/etace_lammps_tutorial.jl`](examples/etace_lammps_tutorial.jl) for a complete walkthrough.
@@ -396,6 +408,7 @@ being true, and the protocol and the full measurement table are in
 | generated Julia vs the fitted `ETACEPotential`/`StackedCalculator` | the model as fitted (or as splinified, for `:hermite_spline`) | 1e-12 energies, forces, virial |
 | compiled `.so` via the Python C API vs Julia | the generated Julia | 1e-12 |
 | `pair_style ace` in LAMMPS vs Julia | the compiled library | 1e-10 |
+| the LAMMPS virial, all six Voigt components, rattled cell | the Julia reference | 1e-10 relative |
 | 2 MPI ranks vs 1 | the serial run | 1e-13 relative in energy, 1e-12 absolute in forces |
 | `OMP_NUM_THREADS=4` vs serial | the serial run | bitwise |
 | generator vs the previous generator | the previous commit's exported model | 1e-13 relative |
