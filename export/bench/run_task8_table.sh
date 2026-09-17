@@ -96,12 +96,26 @@ echo "### run_task8_table.sh  start $(date '+%Y-%m-%d %H:%M:%S')  core=$CORE"
 echo "### loadavg at dispatch: $(cat /proc/loadavg)"
 echo "### out: $OUT"
 
-for pass in A B; do
-  echo "### PASS $pass  $(date +%H:%M:%S)  loadavg=$(cut -d' ' -f1-3 /proc/loadavg)"
-  for tag in $PASS_ALL; do run_block "$tag"; done
-done
-echo "### PASS C (TiAl :polynomial repeats, for n >= 5)  $(date +%H:%M:%S)"
-for tag in $PASS_TIAL; do run_block "$tag"; done
+# TAGS overrides the pass structure entirely and runs exactly the tags given, once each, in
+# order.  It exists for TOP-UP passes: the 3 % spread rule is the protocol's, and on the TiAl
+# box -- which Task 4 measured as carrying +-7 % irreducible block-to-block scatter -- it
+# excludes blocks often enough that a tag can finish a full session with fewer included runs
+# than the protocol requires.  Topping such a tag up with further blocks is the protocol
+# working as intended; it is NOT the same as re-running a tag until a number is liked, and the
+# difference is that the top-up blocks go into the SAME rows file and are pooled with the rest
+# by `summarise_rows.py`, which shows every block it included and every block it dropped.
+#     TAGS="tial_poly tial_poly tial_poly_b2" export/bench/run_task8_table.sh rows.txt
+if [ -n "${TAGS:-}" ]; then
+  echo "### TOP-UP PASS: $TAGS  $(date +%H:%M:%S)  loadavg=$(cut -d' ' -f1-3 /proc/loadavg)"
+  for tag in $TAGS; do run_block "$tag"; done
+else
+  for pass in A B; do
+    echo "### PASS $pass  $(date +%H:%M:%S)  loadavg=$(cut -d' ' -f1-3 /proc/loadavg)"
+    for tag in $PASS_ALL; do run_block "$tag"; done
+  done
+  echo "### PASS C (TiAl :polynomial repeats, for n >= 5)  $(date +%H:%M:%S)"
+  for tag in $PASS_TIAL; do run_block "$tag"; done
+fi
 
 echo "### run_task8_table.sh  done $(date '+%Y-%m-%d %H:%M:%S')  loadavg=$(cat /proc/loadavg)"
 echo "### summarise with:"

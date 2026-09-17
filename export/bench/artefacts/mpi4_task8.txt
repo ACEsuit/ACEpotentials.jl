@@ -1,0 +1,30 @@
+mpi_sanity.sh  2026-09-17 09:27:35  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 2.37 2.43 1.67 2/667 600867
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=6.94664s  Pair %varavg=35.1  %total=79.15  Comm %varavg=68.5
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.6056s  Pair %varavg=5.8  %total=97.79  Comm %varavg=38.7
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_pace.log
+mpi_sanity.sh  2026-09-17 09:27:58  tag=tial_poly_b2 ranks=4 steps=100
+  loadavg 2.96 2.56 1.73 2/667 601099
+  lib     /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/libace_tial_poly_b2.so
+  sha256  68742ed29200c8c5
+  plugin  /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/verify_cantor/plugin_build_b2/aceplugin.so
+  mpirun  /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+  box     box_tial.lmp
+  pair_style ace : procs=4  loop=6.99181s  Pair %varavg=24.6  %total=79.45  Comm %varavg=48.5
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  mpirun (pace) /software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+  pace recursive : procs=4  loop=10.6266s  Pair %varavg=6.3  %total=97.72  Comm %varavg=41.3
+    Nlocal:            500 ave         507 max         496 min
+    FullNghs:        56065 ave       56835 max       55618 min
+  screen logs: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_ace.log /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/mpi_sanity_tial_poly_b2_pace.log

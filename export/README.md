@@ -80,10 +80,22 @@ See [`examples/etace_lammps_tutorial.jl`](examples/etace_lammps_tutorial.jl) for
 
 When exporting, choose the radial basis representation:
 
-| Mode | Accuracy | Reference it reproduces | Status | Use case |
-|------|----------|-------------------------|--------|----------|
-| `:polynomial` | exact (1e-12 in energy, forces and virial) | the **fitted** model | **default** | any model |
-| `:hermite_spline` | approximate: 2.7e-4 eV/Å at `Nspl=50`, 3e-6 eV/Å at `Nspl=200` on the Cantor model | the **splinified** model | opt-in | learned radials with a small `N_POLYS` |
+| Mode | Accuracy | Reference it reproduces | Speed, µs/site (Cantor / TiAl) | Status | Use case |
+|------|----------|-------------------------|---|--------|----------|
+| `:polynomial` | **exact** (1e-12 in energy, forces and virial) | the **fitted** model | **58.1 / 92.8** | **default** | any model that has not been splinified |
+| `:hermite_spline` | approximate: 2.7e-4 eV/Å at `Nspl=50`, 3e-6 eV/Å at `Nspl=200` on the Cantor model; **1.6e-2 eV/Å** on the TiAl order-4 model | the **splinified** model | 62.5 / 152.5 (**7 % / 64 % slower**) | opt-in | a model that was *fitted after* `splinify()` — the only case it can be exported at all |
+
+> **Do not choose `:hermite_spline` for speed.** As of the per-neighbour kernel it is the
+> **slower** mode on both reference models *and* the approximate one. The speed column is
+> measured — one pinned core, 2048- and 2000-atom boxes, `timestep 0.0`, 100 steps; the
+> protocol, the rows and the artefacts are in [`bench/README.md`](bench/README.md). Its old
+> justification, "learned radials with a small `N_POLYS`", no longer holds either:
+> `:polynomial` now emits an arbitrary dense (i.e. genuinely learned) radial-mixing tensor
+> exactly, and emits the recurrence only at the width a model actually reads. What remains is
+> that `:polynomial` **cannot** export an already-splinified model — `splinify()` leaves no
+> recurrence to emit — so `:hermite_spline` is the only route for one. See
+> [`bench/FINDINGS_parity.md`](bench/FINDINGS_parity.md) §7, which puts the question of
+> retiring this mode to the maintainer.
 
 `:polynomial` re-evaluates the polynomial recurrence at runtime and reproduces the model it
 was exported from to double-precision roundoff.
@@ -250,59 +262,84 @@ The `ACELibraryCalculator` is single-threaded due to Julia's `--trim=safe` compi
 
 ## C API Reference
 
-The compiled library exports these C functions:
+Summarised here; **[`docs/C_INTERFACE_API.md`](docs/C_INTERFACE_API.md) is the authority**, and
+it also explains why each rule below exists.
 
-### Model Information Functions
+### Workspaces (every evaluation entry point takes one)
 
-```c
-double ace_get_cutoff(void);      // Returns maximum cutoff radius (Angstroms)
-int ace_get_n_species(void);       // Returns number of supported species
-int ace_get_species(int idx);      // Returns atomic number for species index (1-indexed)
-```
-
-### Site-Level Evaluation
-
-These functions compute the contribution from a single site (atom i) given its neighbors.
-Both LAMMPS and Python use this API (with their respective neighbor list implementations).
+The library holds **no mutable global state**. All scratch lives in a *workspace*, which the
+caller obtains once and passes as the **first argument** to every evaluation call:
 
 ```c
-// Energy only
-double ace_site_energy(
-    int z0,           // Atomic number of center atom
-    int nneigh,       // Number of neighbors
-    int* neighbor_z,  // Array[nneigh]: atomic numbers of neighbors
-    double* Rij       // Array[nneigh*3]: displacement vectors R_j - R_i (row-major)
-);
-
-// Energy and forces
-double ace_site_energy_forces(
-    int z0,           // Atomic number of center atom
-    int nneigh,       // Number of neighbors
-    int* neighbor_z,  // Array[nneigh]: atomic numbers of neighbors
-    double* Rij,      // Array[nneigh*3]: displacement vectors (input)
-    double* forces    // Array[nneigh*3]: forces ON neighbors (output)
-);
-
-// Energy, forces, and virial
-double ace_site_energy_forces_virial(
-    int z0,           // Atomic number of center atom
-    int nneigh,       // Number of neighbors
-    int* neighbor_z,  // Array[nneigh]: atomic numbers of neighbors
-    double* Rij,      // Array[nneigh*3]: displacement vectors (input)
-    double* forces,   // Array[nneigh*3]: forces ON neighbors (output)
-    double* virial    // Array[6]: site virial in Voigt notation (xx,yy,zz,yz,xz,xy) (output)
-);
+void *ace_workspace_new(void);   /* NULL when the pool is exhausted -- CHECK IT */
+void  ace_workspace_free(void *ws);
+int   ace_max_workspaces(void);  /* pool size, fixed when the library was built (32) */
 ```
 
-### Important Conventions
+- **Re-entrant with one workspace per concurrent caller.** Not thread-safe with a shared one,
+  and there is no internal locking that would make it so.
+- The pool is **fixed size and built into the library image**; size your thread pool with
+  `ace_max_workspaces()` and check `ace_workspace_new` for `NULL`. (It is in the image because
+  a runtime-allocated Julia object is not reliably rooted in a `juliac --trim` library — that
+  was measured twice, and both variants passed every accuracy gate before dying in a real run.)
+- A workspace is sized from the **model**, never from the neighbour count, so there is **no
+  maximum neighbour count**: the old `MAX_NEIGHBORS = 256` cap is gone.
+- Handles are **tagged opaque integers** and are validated on every call; a stale, freed or
+  never-allocated handle is rejected rather than served.
 
-**Force Convention:**
-The site-level API returns forces **on neighbors**:
-- `forces[j]` = force on neighbor j due to center atom
-- For total forces: `F[j] += forces[j]`, `F[i] -= sum(forces)`
+A library compiled before this API does not export `ace_workspace_new`. Both the LAMMPS plugin
+and `ACELibrary` resolve that symbol first and **refuse to load** such a library — re-export
+and re-compile rather than working around it.
 
-**Virial Format:**
-6 elements in Voigt notation: `[xx, yy, zz, yz, xz, xy]`
+### Model information (no workspace, no state)
+
+```c
+double ace_get_cutoff(void);      /* maximum cutoff radius, Å */
+int    ace_get_n_species(void);
+int    ace_get_species(int idx);  /* atomic number for 1-based species index */
+int    ace_get_n_basis(void);
+unsigned long long ace_build_id(void);   /* 64-bit hash of the generated source */
+```
+
+### Site-level evaluation
+
+One site (atom *i*) given its neighbours. LAMMPS and Python both use this API with their own
+neighbour lists.
+
+```c
+double ace_site_energy(void *ws, int z0, int nneigh,
+                       const int *neighbor_z, const double *neighbor_Rij);
+
+double ace_site_energy_forces(void *ws, int z0, int nneigh,
+                              const int *neighbor_z, const double *neighbor_Rij,
+                              double *forces);
+
+double ace_site_energy_forces_virial(void *ws, int z0, int nneigh,
+                                     const int *neighbor_z, const double *neighbor_Rij,
+                                     double *forces, double *virial);
+
+int    ace_site_basis(void *ws, int z0, int nneigh,
+                      const int *neighbor_z, const double *neighbor_Rij,
+                      double *basis_out);
+
+void   ace_batch_energy_forces_virial(void *ws, int natoms, const int *z,
+                                      const int *neighbor_counts,
+                                      const int *neighbor_offsets,
+                                      const int *neighbor_z, const double *neighbor_Rij,
+                                      double *energies, double *forces, double *virials);
+```
+
+### Important conventions
+
+- `neighbor_Rij` is `nneigh * 3` doubles of **displacement vectors** `R_j - R_i` in Å — not
+  positions.
+- **Forces are on neighbours:** `forces[j]` is `-dE_i/dR_j`. For totals,
+  `F[j] += forces[j]`, `F[i] -= sum(forces)`.
+- **Virial** is 6 doubles in Voigt order `[xx, yy, zz, yz, xz, xy]`.
+- The returned energy is the **site energy including `E0`** of the centre species, and the pair
+  term when the model has one. `nneigh == 0` returns `E0` and writes zeros.
+- `ace_batch_*` is sequential within one call and uses the single workspace it is given; to go
+  parallel, split the atom range and give each thread its own.
 
 ## Technical Details
 
@@ -312,15 +349,62 @@ The export uses Julia 1.12's `juliac --trim=safe` feature to create standalone l
 - Type-stable code paths (no dynamic dispatch)
 - Pre-computed tensor structures
 - Manual pullback for analytic forces (avoids Zygote allocations)
-- Spline-based radial basis for fast evaluation
+- A per-neighbour kernel: one pass builds the `A` basis edge by edge, one pass turns `∂A` back
+  into forces, and the radial recurrence is emitted only for the `(n,l)` rows and species pairs
+  a given model actually reads
 
 ### Library Size
 
-Typical deployment sizes:
-- Model library: ~3 MB
+Typical deployment sizes (measured on `libace_cantor_poly_b2.so`, a 5-species order-3 model):
+- Model library: ~4 MB
 - Julia runtime: ~20 MB
-- LAMMPS plugin: ~70 KB
+- LAMMPS plugin: ~75 KB
 - **Total: ~25 MB**
+
+## Known limitations
+
+1. **The Julia runtime ships beside LAMMPS.** A compiled model is a `juliac --trim=safe`
+   shared library and needs `libjulia` and its support libraries on `LD_LIBRARY_PATH` at run
+   time — about 20 MB, and the reason `setup_env.sh` exists. No Julia *process* is started and
+   no Julia code is interpreted, but the runtime is not removable.
+2. **LAMMPS copies the neighbour list.** `pair_style ace` requests a FULL neighbour list, filters each
+   atom's list to `r < rcut` (LAMMPS' list carries the skin, so this is a real reduction —
+   201 listed neighbours become 82 on the Cantor box) and packs displacement vectors into a
+   contiguous buffer before calling the library. That copy is per-site and unavoidable across the C boundary in the
+   current ABI; it is inside every timing row in [`bench/README.md`](bench/README.md), so the
+   published throughput already includes it.
+3. **`:hermite_spline` is approximate by construction, and since B2 it is also the slower
+   mode.** See the table above. It cannot be used at all when species pairs have different
+   cutoffs (an upstream `EquivariantTensors._spl_grid` `BoundsError`), and the export refuses
+   that combination rather than emitting it.
+4. **One workspace per concurrent caller, from a pool of 32.** Not a physical limit — see the
+   C API section — but it is fixed when the library is built.
+5. **The minimal-export path is inoperable.** `pair_ace_minimal.cpp` looks for
+   `ace_c_interface_minimal.jl` through `ACE_C_INTERFACE_PATH`; that file was deleted in
+   `0372f90d`. Use the compiled-library path. Whether the minimal path is restored against the
+   current ABI or removed is an open question for the maintainer — see
+   [`bench/FINDINGS_parity.md`](bench/FINDINGS_parity.md).
+
+## Verification
+
+Every claim of exactness or speed in this file is gated by a test that fails when it stops
+being true, and the protocol and the full measurement table are in
+**[`bench/README.md`](bench/README.md)**. In brief:
+
+| level | reference | tolerance |
+|---|---|---|
+| generated Julia vs the fitted `ETACEPotential`/`StackedCalculator` | the model as fitted (or as splinified, for `:hermite_spline`) | 1e-12 energies, forces, virial |
+| compiled `.so` via the Python C API vs Julia | the generated Julia | 1e-12 |
+| `pair_style ace` in LAMMPS vs Julia | the compiled library | 1e-10 |
+| 2 MPI ranks vs 1 | the serial run | 1e-13 relative in energy, 1e-12 absolute in forces |
+| `OMP_NUM_THREADS=4` vs serial | the serial run | bitwise |
+| generator vs the previous generator | the previous commit's exported model | 1e-13 relative |
+
+```bash
+cd export/test && julia --project=.. runtests.jl        # the default groups
+ACE_REQUIRE_GROUPS=all julia --project=.. runtests.jl   # fail, don't skip, on a missing fixture
+EXPORT_REF_SHA=<commit> julia --project=.. runtests.jl parity
+```
 
 ## Troubleshooting
 

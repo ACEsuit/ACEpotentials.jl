@@ -3,9 +3,20 @@
 This directory holds the timing harness and the recorded results for the exported
 `pair_style ace` code path.
 
-The *measurement protocol* below was fixed by Task 0 and must not be rewritten. The
-Results section at the bottom holds Task 4's baseline rows, Task 5's B1 rows and Task 6's B2
-rows, all taken on this host. Do not add numbers here that were not measured.
+The *measurement protocol* below was fixed by Task 0 and must not be rewritten. **The
+close-out table — every step of the plan, both reference models, one session, one core — is
+the first thing under "Results"**; the per-task sections after it are the working record that
+produced it. Do not add numbers here that were not measured.
+
+Two standing rules, stated once and applying to everything below:
+
+* **Quote a number by running `summarise_rows.py`, never by reading a line by eye.** The
+  published statistic is the pooled median over included blocks, and the tool applies the
+  protocol's exclusions rather than leaving them to the reader. A figure in this file that was
+  typed by hand has already been found wrong once.
+* **Replicate anything surprising or borderline across at least two blocks before reporting
+  it. One block that agrees with itself is not evidence.** This codebase has one recorded
+  double-digit-percent single-block timing outlier of unknown cause (see Task 6's section).
 
 ## Measurement protocol
 
@@ -88,7 +99,106 @@ Added by Task 4 (all in this directory unless stated):
 * `make_pace_basis.py` — the size-matched `pair_style pace` comparator (multi-species).
 * `export/test/fixtures/tial_fixture.jl` — `load_tial_fixture()` and friends.
 
+Added by Tasks 6-8:
+
+* `summarise_rows.py` — **the only sanctioned way to quote a row.** Pooled median over the
+  runs of every included block; excludes a block whose own runs disagree by more than 3 %
+  (the protocol's rule) or that a `# EXCLUDE <tag> <reason>` line names, and nothing else — no
+  outlier rejection, no trimming, no warm-up discard. `--series ace|pace|both`; `both` prints
+  the ratio of the two pooled medians, which is what a published ratio must come from. It
+  fails loudly (nonzero exit) on a malformed file, an empty file, a tag matching no rows, a
+  stale exclusion, a reasonless exclusion, or a group left with no usable blocks.
+* `profile_tensor_step.jl` — the per-phase attribution profile. **Not a protocol row**: its
+  ratios are stable, its absolutes are not (see Task 7's section).
+* `diag_dA_conditioning.jl` — the BigFloat conditioning diagnostic behind the κ figures and
+  the 1e-12 force-gate comment.
+* `run_task8_table.sh` — the close-out table in one command. Chooses the plugin per library
+  from the library's own symbol table (a pre-B2 library needs the pre-workspace plugin, and
+  the two mismatches are loud in opposite directions).
+* `mpi_sanity.sh` — the multi-rank `%varavg` load-balance check, for both pair styles.
+* `export/test/bytecmp_generator.jl` — generated source vs a reference commit, **byte for
+  byte**, with `EXPORT_BUILD_ID` from each.
+* `artefacts/` — the committed copies of the files the close-out numbers are quoted from.
+
 ## Results
+
+### THE CLOSE-OUT TABLE — 2026-09-17, moriarty, core 31
+
+| step | Cantor µs/site | vs `pace` | TiAl µs/site | vs `pace` |
+|---|---|---|---|---|
+| baseline (Task 4 generator) | 512.2 | **7.93x** | 424.6 | **2.27x** |
+| B1 — radial mixing from `W`'s sparsity (Task 5) | 224.9 | **3.49x** | 278.8 | **1.49x** |
+| **B2 — per-neighbour kernel (Task 6) — SHIPPED** | **58.1** | **0.89x** | **92.8** | **0.50x** |
+| `:hermite_spline`, `Nspl = 50`, at B2 | 62.5 | 0.97x | 152.5 | 0.82x |
+| `pair_style pace recursive` (the comparator, re-run in every block) | 64.8 | 1.00 | 186.5 | 1.00 |
+
+**The gate is ≤ 1.20x on both models in exact `:polynomial`. Measured: 0.89x and 0.50x** — and
+three of the four shipped configurations are faster than `pair_style pace recursive` outright.
+
+Taken 2026-09-17 on `moriarty`, core 31, `taskset`, `OMP_NUM_THREADS=1`, `timestep 0.0`, 100
+steps per run, `/proc/loadavg` 0.29–1.69 (this benchmark's own single pinned process is ~1.0).
+Every figure is the pooled median that `summarise_rows.py --series both` prints, numerator and
+denominator alike; every library passed its source, library, LAMMPS and 2-rank gates before it
+was timed, enforced by a content-based interlock (`gate=OK[...]` in every row).
+
+These reproduce the per-task rows they supersede — 8.15 → 7.93, 3.51 → 3.49, 0.90 → 0.89,
+0.97 → 0.97, 2.27 → 2.27, 1.54 → 1.49, 0.49 → 0.50, 0.82 → 0.82 — on a different day with the
+whole chain re-measured in one session.
+
+Rows: `artefacts/rows_task8.txt` (also in the untracked
+`bench_parity/rows_task8.txt`), session transcript `artefacts/task8_table.txt`,
+driver `run_task8_table.sh`. Quote it with
+
+```
+export/bench/summarise_rows.py export/bench/artefacts/rows_task8.txt --series both
+```
+
+**Pass the tags as nothing at all**, so the tool groups by EXACT tag. Passing
+`cantor_poly` as a prefix also matches `cantor_poly_b1` and `cantor_poly_b2` and pools
+three different binaries into one statistic — it is the one trap in the interface.
+
+#### A protocol/tool interaction found while taking this table, and what it costs
+
+The protocol says *"two runs must agree within 3 %; otherwise take a third run and report
+the median"*. `summarise_rows.py` excludes any block whose spread exceeds 3 %. **Those two
+rules contradict each other**: a third run is taken only when the first two already differ
+by more than 3 %, and a third value can only widen the min-max — so *every* block that goes
+to three runs is then discarded by the tool, and the median the protocol asked for is never
+reported. On the TiAl box, whose ±7 % block-to-block scatter Task 4 documented, that is most
+blocks: `tial_poly` took 16 runs across 6 blocks and the tool admitted 4 of them.
+
+It is disclosed rather than fixed, because changing the rule now would silently move
+figures already published above (Task 6's four controls and Task 7's rows). **It changes
+nothing here.** Re-running the same rows with every block admitted (`--max-spread 1.0`,
+which is *not* how a figure should be quoted) gives:
+
+| tag | protocol (3 % rule) | all blocks | runs | difference |
+|---|---|---|---|---|
+| `cantor_poly` | 7.932 | 7.890 | 4 → 7 | 0.5 % |
+| `cantor_poly_b1` | 3.488 | 3.488 | 6 → 6 | 0 |
+| `cantor_poly_b2` | 0.893 | 0.893 | 4 → 4 | 0 |
+| `cantor_h50_b2` | 0.967 | 0.967 | 4 → 4 | 0 |
+| `tial_poly` | 2.273 | 2.292 | 4 → 16 | 0.8 % |
+| `tial_poly_b1` | 1.488 | 1.504 | 4 → 7 | 1.1 % |
+| `tial_poly_b2` | 0.504 | 0.505 | 8 → 14 | 0.2 % |
+| `tial_h50_b2` | 0.816 | 0.816 | 4 → 4 | 0 |
+
+No figure moves by more than 1.1 % and no verdict changes. **The recommended fix**, for
+whoever takes the next table: apply the 3 % test to the block's FIRST TWO runs (the
+protocol's own trigger) and admit a 3-run block with its median. That would move the
+published controls above by under 1.5 %, so it should be done deliberately and the moved
+figures restated, not slipped in.
+
+#### The comparator is more load-sensitive than the code under test
+
+One block's `pace` series was taken while an unrelated single-core job ran elsewhere on
+the host, and came back with an 8.67 % internal spread while the `pair_style ace` series in
+the *same block*, on the pinned core, held 0.08 %. `pace recursive` streams a 193 MB
+`.yace`; the exported library's per-edge tables are small. **A quiet core is not enough for
+the comparator — it needs a quiet host.** `summarise_rows.py` now applies the spread rule
+to each series separately, so such a block contributes its numerator and not its
+denominator; before that fix it would have moved the published denominator with every
+visible diagnostic green.
 
 ### Baseline rows — 2026-09-16, moriarty.scrtp.warwick.ac.uk, core 31
 
@@ -677,6 +787,43 @@ Quoted from
 export/bench/summarise_rows.py bench_parity/rows_task7.txt cantor_poly_b3 cantor_poly_b2 cantor_h50_b3 cantor_h50_b2
 ```
 
+#### PROVENANCE OF THE FOUR ROWS ABOVE: the `:dag` libraries were rebuilt after they were timed
+
+The `cantor_*_b3` rows above were taken against libraries whose `lib_sha256` reads
+`99050c26a6732753` / `ac6ddd7971f5f8f0` **in the rows themselves**. Those binaries no longer
+exist: the fix round corrected the indentation of two generated blocks (a Julia triple-quoted
+string dedents lines 2..n when line 1 carries content, which had been putting one statement at
+column 0), so the `:dag` source and its libraries were re-exported, re-compiled and re-gated.
+On disk they are now `c79d791745c224de` / `2dbf49ddfb32bb1f`.
+
+**The rows were not re-taken, and the change cannot have moved them**: it is whitespace in the
+generated source. That is asserted *and measured* — the source gate figures
+(`1.657933e-14 / 2.968824e-14 / 1.566155e-13` for `cantor_poly_b3`) and **every one of gates
+A, B, C, L1 and L2 reproduce digit for digit** across the rebuild
+(`bench_parity/gate_libs_b3.log` vs `bench_parity/gate_libs_b3_fix1.log`). This is the same
+situation Task 6 recorded for its own rebuild, and the same reason the `lib_sha256` field
+exists: a row is tied to the binary named *in the row*.
+
+The manifests now also record `aa_products=`, so a `:dag` library can never be mistaken for a
+`:flat` one; `verify_bench_models.jl` takes `AA_PRODUCTS=dag` in the environment (not a tag
+convention — the tag names are the keys the rows are filed under and must not change meaning).
+
+**Updated by Task 8.** The dedent fix described above did **not** work, and the note it left in
+the generator stated a rule that is false. Julia dedents a triple-quoted literal by the
+*minimum* indent over its lines; a first line sharing the line with the opening `"""` is the
+only exemption. A leading newline is therefore no defence at all, and the two `:dag` blocks —
+which contain no column-0 line — were still emitted at column 0. Task 8's first commit emits
+them line by line and states the rule that holds. **Consequences, in order of what matters:**
+
+* the **shipped default is untouched** — `:flat` output is byte-identical to `b826c831` on all
+  four benchmark models with `EXPORT_BUILD_ID` unchanged, re-verified after the change by the
+  committed `export/test/bytecmp_generator.jl` (log in `artefacts/bytecmp_task8.txt`);
+* the on-disk `cantor_*_b3` model files and libraries now predate this second whitespace fix,
+  so they are one whitespace revision behind the generator. They were **not** rebuilt again:
+  `:dag` is off by default, no row in the close-out table uses it, and the rebuild above already
+  demonstrated — by reproducing every gate figure digit for digit — that this class of change
+  moves nothing. Re-export before quoting a *new* `:dag` number.
+
 The B2 re-measurements reproduce Task 6's controls (116.8575 / 128.4955) to 1.4 % and 0.7 %,
 and `pace recursive` in the three blocks that carried it (133.224 / 131.737 / 132.103) is
 within 1.1 % of Task 4's, Task 5's and Task 6's, so the comparator has not moved and the ratio
@@ -776,27 +923,6 @@ arithmetic, not a bug.
 **This is a finding for the plan, not a change made here.** Whether the TiAl force gate should
 become κ-aware, as the TiAl virial gate already is, is a ruling for the plan owner. Until then
 `:dag` is unusable on that model and `:flat` is the default everywhere.
-
-#### Provenance note after Task 7's fix round: the `:dag` libraries were rebuilt
-
-The `cantor_*_b3` rows above were taken against libraries whose `lib_sha256` reads
-`99050c26a6732753` / `ac6ddd7971f5f8f0` **in the rows themselves**. Those binaries no longer
-exist: the fix round corrected the indentation of two generated blocks (a Julia triple-quoted
-string dedents lines 2..n when line 1 carries content, which had been putting one statement at
-column 0), so the `:dag` source and its libraries were re-exported, re-compiled and re-gated.
-On disk they are now `c79d791745c224de` / `2dbf49ddfb32bb1f`.
-
-**The rows were not re-taken, and the change cannot have moved them**: it is whitespace in the
-generated source. That is asserted *and measured* — the source gate figures
-(`1.657933e-14 / 2.968824e-14 / 1.566155e-13` for `cantor_poly_b3`) and **every one of gates
-A, B, C, L1 and L2 reproduce digit for digit** across the rebuild
-(`bench_parity/gate_libs_b3.log` vs `bench_parity/gate_libs_b3_fix1.log`). This is the same
-situation Task 6 recorded for its own rebuild, and the same reason the `lib_sha256` field
-exists: a row is tied to the binary named *in the row*.
-
-The manifests now also record `aa_products=`, so a `:dag` library can never be mistaken for a
-`:flat` one; `verify_bench_models.jl` takes `AA_PRODUCTS=dag` in the environment (not a tag
-convention — the tag names are the keys the rows are filed under and must not change meaning).
 
 The **shipped default** was not rebuilt and did not need to be: after the same fix, its
 generated source is **byte-identical to `b826c831`'s on all four benchmark models**, with

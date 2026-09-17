@@ -167,6 +167,30 @@ model file?" — `export_build_id(<file>)` in `export/src/build_stamp.jl` recomp
 process (ctypes, or any C caller): `ccall`ing into a `juliac --trim` library from a host Julia
 process aborts that process.
 
+## Cost of a call, and what the entry points are for
+
+Measured through `pair_style ace`, one pinned core, on the two reference models — the full
+table, the protocol and the artefacts are in [`../bench/README.md`](../bench/README.md), and
+the account of how it got there is in
+[`../bench/FINDINGS_parity.md`](../bench/FINDINGS_parity.md).
+
+* `ace_site_energy_forces_virial` is the entry LAMMPS takes on a step that needs the virial;
+  `ace_site_energy_forces` is the same computation without the per-edge outer product, and the
+  plugin calls it on the steps that do not. The saving is small (~0.25 % of a 100-step run at
+  `thermo 50`), and it is measured rather than assumed — a `thermo 1` control run, which forces
+  the virial on every step, reproduces the same speed-up figures.
+* `ace_site_energy` shares the forward pass and the readout with the force path, so it and
+  `ace_site_energy_forces` agree **bitwise** on the many-body term.
+* `ace_site_basis` is not on the energy or force path at all. It is served from constants
+  (`A2BMAP_*`, `WB_*`) that are emitted **only** when `for_library = true`.
+* A site call allocates about `56n + 208` bytes for `n` filtered neighbours. That is real
+  allocation in the library's own runtime: it collects, and a caller that drives the library
+  hard will see `ace_gc_count()` move. This is not a leak, and the workspace is not affected —
+  the pool is part of the image precisely so that a collection cannot reclaim it.
+
+**Do not size a workload from these numbers** without re-reading the protocol: they are
+single-core, `timestep 0.0`, and include the plugin's per-site neighbour copy.
+
 ---
 
 # C Interface API for Minimal Export
