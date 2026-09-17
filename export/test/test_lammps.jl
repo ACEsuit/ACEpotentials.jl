@@ -336,6 +336,13 @@ include(joinpath(@__DIR__, "check_export.jl"))
         # components, which is exactly the ratio of the two constants and nothing to do with
         # the potential.  That was measured before this gate was written, not guessed.
         #
+        # IF THIS TEST EVER FAILS WITH A UNIFORM ~8.4e-8 OFFSET ON ALL SIX COMPONENTS, LAMMPS
+        # HAS CHANGED ITS CONSTANT.  Update `nktv2p` below to match `src/update.cpp`; do NOT
+        # touch the tolerance.  A uniform relative offset on every component at once is a units
+        # constant, never a potential defect -- a real error in the virial path would move some
+        # components and not others, or change a sign.  This branch's own history is the reason
+        # the instruction is spelled out: the tolerance is the thing people reach for.
+        #
         # THE MAPPING WAS ESTABLISHED BY MEASUREMENT, NOT DERIVED.  `P_ab = V_ab / vol` with no
         # sign flip and no transposition, where `V` is the 3x3 returned by `exported_efv`
         # (itself `-Σ R ⊗ ∂E/∂R` summed over sites).  Worth stating because it is easy to derive

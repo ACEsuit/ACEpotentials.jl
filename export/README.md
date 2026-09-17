@@ -408,7 +408,7 @@ being true, and the protocol and the full measurement table are in
 | generated Julia vs the fitted `ETACEPotential`/`StackedCalculator` | the model as fitted (or as splinified, for `:hermite_spline`) | 1e-12 energies, forces, virial |
 | compiled `.so` via the Python C API vs Julia | the generated Julia | 1e-12 |
 | `pair_style ace` in LAMMPS vs Julia | the compiled library | 1e-10 |
-| the LAMMPS virial, all six Voigt components, rattled cell | the Julia reference | 1e-10 relative |
+| the LAMMPS virial, all six Voigt components, rattled cell — **the Si test model only**, since that is the model the LAMMPS group builds; the multi-species virial is gated at the Julia and compiled-library levels above, not through LAMMPS | the Julia reference | 1e-10 relative |
 | 2 MPI ranks vs 1 | the serial run | 1e-13 relative in energy, 1e-12 absolute in forces |
 | `OMP_NUM_THREADS=4` vs serial | the serial run | bitwise |
 | generator vs the previous generator | the previous commit's exported model | 1e-13 relative |

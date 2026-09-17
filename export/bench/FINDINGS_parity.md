@@ -297,7 +297,18 @@ geometry (handed over as a file, not rebuilt) at **1e-10 relative**. Measured: *
   gate was written.
 * **It is falsifiable, and that was checked rather than assumed.** Swapping the `xy` and `xz`
   entries of the reference — precisely the Voigt permutation the cubic test cannot see —
-  produces **7 failures** in that testset.
+  produces **2 failures**, `pxy` at rel 1.925 and `pxz` at rel 2.081 against a 1e-10 gate, with
+  the other eleven assertions passing. (An earlier version of this line said 7. That count came
+  from a *malformed* mutation: the comment I appended to mark the edit swallowed the
+  ` ./ vol .* nktv2p` on the same line, so the reference stayed in eV and every component plus
+  the non-vacuity guard failed. The stated experiment is the two-component swap, and it gives
+  2.)
+
+**One property of the gate a maintainer should know:** the six-component comparison sits inside
+`if mP !== nothing && mV !== nothing && isfile(vgeom)`, so were `write_data` ever to fail
+silently the testset would shrink from 13 assertions to 5 with nothing red. The
+`!occursin("ERROR", out)` assertion above it makes that unlikely, and nothing else in this suite
+gates assertion counts either — recorded as an observation, not fixed here.
 
 Independent of the gate, the branch's final reviewer verified the same path against **physics**
 rather than against our own reference, which no assertion here does: forces through the whole
@@ -450,11 +461,20 @@ garbage collector from the hot path whether or not it is the cause here.
      committed and re-run, while the `:flat` column reproduced within run-to-run spread. The
      correction *strengthened* the conclusion. **Quote protocol rows, not the micro-profile**:
      its ratios are stable, its absolutes are not.
-7. **`benchmark/accuracy_test.jl:69` and `benchmark/julia_benchmark.jl:77`** call
+7. **`export/examples/etace_lammps_tutorial.jl:310` still lists "Splinify BEFORE export" as a
+   key step.** The tutorial is internally consistent — it exports with
+   `radial_basis=:hermite_spline`, so it does not error — but that generic imperative now
+   contradicts `export/README.md`, whose quick start was corrected precisely because the
+   splinify-then-default-export sequence is a hard error. It is a pre-existing line, and which
+   way it should read depends on the answer to §7: if the fit-on-splines workflow is kept, the
+   imperative wants qualifying; if `:hermite_spline` is retired, the tutorial goes with it.
+   **Recorded rather than edited, so the maintainer decides it alongside the retirement
+   question.**
+8. **`benchmark/accuracy_test.jl:69` and `benchmark/julia_benchmark.jl:77`** call
    `export_ace_model` with `radial_basis=:spline` and `n_spline_samples` — neither the symbol
    nor the keyword exists, and both scripts fail immediately. Pre-existing rot; `benchmark/` is
    outside this work's `export/`-only scope, so it is reported, not fixed.
-8. **`lammps-export` carries nine committed binaries under `benchmark/`, and `main` has none.**
+9. **`lammps-export` carries nine committed binaries under `benchmark/`, and `main` has none.**
    An observation about the base branch, not a defect of this work — but a PR from here into
    `main` would carry them, so it is better seen now than in a diff:
 
@@ -482,14 +502,14 @@ garbage collector from the hot path whether or not it is the cause here.
    outside this plan's `export/`-only scope, and removing someone's committed binaries uninvited
    is not an execution agent's call. The decision — keep, drop, or move to a release artefact —
    belongs to the maintainer, and is worth making before a push rather than after.
-9. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
+10. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
    5–8 %** on the same box with the same decomposition, on a verified quiet host (§4). The work
    is balanced to 1.1 %, so it is the pair style's *time*, not its share of atoms. **The cause
    is not established** — binding does not help, and at 400 steps it falls to 14.8 %. The
    surviving clue is that per-rank `Pair` and `Comm` are complementary to 0.1 ms. It is a
    throughput cost only; the 2-rank correctness gate is exact. **It is the largest open
    performance item**, and §4 names the experiment that would diagnose it.
-10. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
+11. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
    mismatched-ABI plugin that is a per-atom flood. It is a loud failure rather than a silent one
    — Task 6 confirmed the mismatch surfaces as a clean LAMMPS stop — but it should rate-limit.
 
