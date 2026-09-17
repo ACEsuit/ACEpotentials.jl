@@ -86,14 +86,22 @@ Both predictions held.
   Cantor `:polynomial` went from **511.8 to 58.1 µs/site**, past the plan's own 150 µs/site
   target; TiAl `:polynomial` from 429.6 to 94.0.
 - **The blindness is gone too**, and that is the half of this work that will age best. The
-  export suite went from 43 tests, several of which asserted nothing, to **32 462 passing across
-  eight groups, with every group required to have actually run** (293 of them outside the DAG
+  export suite went from 43 tests, several of which asserted nothing, to **32 485 passing across
+  nine groups, with every group required to have actually run** (~316 of them outside the DAG
   group's exhaustive sweep); four pieces of "looked green, asserted nothing"
   coverage were found and fixed *inside the tasks whose job was to remove that class*.
-  (It peaked at **32 562 across ten groups**; the §7 removal took 100 assertions and two
-  groups with it, every one of them Hermite-only -- reconciled testset by testset against
-  `artefacts/suite_task8.txt`, with no non-Hermite assertion lost. The figure above is the
-  current one, because it is the one a reader will re-measure.)
+
+  **Where 32 485 comes from**, since this figure has moved: it peaked at **32 562 across ten
+  groups**; the §7 removal took 100 assertions and two groups with it, every one of them
+  Hermite-only (reconciled testset by testset against
+  [`artefacts/suite_task8.txt`](artefacts/suite_task8.txt), with no non-Hermite assertion
+  lost); the review round added 8 back as `dispatch_check` and 15 more as the new `syntax`
+  group. All three are **top-level totals of the same command**, so they are like for like,
+  and 32 485 is what `ACE_REQUIRE_GROUPS=all runtests.jl` prints today —
+  [`artefacts/suite_close_out.txt`](artefacts/suite_close_out.txt) is that run. (The "outside
+  the DAG sweep" figure is carried forward by the same deltas; it inherits a discrepancy from
+  the original and does not recompute exactly from the artefact, so it is given as `~`. The
+  DAG group itself is bit-for-bit untouched by any of this.)
 
 One thing did not pay, and ships off:
 

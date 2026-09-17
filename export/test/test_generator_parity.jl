@@ -176,8 +176,22 @@ const EXPORT_TOL   = 1e-12      # generated code vs the Julia calculator, absolu
 #   * A file sitting in `export/src/` that the generator does not include (a diagnostic
 #     script, say) is no longer copied in.  It never belonged in the reference.
 #
-# Only same-directory includes can be honoured, because every file is written flat into one
-# temporary directory; anything else raises rather than being silently skipped.
+# WHAT THIS DOES NOT SEE, stated because the code does not say it.  `_include_targets` matches
+# `include("literal.jl")` and nothing else.  A computed form -- `include(joinpath(...))`, a
+# variable, an interpolation -- is NOT matched and is therefore SILENTLY SKIPPED here; it is
+# not detected and rejected.  Two reasons that is acceptable rather than a hole:
+#
+#   * no such form exists in `export/src/` at any commit this gate can be pointed at (checked
+#     across the full history of the directory), and
+#   * the consequence is LOUD, not silent: the file simply is not written into the temp dir,
+#     and the reference generator then fails on its own `include` with a `SystemError` naming
+#     the missing file -- the same visible failure this whole function was written to stop
+#     being possible by omission.
+#
+# A path-bearing literal (`include("sub/dir.jl")`) IS matched, and raises rather than being
+# skipped, because every file is written flat into one temporary directory and a nested path
+# could not be honoured.  If a computed include ever appears, teach `_include_targets` about
+# it; do not assume this function saw it.
 
 """
     _include_targets(src) -> Vector{String}

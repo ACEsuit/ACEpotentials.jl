@@ -2,6 +2,8 @@
 Export Test Suite - Main Test Runner
 
 This file orchestrates all export-related tests for ETACE models:
+0. Syntax: every tracked export/*.jl parses (covers the bench/scripts/examples files that
+   nothing else loads -- see test_syntax.jl for why that gap existed)
 1. ETACE export functionality (polynomial radial basis)
 2. Export accuracy on a small Si model (:polynomial vs the fitted model at 1e-12, plus the
    refusals that replaced the removed spline export)
@@ -15,6 +17,7 @@ This file orchestrates all export-related tests for ETACE models:
 
 Usage:
     julia --project=.. runtests.jl              # Run all available tests
+    julia --project=.. runtests.jl syntax       # Parse every tracked export/*.jl
     julia --project=.. runtests.jl etace        # Run ETACE polynomial export tests
     julia --project=.. runtests.jl accuracy     # Run the small-Si accuracy + refusal tests
     julia --project=.. runtests.jl multispecies # Run multi-species tests
@@ -397,7 +400,7 @@ group -- `hermite`, `hermite_accuracy`, `hermite_cantor`, all retired with the
 run of zero tests.  `ACE_REQUIRE_GROUPS` already catches the CI form of that mistake; this
 catches the command-line form.  Add a name here in the same edit that adds its group.
 """
-const KNOWN_GROUPS = (:all, :etace, :accuracy, :multispecies, :dag, :pair,
+const KNOWN_GROUPS = (:all, :syntax, :etace, :accuracy, :multispecies, :dag, :pair,
                       :python, :lammps, :mpi, :parity)
 
 """
@@ -448,6 +451,18 @@ function main()
     cantor_missing() = [f for f in values(cantor_fixture_paths()) if !isfile(f)]
 
     @testset "ACE Export Tests" verbose=true begin
+        # Syntax.  FIRST, and cheap (< 1 s): it is the only thing in the suite that looks at
+        # the ~15 tracked .jl files under bench/, scripts/, examples/ and ase-ace/julia/ that
+        # neither the suite nor CI ever loads.  Running it first means a syntax error in one
+        # of them is the first thing reported rather than something found weeks later by
+        # whoever next ran a benchmark.
+        if should_run_test(selection, :syntax) || should_run_test(selection, :all)
+            run_group("syntax") do
+                @info "Running syntax checks (every tracked export/*.jl parses)..."
+                include(joinpath(TEST_DIR, "test_syntax.jl"))
+            end
+        end
+
         # ETACE export tests (polynomial radial basis)
         if should_run_test(selection, :etace) || should_run_test(selection, :all)
             run_group("etace") do
@@ -618,7 +633,7 @@ Print the status of every group this run touched, then -- if `ACE_REQUIRE_GROUPS
 assert that each required group actually executed.
 
 `ACE_REQUIRE_GROUPS=all` requires every group that was selected and reached a decision;
-otherwise it is a comma-separated list of group names (`etace`, `accuracy`,
+otherwise it is a comma-separated list of group names (`syntax`, `etace`, `accuracy`,
 `multispecies`, `dag`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
 was skipped, or that was never reached because the selection excluded it, fails.
 """

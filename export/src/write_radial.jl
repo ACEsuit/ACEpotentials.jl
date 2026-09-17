@@ -1030,12 +1030,20 @@ end
 # has ZERO CALLERS.  Its deletion is with the maintainer; see the marker on the other method.
 #
 # READ THE MESSAGE BELOW BEFORE QUOTING IT ANYWHERE.  It says "Use splinify_first=true or call
-# splinify() on your model first", and BOTH halves are wrong today:
+# splinify() on your model first", and both halves misdirect a reader of THIS file:
 #
-#   * `splinify_first` has never been a keyword of anything in this repository;
+#   * `splinify_first` is not, and has never been, a keyword of
+#     `export/src/export_ace_model.jl` -- the exporter this method belongs to.  It IS a real
+#     keyword somewhere: `benchmark/fair_comparison/export_ace_model_oldace.jl:32` declares
+#     `splinify_first::Bool=true`, and line 1401 of that file carries this identical error
+#     string.  That is the classic-`ACEModel` exporter these ~300 lines were copied from, and
+#     the message came with them.  So it is not advice about a keyword that never existed --
+#     it is advice about a DIFFERENT exporter's keyword, which is worse, because it looks
+#     checkable.
 #   * "call splinify() on your model first" is the exact OPPOSITE of the decision recorded in
 #     export/bench/FINDINGS_parity.md §7 -- a splinified model can no longer be exported at
-#     all, and `export_ace_model` refuses one in a message ~700 lines above this that says so.
+#     all by the exporter in this directory, and `export_ace_model` refuses one in a message
+#     ~700 lines above this that says so.
 #
 # It is unreachable, so no user can meet it; but anyone grepping `splinify` under export/src/
 # meets it immediately, which is why it is marked rather than left bare.  It is deliberately
