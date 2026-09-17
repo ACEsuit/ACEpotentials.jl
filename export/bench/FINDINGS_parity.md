@@ -316,9 +316,23 @@ identical box and decomposition, each run preceded by a wait for `/proc/loadavg`
 | `pace recursive`, defaults | **4.6, 4.9, 6.0** | 4.9 | 97–99 % | 10.36–10.62 s |
 | `pace recursive`, bound | **5.9, 7.0, 7.7** | 7.0 | 98 % | 10.46–10.52 s |
 
+**Four runs in that artefact are NOT in the table above, and this is why.** The file opens with
+four `ace` runs and four `pace` runs taken 10:04–10:05, back to back with no settle wait, so
+each sat in the decaying load of the one before it (`loadavg` reaches 2.73 by the fourth). They
+read `ace` 15.8 / 5.2 / 21.8 / 27.9 and `pace` 7.2 / 0.9 / 7.3 / 6.3. They are the first
+attempt at a clean re-take and they are kept in the artefact rather than deleted, but they are
+not pooled into the table, because "settled before every run" is the condition this section
+exists to satisfy. A reader opening the file should find eleven `ace` runs: these four, the six
+settled ones tabulated above, and one 400-step run.
+
+**Pooling them in anyway does not change the conclusion, which is worth stating plainly:** the
+median over all ten 100-step runs is `ace` 27.0 % against `pace` 6.15 %, a ratio of **4.4x**,
+against **5.1x** (30.5 / 5.95) for the six settled runs alone. The effect is large either way;
+the settled six are quoted because they are the ones taken under the stated conditions.
+
 **What is established.** At 100 steps the exported pair style's `Pair` time varies about **5x
-more across ranks than `pace`'s** on the same box, and this reproduces on a host that is
-demonstrably quiet. **It is not the decomposition**: both styles report `Nlocal` 496–507 and
+more across ranks than `pace`'s** on the same box (4.4x if the four unsettled runs above are
+pooled in), and this reproduces on a host that is demonstrably quiet. **It is not the decomposition**: both styles report `Nlocal` 496–507 and
 `FullNghs` 55 618–56 835, balanced to 1.1 %. So the earlier finding's attribution of its 22–34 %
 to "a shared, loaded host" does not survive: the load was removed and the figure stayed.
 
@@ -338,11 +352,11 @@ With the clean data:
    imbalance. Named as a hypothesis, not a conclusion.
 3. **The "runtime threads collide with other ranks' cores" mechanism is WITHDRAWN as an
    explanation.** What is retained is the observation that produced it, which is solid: **every
-   rank carries 5 threads at `OMP_NUM_THREADS=1`** — the embedded Julia runtime's — in all ten
-   captured censuses. But on the quiet host those four extra threads sit on a core *distinct*
-   from the rank's own (rank on core 0, threads on 16; rank on 1, threads on 17), not on another
-   rank's. The one census showing two ranks' threads on one core was taken during the
-   contaminated runs.
+   rank carries 5 threads at `OMP_NUM_THREADS=1`** — the embedded Julia runtime's — in all
+   eleven captured censuses. But on the quiet host each rank's four extra threads are confined
+   to its **own `{N, N+16}` SMT pair** — rank on core 0 with its threads on 16, rank on 1 with
+   its threads on 17 — not on another rank's core. The one census showing two ranks' threads on
+   a single core was taken during the contaminated runs.
 
 **The one structural clue that survives**, and the place to start looking: per-rank `Pair` and
 `Comm` times are **complementary to about 0.1 ms**. From the retained log of the third bound
@@ -399,14 +413,42 @@ garbage collector from the hot path whether or not it is the cause here.
    `export_ace_model` with `radial_basis=:spline` and `n_spline_samples` — neither the symbol
    nor the keyword exists, and both scripts fail immediately. Pre-existing rot; `benchmark/` is
    outside this work's `export/`-only scope, so it is reported, not fixed.
-8. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
+8. **`lammps-export` carries nine committed binaries under `benchmark/`, and `main` has none.**
+   An observation about the base branch, not a defect of this work — but a PR from here into
+   `main` would carry them, so it is better seen now than in a diff:
+
+   | file | size |
+   |---|---|
+   | `benchmark/deployments/tial_ace/lib/libjulia-internal.so.1.12` | 14.13 MB |
+   | `benchmark/deployments/tial_ace/lib/libace_tial_ace.so` | 4.00 MB |
+   | `benchmark/hpc_benchmark/lib/libace_tial_ace.so` | 4.00 MB |
+   | `benchmark/deployments/tial_etace_codegen/lib/libace_etace_spline.so` | 2.92 MB |
+   | `benchmark/deployments/tial_etace_codegen/lib/libace_etace_poly.so` | 2.65 MB |
+   | `benchmark/deployments/tial_ace/lib/libunwind.so.8` | 0.49 MB |
+   | `benchmark/deployments/tial_ace/lib/libjulia.so` | 0.24 MB |
+   | `benchmark/deployments/tial_ace/lib/libjulia.so.1.12` | 0.24 MB |
+   | `benchmark/hpc_benchmark/lib/aceplugin.so` | 0.08 MB |
+   | **total** | **28.76 MB of content, 8.37 MB packed** |
+
+   They are compiled model libraries plus a copy of the Julia runtime and `libunwind`, i.e.
+   host-local build products. Provenance, checked rather than assumed:
+   `git log --diff-filter=A` puts all nine in **`1e88c697` "Add LAMMPS export and benchmark
+   infrastructure"**; `git ls-tree acesuit/lammps-export` finds all nine already there;
+   `git ls-tree main` finds **zero**; and `git log --diff-filter=A 075d3859..HEAD -- benchmark/`
+   is **empty**, so nothing in this plan added or touched them.
+
+   **Nothing here strips them.** They are the maintainer's content on the maintainer's branch,
+   outside this plan's `export/`-only scope, and removing someone's committed binaries uninvited
+   is not an execution agent's call. The decision — keep, drop, or move to a release artefact —
+   belongs to the maintainer, and is worth making before a push rather than after.
+9. **Multi-rank load balance: `Pair` %varavg is 24–36 % at 100 steps, against `pace`'s
    5–8 %** on the same box with the same decomposition, on a verified quiet host (§4). The work
    is balanced to 1.1 %, so it is the pair style's *time*, not its share of atoms. **The cause
    is not established** — binding does not help, and at 400 steps it falls to 14.8 %. The
    surviving clue is that per-rank `Pair` and `Comm` are complementary to 0.1 ms. It is a
    throughput cost only; the 2-rank correctness gate is exact. **It is the largest open
    performance item**, and §4 names the experiment that would diagnose it.
-9. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
+10. **`_bad_handle()` prints one stderr line per bad call, per site, per step.** Under a
    mismatched-ABI plugin that is a per-atom flood. It is a loud failure rather than a silent one
    — Task 6 confirmed the mismatch surfaces as a clean LAMMPS stop — but it should rate-limit.
 

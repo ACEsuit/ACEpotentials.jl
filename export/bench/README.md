@@ -229,8 +229,9 @@ scatter.
 
 **What the exclusion costs, stated rather than left implicit:** the block's *comparator*
 series has a 1.42 % spread and would otherwise have been admitted into the TiAl denominator.
-Admitting the whole block moves the TiAl baseline from 2.300x to **2.297x** and its ACE median
-from 429.6 to 430.1 µs/site — i.e. the exclusion is worth 0.1 % and does not act in our
+Admitting the whole block moves the TiAl baseline from 2.300x to **2.298x**
+(860.2505 / 374.3360 = 2.29807, from the tool with the `# EXCLUDE` line removed) and its ACE
+median from 429.6 to 430.1 µs/site — i.e. the exclusion is worth 0.1 % and does not act in our
 favour.
 
 #### The comparator is more load-sensitive than the code under test

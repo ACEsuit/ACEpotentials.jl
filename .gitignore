@@ -1,5 +1,7 @@
 *Manifest.toml
-!export/Manifest.toml
+# export/Manifest.toml used to be un-ignored here.  It is a host-local dependency resolve --
+# it was untracked at this branch's base and a recursive `git add` pulled it straight back in
+# twice during Task 8.  A discipline promise is not a rule; this is the rule.
 /docs/Manifest.toml
 /docs/build/
 scratch

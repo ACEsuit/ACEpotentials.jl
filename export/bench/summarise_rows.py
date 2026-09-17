@@ -52,8 +52,8 @@ some figures in README.md were restated.  The old rule excluded any block whose 
 more than 3 %.  But a 2-run block is within 3 % by construction and a 3-run block is precisely
 one whose first two runs were not -- so "exclude spread > 3 %" meant "discard every block for
 which the protocol's own remedy was invoked", and the median the protocol tells you to report
-was never reported.  On the TiAl box that was most blocks: Task 8's `tial_poly` took 19 runs
-across 7 blocks and 4 were admitted.  It was also not neutral -- all three TiAl figures moved
+was never reported.  On the TiAl box that was most blocks: Task 8's `tial_poly` took 22 runs
+across 8 blocks and four were admitted.  It was also not neutral -- all three TiAl figures moved
 the flattering way under it.  Task 6's four published controls are unchanged by the fix (every
 one of its included blocks has two runs); Task 8's figures are restated in README.md with the
 movement and its sign shown.
@@ -169,7 +169,7 @@ def main(argv=None):
     # An exclusion names either a TAG (every block carrying it) or ONE BLOCK, as `TAG@HH:MM:SS`.
     #
     # The per-block form had to be added: this table repeats a tag across passes, so a tag-keyed
-    # exclusion aimed at one bad block silently takes out all seven of `tial_poly`'s.  Task 6
+    # exclusion aimed at one bad block silently takes out all eight of `tial_poly`'s.  Task 6
     # avoided the problem by giving every block a unique tag (`..._fix3r1`, `_fix3r2`), which
     # works but makes the rows file unreadable and splits a tag's blocks across groups.  The
     # timestamp is already in every row and is unique per block.
