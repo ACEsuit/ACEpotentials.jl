@@ -43,6 +43,21 @@ are applied, not printed; they are named in the output; and an exclusion for a r
 spread rule does not capture has to be WRITTEN DOWN, in the rows file or the invocation, where
 the next reader will see it.
 
+KNOWN INTERACTION WITH THE PROTOCOL, disclosed rather than fixed.  The protocol says "two runs
+must agree within 3 %; otherwise take a third run and report the median".  This tool excludes
+any block whose spread exceeds 3 %.  Those rules contradict each other: a third run is taken
+only when the first two ALREADY differ by more than 3 %, and a third value can only widen the
+min-max, so EVERY 3-run block is discarded here and the median the protocol asked for is never
+reported.  On the TiAl box, whose +-7 % block-to-block scatter Task 4 documented, that is most
+blocks -- `tial_poly` took 16 runs across 6 blocks in Task 8's table and 4 were admitted.
+
+It is not fixed here because changing the rule would silently move figures already published in
+README.md (Task 6's four controls, Task 7's rows).  It changes no conclusion: with every block
+admitted, Task 8's eight figures move by at most 1.1 %.  Both columns are tabulated in
+README.md.  THE RECOMMENDED FIX, for whoever takes the next table: apply the 3 % test to the
+block's FIRST TWO runs -- the protocol's own trigger -- and admit a 3-run block with its median.
+Do it deliberately and restate the moved figures; do not slip it in.
+
 IT FAILS LOUDLY.  A malformed file, an empty file, a tag matching no rows, a `# EXCLUDE` line
 naming a tag that is not there, or a group left with no included blocks are all errors with a
 message and a nonzero exit.  A quoting tool that prints nothing when the format drifts is
@@ -84,9 +99,8 @@ ROW = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
 # under one pooling rule and one set of exclusions.
 #
 # A row taken with `pace=none` ends `pace_ms/step=-` and simply does not match; such a block
-# contributes to the ACE statistic and to nothing else.  A block excluded for its ACE spread
-# is excluded from BOTH series -- it was taken on a contended core, which is a property of the
-# block, not of one pair style in it.
+# contributes to the ACE statistic and to nothing else.  Each series is then excluded on ITS
+# OWN spread -- see the loop below for why that is not the same as excluding the block.
 PACE = re.compile(r"^(\S+)\s.*?natoms=(\d+).*?"
                   r"\bpace_us/site=[\d.]+\s*\(n=\d+\s+runs\(exec order\)=\s*"
                   r"([-\d. ]+?),\s*spread=([\d.]+)\)")
