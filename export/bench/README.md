@@ -649,3 +649,101 @@ not because it is worth anything on this benchmark.
   `cantor_poly` 2 991 352 → 4 141 592 B, `cantor_h50` 3 746 480 → 6 190 344,
   `tial_poly` 4 291 384 → 8 056 768, `tial_h50` 4 670 056 → 8 947 184.  See
   `export/src/write_c_interface.jl` for why the pool has to be built into the image.
+
+### Task 7 rows (B3: the AA product DAG with a C-tilde-seeded backward) — 2026-09-17, core 31
+
+Raw rows: `bench_parity/rows_task7.txt` (every row below, in execution order); driver
+transcript `/dev/null` — the driver is `rows7.sh`, reproduced in the task report; screen logs
+in `bench_parity/screen/`. Conditions are the protocol's: 1 MPI rank, `taskset -c 31`,
+`OMP_NUM_THREADS=1`, `timestep 0.0`, 100 steps, `/proc/loadavg` in every row (0.54–1.29),
+`pace recursive` re-run in the same block on the same core, `PLUGIN=verify_cantor/plugin_build_b2/aceplugin.so`
+(the workspace-ABI plugin Task 6 used; the default `verify_cantor/plugin_build/aceplugin.so`
+predates it and makes every `ace_site_*` call fail the handle check).
+
+**THE B3 ROWS ARE A REGRESSION, AND THAT IS THE RESULT.** The DAG is not adopted: it ships as
+`export_ace_model(...; aa_products = :dag)`, **off by default**, and `:flat` — the Task 6
+tensor step — is bit-identical to `b826c831` on all six parity cases.
+
+| tag | box | ace ms/step (pooled median) | n | µs/site | vs B2 | pace recursive | ratio |
+|---|---|---|---|---|---|---|---|
+| `cantor_poly_b3` | 2048-atom fcc CrMnFeCoNi | **156.5325** | 8 | **76.4** | **1.32x SLOWER** | 132.10 | **1.19** |
+| `cantor_poly_b2` (re-measured) | same | **118.4775** | 6 | 57.9 | — | (same blocks) | 0.90 |
+| `cantor_h50_b3` | 2048-atom fcc CrMnFeCoNi | **163.4005** | 4 | **79.8** | **1.26x SLOWER** | 131.74 | **1.24** |
+| `cantor_h50_b2` (re-measured) | same | **129.4170** | 6 | 63.2 | — | (same blocks) | 0.98 |
+
+Quoted from
+
+```
+export/bench/summarise_rows.py bench_parity/rows_task7.txt cantor_poly_b3 cantor_poly_b2 cantor_h50_b3 cantor_h50_b2
+```
+
+The B2 re-measurements reproduce Task 6's controls (116.8575 / 128.4955) to 1.4 % and 0.7 %,
+and `pace recursive` in the three blocks that carried it (133.224 / 131.737 / 132.103) is
+within 1.1 % of Task 4's, Task 5's and Task 6's, so the comparator has not moved and the ratio
+column is comparable with every earlier table. One `cantor_h50_b3` block is excluded by the
+protocol's own 3 % rule (4.03 % internal spread) and the tool names it.
+
+**`summarise_rows.py` HAD TO BE FIXED BEFORE ANY OF THIS COULD BE QUOTED.** Its row pattern
+ended `.*runs\(exec order\)=`, greedily, so on a row that carries a `pace` comparator it read
+the **comparator's** runs. `rows_task6_fix3.txt`, the only file it had ever been validated
+against, was taken with `pace=none` on every row; `rows_task5.txt`, `rows_task6.txt` and
+`rows_task6_full.txt` all contain rows it would have mis-read and it had never been run on
+them. It is now anchored on `ace_us/site=` — so a future row format that moves the ACE half
+makes it fail loudly rather than silently read the wrong field — and it still reproduces Task
+6's four control figures to the last digit.
+
+#### Why the DAG loses on Cantor and would win on TiAl
+
+Per-phase, pinned to core 31, pure Julia (`_embed_val!` / `_energy_and_∂A!` /
+`_forces_from_∂A!` timed once per site over 200 sites, best of 9 sweeps). **Passes 1 and 2 are
+byte-identical code in the two exports.**
+
+| phase | Cantor `:flat` | Cantor `:dag` | TiAl `:flat` | TiAl `:dag` |
+|---|---|---|---|---|
+| embed (pass 1) | 20.94 µs | 26.68 (**+27 %**) | 10.41 | 10.41 (**0 %**) |
+| **tensor step** | 13.57 | **8.54** (1.59x) | 59.43 | **25.62** (2.32x) |
+| forces (pass 2) | 28.46 | 36.77 (**+29 %**) | 15.71 | 15.73 (**0 %**) |
+| whole site | 49.64 | 56.37 | 79.90 | **46.70** (1.71x) |
+
+The DAG does exactly what it was budgeted to do — the tensor step is 1.6x/2.3x faster — and on
+Cantor the two neighbour passes, which it does not touch, pay more than that back. A
+201-neighbour site runs them either side of the DAG's 48 kB of gathered/scattered
+`AAd`/`∂AAd`/`CTILDE` traffic; TiAl's 112-neighbour site with a tensor step that is 73 % of the
+total has nothing to lose. **This is the clearest instance yet of Task 4's rule that an
+optimisation has to show on both boxes.**
+
+(The micro-profile puts the Cantor whole-site penalty at 1.14x where the LAMMPS row says 1.32x.
+The row is the protocol measurement and the authority; the micro-profile is an attribution
+tool, and it flatters `:dag` because it calls the tensor step immediately before the
+whole-site call, leaving the DAG's structures hot.)
+
+#### The TiAl `:dag` libraries were NOT built and NOT timed
+
+`:dag` fails the plan's 1e-12 absolute force gate on the TiAl order-4 model
+(`max|dF| = 1.738e-12` polynomial, `1.547e-12` Hermite, against the `ETACEPotential` /
+splinified reference). **No tolerance was loosened and nothing ungated was timed.** The
+attribution, which is the same shape as the κ argument this file already carries for the TiAl
+virial: measured against a BigFloat evaluation of the same expressions, over 20 sites per
+species,
+
+| model / species | max&#124;∂A&#124; | κ = Σ&#124;terms&#124;/&#124;∂A&#124; | floor = κ·eps·&#124;∂A&#124; | `:flat` err | `:dag` err |
+|---|---|---|---|---|---|
+| TiAl Ti | 317.5 | 18.8 | 1.154e-12 | 1.307e-12 (1.13x) | 1.251e-12 (**1.08x**) |
+| TiAl Al | 152.1 | 37.7 | 1.228e-12 | 9.948e-13 (0.81x) | 1.535e-12 (1.25x) |
+| Cantor Cr | 13.5 | 3.2 | 9.302e-15 | 2.132e-14 (2.29x) | 5.329e-15 (**0.57x**) |
+| Cantor Mn | 11.2 | 7.1 | 1.514e-14 | 3.730e-14 (2.46x) | 7.105e-15 (**0.47x**) |
+| Cantor Fe | 12.3 | 3.4 | 8.339e-15 | 2.309e-14 (2.77x) | 5.329e-15 (**0.64x**) |
+| Cantor Co | 27.9 | 2.5 | 1.504e-14 | 4.974e-14 (3.31x) | 3.197e-14 (**2.13x**) |
+| Cantor Ni | 29.3 | 2.7 | 1.779e-14 | 6.040e-14 (3.39x) | 2.487e-14 (**1.40x**) |
+
+Both routes sit at the cancellation floor on both models, and on Cantor the DAG is the more
+accurate of the two. The TiAl model's `∂A` simply carries **~1.2e-12 of absolute error in
+double precision whatever the association**, so a force gate of 1e-12 against an
+independently-associated reference cannot be met by any re-association; `:flat` meets it
+(5.5e-13) because it shares `EquivariantTensors`' association and the two roundings cancel.
+The two BigFloat routes agree to better than 1e-40 relative, so the DAG is exact — this is
+arithmetic, not a bug.
+
+**This is a finding for the plan, not a change made here.** Whether the TiAl force gate should
+become κ-aware, as the TiAl virial gate already is, is a ruling for the plan owner. Until then
+`:dag` is unusable on that model and `:flat` is the default everywhere.
