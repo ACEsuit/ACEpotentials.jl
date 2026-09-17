@@ -46,7 +46,7 @@
 # row set, together with the LOCAL slot of that row in the narrow radial vector and the Ylm
 # index.  Restricting the accumulation to it is exact and not merely accurate: a row outside
 # the pair's set is identically zero in `_evaluate_Rnl_pair_m`'s output (that is what
-# `_radial_mixing` / `hermite_pair_rows` select on), so the terms dropped are `0.0 * Ylm`.
+# `_radial_mixing` selects on), so the terms dropped are `0.0 * Ylm`.
 #
 # WORKSPACE.  All scratch lives in a caller-supplied `Workspace`, so the library is re-entrant:
 # the LAMMPS plugin holds one per OpenMP thread and the ASE calculator one per instance.  Every
@@ -68,8 +68,8 @@
 # `_write_no_pair_basis`'s contract.
 #
 # `pair_rows[k]` is the ORDERED pair `k`'s radial row set, in the order the narrow radial
-# vector carries it.  It comes from whichever radial writer ran (`_write_etace_radial_basis`
-# returns it; `hermite_pair_rows` computes it for the spline mode) -- never recomputed here,
+# vector carries it.  It comes from the radial writer (`_write_etace_radial_basis` returns
+# it) -- never recomputed here,
 # because a second reading of the same data that drifts out of step would produce a kernel
 # that indexes the wrong radial slot and is wrong by a smooth, plausible-looking amount.
 

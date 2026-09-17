@@ -2,103 +2,16 @@
 # Split from export_ace_model.jl for maintainability
 
 # The ordered/symmetric species-pair index helpers `_ordered_pairs` and `_sym_pair_index`
-# that every per-pair table writer below uses live in splinify.jl, which `extract_hermite_
-# spline_data` also needs them from and which export_ace_model.jl includes first.  See the
-# comment block there for the convention.
-
-"""
-    _agnesi_pair_rcut(p, rmax) -> Float64
-
-The distance at which `ET.eval_agnesi(r, p)` first reaches `+1`, i.e. the cutoff that the
-stored Agnesi parameter tuple `p` encodes.  The tuple has no `rcut` field, but
-`ET.agnesi_params` builds `b0, b1` from `xin = x(rin)` and `xcut = x(rcut)` so that those two
-radii map to -1 and +1; inverting the linear part gives `xcut = (1 - b0) / b1`, and `x(r)` is
-strictly decreasing, so a bisection on `s` recovers `rcut` exactly.
-
-`rmax` is returned for a degenerate tuple (one whose `xcut` is outside `(0, 1)`), which means
-"do not treat this pair as short-ranged" -- the caller only ever uses the result to detect
-pairs whose range falls SHORT of the global cutoff.
-"""
-function _agnesi_pair_rcut(p, rmax::Real)
-    xcut = (1 - p.b0) / p.b1
-    (xcut <= 0 || xcut >= 1) && return Float64(rmax)
-    g = 1 / xcut - 1                     # = a s^pin / (1 + s^(pin-pcut)) at r = rcut
-    f(s) = p.a * s^p.pin / (1 + s^(p.pin - p.pcut)) - g    # strictly increasing in s > 0
-    lo, hi = 0.0, 1.0
-    while f(hi) < 0 && hi < 1e6
-        hi *= 2
-    end
-    f(hi) < 0 && return Float64(rmax)
-    for _ = 1:200
-        mid = 0.5 * (lo + hi)
-        f(mid) < 0 ? (lo = mid) : (hi = mid)
-    end
-    return p.rin + 0.5 * (lo + hi) * (p.req - p.rin)
-end
-
-"""
-    _check_hermite_uniform_cutoffs(agnesi_params, NZ, rcut)
-
-Refuse to emit a `:hermite_spline` export whose species pairs do not all share the cutoff the
-neighbour lists are built at.
-
-WHY THIS IS A HARD ERROR, not a warning.  `EquivariantTensors`' spline evaluator clamps the
-transformed coordinate to `[x0, x1]` and then reads knots `il+1, il+2` (`_spl_grid`,
-`embed/transsplines.jl:200-207`).  At `y == x1` that is knot `NX + 1`.  Any edge with
-`rcut[i,j] <= r <= RCUT_MAX` transforms to exactly `y = 1`, so the SPLINIFIED model throws a
-`BoundsError` before an exported library can be compared to it.  The export would therefore
-be un-verifiable by construction: no 1e-12 gate could ever be run on it.  Emitting an
-unverifiable artefact silently is the same class of defect as silently dropping the pair term.
-
-WHAT THE MESSAGE MAY AND MAY NOT SUGGEST.  Reaching this function implies the model IS
-splinified: `export_ace_model` demotes `:hermite_spline` to `:polynomial` for an unsplinified
-model, and REFUSES `:polynomial` outright for a splinified one, so
-`radial_basis == :hermite_spline` at the call site can only mean "splinified".  Telling such a
-caller to "use `radial_basis = :polynomial`" would therefore be useless advice on THIS model
--- that keyword now raises a different error, about the splinification, and still produces no
-file.  The two remedies below are the ones that actually work for a caller who can reach this
-error.
-"""
-function _check_hermite_uniform_cutoffs(agnesi_params, NZ::Int, rcut::Real)
-    short = Tuple{Int,Int,Int,Float64}[]        # (k, iz, jz, this pair's cutoff)
-    for (k, iz, jz) in _ordered_pairs(NZ)
-        rc = _agnesi_pair_rcut(agnesi_params[_sym_pair_index(iz, jz, NZ)], rcut)
-        rc < rcut * (1 - 1e-9) && push!(short, (k, iz, jz, rc))
-    end
-    isempty(short) && return nothing
-    lines = join(["      pair $k = (iz=$iz, jz=$jz): cutoff $(round(rc, digits = 6)) Å" *
-                  " (RCUT_MAX is $rcut Å)" for (k, iz, jz, rc) in short], "
-")
-    error("""
-        export_ace_model: radial_basis=:hermite_spline requires every species pair to share
-        one cutoff, and this model's pairs do not:
-        $lines
-        An edge with rcut[i,j] <= r <= RCUT_MAX transforms to exactly y = 1, where
-        EquivariantTensors' spline evaluator (_spl_grid, embed/transsplines.jl:200-207)
-        indexes knot NX+1 and throws a BoundsError.  The SPLINIFIED model that such an export
-        would have to be verified against therefore cannot be evaluated at all, so the export
-        is unverifiable by construction.
-
-        Two things fix this; passing radial_basis=:polynomial is NOT one of them, because
-        this model is already splinified and export_ace_model refuses :polynomial for a
-        splinified model (splinify() left no polynomial recurrence to emit):
-
-          1. Export the model as it was BEFORE splinify() was applied, with
-             radial_basis=:polynomial (the default).  That mode handles per-pair cutoffs
-             exactly and is gated at 1e-12 against the fitted model.
-          2. Rebuild the model with a single rcut shared by every species pair, then
-             re-splinify it, if you specifically need the spline tables.
-
-        See "Radial Basis Export Options" in export/README.md.""")
-end
+# that every per-pair table writer below uses live in pair_index.jl, which
+# export_ace_model.jl includes first.  See the comment block there for the convention.
 
 """
     _emit_pair_dispatch(io, NZ, indent, body)
 
 Emit `if k == 1; <body(1)> elseif k == 2; <body(2)> … end` over the `NZ^2` ORDERED species
 pairs, the analogue of `_emit_species_dispatch` for the per-pair tables.  Written as an
-`if`-chain on a plain `Int` rather than as a tuple lookup because that is the form
-`codegen.jl`'s Hermite dispatchers already use and the form that survives `--trim=safe`.
+`if`-chain on a plain `Int` rather than as a tuple lookup because that is the form that
+survives `--trim=safe`.
 """
 function _emit_pair_dispatch(io, NZ::Int, indent::String, body::Function)
     for k = 1:NZ^2
@@ -222,16 +135,6 @@ function _polys_used(W_radial, mix_rows, mix_sel, onehot::Bool)
     # A model whose mixing reads nothing at all would emit a zero-length recurrence; the
     # generated `eval_polys` indexes `POLY_A[1]` unconditionally, so keep at least one term.
     return max(q, 1)
-end
-
-function _write_spline_radial_basis_header(io, rcut)
-    println(io, """
-# ============================================================================
-# RADIAL BASIS CONFIGURATION
-# ============================================================================
-
-const RCUT_MAX = $(rcut)
-""")
 end
 
 # Write ETACE radial basis using data-table approach for reduced code generation.
@@ -528,8 +431,7 @@ end
 """)
 
     # Write generic radial basis functions.  Everything up to `P_env` is pair-generic; only
-    # the MIXING is per-pair, and it is reached through the same `if k == …` chain the
-    # Hermite dispatchers in codegen.jl use.
+    # the MIXING is per-pair, and it is reached through an `if k == …` chain.
     println(io, """
 # ============================================================================
 # RADIAL BASIS EVALUATION (generic transform + envelope, per-pair mixing)

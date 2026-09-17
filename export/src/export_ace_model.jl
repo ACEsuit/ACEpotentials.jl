@@ -18,9 +18,9 @@ using EquivariantTensors
 const ET = EquivariantTensors
 using AtomsBase: ChemicalSpecies
 
-# Include spline utilities and code generators
+# Include the pair-index helpers and the code generators
 include("build_stamp.jl")
-include("splinify.jl")
+include("pair_index.jl")
 include("codegen.jl")
 include("symmprod_dag.jl")   # AA product DAG (export time only; see its header)
 
@@ -113,7 +113,7 @@ Arguments:
 - `calc`: The fitted ETACEPotential to export
 - `filename`: Output filename
 - `for_library=false`: If true, generate a shared library with C interface instead of executable
-- `radial_basis=:polynomial`: Radial basis evaluation method -- see the table below.
+- `radial_basis=:polynomial`: VESTIGIAL -- `:polynomial` is the only mode. See below.
 - `aa_products=:flat`: how the AA (symmetric product) step is evaluated -- see below.
 
 # AA product modes (`aa_products`), and why `:flat` is the default
@@ -161,66 +161,46 @@ the two (0.5-2.1x the cancellation floor against `:flat`'s 2.3-3.4x).
 So: `:dag` is the right structure for a high-order, many-function, modest-neighbour-count
 model and the wrong one here, and it is available but off.
 
-# Radial basis modes
+# Radial basis modes (`radial_basis`) -- VESTIGIAL: `:polynomial` is the only mode
 
-| mode | reproduces | accuracy | when to use |
+`radial_basis` is kept only because every existing call site passes it, and it accepts
+`:polynomial` and nothing else.  Omit it.
+
+| mode | reproduces | accuracy | status |
 |---|---|---|---|
-| `:polynomial` (**default**) | the fitted model | exact: 1e-12 in energies, forces and virial | any model |
-| `:hermite_spline` | the **splinified** model | approximate: 2.7e-4 eV/Å (Cantor) and 1.6e-2 eV/Å (TiAl order 4) at `Nspl = 50` -- the splinification error is a property of the model, not of the export | a model that was *fitted after* `splinify()`, which is the only case it can be exported at all |
-
-**DO NOT CHOOSE `:hermite_spline` FOR SPEED.** Since the per-neighbour kernel it is the
-**slower** mode as well as the approximate one: **62.5 vs 58.1 µs/site on Cantor and 152.5 vs
-94.0 on TiAl** (one pinned core, `export/bench/README.md`). Its old justification -- "learned
-radials with a small `N_POLYS`, where the spline table is cheaper than the recurrence" -- no
-longer holds either: `:polynomial` emits an arbitrary dense (i.e. learned) radial-mixing tensor
-exactly, and emits the recurrence only at the width a model actually reads (45 -> 6 terms on
-Cantor, 33 -> 11 on TiAl), which is the work the spline table existed to avoid. What remains is
-that `:polynomial` *cannot* export an already-splinified model, because `splinify()` leaves no
-recurrence to emit. See `export/bench/FINDINGS_parity.md` §7.
+| `:polynomial` (**default**) | the fitted model | exact: 1e-12 in energies, forces and virial | the only mode |
+| `:hermite_spline` | -- | -- | **REMOVED**; raises |
 
 `:polynomial` re-evaluates the orthogonal polynomial recurrence at runtime and reproduces the
-model it was exported from to double-precision roundoff.  It is the default and the mode every
-verification step of this project gates at 1e-12.  It requires a model that has **not** been
-splinified: on a splinified model the export is REFUSED rather than quietly switched to
-`:hermite_spline`, because `:polynomial` is the default and a silent switch would hand a
-caller who never chose the approximate mode an approximate model (see the validation block in
-the method body for the full reasoning).  The reverse mismatch -- `:hermite_spline` on an
-unsplinified model -- is demoted to `:polynomial` with a warning, since substituting the exact
-mode cannot make a result wrong.
+model it was exported from to double-precision roundoff.  It is the mode every verification
+step of this project gates at 1e-12, and it handles a dense (i.e. genuinely learned)
+radial-mixing tensor and per-pair cutoffs exactly.
 
-`:hermite_spline` emits the knot tables of a model that has ALREADY been splinified with
-`ETModels.splinify` and evaluates a piecewise cubic.  It reproduces *that splinified model* to
-1e-12 -- but the splinified model is not the fitted one.  On the fitted Cantor model the
-difference is ~2.3e-4 eV/Å at `Nspl = 50` and ~3.0e-6 eV/Å at `Nspl = 200`
-(`verify_cantor/log.chain`); the interpolation error of a cubic on a uniform grid falls like
-`h^4` in values and `h^3` in derivatives, so it is the FORCES that set the usable knot count.
-Splinify BEFORE fitting if you intend to deploy this mode, so that the fit sees the same
-representation the library will evaluate.  Never gate a `:hermite_spline` export against the
-fitted model; gate it against the splinified one and report the rest.
+WHY `:hermite_spline` WENT, and what it means for a splinified model.  It emitted the knot
+tables of a model already splinified with `ETModels.splinify`.  By the time the per-neighbour
+kernel landed it had lost every advantage it was kept for: it was **slower** (62.5 vs 58.1
+µs/site on Cantor, 152.5 vs 94.0 on TiAl, one pinned core), it was **approximate** (2.7e-4
+eV/Å on Cantor and 1.6e-2 eV/Å on TiAl at `Nspl = 50`, against an exact mode gated at 1e-12),
+and it was **refused outright for per-pair cutoffs**, because the splinified reference model
+itself throws a `BoundsError` in upstream `EquivariantTensors._spl_grid` at `y = 1`.  Its
+stated justification -- "learned radials with a small `N_POLYS`" -- was empty: `:polynomial`
+emits an arbitrary dense `W` exactly and emits the recurrence only at the width a model
+actually reads (45 -> 6 terms on Cantor, 33 -> 11 on TiAl).  The evidence is in
+`export/bench/FINDINGS_parity.md` §7; the maintainer answered "remove".
 
-KNOWN LIMITATION (multi-species): `:hermite_spline` is only usable when every species pair
-shares one cutoff.  With per-pair cutoffs, any edge beyond a pair's own cutoff transforms to
-exactly `y = 1` and `EquivariantTensors`' `_spl_grid` then indexes knot `NX + 1`, so the
-splinified model throws a `BoundsError` before it can even be compared to the export.  See
-`export/test/test_multispecies.jl`.
+**A SPLINIFIED MODEL CAN NO LONGER BE EXPORTED AT ALL, and that is deliberate.**
+`splinify()` replaces the polynomial recurrence with knot tables, so `:polynomial` has nothing
+to emit and refuses -- it always did.  `:hermite_spline` was the only path such a model had,
+so removing the mode retires the fit-on-splines deployment route with it.  The workflow that
+works is: keep the UNSPLINIFIED model, fit it, and export that with `:polynomial` (the
+default).  `ACEpotentials.ETModels.splinify` itself is untouched and still useful for
+in-Julia evaluation; it is only its export path that is gone.
 
-# Example 1: Standard polynomial export (no pre-processing needed)
+# Example: export (no pre-processing needed, and none wanted)
 ```julia
 calc = ETACEPotential(etace, ps_fitted, st_fitted, 5.5)
 export_ace_model(calc, "my_model.jl"; for_library=true)
 # Compile with: juliac --output-lib libace.so --trim=safe my_model.jl
-```
-
-# Example 2: Hermite spline export (requires pre-splinification)
-```julia
-using ACEpotentials.ETModels: splinify
-
-# Splinify BEFORE fitting, so the fit sees the representation that will be deployed
-etace_splined = splinify(etace, ps, st; Nspl=50)
-# ... fit the splinified model ...
-calc = ETACEPotential(etace_splined, ps_fitted, st_fitted, 5.5)
-
-export_ace_model(calc, "my_model.jl"; for_library=true, radial_basis=:hermite_spline)
 ```
 """
 function export_ace_model(calc::ETACEPotential, filename::String;
@@ -247,59 +227,72 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # Auto-detect if model is splinified
     is_splinified = isa(rembed_layer, ET.TransSelSplines)
 
-    # Validate radial_basis choice against model state.
+    # Validate `radial_basis`, and refuse a splinified model.
     #
-    # The two mismatches are NOT symmetric, and are therefore not handled symmetrically.
+    # `radial_basis` is VESTIGIAL.  `:hermite_spline` was removed (evidence and the
+    # maintainer's answer: export/bench/FINDINGS_parity.md §7), and with it the only export
+    # path a splinified model had.  The keyword survives because every existing call site
+    # passes it; it accepts `:polynomial` and nothing else.
     #
-    #   :hermite_spline on an UNSPLINIFIED model  -> demoted to :polynomial, with a warning.
-    #       The caller asked for the approximate mode and gets the EXACT one.  No result can
-    #       be wrong because of that substitution; at worst the library is slower than the
-    #       caller expected.  A warning is proportionate.
-    #
-    #   :polynomial on a SPLINIFIED model         -> REFUSED.
-    #       This used to be silently promoted to :hermite_spline behind a @warn, which meant
-    #       a caller who asked for the exact mode -- or, far more often, simply took the
-    #       DEFAULT, since :polynomial is the default -- received an APPROXIMATE model and a
-    #       line of log output.  The substitution changes the model class: the exported file
-    #       reproduces the splinified model, not the fitted one, and on the fitted Cantor
-    #       model those differ by ~2.3e-4 eV/A at Nspl=50.  Inside this very repository the
-    #       promotion had produced `export/test/build/test_poly_etace_only.jl`, a file named
-    #       "poly" whose first section is `HERMITE CUBIC SPLINE RADIAL BASIS`.
-    #
-    #       There is no way to honour :polynomial here -- splinify() replaced the recurrence
-    #       with knot tables, so there is no polynomial left to emit -- so the choice is
-    #       between substituting silently and refusing.  It refuses, and names the two ways
-    #       forward.  Passing radial_basis=:hermite_spline is the one-word opt-in that says
-    #       the approximate mode is what the caller actually wants.
-    if radial_basis == :hermite_spline && !is_splinified
-        @warn "Model is not splinified, but radial_basis=:hermite_spline requires splinification. " *
-              "Falling back to :polynomial, which is exact for this model."
-        radial_basis = :polynomial
-    elseif radial_basis == :polynomial && is_splinified
+    # Both refusals below name the workflow that DOES work, because a removal message whose
+    # only content is "that is gone" costs the reader the same search twice.
+    if radial_basis === :hermite_spline
         error("""
-        radial_basis=:polynomial cannot export this model: it has already been splinified.
+        radial_basis=:hermite_spline has been REMOVED.  There is no spline export.
 
-        splinify() replaced the radial polynomial recurrence with cubic-spline knot tables,
-        so there is no polynomial basis left for the exporter to emit.  Note that
-        :polynomial is the DEFAULT, so this also fires when no radial_basis was passed at
-        all -- that is deliberate.  Earlier versions substituted :hermite_spline here behind
-        a warning, which handed callers who wanted (or defaulted to) the EXACT mode an
-        APPROXIMATE model instead; on the fitted Cantor model that substitution costs
-        ~2.3e-4 eV/A at Nspl=50.
+        Why: by the time the per-neighbour kernel landed, the Hermite mode was SLOWER than
+        the exact :polynomial mode on both reference models (62.5 vs 58.1 µs/site on Cantor,
+        152.5 vs 94.0 on TiAl), APPROXIMATE by construction (2.7e-4 eV/Å on Cantor and
+        1.6e-2 eV/Å on TiAl at Nspl=50, against a mode gated at 1e-12), and REFUSED outright
+        for per-pair cutoffs because the splinified reference model itself throws a
+        BoundsError in upstream EquivariantTensors._spl_grid.  Its stated justification
+        ("learned radials with a small N_POLYS") was empty: :polynomial emits an arbitrary
+        dense -- i.e. genuinely learned -- radial-mixing tensor exactly.  The measurements
+        are in export/bench/FINDINGS_parity.md §7.
 
-        Two ways forward:
+        What to do instead: export with radial_basis=:polynomial (the default, so just drop
+        the keyword) from the model as it was BEFORE splinify() was applied.  That export is
+        exact and is gated at 1e-12 against the fitted model throughout this project's test
+        suite.  It is faster than the spline mode was.
 
-          1. Export the model as it was BEFORE splinify() was applied, with
-             radial_basis=:polynomial (the default).  That export is exact and is gated at
-             1e-12 against the fitted model throughout this project's test suite.  This is
-             the right answer unless you specifically need the spline tables.
+        Note that this is NOT a rename: the fit-on-splines DEPLOYMENT route is retired, not
+        relocated.  See the refusal for an already-splinified model below.""")
+    elseif radial_basis !== :polynomial
+        error("""
+        export_ace_model: unknown radial_basis=$(repr(radial_basis)).  The only value is
+        :polynomial, which is the default -- the keyword is vestigial and can be omitted.
+        (:hermite_spline was removed; see export/bench/FINDINGS_parity.md §7.)""")
+    end
 
-          2. Pass radial_basis=:hermite_spline explicitly.  That is the opt-in to the
-             approximate mode: the exported file reproduces the SPLINIFIED model to 1e-12,
-             and its difference from the FITTED model is the splinification error, which
-             must be reported and never gated.  If you take this route, splinify BEFORE
-             fitting so that the fit sees the representation the library will evaluate.
-        """)
+    if is_splinified
+        error("""
+        This model has already been splinified, and a splinified model can no longer be
+        exported at all.
+
+        splinify() replaces the radial polynomial recurrence with cubic-spline knot tables,
+        so :polynomial -- the only mode, and the default -- has no polynomial basis left to
+        emit.  It always refused such a model.  What has changed is that :hermite_spline,
+        the one path a splinified model had, was REMOVED: it was slower AND approximate
+        against the exact mode on both reference models, and unusable with per-pair cutoffs.
+        The evidence is in export/bench/FINDINGS_parity.md §7.
+
+        THE FIT-ON-SPLINES DEPLOYMENT ROUTE IS THEREFORE RETIRED.  There is no supported way
+        to deploy a model through splinify(); do not look for a keyword that re-enables one.
+
+        What to do:
+
+          1. Export the model as it was BEFORE splinify() was applied, with the default
+             (radial_basis=:polynomial, or no keyword at all).  That export is exact, gated
+             at 1e-12 against the fitted model, handles a dense/learned radial-mixing tensor
+             and per-pair cutoffs, and is FASTER than the spline export was.  Keep the
+             unsplinified model and its fitted parameters; that is what you deploy.
+
+          2. If the parameters you hold were fitted AFTER splinify() -- so there is no
+             unsplinified model carrying them -- refit the unsplinified model.  The spline
+             representation those parameters belong to has no exporter any more.
+
+        ACEpotentials.ETModels.splinify itself is untouched and still usable for in-Julia
+        evaluation.  It is only the EXPORT path for its output that is gone.""")
     end
 
     # Extract species information from radial embedding state
@@ -312,20 +305,6 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # Extract Agnesi transform parameters
     agnesi_params = trans_st.params  # SVector of Agnesi parameter NamedTuples
 
-    # :hermite_spline is only valid when every species pair shares the neighbour-list cutoff.
-    # Checked BEFORE the output file is opened, so a refused export leaves no partial file.
-    #
-    # By the validation block above, `radial_basis == :hermite_spline` here implies
-    # `is_splinified`: an unsplinified model is demoted to :polynomial, and a splinified one
-    # reaches this line only because the caller passed :hermite_spline explicitly (:polynomial
-    # on a splinified model is refused outright).  The refusal message relies on that
-    # invariant when it says :polynomial is NOT a usable remedy, so assert it rather than
-    # leave it as a reading of the branch above.
-    if radial_basis == :hermite_spline
-        @assert is_splinified "internal: :hermite_spline selected for an unsplinified model"
-        _check_hermite_uniform_cutoffs(agnesi_params, NZ, rcut)
-    end
-
     # Tensor components (same structure as old ACE)
     tensor = etace.basis
 
@@ -334,31 +313,19 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     ybasis = yembed_layer.basis
     maxl = P4ML.maxl(ybasis)
 
-    # Radial basis spec and weights
-    # Different structure for splinified vs non-splinified models
-    if is_splinified
-        # TransSelSplines structure: trans, envelope, selector, refstate
-        # Extract n_rnl from spline data (F matrix has SVector{n_rnl, ...} elements)
-        spline_refstate = st.rembed.params
-        F_sample = spline_refstate.F[1, 1]  # Get first SVector to determine size
-        n_rnl = length(F_sample)
-        n_polys = nothing  # Not applicable for splines
-        poly_basis = nothing
-        W_radial = nothing  # Splines don't use weight matrix
-    else
-        # EmbedDP structure: trans -> basis (WrappedBasis) -> post (SelectLinL)
-        rbasis_linl = rembed_layer.post  # The SelectLinL layer
-        n_polys = rbasis_linl.in_dim   # Number of polynomial terms
-        n_rnl = rbasis_linl.out_dim    # Number of (n,l) basis functions
+    # Radial basis spec and weights.
+    # EmbedDP structure: trans -> basis (WrappedBasis) -> post (SelectLinL)
+    rbasis_linl = rembed_layer.post  # The SelectLinL layer
+    n_polys = rbasis_linl.in_dim   # Number of polynomial terms
+    n_rnl = rbasis_linl.out_dim    # Number of (n,l) basis functions
 
-        # Extract polynomial basis (Chebyshev) from the WrappedBasis -> BranchLayer
-        # rembed_layer.basis is WrappedBasis{BranchLayer{...}}
-        # WrappedBasis has fields: l (the inner layer), len
-        poly_basis = rembed_layer.basis.l.layers.layer_1  # The Chebyshev polynomial basis
+    # Extract polynomial basis (Chebyshev) from the WrappedBasis -> BranchLayer
+    # rembed_layer.basis is WrappedBasis{BranchLayer{...}}
+    # WrappedBasis has fields: l (the inner layer), len
+    poly_basis = rembed_layer.basis.l.layers.layer_1  # The Chebyshev polynomial basis
 
-        # Radial weights: ps.rembed.post.W[n_rnl, n_polys, n_species_pairs]
-        W_radial = ps.rembed.post.W
-    end
+    # Radial weights: ps.rembed.post.W[n_rnl, n_polys, n_species_pairs]
+    W_radial = ps.rembed.post.W
 
     # Readout weights: ps.readout.W[1, n_basis, n_species]
     W_readout = ps.readout.W
@@ -386,36 +353,13 @@ function export_ace_model(calc::ETACEPotential, filename::String;
         _write_species(io, _i2z)
         _write_tensor(io, tensor, dag, W_readout, NZ)
 
-        # Write radial basis (hermite_spline or polynomial).
+        # Write the radial basis.
         #
-        # Both writers return the per-ORDERED-pair radial row sets: `pair_rows[k][i]` is the
+        # The writer returns the per-ORDERED-pair radial row sets: `pair_rows[k][i]` is the
         # global (n,l) index carried in local slot `i` of the narrow `SVector{M_RNL}` that
         # pair k's evaluator returns.  `_write_evaluation_functions` builds its per-pair A
         # blocks from exactly this, so the kernel and the tables cannot drift apart.
-        pair_rows = Vector{Vector{Int}}()
-        if radial_basis == :hermite_spline
-            @info "Extracting Hermite cubic spline data for exact trim-safe export..."
-            # Extract the Hermite spline data from the already-splinified model
-            # NOTE: The model should have been splinified BEFORE fitting, not here!
-            # This function extracts the exact spline knots and coefficients.
-            hermite_data = extract_hermite_spline_data(etace, ps, st, rcut)
-
-            _write_spline_radial_basis_header(io, rcut)
-            # Generate Hermite spline code using codegen (trim-safe, exact)
-            # `rnl_used` prunes the knot tables to the (n,l) rows the A basis actually reads
-            # (Task 5 / B1); the rows it drops are exactly zero in every emitted quantity.
-            rnl_used = _rnl_used(tensor)
-            spline_code = generate_hermite_spline_code(hermite_data, NZ, rcut;
-                                                       rnl_used = rnl_used)
-            print(io, spline_code)
-            println(io)
-            rows_dict = hermite_pair_rows(hermite_data, rnl_used)
-            pair_rows = [rows_dict[k] for k = 1:NZ^2]
-        elseif radial_basis == :polynomial
-            pair_rows = _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
-        else
-            error("Unknown radial_basis option: $radial_basis. Use :hermite_spline or :polynomial")
-        end
+        pair_rows = _write_etace_radial_basis(io, etace, ps, agnesi_params, NZ, rcut)
 
         # Pair potential term (from the ETPairModel of a StackedCalculator, if present).
         # Always emits `pair_energy` / `pair_energy_d` so the evaluation functions below
@@ -510,6 +454,17 @@ end
 @inline pair_idx(iz::Int, jz::Int) = (iz - 1) * NZ + jz
 """)
 end
+
+# NOTE, on the line just above that says "the Hermite knot tables PAIR_k_F / PAIR_k_G":
+# that sentence is EMITTED INTO EVERY GENERATED MODEL FILE, and those tables no longer exist
+# -- `:hermite_spline` was removed.  It is left wrong ON PURPOSE.  `EXPORT_BUILD_ID` is the
+# FNV-1a hash of the emitted body (build_stamp.jl), so editing one character of emitted text
+# changes the id of every model file, which in turn invalidates every committed gate manifest
+# and every standing timing row that was taken against a library compiled from the old id --
+# and the acceptance condition for this removal is that the shipped `:polynomial` source stays
+# BYTE-IDENTICAL.  Correct it in the next change that legitimately moves the build id (the
+# next generator change that alters emitted code), not in a removal whose whole claim is that
+# it moved nothing.
 
 """
     _write_tensor(io, tensor, dag, W_readout, NZ)
