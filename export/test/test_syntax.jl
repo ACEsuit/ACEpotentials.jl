@@ -95,8 +95,11 @@ parse_problems_file(path::AbstractString) = parse_problems(read(path, String), r
     files = tracked_export_jl()
 
     # A gate that checks nothing passes.  The floor is deliberately well below the current
-    # count (39) so that deleting files does not trip it, and well above zero so that a
-    # broken `git ls-files`, a wrong working directory or an over-eager filter does.
+    # count (40 at the time of writing -- this file is one of them) so that deleting files
+    # does not trip it, and well above zero so that a broken `git ls-files`, a wrong working
+    # directory or an over-eager filter does.  It is a FLOOR and not an equality on purpose:
+    # an exact count would be stale the moment anyone adds a file, which is the failure this
+    # comment's own number had in its first commit.
     @testset "the file set is non-empty and plausible" begin
         @test length(files) >= 25
         @test any(endswith(f, "src/export_ace_model.jl") for f in files)

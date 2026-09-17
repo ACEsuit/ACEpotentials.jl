@@ -1,4 +1,4 @@
-  syntax gate: 39 tracked export/*.jl files parsed
+  syntax gate: 40 tracked export/*.jl files parsed
 
 ================================================================================
 Testing export accuracy (:polynomial) and the removed spline path's refusals
@@ -95,19 +95,19 @@ ACE_GROUP_STATUS syntax=ran
 [ Info: Cantor fixture available: true
 [ Info: Parity gate runnable: false  EXPORT_REF_SHA is not set (this gate has no default)
 [ Info: Python available: true
-┌ Info:   lmp candidate rejected: /home/eng/essswb/.local/bin/lmp ([moriarty:734327] *** Process received signal ***
-│ [moriarty:734327] Signal: Segmentation fault (11)
-│ [moriarty:734327] Signal code: Address not mapped (1)
-│ [moriarty:734327] Failing at address: 0x44000098
-│ [moriarty:734327] [ 0] /lib64/libc.so.6(+0x3fb30)[0x14a58363fb30]
-│ [moriarty:734327] [ 1] /software/easybuild/software/CASA/5.3.0-143.el7/lib64/libmpi.so.12(PMPI_Comm_rank+0x3e)[0x14a583f25b9e]
-│ [moriarty:734327] [ 2] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS8UniverseC1EPNS_6LAMMPSEi+0x12f)[0x14a584f4490f]
-│ [moriarty:734327] [ 3] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS6LAMMPSC1EiPPci+0xaf)[0x14a584d300af]
-│ [moriarty:734327] [ 4] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(main+0x3f)[0x4023ff]
-│ [moriarty:734327] [ 5] /lib64/libc.so.6(+0x2a610)[0x14a58362a610]
-│ [moriarty:734327] [ 6] /lib64/libc.so.6(__libc_start_main+0x80)[0x14a58362a6c0]
-│ [moriarty:734327] [ 7] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(_start+0x2e)[0x40249e]
-└ [moriarty:734327] *** End of error message ***)
+┌ Info:   lmp candidate rejected: /home/eng/essswb/.local/bin/lmp ([moriarty:741249] *** Process received signal ***
+│ [moriarty:741249] Signal: Segmentation fault (11)
+│ [moriarty:741249] Signal code: Address not mapped (1)
+│ [moriarty:741249] Failing at address: 0x44000098
+│ [moriarty:741249] [ 0] /lib64/libc.so.6(+0x3fb30)[0x149f5983fb30]
+│ [moriarty:741249] [ 1] /software/easybuild/software/CASA/5.3.0-143.el7/lib64/libmpi.so.12(PMPI_Comm_rank+0x3e)[0x149f5a1c5b9e]
+│ [moriarty:741249] [ 2] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS8UniverseC1EPNS_6LAMMPSEi+0x12f)[0x149f5b1e490f]
+│ [moriarty:741249] [ 3] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS6LAMMPSC1EiPPci+0xaf)[0x149f5afd00af]
+│ [moriarty:741249] [ 4] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(main+0x3f)[0x4023ff]
+│ [moriarty:741249] [ 5] /lib64/libc.so.6(+0x2a610)[0x149f5982a610]
+│ [moriarty:741249] [ 6] /lib64/libc.so.6(__libc_start_main+0x80)[0x149f5982a6c0]
+│ [moriarty:741249] [ 7] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(_start+0x2e)[0x40249e]
+└ [moriarty:741249] *** End of error message ***)
 [ Info: LAMMPS available: true
 [ Info: MPI available: true
 [ Info: 
@@ -244,37 +244,37 @@ ACE_GROUP_STATUS syntax=ran
 [ Info: MPI force consistency: max|F| = 5.118e+01 eV/Å, max|dF| (4 ranks vs serial) = 1.476e-14 eV/Å
 [ Info: Test suite completed!
 Test Summary:                                                                  |  Pass  Total     Time
-ACE Export Tests                                                               | 32485  32485  3m38.2s
-  every tracked export/*.jl parses                                             |    13     13     0.5s
+ACE Export Tests                                                               | 32485  32485  3m39.0s
+  every tracked export/*.jl parses                                             |    13     13     0.6s
     the file set is non-empty and plausible                                    |     7      7     0.1s
-    the check actually detects a broken file                                   |     5      5     0.2s
-    all 39 tracked files                                                       |     1      1     0.1s
-  ETACE Export                                                                 |    26     26  1m22.4s
-    Model Export                                                               |    11     11    36.9s
-    Energy Correctness                                                         |     1      1    10.5s
-    Force Correctness                                                          |     4      4    22.1s
-    Virial Correctness                                                         |     1      1     3.3s
-    Finite Difference Verification                                             |     3      3     3.5s
-    Multi-species Export                                                       |     6      6     6.0s
+    the check actually detects a broken file                                   |     5      5     0.3s
+    all 40 tracked files                                                       |     1      1     0.1s
+  ETACE Export                                                                 |    26     26  1m23.6s
+    Model Export                                                               |    11     11    37.6s
+    Energy Correctness                                                         |     1      1    10.7s
+    Force Correctness                                                          |     4      4    22.3s
+    Virial Correctness                                                         |     1      1     3.4s
+    Finite Difference Verification                                             |     3      3     3.6s
+    Multi-species Export                                                       |     6      6     6.1s
   Export Accuracy (:polynomial)                                                |    26     26     8.6s
-    Polynomial vs the FITTED reference, 1e-12 (Si)                             |     6      6     7.3s
+    Polynomial vs the FITTED reference, 1e-12 (Si)                             |     6      6     7.4s
     Finite Difference Verification (Polynomial)                                |     4      4     0.7s
     Random Perturbation Tests (Polynomial)                                     |     5      5     0.5s
     the removed spline export path refuses, and says what to do                |    11     11     0.0s
-  Multi-Species ETACE Export                                                   |   123    123    27.2s
+  Multi-Species ETACE Export                                                   |   123    123    27.3s
     the NZ=3 models discriminate the two pair conventions                      |    26     26     0.4s
-    :polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12               |     4      4    15.0s
-    :polynomial (uniform cutoff) vs the fitted ET stack, 1e-12                 |     4      4     1.7s
-    a splinified model is refused, whatever the keyword                        |    13     13     2.1s
+    :polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12               |     4      4    15.1s
+    :polynomial (uniform cutoff) vs the fitted ET stack, 1e-12                 |     4      4     1.6s
+    a splinified model is refused, whatever the keyword                        |    13     13     2.0s
     one ordered pair index keys every per-pair table                           |    70     70     0.8s
-    a 300-neighbour site evaluates; the cap and the global scratch are gone    |     6      6     1.7s
+    a 300-neighbour site evaluates; the cap and the global scratch are gone    |     6      6     1.8s
   set partitions                                                               |  3479   3479     0.6s
-  DAG reproduces the flat AA basis and the readout                             | 28269  28269    22.6s
+  DAG reproduces the flat AA basis and the readout                             | 28269  28269    21.8s
   has0 (a CONSTANT AA term): the paths no real model reaches                   |   403    403     0.3s
-  aa_products = :flat is the default and emits no DAG                          |     5      5     2.5s
-  exported DAG evaluator is exact                                              |    12     12    13.0s
+  aa_products = :flat is the default and emits no DAG                          |     5      5     2.3s
+  exported DAG evaluator is exact                                              |    12     12    13.5s
   Pair potential is exported                                                   |    12     12     8.8s
-  site_energy / _forces / _forces_virial agree, with a live pair term          |    12     12    11.2s
+  site_energy / _forces / _forces_virial agree, with a live pair term          |    12     12    11.0s
   Unknown calculator in the stack is refused                                   |     2      2     0.0s
   Python Calculator                                                            |    20     20     6.1s
     Library Loading                                                            |     1      1     0.1s
@@ -294,13 +294,13 @@ ACE Export Tests                                                               |
     LAMMPS vs Julia (reference: exported model in Julia, tol 1e-10)            |    14     14     3.6s
     Python library vs Julia (reference: exported model in Julia, tol 1e-12)    |     4      4     0.8s
     two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)          |     1      1     4.7s
-    Virial vs Julia (rattled cell, all six components, tol 1e-10)              |    13     13     2.6s
+    Virial vs Julia (rattled cell, all six components, tol 1e-10)              |    13     13     2.5s
     Stress/Virial (smoke: cubic symmetry only)                                 |     3      3     1.6s
     NVE runs (liveness: 512 atoms, ~103 MB allocated, 2.4x the first-GC point) |     3      3     3.0s
-  MPI Parallelization                                                          |    25     25    11.4s
+  MPI Parallelization                                                          |    25     25    11.5s
     MPI Energy Consistency                                                     |     7      7     3.3s
     MPI Force Consistency (4 ranks vs serial, non-trivial forces)              |     7      7     4.6s
-    Domain Decomposition                                                       |     6      6     1.7s
+    Domain Decomposition                                                       |     6      6     1.8s
     Ghost Atom Handling                                                        |     5      5     1.8s
   every selected group reached a dispatch branch                               |     9      9     0.0s
   required test groups executed                                                |     9      9     0.0s
