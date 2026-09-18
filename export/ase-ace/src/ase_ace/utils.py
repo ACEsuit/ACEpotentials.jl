@@ -88,19 +88,26 @@ def check_julia_packages(
     julia_executable : str, optional
         Path to Julia executable.  Defaults to the one juliapkg resolved.
     julia_project : str, optional
-        Path to a Julia project directory.  Defaults to the one juliapkg manages.
+        Path to a Julia project directory.  Defaults to the one juliapkg manages.  Passing
+        *either* argument bypasses juliapkg entirely, as it does for ``ACECalculator``.
 
     Returns
     -------
     dict
         ``{package_name: bool}`` for every package in ``juliapkg.json``.
     """
-    from .server import julia_env
+    # Same bypass rule as JuliaACEServer: naming EITHER argument means "use the environment
+    # I built", and juliapkg is not consulted at all.  It used to be per-argument here --
+    # naming an executable still paid a full juliapkg resolve to get a project -- which made
+    # the same two arguments mean different things in two modules, and made an HPC user
+    # pointing at a hand-built module environment wait for a resolve they had explicitly
+    # opted out of.
+    if julia_executable is None and julia_project is None:
+        from .server import julia_env
 
-    if julia_executable is None or julia_project is None:
-        exe, project = julia_env()
-        julia_executable = julia_executable or exe
-        julia_project = julia_project or project
+        julia_executable, julia_project = julia_env()
+    else:
+        julia_executable = julia_executable or 'julia'
 
     results = {}
     for pkg in declared_julia_packages():
@@ -113,7 +120,10 @@ def check_julia_packages(
         end
         '''
 
-        cmd = [julia_executable, f"--project={julia_project}", '-e', check_code]
+        cmd = [julia_executable]
+        if julia_project is not None:
+            cmd.append(f"--project={julia_project}")
+        cmd.extend(['-e', check_code])
 
         try:
             result = subprocess.run(
@@ -152,12 +162,13 @@ def setup_julia_environment(
     Parameters
     ----------
     julia_executable : str, optional
-        Only meaningful together with ``julia_project``: the explicit-bypass path below.
-        juliapkg's own Julia is chosen by ``PYTHON_JULIAPKG_EXE``, read once at import, so
-        this argument cannot steer juliapkg.
+        Path to Julia executable.  Naming it -- like naming ``julia_project`` -- takes the
+        explicit-bypass path: juliapkg is not consulted.  It cannot *steer* juliapkg, whose
+        own Julia comes from ``PYTHON_JULIAPKG_EXE``, read once at import.
     julia_project : str, optional
         Instantiate this project instead of asking juliapkg.  The explicit bypass, for a
-        user who built their own environment.
+        user who built their own environment.  With ``julia_executable`` alone, Julia's
+        default environment is used (no ``--project`` is passed).
     verbose : bool
         Let juliapkg's (or Pkg's) output through to the terminal.
     update : bool
@@ -175,8 +186,9 @@ def setup_julia_environment(
         prefix.  This raises rather than returning False because the message is the useful
         part: it names ``PYTHON_JULIAPKG_PROJECT``, which is the fix.
     """
-    if julia_project is not None:
-        # Explicit bypass: instantiate the project the caller named, as before.
+    if julia_project is not None or julia_executable is not None:
+        # Explicit bypass, on EITHER argument -- the same rule as JuliaACEServer and
+        # check_julia_packages, so the three cannot disagree about what these arguments mean.
         setup_code = '''
         using Pkg
         println("Instantiating project...")
@@ -185,7 +197,10 @@ def setup_julia_environment(
         Pkg.precompile()
         println("Setup complete!")
         '''
-        cmd = [julia_executable or 'julia', f"--project={julia_project}", '-e', setup_code]
+        cmd = [julia_executable or 'julia']
+        if julia_project is not None:
+            cmd.append(f"--project={julia_project}")
+        cmd.extend(['-e', setup_code])
         if verbose:
             print(f"Running: {' '.join(cmd)}")
         try:
@@ -201,18 +216,32 @@ def setup_julia_environment(
             return False
 
     # The normal path: one environment, declared in one file, managed by juliapkg.
-    from .server import julia_env  # for the ImportError / read-only-prefix messages
+    from .server import juliapkg_environment_error
 
-    julia_env()  # resolves, and raises an actionable error if it cannot
-
-    import juliapkg
+    try:
+        import juliapkg
+    except ImportError:
+        raise ImportError(
+            "juliapkg is required to install the Julia side of ase-ace.  It is a base "
+            "dependency; reinstall with `pip install ase-ace`, or pass julia_project= to "
+            "instantiate a project you built yourself."
+        ) from None
 
     if verbose:
         logging.basicConfig()
         logging.getLogger("juliapkg").setLevel(logging.INFO)
 
+    # resolve() directly, rather than calling server.julia_env() first: julia_env() resolves
+    # too, so the pre-flight version made a cold machine install Julia and the eight packages
+    # and *then* do it again under force=True.  The actionable message comes from the same
+    # place either way.
+    #
+    # OSError is re-raised, not reported as "Setup failed": an unwritable prefix is the one
+    # failure with a specific fix, and returning False would throw that message away.
     try:
         juliapkg.resolve(force=True, update=update)
+    except OSError as e:
+        raise juliapkg_environment_error(e) from e
     except Exception as e:
         print(f"Setup failed: {e}")
         return False

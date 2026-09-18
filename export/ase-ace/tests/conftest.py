@@ -30,8 +30,30 @@ def pytest_configure(config):
 
 @pytest.fixture(scope="session")
 def julia_available():
-    """Check if Julia is available."""
-    return shutil.which("julia") is not None
+    """
+    Whether a Julia the calculators could use is reachable.
+
+    Not `shutil.which("julia")`: the calculators do not run the Julia on PATH.  They run the
+    one juliapkg resolved from `ase_ace/juliapkg.json`, which may be a juliaup channel or a
+    build juliapkg downloaded, and which exists on machines with no `julia` on PATH at all.
+    Gating on PATH therefore skipped tests that would have worked and ran tests that could
+    not.
+
+    `juliapkg.executable()` and `juliapkg.project()` are deliberately NOT called here: both
+    call `resolve()`, so on a cold machine this fixture would install Julia and the eight
+    packages as a side effect of *collecting* the suite.  `juliapkg.state.STATE` is populated
+    by `reset_state()` at import, so the paths can be read without resolving anything; the
+    existence of its `meta.json` means juliapkg has resolved here before and doing so again
+    is a content-hash check.
+    """
+    if shutil.which("julia") is not None:
+        return True
+    try:
+        from juliapkg.state import STATE
+
+        return os.path.isfile(STATE["meta"])
+    except Exception:
+        return False
 
 
 @pytest.fixture(scope="session")

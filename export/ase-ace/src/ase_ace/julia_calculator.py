@@ -108,13 +108,26 @@ class ACEJuliaCalculator(ACECalculatorBase):
 
         logger.info(f"Initializing Julia with {num_threads} threads...")
 
-        # Import juliacall (this starts Julia)
+        # Import juliacall (this starts Julia).
+        #
+        # Two distinct failures hide behind this one import, and only one of them is an
+        # ImportError.  juliacall resolves juliapkg *at import time*, so on a prefix it
+        # cannot write, this line raises `PermissionError: [Errno 13] ...` -- an OSError.
+        # Catching only ImportError let that escape bare, with no mention of
+        # PYTHON_JULIAPKG_PROJECT, the container recipe, or the README: exactly the
+        # experience server.julia_env()'s wrapper exists to prevent, reappearing on the
+        # backend that does not go through it.  Both backends now produce the same message
+        # from the same function.
         try:
             from juliacall import Main as jl
         except ImportError:
             raise ImportError(
                 "juliacall not installed. Install with: pip install ase-ace[julia]"
-            )
+            ) from None
+        except OSError as e:
+            from .server import juliapkg_environment_error
+
+            raise juliapkg_environment_error(e) from e
 
         # Load required Julia packages
         logger.info("Loading Julia packages...")

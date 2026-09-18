@@ -72,6 +72,58 @@ def get_julia_project_path() -> Path:
     return get_julia_assets_path()
 
 
+def juliapkg_environment_error(exc: OSError) -> RuntimeError:
+    """
+    Turn juliapkg's ``OSError`` into an error a user can act on.
+
+    Shared by every entry point into Julia -- :func:`julia_env` for the socket backend and
+    ``utils``, and ``ACEJuliaCalculator._init_julia`` for the juliacall backend, which meets
+    the same failure at ``import juliacall`` (juliacall resolves juliapkg at import, and the
+    failure is an ``OSError``, not an ``ImportError``).  One message, one place, so the two
+    backends cannot drift apart on the one thing a user has to be told.
+
+    The message adapts to whether ``PYTHON_JULIAPKG_PROJECT`` is already set, because
+    advising someone to set the variable they have just set is worse than saying nothing.
+    """
+    configured = os.environ.get("PYTHON_JULIAPKG_PROJECT")
+    lines = [f"ase-ace could not create its Julia environment: {exc}"]
+
+    if configured:
+        lines += [
+            f"PYTHON_JULIAPKG_PROJECT is set to {configured!r}, and that path is not "
+            "writable.  Point it somewhere you can write, or fix the permissions:",
+            "    export PYTHON_JULIAPKG_PROJECT=$HOME/.julia/environments/ase_ace",
+        ]
+    else:
+        # Be accurate about which installs can hit this.  juliapkg puts the environment in
+        # the Python prefix ONLY in a virtualenv or conda environment (juliapkg/state.py:
+        # `sys.prefix != sys.base_prefix`, else `CONDA_PREFIX`).  A plain system Python uses
+        # <depot>/environments/pyjuliapkg instead -- so "a system-wide install" is NOT a
+        # cause of a prefix permission error, and listing it sends people down the wrong
+        # path.  What a system Python can hit is an unwritable depot (a read-only $HOME, or
+        # JULIA_DEPOT_PATH on a read-only share), which the same variable also solves.
+        lines += [
+            "In a virtualenv or conda environment juliapkg puts that environment inside the "
+            "prefix (<sys.prefix>/julia_env); for a system Python it uses "
+            "<JULIA_DEPOT_PATH or ~/.julia>/environments/pyjuliapkg.  Either way the path "
+            "above is not writable -- a read-only container image, a shared install serving "
+            "several users, or a read-only home directory.",
+            "Point juliapkg at a writable directory, e.g.",
+            "    export PYTHON_JULIAPKG_PROJECT=$HOME/.julia/environments/ase_ace",
+        ]
+
+    lines += [
+        "and run once:",
+        "    python -c 'from ase_ace.utils import setup_julia_environment; "
+        "setup_julia_environment(verbose=True)'",
+        "Site administrators building a read-only image: set that variable and run the same "
+        "command at build time, then set PYTHON_JULIAPKG_OFFLINE=yes at run time.",
+        "Note that PYTHON_JULIAPKG_PROJECT is process-global and shared with juliacall and "
+        "every other juliapkg consumer, which is why ase-ace will not set it for you.",
+    ]
+    return RuntimeError("\n".join(lines))
+
+
 def julia_env() -> Tuple[str, str]:
     """
     ``(executable, project)`` for the Julia side, as resolved by juliapkg.
@@ -87,12 +139,15 @@ def julia_env() -> Tuple[str, str]:
     ``start()``, not at construction.  Subsequent calls are a content-hash check under a
     cross-process file lock and return in milliseconds.
 
+    The juliacall backend does not call this -- juliacall resolves juliapkg itself, at
+    import -- but it routes the same failure through :func:`juliapkg_environment_error`.
+
     Raises
     ------
     ImportError
         If juliapkg is not installed.
     RuntimeError
-        If juliapkg cannot create its environment -- almost always a read-only Python
+        If juliapkg cannot create its environment -- almost always an unwritable Python
         prefix.  The message names ``PYTHON_JULIAPKG_PROJECT``, which is the fix; see the
         README's "Where the Julia environment lives".
     """
@@ -109,23 +164,7 @@ def julia_env() -> Tuple[str, str]:
     try:
         return juliapkg.executable(), juliapkg.project()
     except OSError as e:
-        raise RuntimeError(
-            f"ase-ace could not create its Julia environment: {e}\n"
-            "juliapkg puts that environment inside the Python prefix "
-            "(<sys.prefix>/julia_env in a virtualenv), so this usually means the prefix is "
-            "not writable: a system-wide install, a read-only container image, or a shared "
-            "install serving several users.\n"
-            "Point juliapkg at a writable directory, e.g.\n"
-            "    export PYTHON_JULIAPKG_PROJECT=$HOME/.julia/environments/ase_ace\n"
-            "and run once:\n"
-            "    python -c 'from ase_ace.utils import setup_julia_environment; "
-            "setup_julia_environment(verbose=True)'\n"
-            "Site administrators building a read-only image: set that variable and run the "
-            "same command at build time, then set PYTHON_JULIAPKG_OFFLINE=yes at run time.\n"
-            "Note that PYTHON_JULIAPKG_PROJECT is process-global and shared with juliacall "
-            "and every other juliapkg consumer, which is why ase-ace will not set it for "
-            "you."
-        ) from e
+        raise juliapkg_environment_error(e) from e
 
 
 class JuliaACEServer:

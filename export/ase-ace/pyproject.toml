@@ -55,7 +55,23 @@ dependencies = [
     # pure-Python requirements (filelock, semver, tomli, tomlkit), and nothing is downloaded
     # until something calls resolve().  juliacall stays in `[julia]`, so the socket backend
     # works for someone who never installed that extra.
-    "juliapkg>=0.1.10",
+    #
+    # THE FLOOR IS 0.1.22 BECAUSE THAT IS WHAT THIS CODE CAN CALL, not because 0.1.22 is
+    # recent.  It was `>=0.1.10`, which admits versions where:
+    #   * `resolve()` is `def resolve(force=False, dry_run=False)` -- no `update=` (0.1.10,
+    #     0.1.11, 0.1.12), so `utils.setup_julia_environment()`, the command the README puts
+    #     front and centre, raises `TypeError: resolve() got an unexpected keyword argument
+    #     'update'`;
+    #   * `_UUID_RE` does not exist through 0.1.12, and `find_requirements` through 0.1.11,
+    #     so two tests in tests/test_packaging.py fail with ImportError;
+    #   * there is no `FileLock` at all through 0.1.12 -- 0.1.10 depends only on
+    #     `semantic_version` -- so the cross-process lock this package now relies on for
+    #     concurrent resolves is absent, and the four-requirement sentence above is untrue
+    #     of every version the old floor admitted.
+    # 0.1.22 is the oldest version this was tested against.  All of the above was reproduced
+    # against real installs of `juliapkg==0.1.12` and `==0.1.22`, not read off a changelog;
+    # tests/test_packaging.py::test_juliapkg_floor_covers_the_api_we_call is the gate.
+    "juliapkg>=0.1.22",
 ]
 
 [project.optional-dependencies]
@@ -68,7 +84,7 @@ lib = [
 # a base dependency: this extra genuinely needs it, and saying so costs nothing.
 julia = [
     "juliacall>=0.9.20",
-    "juliapkg>=0.1.10",
+    "juliapkg>=0.1.22",   # see the base dependency above for why the floor is 0.1.22
 ]
 
 # Development dependencies
@@ -82,7 +98,7 @@ dev = [
 all = [
     "matscipy>=0.8",
     "juliacall>=0.9.20",
-    "juliapkg>=0.1.10",
+    "juliapkg>=0.1.22",
 ]
 
 [project.urls]

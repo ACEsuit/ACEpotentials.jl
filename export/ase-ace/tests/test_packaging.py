@@ -232,18 +232,38 @@ class TestPackageRelativeAssets:
 
 USING_RE = re.compile(r"^\s*(?:using|import)\s+([^\n#]+)", re.MULTILINE)
 
+# `jl.seval('using ACEpotentials')` in julia_calculator.py -- Julia `using` lines that live
+# inside Python string literals, so USING_RE (anchored to the start of a line) cannot see
+# them.  They are as much a dependency as anything in a .jl file: five of them run at
+# ACEJuliaCalculator._init_julia.
+SEVAL_RE = re.compile(r"""seval\(\s*['"]\s*((?:using|import)\s[^'"]+)['"]""")
 
-def julia_packages_used(text):
+
+def julia_packages_used(text, kind="julia"):
     """
-    Top-level Julia package names that a chunk of Julia source ``using``s or ``import``s.
+    Top-level Julia package names that a chunk of source ``using``s or ``import``s.
 
     Handles the three forms that appear in the shipped files:
     ``using A, B``, ``using A: x, y`` (the package is ``A``) and ``using A.Sub: x``
     (likewise ``A``).  Relative forms (``using .Mod``) are dropped -- they name a module
     defined in the same file, not a dependency.
+
+    With ``kind="python"`` it instead reads `jl.seval("using X")` out of Python source, and
+    ONLY that.  The two are separate because `USING_RE` is anchored to the start of a line
+    and would otherwise swallow Python's own `import os` / `import numpy as np`.  Without the
+    python mode this checker's name overpromised: it read .jl files only, while five of the
+    packages the juliacall backend loads are named in Python string literals in
+    julia_calculator.py.  Nothing had drifted, but the invariant was narrower than its name.
     """
+    if kind == "python":
+        clauses = [m.split(None, 1)[1] for m in SEVAL_RE.findall(text)]
+    elif kind == "julia":
+        clauses = USING_RE.findall(text)
+    else:
+        raise ValueError(kind)
+
     found = set()
-    for clause in USING_RE.findall(text):
+    for clause in clauses:
         clause = clause.split(":", 1)[0]
         for name in clause.split(","):
             name = name.strip()
@@ -253,16 +273,19 @@ def julia_packages_used(text):
     return found
 
 
-def undeclared_packages(sources, declared):
+def undeclared_packages(sources, declared, python_sources=()):
     """
-    Package names ``using``d by `sources` but absent from `declared`; empty means consistent.
+    Package names loaded by the sources but absent from `declared`; empty means consistent.
 
-    `sources` is an iterable of Julia source strings, `declared` the set of names in
+    `sources` is an iterable of Julia source strings and `python_sources` of Python source
+    strings (scanned for `jl.seval("using X")` only); `declared` is the set of names in
     juliapkg.json.  Returns a sorted list so the failure message names them.
     """
     used = set()
     for text in sources:
-        used |= julia_packages_used(text)
+        used |= julia_packages_used(text, kind="julia")
+    for text in python_sources:
+        used |= julia_packages_used(text, kind="python")
     return sorted(used - set(declared) - JULIA_STDLIB_ALLOWLIST)
 
 
@@ -279,6 +302,66 @@ def project_toml_problems(package_dir):
             f"while juliapkg.json said the reverse) and nothing compared them."
         ]
     return []
+
+
+JULIAPKG_FLOOR_RE = re.compile(r'"juliapkg\s*>=\s*([0-9]+(?:\.[0-9]+)*)"')
+
+# The oldest juliapkg this package's code can actually call.  Not a "keep it fresh" number:
+# each entry below is an API `ase-ace` uses that is absent from older published sdists.
+MIN_JULIAPKG = (0, 1, 22)
+JULIAPKG_APIS_WE_CALL = {
+    # utils.setup_julia_environment() passes update=; resolve() has no such parameter up to
+    # and including 0.1.12, so the README's headline install command raises TypeError there.
+    "resolve(update=)": lambda jp: "update" in __import__("inspect").signature(
+        jp.deps.resolve
+    ).parameters,
+    "executable": lambda jp: callable(jp.executable),
+    "project": lambda jp: callable(jp.project),
+    # used by the tier-2 probe and by test_juliapkg_json_is_well_formed
+    "deps.find_requirements": lambda jp: callable(jp.deps.find_requirements),
+    "deps._UUID_RE": lambda jp: jp.deps._UUID_RE is not None,
+    # the cross-process lock the fold claims to inherit; absent in 0.1.12 and earlier
+    "deps.FileLock": lambda jp: jp.deps.FileLock is not None,
+}
+
+
+def juliapkg_floor_problems(pyproject_text, installed=None):
+    """
+    Reasons the declared juliapkg floor does not cover the API this package calls.
+
+    `installed` is the imported juliapkg module, or None to skip the runtime half.  Returns
+    strings so the negative test can drive it with a deliberately low floor.
+    """
+    problems = []
+    floors = JULIAPKG_FLOOR_RE.findall(pyproject_text)
+    if not floors:
+        return ["no `juliapkg>=X` requirement found in pyproject.toml"]
+    for floor in floors:
+        parts = tuple(int(x) for x in floor.split("."))
+        parts += (0,) * (3 - len(parts))
+        if parts < MIN_JULIAPKG:
+            problems.append(
+                f"juliapkg>={floor}: below {'.'.join(map(str, MIN_JULIAPKG))}, which admits "
+                f"versions this code cannot call.  Measured against the published sdists: "
+                f"0.1.12 has `resolve(force=False, dry_run=False)` -- no `update=`, so "
+                f"setup_julia_environment() raises TypeError -- and no `_UUID_RE` and no "
+                f"`FileLock` at all, so the cross-process lock this package relies on for "
+                f"concurrent resolves does not exist; `find_requirements` is missing "
+                f"earlier still (0.1.10, 0.1.11), and 0.1.10's sole dependency is "
+                f"semantic_version"
+            )
+    if installed is not None:
+        for name, probe in sorted(JULIAPKG_APIS_WE_CALL.items()):
+            try:
+                ok = probe(installed)
+            except Exception as e:  # AttributeError on an old version
+                ok = False
+                name = f"{name} ({type(e).__name__})"
+            if not ok:
+                problems.append(
+                    f"installed juliapkg does not provide {name}, which ase-ace calls"
+                )
+    return problems
 
 
 class TestOneDependencyDeclaration:
@@ -326,7 +409,9 @@ class TestOneDependencyDeclaration:
             (package_dir / "julia" / name).read_text()
             for name in ("ace_driver.jl", "python_interface.jl")
         ]
-        assert undeclared_packages(sources, declared) == []
+        # ...and the Python file that loads Julia packages by `seval`.
+        python_sources = [(package_dir / "julia_calculator.py").read_text()]
+        assert undeclared_packages(sources, declared, python_sources) == []
 
     def test_using_checker_rejects_the_pre_fold_declaration(self):
         """
@@ -364,6 +449,20 @@ class TestOneDependencyDeclaration:
         }
         assert julia_packages_used("using .ACEPythonInterface\n") == set()
 
+        # ...and it must see the Python-embedded form, or the four lines added above are
+        # decoration.
+        assert julia_packages_used(
+            "        jl.seval('using StaticArrays')\n", kind="python"
+        ) == {"StaticArrays"}
+        assert undeclared_packages(
+            [], declared, python_sources=["jl.seval('using Nowhere')\n"]
+        ) == ["Nowhere"]
+        # ...without mistaking Python's own imports for Julia dependencies, which is why the
+        # two modes are separate rather than one regex over everything.
+        assert julia_packages_used(
+            "import os\nimport numpy as np\nfrom pathlib import Path\n", kind="python"
+        ) == set()
+
     def test_juliapkg_json_is_well_formed(self):
         """
         juliapkg must be able to parse what we ship: real UUIDs and a real Julia compat.
@@ -395,6 +494,51 @@ class TestOneDependencyDeclaration:
         assert Version.parse("1.12.6") in compat
         assert Version.parse("1.13.0") not in compat
         assert Version.parse("1.10.10") not in compat
+
+    def test_juliapkg_floor_covers_the_api_we_call(self):
+        """
+        The declared `juliapkg>=` floor admits only versions whose API this code has.
+
+        It was `>=0.1.10`, chosen as "old enough to be safe", and 0.1.10/0.1.11/0.1.12 are a
+        legal resolution of it.  In all three `resolve()` is
+        `def resolve(force=False, dry_run=False)` -- so `setup_julia_environment()`, the
+        command the README puts front and centre, dies with
+        `TypeError: resolve() got an unexpected keyword argument 'update'` -- reproduced
+        against a real `juliapkg==0.1.12` install.  `_UUID_RE` and `FileLock` are absent in
+        0.1.12 too, and `find_requirements` in 0.1.10/0.1.11.  The floor was never checked
+        against the floor, only against the newest two releases.
+        """
+        import juliapkg
+
+        problems = juliapkg_floor_problems(
+            (PACKAGE_ROOT / "pyproject.toml").read_text(), installed=juliapkg
+        )
+        assert problems == [], "\n".join(problems)
+
+    def test_floor_checker_rejects_the_old_floor(self):
+        """Negative case: the floor this branch shipped with must be reported."""
+        assert juliapkg_floor_problems('dependencies = ["juliapkg>=0.1.22"]') == []
+
+        problems = juliapkg_floor_problems('dependencies = ["juliapkg>=0.1.10"]')
+        assert len(problems) == 1
+        assert "below 0.1.22" in problems[0]
+        assert "update" in problems[0]
+
+        assert juliapkg_floor_problems('dependencies = ["ase>=3.22"]') == [
+            "no `juliapkg>=X` requirement found in pyproject.toml"
+        ]
+
+        # ...and the runtime half reports a module missing the API, not just a low string.
+        class Fake:
+            pass
+
+        fake = Fake()
+        fake.deps = Fake()
+        problems = juliapkg_floor_problems(
+            'dependencies = ["juliapkg>=0.1.22"]', installed=fake
+        )
+        assert len(problems) == len(JULIAPKG_APIS_WE_CALL)
+        assert all("does not provide" in p for p in problems)
 
     def test_juliapkg_discovery_descends_exactly_one_level(self, tmp_path, monkeypatch):
         """

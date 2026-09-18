@@ -155,11 +155,17 @@ export/
 │   │   ├── calculator.py         # ACECalculator (socket-based)
 │   │   ├── julia_calculator.py   # ACEJuliaCalculator (JuliaCall)
 │   │   ├── library_calculator.py # ACELibraryCalculator (compiled .so)
-│   │   ├── juliapkg.json         # Julia deps for the JuliaCall backend
-│   │   └── julia/                # Julia project shipped INSIDE the package,
-│   │       ├── Project.toml      #   so it resolves from a wheel as well as
-│   │       ├── ace_driver.jl     #   from a checkout
-│   │       └── python_interface.jl
+│   │   ├── juliapkg.json         # THE Julia dependency declaration.  Both
+│   │   │                         #   Julia-backed calculators run in the
+│   │   │                         #   environment juliapkg builds from this one
+│   │   │                         #   file.  It must stay directly inside the
+│   │   │                         #   package: juliapkg scans each sys.path entry
+│   │   │                         #   and ONE level below it, no deeper.
+│   │   └── julia/                # Julia SCRIPTS, not a Julia project -- there is
+│   │       ├── ace_driver.jl     #   deliberately no Project.toml here.  They ship
+│   │       └── python_interface.jl  #  inside the package so one
+│   │                             #   Path(__file__).parent expression finds them
+│   │                             #   in a wheel and in a checkout alike.
 │   └── tests/
 │
 ├── scripts/                      # Convenience scripts
@@ -189,9 +195,16 @@ The [`ase-ace`](ase-ace/) package provides three ASE-compatible calculators:
 
 | Calculator | Backend | Threading | Startup | Julia Required |
 |------------|---------|-----------|---------|----------------|
-| `ACECalculator` | Socket/i-PI | Multi-threaded | 5-10s | Yes (runtime) |
+| `ACECalculator` | Socket/i-PI | Multi-threaded | 5-10s | Yes (managed) |
 | `ACEJuliaCalculator` | JuliaCall | Multi-threaded | 10-30s | Yes (managed) |
 | `ACELibraryCalculator` | Compiled .so | Single-threaded | Instant | No |
+
+"Managed" means juliapkg installs Julia and the Julia packages on first use, from
+`src/ase_ace/juliapkg.json`; you do not have to install Julia yourself.  Both Julia-backed
+calculators share that one environment -- `ACECalculator` used to instead run
+`julia --project=<its own project inside site-packages>`, which is why this row said
+"runtime".  See [ase-ace/README.md](ase-ace/README.md#where-the-julia-environment-lives) if
+the Python prefix is not writable.
 
 ### Installation
 
@@ -260,6 +273,8 @@ The `ACELibraryCalculator` is single-threaded due to Julia's `--trim=safe` compi
 
 ### For Deployment (End users)
 - **No Julia required** for `ACELibraryCalculator` - runtime libraries are bundled
+- **No Julia install required** for `ACECalculator` / `ACEJuliaCalculator` either: juliapkg
+  installs a compatible one (`~1.11, ~1.12`) on first use
 - LAMMPS: Any version with plugin support
 - Python: 3.9+, see [ase-ace/](ase-ace/) for calculator-specific dependencies
 
@@ -430,3 +445,9 @@ pip install "./ase-ace[all]"  # All calculators
 pip install "./ase-ace[lib]"    # ACELibraryCalculator
 pip install "./ase-ace[julia]"  # ACEJuliaCalculator
 ```
+`ACECalculator` needs no extra: juliapkg is a base dependency.
+
+### `ase-ace could not create its Julia environment: [Errno 13]`
+The Python prefix is not writable.  Set `PYTHON_JULIAPKG_PROJECT` to a directory you can
+write and run `setup_julia_environment()` once -- see
+[ase-ace/README.md](ase-ace/README.md#where-the-julia-environment-lives).
