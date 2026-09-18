@@ -485,7 +485,7 @@ python tests/conftest.py
 
 ## License
 
-MIT License - see the main ACEpotentials.jl repository.
+MIT License.  The full text ships with the package, as `LICENSE` in the source tree and in `ase_ace-<version>.dist-info/licenses/` in an installed wheel; it is a copy of the LICENSE at the root of the ACEpotentials.jl repository.
 
 ## References
 

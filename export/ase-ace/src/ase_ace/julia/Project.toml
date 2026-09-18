@@ -9,4 +9,14 @@ UnitfulAtomic = "a7773ee8-282e-5fa2-be4e-bd808c38a91a"
 
 [compat]
 ACEpotentials = "0.10"
-julia = "1.11"
+# The Julia versions ACEpotentials is tested on.  This must say the same thing as
+# ../../juliapkg.json, which is what actually decides which Julia a `pip install ase-ace`
+# user ends up running.
+#
+# Tildes, not the bare `"1.11, 1.12"` of the repository-root Project.toml, and the
+# difference is not stylistic: in Julia compat syntax a bare `1.11` is `^1.11`, i.e.
+# `[1.11, 2.0)`, so `"1.11, 1.12"` admits 1.13 and every later 1.x.  `~1.11, ~1.12` is
+# `[1.11, 1.13)` -- exactly the two minor series ACEpotentials is tested against, and a
+# strict subset of what the root declares, so this can never claim support the package
+# itself does not.
+julia = "~1.11, ~1.12"

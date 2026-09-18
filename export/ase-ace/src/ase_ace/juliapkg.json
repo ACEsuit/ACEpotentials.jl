@@ -1,5 +1,5 @@
 {
-    "julia": "=1.11.5",
+    "julia": "~1.11, ~1.12",
     "packages": {
         "ACEpotentials": {
             "uuid": "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53",

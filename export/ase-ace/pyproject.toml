@@ -1,5 +1,9 @@
 [build-system]
-requires = ["hatchling"]
+# `>=1.27` is not cosmetic: 1.27.0 is the first hatchling that understands the PEP 639
+# metadata below (`license = "MIT"` as an SPDX expression plus `license-files`), and this
+# table previously carried no lower bound at all, so an old hatchling on the build machine
+# would have silently produced metadata without a License-Expression.
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,14 +12,26 @@ version = "0.1.0"
 description = "ASE calculators for ACE potentials (socket and compiled library backends)"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+# PEP 639 form: an SPDX expression plus the file(s) that carry the text.  The older
+# `license = {text = "MIT"}` table is deprecated, and -- more to the point -- it put the
+# string "MIT" in the metadata while shipping no licence text at all, which is what a
+# PyPI release must not do.
+#
+# `license-files` globs are resolved against THIS directory and cannot escape it.  Pointing
+# at the repository root's copy with `["../LICENSE"]` is accepted by hatchling but is a
+# trap: it writes an archive member literally named
+# `ase_ace-0.1.0.dist-info/licenses/../LICENSE` and a `License-File: ../LICENSE` metadata
+# line, i.e. a path-traversing entry that no installer is obliged to honour.  So the root
+# LICENSE is *copied* here instead; `export/ase-ace/LICENSE` is a byte-identical copy of the
+# repository root's, and both are the standard MIT text.
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     {name = "ACEsuit contributors"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -72,8 +88,11 @@ Repository = "https://github.com/ACEsuit/ACEpotentials.jl"
 # following README section 2 would hit `failed to find source of parent package`.  It also
 # pins an exact graph for one Julia version inside a directory an installed user typically
 # cannot edit.  Every dependency resolves from the General registry, so `Pkg.instantiate()`
-# from `Project.toml` alone works on a fresh machine; the reproducibility this package
-# actually promises is expressed in juliapkg.json ("julia": "=1.11.5", ACEpotentials 0.10).
+# from `Project.toml` alone works on a fresh machine; what this package actually promises is
+# expressed in juliapkg.json ("julia": "~1.11, ~1.12", ACEpotentials 0.10) -- a supported
+# range rather than one build machine's exact resolve, which is the right granularity for a
+# published package: an exact `=1.11.5` made juliapkg download a second Julia for anyone
+# already running 1.11.7.
 #
 # THIS KEY IS UNDER `[tool.hatch.build]`, NOT `[...targets.wheel]`, ON PURPOSE.  A
 # wheel-target exclusion leaves the sdist shipping exactly what the wheel refuses -- an
