@@ -19,12 +19,14 @@ list.
 WHAT IT COVERS THAT NOTHING ELSE DOES.  Most of `export/` is loaded by the suite or by CI, and
 a syntax error there fails loudly on its own.  These are not:
 
-    export/bench/*.jl          diag_dA_conditioning, fit_tial_order4, gate_bench_libs,
-                               profile_tensor_step, test_assert_ranks, verify_bench_models
-    export/scripts/*.jl        build_deployment, build_portable, deploy_model
-    export/examples/*.jl       etace_lammps_tutorial
-    export/ase-ace/src/ase_ace/julia/*.jl  ace_driver
-    export/test/*.jl           bytecmp_generator, diag_virial_conditioning, debug_ylm
+    export/bench/*.jl                     diag_dA_conditioning, fit_tial_order4,
+                                          gate_bench_libs, profile_tensor_step,
+                                          test_assert_ranks, verify_bench_models
+    export/scripts/*.jl                   build_deployment, build_portable, deploy_model
+    export/examples/*.jl                  etace_lammps_tutorial
+    export/ase-ace/src/ase_ace/julia/*.jl ace_driver
+    export/test/*.jl                      bytecmp_generator, diag_virial_conditioning,
+                                          debug_ylm
 
 Fifteen files at the time of writing, run by hand or by a benchmark session and by nothing
 that gates a merge.  The `:hermite_spline` removal edited four of them.  A syntax error in any

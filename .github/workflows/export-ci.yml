@@ -609,10 +609,14 @@ jobs:
       # the socket and JuliaCall backends were dead for anyone who ran `pip install ase-ace`.
       # It belongs in THIS job because it needs neither Julia nor a compiled library, and it
       # runs *after* the editable install above precisely so both install modes are covered.
-      - name: Run packaging tests (wheel build + non-editable install)
+      - name: Run packaging tests (wheel + sdist build, non-editable install)
         env:
           ACE_TEST_PACKAGING: '1'
         run: |
+          # `build` is what produces the sdist -- pip has no "give me the sdist" mode.  Without
+          # it the sdist test SKIPS rather than fails, and a gate that silently skips in CI is
+          # the same defect in a different costume, so it is installed here explicitly.
+          pip install build
           cd export/ase-ace
           pytest -v tests/test_packaging.py
 

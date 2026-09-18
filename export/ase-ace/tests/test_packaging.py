@@ -29,22 +29,29 @@ TIER 1 -- always runs, no build, no network (``TestPackageRelativeAssets``).
     is the gate that runs in the default ``pytest`` invocation and on every CI job that
     touches this package.
 
-TIER 2 -- opt-in, builds a wheel and installs it (``TestBuiltWheel``, ``TestNonEditableInstall``).
-    The end-to-end proof: build the wheel, look inside it, install it into a throwaway venv
-    and resolve the assets from there.  It needs a network-capable build environment and takes
-    ~10-60 s, so it is gated on ``ACE_TEST_PACKAGING=1`` rather than slowing every run.  CI
-    sets that variable in the ``ase-ace (imports and utils)`` job, which needs neither Julia
-    nor a compiled library -- see ``.github/workflows/export-ci.yml``.
+TIER 2 -- opt-in, builds the artifacts and installs one (``TestBuiltWheel``,
+``TestBuiltSdist``, ``TestNonEditableInstall``).
+    The end-to-end proof: build the wheel AND the sdist, look inside both, install the wheel
+    into a throwaway venv and resolve the assets from there.  Both artifacts are checked
+    because they are configured separately -- a `[tool.hatch.build.targets.wheel] exclude`
+    leaves the sdist shipping what the wheel refuses, which is exactly what happened here.
+    It needs a network-capable build environment and takes ~10-60 s, so it is gated on
+    ``ACE_TEST_PACKAGING=1`` rather than slowing every run.  CI sets that variable in the
+    ``ase-ace (imports and utils)`` job, which needs neither Julia nor a compiled library --
+    see ``.github/workflows/export-ci.yml``.
 
 NEGATIVE CASES.  Each checker is exercised against a layout that is *wrong* -- a synthetic
-copy of the pre-fix tree for tier 1, and the real pre-fix wheel manifest for tier 2 -- so that
-neither gate is one of those checks that passes because it asserts nothing.
+copy of the pre-fix tree for tier 1, and for tier 2 the real member lists of the two artifacts
+this branch actually produced while broken (the wheel with no Julia assets, the sdist with two
+Manifests) -- so that no gate here is one of those checks that passes because it asserts
+nothing.
 """
 
 import json
 import os
 import subprocess
 import sys
+import tarfile
 import zipfile
 from pathlib import Path
 
@@ -200,12 +207,48 @@ def wheel_problems(names):
         want = f"ase_ace/{rel}"
         if want not in names:
             problems.append(f"{want}: not in the wheel")
-    for name in names:
-        if name.endswith("julia/Manifest.toml"):
-            problems.append(
-                f"{name}: Manifest.toml must not be shipped -- it is untracked, so it is "
-                f"whatever the build machine last resolved (pyproject.toml `exclude`)"
-            )
+    problems.extend(manifest_problems(names))
+    return problems
+
+
+def manifest_problems(names):
+    """
+    Every `Manifest.toml` in an archive, as a problem string.
+
+    Shared by the wheel and sdist checks because the rule is the same for both, and because
+    the sdist is where it was first broken: the exclusion originally lived under
+    `[tool.hatch.build.targets.wheel]`, so the sdist shipped exactly what the wheel refused --
+    this package's own `src/ase_ace/julia/Manifest.toml` *and* a stray `test/Manifest.toml`
+    left in the build root by an accidental `julia --project=test`.  Matching on the basename
+    rather than on one known path is deliberate: the stray was not at a path anyone would have
+    thought to name.
+    """
+    return [
+        f"{name}: Manifest.toml must not be shipped -- it is untracked, so it is whatever "
+        f"the build machine last resolved (pyproject.toml [tool.hatch.build] `exclude`)"
+        for name in names
+        if Path(name).name == "Manifest.toml"
+    ]
+
+
+def sdist_problems(names):
+    """
+    Reasons an sdist's member list is not a usable source release; empty means it is.
+
+    `names` is the list of archive paths as `tarfile.getnames()` returns them, each prefixed
+    with the `ase_ace-<version>/` root directory.
+    """
+    roots = {n.split("/")[0] for n in names if "/" in n}
+    if len(roots) != 1:
+        return [f"expected a single sdist root directory, got {sorted(roots)}"]
+    root = roots.pop()
+
+    problems = []
+    for rel in REQUIRED_ASSETS:
+        want = f"{root}/src/ase_ace/{rel}"
+        if want not in names:
+            problems.append(f"{want}: not in the sdist")
+    problems.extend(manifest_problems(names))
     return problems
 
 
@@ -221,6 +264,26 @@ def build_wheel(dest):
     wheels = list(Path(dest).glob("ase_ace-*.whl"))
     assert len(wheels) == 1, f"expected exactly one wheel, got {wheels}"
     return wheels[0]
+
+
+def build_sdist(dest):
+    """
+    Build the ase-ace sdist into `dest` and return its path.
+
+    Via `python -m build`, because pip has no "give me the sdist" mode -- `pip wheel` always
+    goes on to build a wheel from it, which is the artifact we are trying *not* to look at
+    here.  `build` is skipped rather than required, so a runner without it loses this one
+    test instead of erroring.
+    """
+    pytest.importorskip("build", reason="python -m build is needed to produce an sdist")
+    subprocess.run(
+        [sys.executable, "-m", "build", "--sdist", "--outdir", str(dest),
+         str(PACKAGE_ROOT)],
+        check=True, capture_output=True, text=True,
+    )
+    sdists = list(Path(dest).glob("ase_ace-*.tar.gz"))
+    assert len(sdists) == 1, f"expected exactly one sdist, got {sdists}"
+    return sdists[0]
 
 
 class TestBuiltWheel:
@@ -261,6 +324,61 @@ class TestBuiltWheel:
         problems = wheel_problems(good + ["ase_ace/julia/Manifest.toml"])
         assert len(problems) == 1
         assert "must not be shipped" in problems[0]
+
+
+class TestBuiltSdist:
+    """
+    The sdist is the second artifact, and it needs its own gate.
+
+    A `[tool.hatch.build.targets.wheel] exclude` says nothing about the sdist, so for one
+    commit this package shipped a wheel with no Manifest and an sdist with two of them. Anyone
+    unpacking that sdist and following README section 2 would have instantiated the build
+    machine's resolve rather than their own.
+    """
+
+    @slow
+    def test_sdist_carries_the_julia_assets_and_no_manifest(self, tmp_path):
+        sdist = build_sdist(tmp_path)
+        with tarfile.open(sdist) as tf:
+            names = tf.getnames()
+        assert sdist_problems(names) == [], "\n".join(sdist_problems(names))
+
+    # -- negative case: the real pre-fix sdist, which this must reject --------------------
+
+    def test_sdist_check_rejects_the_wheel_only_exclusion(self):
+        """
+        The member list actually produced while `exclude` sat under the wheel target, trimmed
+        to what matters.  Both Manifests must be reported -- the package's own, and the stray
+        from a `test/` directory that had no business existing in the build root.
+        """
+        root = "ase_ace-0.1.0"
+        names = [
+            f"{root}/pyproject.toml",
+            f"{root}/README.md",
+            f"{root}/src/ase_ace/__init__.py",
+            f"{root}/src/ase_ace/juliapkg.json",
+            f"{root}/src/ase_ace/julia/Manifest.toml",
+            f"{root}/src/ase_ace/julia/Project.toml",
+            f"{root}/src/ase_ace/julia/ace_driver.jl",
+            f"{root}/src/ase_ace/julia/python_interface.jl",
+            f"{root}/test/Manifest.toml",
+            f"{root}/tests/conftest.py",
+        ]
+        problems = sdist_problems(names)
+        assert len(problems) == 2
+        assert all("must not be shipped" in p for p in problems)
+        assert any(p.startswith(f"{root}/test/Manifest.toml") for p in problems), (
+            "the stray build-root Manifest must be caught too -- it is not at a path anyone "
+            "would have named in advance, which is why the check matches on the basename"
+        )
+
+    def test_sdist_check_rejects_a_missing_asset(self):
+        root = "ase_ace-0.1.0"
+        good = [f"{root}/src/ase_ace/{rel}" for rel in REQUIRED_ASSETS]
+        assert sdist_problems(good) == []
+        problems = sdist_problems([n for n in good if not n.endswith("ace_driver.jl")])
+        assert len(problems) == 1
+        assert "not in the sdist" in problems[0]
 
 
 class TestNonEditableInstall:

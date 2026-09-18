@@ -70,6 +70,18 @@ julia --project=src/ase_ace/julia -e '
 '
 ```
 
+**If you installed ase-ace from a wheel** there is no `src/ase_ace/julia` to point at -- the
+project is inside site-packages, and you should not be typing that path by hand.  Install the
+package first (section 3) and then let it locate its own project:
+
+```bash
+python -c "from ase_ace.utils import setup_julia_environment; setup_julia_environment(verbose=True)"
+```
+
+That runs the same `Pkg.instantiate()` / `Pkg.precompile()` against
+`ase_ace.server.get_julia_project_path()`.  See [Utility Functions](#utility-functions) for the
+rest of that module.
+
 ### 3. Install ase-ace
 
 ```bash

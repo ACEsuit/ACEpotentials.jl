@@ -453,10 +453,9 @@ function main()
     @testset "ACE Export Tests" verbose=true begin
         # Syntax.  FIRST, and cheap (< 1 s): it is the only thing in the suite that looks at
         # the ~15 tracked .jl files under bench/, scripts/, examples/ and ase-ace's bundled
-        # Julia project that
-        # neither the suite nor CI ever loads.  Running it first means a syntax error in one
-        # of them is the first thing reported rather than something found weeks later by
-        # whoever next ran a benchmark.
+        # Julia project that neither the suite nor CI ever loads.  Running it first means a
+        # syntax error in one of them is the first thing reported rather than something found
+        # weeks later by whoever next ran a benchmark.
         if should_run_test(selection, :syntax) || should_run_test(selection, :all)
             run_group("syntax") do
                 @info "Running syntax checks (every tracked export/*.jl parses)..."

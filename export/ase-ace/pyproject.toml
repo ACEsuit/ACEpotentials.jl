@@ -61,6 +61,31 @@ Homepage = "https://github.com/ACEsuit/ACEpotentials.jl"
 Documentation = "https://acesuit.github.io/ACEpotentials.jl"
 Repository = "https://github.com/ACEsuit/ACEpotentials.jl"
 
+[tool.hatch.build]
+# No Manifest.toml is shipped, in ANY artifact.
+#
+# `Manifest.toml` is untracked in this repository -- only `Project.toml`, `ace_driver.jl` and
+# `python_interface.jl` are -- so a shipped one is whatever the build machine's last
+# `Pkg.instantiate()` happened to resolve, which makes the artifact's contents depend on who
+# built it.  That is not hypothetical: the copy on the machine this exclusion was written for
+# is broken, pointing at a `DifferentiationInterface` source that no longer exists, so a user
+# following README section 2 would hit `failed to find source of parent package`.  It also
+# pins an exact graph for one Julia version inside a directory an installed user typically
+# cannot edit.  Every dependency resolves from the General registry, so `Pkg.instantiate()`
+# from `Project.toml` alone works on a fresh machine; the reproducibility this package
+# actually promises is expressed in juliapkg.json ("julia": "=1.11.5", ACEpotentials 0.10).
+#
+# THIS KEY IS UNDER `[tool.hatch.build]`, NOT `[...targets.wheel]`, ON PURPOSE.  A
+# wheel-target exclusion leaves the sdist shipping exactly what the wheel refuses -- an
+# earlier version of this file did, and the sdist carried both this package's
+# `src/ase_ace/julia/Manifest.toml` and a stray `test/Manifest.toml` from an accidental
+# `julia --project=test` in the build root.  Hatchling reads `export/ase-ace/.gitignore` and
+# not the repository root's, and only the root one carries `*Manifest.toml`, so nothing else
+# stops them.  The pattern is gitignore-style and unanchored, so it matches at any depth --
+# including build-root junk this project does not own.  tests/test_packaging.py asserts both
+# the wheel and the sdist.
+exclude = ["Manifest.toml"]
+
 [tool.hatch.build.targets.wheel]
 # `packages` ships EVERY file under src/ase_ace, not only the .py files -- juliapkg.json and
 # the whole src/ase_ace/julia/ project (Project.toml, ace_driver.jl, python_interface.jl)
@@ -70,16 +95,6 @@ Repository = "https://github.com/ACEsuit/ACEpotentials.jl"
 # `packages` already carried it, and it is gone rather than left as a second mechanism doing
 # the same job.  tests/test_packaging.py asserts the wheel's contents.
 packages = ["src/ase_ace"]
-
-# Manifest.toml is NOT shipped.  It is untracked in this repository (only Project.toml,
-# ace_driver.jl and python_interface.jl are), so it is whatever the build machine's last
-# `Pkg.instantiate()` happened to resolve -- shipping it would make the wheel's contents
-# depend on who built it.  It also pins an exact dependency graph for one Julia version,
-# inside a directory the installed user typically cannot edit, while the reproducibility this
-# package actually promises is expressed in juliapkg.json ("julia": "=1.11.5", ACEpotentials
-# 0.10).  Project.toml is enough: `Pkg.instantiate()` resolves it, and that is what
-# ase_ace.utils.setup_julia_environment() runs.
-exclude = ["src/ase_ace/julia/Manifest.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
