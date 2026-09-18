@@ -118,7 +118,7 @@ jobs:
       # then dealt with explicitly by the step after this one.
       #
       # `syntax` parses every TRACKED export/*.jl, which is the only coverage the ~15 files
-      # under bench/, scripts/, examples/ and ase-ace's bundled Julia project have: nothing else in this
+      # under bench/, scripts/, examples/ and ase-ace's bundled Julia scripts have: nothing else in this
       # workflow or in the suite loads them, so a syntax error in one used to reach whoever
       # next ran a benchmark by hand. It takes under a second.
       #
@@ -607,6 +607,9 @@ jobs:
       # that an editable install cannot: `get_julia_project_path()` used to climb out of the
       # package to `export/ase-ace/julia`, right in a checkout and absent from every wheel, so
       # the socket and JuliaCall backends were dead for anyone who ran `pip install ase-ace`.
+      # It is also the gate on ase-ace having exactly ONE Julia dependency declaration
+      # (src/ase_ace/juliapkg.json) and on juliapkg finding it from site-packages, which is
+      # what the socket backend now relies on to locate Julia and its project.
       # It belongs in THIS job because it needs neither Julia nor a compiled library, and it
       # runs *after* the editable install above precisely so both install modes are covered.
       - name: Run packaging tests (wheel + sdist build, non-editable install)

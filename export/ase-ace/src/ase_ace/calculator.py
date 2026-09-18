@@ -44,10 +44,14 @@ class ACECalculator(ACECalculatorBase):
         Mutually exclusive with port.
     timeout : float, default=60.0
         Timeout in seconds for Julia startup and connection.
-    julia_executable : str, default='julia'
-        Path to Julia executable.
+    julia_executable : str, optional
+        Path to Julia executable.  The default, ``None``, means the Julia that juliapkg
+        resolved from this package's ``juliapkg.json``.
     julia_project : str, optional
-        Path to Julia project directory. Defaults to the bundled project.
+        Path to a Julia project directory.  The default, ``None``, means the environment
+        juliapkg manages for this Python installation.  Passing *either* this or
+        ``julia_executable`` bypasses juliapkg entirely and uses what you name -- it is not
+        an override of one of juliapkg's two choices.
     log_level : str, default='WARNING'
         Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR').
 
@@ -76,8 +80,9 @@ class ACECalculator(ACECalculatorBase):
     The first calculation may take 5-10 seconds due to Julia's JIT
     compilation. Subsequent calculations are much faster.
 
-    The calculator requires Julia 1.11+ with ACEpotentials.jl and
-    IPICalculator.jl installed.
+    Julia and the Julia packages are installed on first use by juliapkg, from the
+    declaration in ``ase_ace/juliapkg.json``; nothing happens at construction time.  See the
+    README's "Where the Julia environment lives" if the Python prefix is read-only.
     """
 
     default_parameters = {}
@@ -89,7 +94,7 @@ class ACECalculator(ACECalculatorBase):
         port: int = 0,
         unixsocket: Optional[str] = None,
         timeout: float = 60.0,
-        julia_executable: str = 'julia',
+        julia_executable: Optional[str] = None,
         julia_project: Optional[str] = None,
         log_level: str = 'WARNING',
     ):

@@ -3,7 +3,11 @@ The Julia assets resolve from the INSTALLED package, in a wheel as well as in a 
 
 WHY THIS FILE EXISTS.
 
-`ase_ace.server.get_julia_project_path()` and `ase_ace.julia_calculator._INTERFACE_PATH` used
+This file grew a second job when the socket backend was folded onto juliapkg: it is also the
+gate that keeps ase-ace's Julia dependencies declared in exactly ONE place.  See
+``TestOneDependencyDeclaration`` at the bottom of tier 1.
+
+`ase_ace.server.get_julia_assets_path()` and `ase_ace.julia_calculator._INTERFACE_PATH` used
 to read
 
     Path(__file__).parent.parent.parent / "julia"
@@ -49,6 +53,7 @@ nothing.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -59,14 +64,43 @@ import pytest
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 
-# The Julia assets that must travel with the installed package.  ``Manifest.toml`` is
-# deliberately absent: see the exclusion comment in pyproject.toml.
+# The Julia assets that must travel with the installed package.
+#
+# ``Manifest.toml`` is deliberately absent: see the exclusion comment in pyproject.toml.
+# ``julia/Project.toml`` is absent because it no longer exists -- ``julia/`` is a directory of
+# scripts now, not a Julia project, and ``juliapkg.json`` is the single declaration of what
+# Julia and which Julia packages this package needs.  ``TestOneDependencyDeclaration`` is what
+# stops the second declaration coming back.
 REQUIRED_ASSETS = (
-    "julia/Project.toml",
     "julia/ace_driver.jl",
     "julia/python_interface.jl",
     "juliapkg.json",
 )
+
+# The eight Julia packages the merged declaration must carry.  Written out rather than read
+# from juliapkg.json, because a test that reads the file it is checking asserts nothing.
+EXPECTED_JULIA_PACKAGES = frozenset({
+    "ACEpotentials",
+    "ArgParse",
+    "AtomsBase",
+    "AtomsCalculators",
+    "IPICalculator",
+    "StaticArrays",
+    "Unitful",
+    "UnitfulAtomic",
+})
+
+# Julia stdlib and self-references that a `using` line may name without a juliapkg.json entry.
+JULIA_STDLIB_ALLOWLIST = frozenset({
+    "Base", "Core", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils",
+    "LinearAlgebra", "Logging", "Markdown", "Pkg", "Printf", "Profile", "Random",
+    "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "TOML",
+    "UUIDs", "Unicode",
+})
+
+# Where each artifact keeps the licence text.  hatchling's `license-files` puts it under the
+# dist-info for a wheel; the sdist keeps it at its root.
+WHEEL_LICENSE = "ase_ace-0.1.0.dist-info/licenses/LICENSE"
 
 RUN_SLOW = os.environ.get("ACE_TEST_PACKAGING") == "1"
 slow = pytest.mark.skipif(
@@ -118,18 +152,18 @@ class TestPackageRelativeAssets:
         package_dir = Path(ase_ace.__file__).resolve().parent
         assert asset_problems(package_dir) == []
 
-    def test_julia_project_path_is_inside_the_package(self):
+    def test_julia_assets_path_is_inside_the_package(self):
         import ase_ace
-        from ase_ace.server import get_julia_project_path
+        from ase_ace.server import get_julia_assets_path
 
         package_dir = Path(ase_ace.__file__).resolve().parent
-        project = get_julia_project_path().resolve()
+        assets = get_julia_assets_path().resolve()
 
-        # `relative_to` raises if `project` is not under the package -- which is exactly what
+        # `relative_to` raises if `assets` is not under the package -- which is exactly what
         # the pre-fix `parent.parent.parent / "julia"` did, editable install or not.
-        project.relative_to(package_dir)
-        assert (project / "Project.toml").exists()
-        assert (project / "ace_driver.jl").exists()
+        assets.relative_to(package_dir)
+        assert (assets / "ace_driver.jl").exists()
+        assert (assets / "python_interface.jl").exists()
 
     def test_interface_path_is_inside_the_package(self):
         pytest.importorskip("numpy")
@@ -144,18 +178,18 @@ class TestPackageRelativeAssets:
         interface.relative_to(package_dir)
         assert interface.exists()
 
-    def test_utils_default_project_agrees(self):
-        """`setup_julia_environment` defaults through the same one function, not a copy."""
-        from ase_ace.server import get_julia_project_path
-        from ase_ace import utils
+    def test_utils_derives_its_package_list_from_the_declaration(self):
+        """
+        ``utils`` must not keep its own copy of the dependency set.
 
-        src = Path(utils.__file__).read_text()
-        assert "get_julia_project_path" in src, (
-            "utils.py must route its default Julia project through server."
-            "get_julia_project_path(); a second copy of the layout assumption is how this "
-            "bug got two homes in the first place"
-        )
-        assert get_julia_project_path().is_dir()
+        It used to: ``check_julia_packages`` hardcoded
+        ``['ACEpotentials', 'IPICalculator', 'AtomsBase']``, a *fourth* list beside
+        juliapkg.json, julia/Project.toml and the `using` lines in the .jl files.  Now it
+        reads juliapkg.json, so it cannot drift.
+        """
+        from ase_ace.utils import declared_julia_packages
+
+        assert set(declared_julia_packages()) == EXPECTED_JULIA_PACKAGES
 
     # -- negative case: prove the checker can fail ---------------------------------------
 
@@ -190,6 +224,204 @@ class TestPackageRelativeAssets:
         for rel in REQUIRED_ASSETS:
             (pkg / rel).write_text("# placeholder\n")
         assert asset_problems(pkg) == []
+
+
+# ---------------------------------------------------------------------------------------
+# Tier 1b: one dependency declaration, and it covers what the shipped Julia code uses.
+
+
+USING_RE = re.compile(r"^\s*(?:using|import)\s+([^\n#]+)", re.MULTILINE)
+
+
+def julia_packages_used(text):
+    """
+    Top-level Julia package names that a chunk of Julia source ``using``s or ``import``s.
+
+    Handles the three forms that appear in the shipped files:
+    ``using A, B``, ``using A: x, y`` (the package is ``A``) and ``using A.Sub: x``
+    (likewise ``A``).  Relative forms (``using .Mod``) are dropped -- they name a module
+    defined in the same file, not a dependency.
+    """
+    found = set()
+    for clause in USING_RE.findall(text):
+        clause = clause.split(":", 1)[0]
+        for name in clause.split(","):
+            name = name.strip()
+            if not name or name.startswith("."):
+                continue
+            found.add(name.split(".", 1)[0])
+    return found
+
+
+def undeclared_packages(sources, declared):
+    """
+    Package names ``using``d by `sources` but absent from `declared`; empty means consistent.
+
+    `sources` is an iterable of Julia source strings, `declared` the set of names in
+    juliapkg.json.  Returns a sorted list so the failure message names them.
+    """
+    used = set()
+    for text in sources:
+        used |= julia_packages_used(text)
+    return sorted(used - set(declared) - JULIA_STDLIB_ALLOWLIST)
+
+
+def project_toml_problems(package_dir):
+    """
+    Reasons `package_dir` declares its Julia dependencies more than once; empty means once.
+    """
+    stray = Path(package_dir) / "julia" / "Project.toml"
+    if stray.exists():
+        return [
+            f"{stray}: a second declaration of the Julia dependency set.  juliapkg.json is "
+            f"the only one; a Project.toml here drifted out of agreement with it once "
+            f"already (it said ArgParse/IPICalculator/UnitfulAtomic and no AtomsCalculators, "
+            f"while juliapkg.json said the reverse) and nothing compared them."
+        ]
+    return []
+
+
+class TestOneDependencyDeclaration:
+    """
+    ase-ace declares its Julia dependencies in exactly one file, and that file is complete.
+
+    Before this branch there were two: ``src/ase_ace/juliapkg.json`` for the juliacall
+    backend and ``src/ase_ace/julia/Project.toml`` for the socket backend, which spawned
+    ``julia --project=<package dir>`` and instantiated inside site-packages.  They disagreed
+    in both directions and about the Julia version.  These tests are cheap, offline, and
+    would have caught that.
+    """
+
+    def test_the_julia_project_toml_is_gone(self):
+        import ase_ace
+
+        package_dir = Path(ase_ace.__file__).resolve().parent
+        assert project_toml_problems(package_dir) == []
+
+    def test_declaration_checker_rejects_a_reinstated_project_toml(self, tmp_path):
+        """Negative case: the checker must fail if the second mechanism comes back."""
+        pkg = tmp_path / "ase_ace"
+        (pkg / "julia").mkdir(parents=True)
+        assert project_toml_problems(pkg) == []
+
+        (pkg / "julia" / "Project.toml").write_text("[deps]\n")
+        problems = project_toml_problems(pkg)
+        assert len(problems) == 1
+        assert "second declaration" in problems[0]
+
+    def test_every_shipped_julia_using_is_declared(self):
+        """
+        Every package the shipped .jl files load is in juliapkg.json.
+
+        This is the invariant the two declarations broke: ``ace_driver.jl`` does
+        ``using ArgParse``, ``using IPICalculator`` and ``using UnitfulAtomic``, and for the
+        package's whole life none of the three was in juliapkg.json -- so the socket backend
+        was unusable in any environment juliapkg had built.
+        """
+        import ase_ace
+
+        package_dir = Path(ase_ace.__file__).resolve().parent
+        declared = json.loads((package_dir / "juliapkg.json").read_text())["packages"]
+        sources = [
+            (package_dir / "julia" / name).read_text()
+            for name in ("ace_driver.jl", "python_interface.jl")
+        ]
+        assert undeclared_packages(sources, declared) == []
+
+    def test_using_checker_rejects_the_pre_fold_declaration(self):
+        """
+        Negative case, twice over.
+
+        First a synthetic source naming a package nobody declared; then the declaration this
+        package actually shipped before the fold, checked against the `using` lines it
+        actually shipped alongside it.  The second is the one that matters: it reports the
+        exact three names the fold added, from the real files, so this gate is pinned to a
+        failure that really happened rather than to an invented one.
+        """
+        declared = dict.fromkeys(EXPECTED_JULIA_PACKAGES)
+        assert undeclared_packages(["using Nonexistent\n"], declared) == ["Nonexistent"]
+
+        # The pre-fold src/ase_ace/juliapkg.json, verbatim.
+        pre_fold = ["ACEpotentials", "ACEfit", "AtomsBase", "AtomsCalculators",
+                    "Unitful", "StaticArrays"]
+        # The pre-fold ace_driver.jl / python_interface.jl `using` blocks, verbatim.
+        pre_fold_sources = [
+            "using ArgParse\nusing ACEpotentials\nusing IPICalculator\n"
+            "using AtomsBase\nusing Unitful\nusing UnitfulAtomic\n",
+            "using ACEpotentials\nusing ACEpotentials: site_descriptors\n"
+            "using ACEpotentials.Models: energy_forces_virial_basis, cutoff_radius, "
+            "length_basis\nusing AtomsBase\nusing AtomsCalculators\nusing Unitful\n"
+            "using Unitful: ustrip\nusing StaticArrays\n",
+        ]
+        assert undeclared_packages(pre_fold_sources, pre_fold) == [
+            "ArgParse", "IPICalculator", "UnitfulAtomic",
+        ]
+
+        # ...and the parser must not invent dependencies out of the qualified and relative
+        # forms that appear in those same files.
+        assert julia_packages_used("using ACEpotentials.Models: cutoff_radius\n") == {
+            "ACEpotentials"
+        }
+        assert julia_packages_used("using .ACEPythonInterface\n") == set()
+
+    def test_juliapkg_json_is_well_formed(self):
+        """
+        juliapkg must be able to parse what we ship: real UUIDs and a real Julia compat.
+
+        juliapkg is a base dependency now, so this is imported rather than importorskip'd --
+        if it is missing, that is itself the failure.
+        """
+        import ase_ace
+        from juliapkg.compat import Compat
+        from juliapkg.deps import _UUID_RE
+
+        package_dir = Path(ase_ace.__file__).resolve().parent
+        decl = json.loads((package_dir / "juliapkg.json").read_text())
+
+        assert set(decl["packages"]) == EXPECTED_JULIA_PACKAGES
+        for name, spec in decl["packages"].items():
+            assert _UUID_RE.match(spec["uuid"]), f"{name}: {spec['uuid']} is not a UUID"
+
+        compat = Compat.parse(decl["julia"])
+        assert str(compat)
+        # `~1.11, ~1.12` and not `1.11, 1.12`: a comma is a union of CARET ranges, so the
+        # bare form means [1.11, 2.0) and admits 1.13 -- which ACEpotentials does not
+        # support (see commit 466b58f4).  juliapkg resolves with upgrade=True, i.e. the
+        # newest compatible Julia juliaup offers, so this distinction decides what a user
+        # actually runs.
+        from juliapkg.compat import Version
+
+        assert Version.parse("1.11.7") in compat
+        assert Version.parse("1.12.6") in compat
+        assert Version.parse("1.13.0") not in compat
+        assert Version.parse("1.10.10") not in compat
+
+    def test_juliapkg_discovery_descends_exactly_one_level(self, tmp_path, monkeypatch):
+        """
+        juliapkg finds ``<sys.path entry>/<pkg>/juliapkg.json`` and nothing deeper.
+
+        The whole design rests on this: the declaration is found because site-packages is a
+        sys.path entry and ``ase_ace`` is a subdirectory of it.  Moving the file into
+        ``ase_ace/julia/`` -- which looks tidier, now that the other Julia files live there
+        -- would silently orphan it, and nothing would fail loudly: juliapkg would just
+        resolve an environment without ACEpotentials in it.  This pins the one-level rule as
+        a fact about juliapkg rather than an assumption in our design notes.
+        """
+        from juliapkg.deps import deps_files
+
+        entry = tmp_path / "site-packages"
+        shallow = entry / "shallow_pkg"
+        deep = entry / "deep_pkg" / "julia"
+        shallow.mkdir(parents=True)
+        deep.mkdir(parents=True)
+        (shallow / "juliapkg.json").write_text('{"packages": {}}')
+        (deep / "juliapkg.json").write_text('{"packages": {}}')
+
+        monkeypatch.setattr(sys, "path", [str(entry)])
+        found = {os.path.normpath(f) for f in deps_files()}
+
+        assert os.path.normpath(str(shallow / "juliapkg.json")) in found
+        assert os.path.normpath(str(deep / "juliapkg.json")) not in found
 
 
 # ---------------------------------------------------------------------------------------
@@ -228,6 +460,24 @@ def manifest_problems(names):
         f"the build machine last resolved (pyproject.toml [tool.hatch.build] `exclude`)"
         for name in names
         if Path(name).name == "Manifest.toml"
+    ]
+
+
+def license_problems(names, expected):
+    """
+    Reason an artifact's member list carries no licence text; empty means it does.
+
+    The metadata has said ``License-Expression: MIT`` since the PEP 639 conversion, and a
+    published artifact that claims a licence while shipping no licence text is exactly what a
+    PyPI release must not do.  The two artifacts put the file in different places -- the wheel
+    under ``<dist-info>/licenses/`` (from ``license-files``), the sdist at its root -- so the
+    expected path is passed in rather than guessed.
+    """
+    if expected in names:
+        return []
+    return [
+        f"{expected}: no licence text in the artifact, although the metadata declares "
+        f"License-Expression: MIT (pyproject.toml `license` / `license-files`)"
     ]
 
 
@@ -315,8 +565,44 @@ class TestBuiltWheel:
             "ase_ace-0.1.0.dist-info/RECORD",
         ]
         problems = wheel_problems(pre_fix)
-        assert len(problems) == 3
+        assert len(problems) == len(REQUIRED_ASSETS) - 1  # juliapkg.json it did ship
         assert all("not in the wheel" in p for p in problems)
+        assert {"ase_ace/julia/ace_driver.jl", "ase_ace/julia/python_interface.jl"} == {
+            p.split(":")[0] for p in problems
+        }
+
+    @slow
+    def test_wheel_carries_the_license(self, tmp_path):
+        """
+        The wheel ships the MIT text, not just the claim of it.
+
+        Nothing asserted this before: the tests here covered the Julia assets and the absence
+        of Manifest.toml, so `export/ase-ace/LICENSE` going away would have been silent, and
+        the metadata would have kept saying ``License-Expression: MIT`` over an artifact with
+        no licence text -- which is what a PyPI release must not do.
+
+        Measured while writing this: deleting ``license-files = ["LICENSE"]`` from
+        pyproject.toml does *not* drop the file, because hatchling then finds ``LICENSE`` by
+        its own default detection.  What this gate catches is the file itself disappearing
+        (verified: both this and the sdist twin fail when it does).
+        """
+        wheel = build_wheel(tmp_path)
+        with zipfile.ZipFile(wheel) as zf:
+            names = zf.namelist()
+            problems = license_problems(names, WHEEL_LICENSE)
+            assert problems == [], "\n".join(problems)
+            assert zf.read(WHEEL_LICENSE).decode().strip(), "the shipped LICENSE is empty"
+
+    def test_license_check_rejects_an_artifact_without_it(self):
+        """Negative case for both artifacts' licence check."""
+        assert license_problems([WHEEL_LICENSE], WHEEL_LICENSE) == []
+        problems = license_problems(["ase_ace/__init__.py"], WHEEL_LICENSE)
+        assert len(problems) == 1
+        assert "no licence text" in problems[0]
+
+        root = "ase_ace-0.1.0"
+        assert license_problems([f"{root}/LICENSE"], f"{root}/LICENSE") == []
+        assert len(license_problems([f"{root}/README.md"], f"{root}/LICENSE")) == 1
 
     def test_wheel_check_rejects_a_shipped_manifest(self):
         good = [f"ase_ace/{rel}" for rel in REQUIRED_ASSETS]
@@ -344,6 +630,17 @@ class TestBuiltSdist:
         assert sdist_problems(names) == [], "\n".join(sdist_problems(names))
 
     # -- negative case: the real pre-fix sdist, which this must reject --------------------
+
+    @slow
+    def test_sdist_carries_the_license(self, tmp_path):
+        sdist = build_sdist(tmp_path)
+        with tarfile.open(sdist) as tf:
+            names = tf.getnames()
+        roots = {n.split("/")[0] for n in names if "/" in n}
+        assert len(roots) == 1, sorted(roots)
+        expected = f"{roots.pop()}/LICENSE"
+        problems = license_problems(names, expected)
+        assert problems == [], "\n".join(problems)
 
     def test_sdist_check_rejects_the_wheel_only_exclusion(self):
         """
@@ -387,8 +684,13 @@ class TestNonEditableInstall:
     site-packages by a subprocess whose working directory is nowhere near this checkout.
     """
 
-    @slow
-    def test_assets_resolve_from_a_non_editable_install(self, tmp_path):
+    def _probe_installed_wheel(self, tmp_path):
+        """
+        Build the wheel, install it into a throwaway venv, and run the probe inside it.
+
+        Returns the probe's decoded JSON.  Shared by the two tests below because they ask
+        different questions of the same install and building twice is pure cost.
+        """
         wheel = build_wheel(tmp_path / "wheel")
 
         venv = tmp_path / "venv"
@@ -408,21 +710,30 @@ class TestNonEditableInstall:
 import json
 from pathlib import Path
 import ase_ace
-from ase_ace.server import get_julia_project_path
+from ase_ace.server import get_julia_assets_path
 from ase_ace.julia_calculator import _INTERFACE_PATH
+from juliapkg.deps import deps_files, find_requirements
 
 pkg = Path(ase_ace.__file__).resolve().parent
-project = get_julia_project_path().resolve()
+assets = get_julia_assets_path().resolve()
 iface = _INTERFACE_PATH.resolve()
+want = str((pkg / "juliapkg.json").resolve())
+files = [str(Path(f).resolve()) for f in deps_files()]
+compat, specs = find_requirements()
 print(json.dumps({
     "package_dir": str(pkg),
-    "project": str(project),
-    "project_exists": project.is_dir(),
-    "driver_exists": (project / "ace_driver.jl").is_file(),
+    "assets": str(assets),
+    "assets_exists": assets.is_dir(),
+    "driver_exists": (assets / "ace_driver.jl").is_file(),
     "interface": str(iface),
     "interface_exists": iface.is_file(),
     "juliapkg_exists": (pkg / "juliapkg.json").is_file(),
-    "manifest_shipped": (project / "Manifest.toml").exists(),
+    "project_toml_shipped": (assets / "Project.toml").exists(),
+    "manifest_shipped": (assets / "Manifest.toml").exists(),
+    "juliapkg_json_discovered": want in files,
+    "deps_files": files,
+    "declared": sorted(spec.name for spec in specs),
+    "julia_compat": None if compat is None else str(compat),
 }))
 """
         # cwd well away from the checkout, so nothing is found by accident
@@ -436,13 +747,59 @@ print(json.dumps({
         assert "site-packages" in info["package_dir"], (
             f"expected a non-editable install; got {info['package_dir']}"
         )
-        assert info["project_exists"], f"Julia project missing: {info['project']}"
-        assert info["driver_exists"], "ace_driver.jl missing from the installed project"
+        # ...and specifically THIS venv's site-packages.  The venv is created with
+        # --system-site-packages, and a developer machine may well have another ase_ace
+        # installed there (this one does); if that copy were the one imported, every
+        # assertion below would be about it rather than about the wheel just built.
+        assert info["package_dir"].startswith(str(venv.resolve())), (
+            f"the probe imported {info['package_dir']}, which is not inside the venv at "
+            f"{venv}"
+        )
+        return info
+
+    @slow
+    def test_assets_resolve_from_a_non_editable_install(self, tmp_path):
+        info = self._probe_installed_wheel(tmp_path)
+
+        assert info["assets_exists"], f"Julia assets missing: {info['assets']}"
+        assert info["driver_exists"], "ace_driver.jl missing from the installed package"
         assert info["interface_exists"], f"python_interface.jl missing: {info['interface']}"
         assert info["juliapkg_exists"], "juliapkg.json missing from the installed package"
         assert not info["manifest_shipped"], (
             "Manifest.toml was shipped; pyproject.toml excludes it on purpose"
         )
-        assert info["project"].startswith(info["package_dir"]), (
-            "the Julia project must live inside the installed package, not beside it"
+        assert not info["project_toml_shipped"], (
+            "julia/Project.toml is back in the artifact -- that is the second dependency "
+            "declaration this package folded onto juliapkg to get rid of"
         )
+        assert info["assets"].startswith(info["package_dir"]), (
+            "the Julia scripts must live inside the installed package, not beside it"
+        )
+
+    @slow
+    def test_juliapkg_discovers_the_installed_declaration(self, tmp_path):
+        """
+        juliapkg finds the shipped juliapkg.json from site-packages, and it is complete.
+
+        This is the load-bearing invariant of the fold: the socket backend no longer carries
+        its own project, so if juliapkg does not find this file the Julia environment is
+        built without ACEpotentials in it -- and nothing fails until a driver subprocess dies
+        with `Package ACEpotentials not found`.  ``deps_files()`` descends exactly one level
+        into each sys.path entry (pinned in tier 1), so this passes only while the file sits
+        directly inside the package.
+
+        No Julia and no network: ``deps_files()`` and ``find_requirements()`` only read files.
+        """
+        info = self._probe_installed_wheel(tmp_path)
+
+        assert info["juliapkg_json_discovered"], (
+            "juliapkg did not find the installed juliapkg.json.  It looked in:\n"
+            + "\n".join(info["deps_files"])
+        )
+        # A superset, not equality: the venv is created with --system-site-packages, so
+        # juliacall's own juliapkg.json (PythonCall, OpenSSL_jll) may be merged in too.
+        assert EXPECTED_JULIA_PACKAGES <= set(info["declared"]), (
+            f"missing from the merged requirements: "
+            f"{sorted(EXPECTED_JULIA_PACKAGES - set(info['declared']))}"
+        )
+        assert info["julia_compat"], "no julia version constraint reached juliapkg"

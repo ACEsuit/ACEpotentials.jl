@@ -53,26 +53,8 @@ def test_model_path():
     return str(TEST_MODEL_PATH)
 
 
-@pytest.fixture(scope="session")
-def julia_project_path():
-    """
-    Path to the Julia project for ase-ace.
-
-    Resolved through the package itself rather than by walking up from this file.  A
-    `Path(__file__).parent.parent / "julia"` here would be a second, independent copy of the
-    layout assumption -- and one that is only ever right for a source checkout, which is
-    exactly the mistake tests/test_packaging.py exists to catch.
-    """
-    from ase_ace.server import get_julia_project_path
-
-    project_path = get_julia_project_path()
-    if not (project_path / "Project.toml").exists():
-        pytest.skip(f"Julia project not found at {project_path}")
-    return str(project_path)
-
-
 @pytest.fixture
-def ace_calculator(test_model_path, julia_available, julia_project_path):
+def ace_calculator(test_model_path, julia_available):
     """
     Create an ACECalculator instance for testing.
 
@@ -83,11 +65,13 @@ def ace_calculator(test_model_path, julia_available, julia_project_path):
 
     from ase_ace import ACECalculator
 
+    # No julia_project=: the calculator asks juliapkg, which is the one mechanism this
+    # package has for deciding where Julia and its packages live.  Naming a project here
+    # would take the explicit-bypass path and test something the shipped default does not do.
     calc = ACECalculator(
         test_model_path,
         num_threads=1,
         timeout=120.0,  # 2 minutes for Julia startup
-        julia_project=julia_project_path,
     )
     yield calc
     calc.close()
@@ -177,13 +161,18 @@ def create_test_model(output_path: str = None):
     println("Model saved to: ", ARGS[1])
     '''
 
-    # Get the Julia project path (from the installed package -- see julia_project_path)
-    from ase_ace.server import get_julia_project_path
+    # Ask juliapkg for both the executable and the project.  Hardcoding "julia" here used to
+    # mean that fixture generation ran against whatever was on PATH, in a project that no
+    # longer exists; `julia_env()` is the same pair the calculators themselves run.
+    #
+    # `ACEfit.BLR()` below keeps working without ACEfit being declared, because
+    # ACEpotentials re-exports it (`@reexport using ACEfit` in src/ACEpotentials.jl).
+    from ase_ace.server import julia_env
 
-    julia_project = get_julia_project_path()
+    julia_executable, julia_project = julia_env()
 
     cmd = [
-        "julia",
+        julia_executable,
         f"--project={julia_project}",
         "-e", julia_script,
         output_path,

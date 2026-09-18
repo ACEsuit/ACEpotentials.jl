@@ -97,20 +97,17 @@ def benchmark_socket_calculator(model_path, structures, num_threads, n_iteration
     """Benchmark ACECalculator (socket-based)."""
     try:
         from ase_ace import ACECalculator
-        from ase_ace.server import get_julia_project_path
     except ImportError:
         return None
-
-    julia_project = get_julia_project_path()
 
     results = {}
 
     try:
+        # No julia_project=: the calculator asks juliapkg, as a shipped install does.
         with ACECalculator(
             model_path,
             num_threads=num_threads,
             timeout=timeout,
-            julia_project=str(julia_project),
         ) as calc:
             for natoms, atoms in structures.items():
                 atoms = atoms.copy()
@@ -218,11 +215,11 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
 
     structures_json = json.dumps(structures_data)
 
-    # Run Julia benchmark.  The project ships inside the package, so ask the package where
-    # it is rather than assuming this script sits next to it in a source checkout.
-    from ase_ace.server import get_julia_project_path
+    # Run the Julia benchmark in the same environment the calculators use, rather than in
+    # whatever project happens to be next to this script in a source checkout.
+    from ase_ace.server import julia_env
 
-    julia_project = get_julia_project_path()
+    julia_executable, julia_project = julia_env()
 
     env = os.environ.copy()
     env['JULIA_NUM_THREADS'] = str(num_threads)
@@ -233,7 +230,7 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
 
     try:
         result = subprocess.run(
-            ['julia', f'--project={julia_project}', script_path,
+            [julia_executable, f'--project={julia_project}', script_path,
              str(model_path), structures_json, str(n_iterations)],
             capture_output=True,
             text=True,

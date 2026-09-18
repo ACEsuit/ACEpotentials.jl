@@ -24,7 +24,7 @@ def num_threads(request):
 
 
 @pytest.fixture
-def threaded_calculator(test_model_path, julia_available, julia_project_path, num_threads):
+def threaded_calculator(test_model_path, julia_available, num_threads):
     """Create calculator with specified thread count."""
     if not julia_available:
         pytest.skip("Julia not available")
@@ -35,7 +35,6 @@ def threaded_calculator(test_model_path, julia_available, julia_project_path, nu
         test_model_path,
         num_threads=num_threads,
         timeout=120.0,
-        julia_project=julia_project_path,
     )
     yield calc
     calc.close()
@@ -83,7 +82,7 @@ class TestThreadingConsistency:
 class TestThreadingPerformance:
     """Test threading performance characteristics."""
 
-    def test_larger_system_scaling(self, test_model_path, julia_available, julia_project_path):
+    def test_larger_system_scaling(self, test_model_path, julia_available):
         """
         Test that larger systems benefit from threading.
 
@@ -106,7 +105,6 @@ class TestThreadingPerformance:
                 test_model_path,
                 num_threads=threads,
                 timeout=120.0,
-                julia_project=julia_project_path,
             ) as calc:
                 atoms.calc = calc
 
@@ -138,7 +136,7 @@ class TestThreadingPerformance:
 class TestThreadCountModes:
     """Test different thread count specification modes."""
 
-    def test_explicit_thread_count(self, test_model_path, julia_available, julia_project_path):
+    def test_explicit_thread_count(self, test_model_path, julia_available):
         """Test explicit integer thread count."""
         if not julia_available:
             pytest.skip("Julia not available")
@@ -152,13 +150,12 @@ class TestThreadCountModes:
             test_model_path,
             num_threads=2,
             timeout=120.0,
-            julia_project=julia_project_path,
         ) as calc:
             atoms.calc = calc
             E = atoms.get_potential_energy()
             assert np.isfinite(E)
 
-    def test_auto_thread_count(self, test_model_path, julia_available, julia_project_path):
+    def test_auto_thread_count(self, test_model_path, julia_available):
         """Test 'auto' thread count mode."""
         if not julia_available:
             pytest.skip("Julia not available")
@@ -173,7 +170,6 @@ class TestThreadCountModes:
             test_model_path,
             num_threads='auto',
             timeout=120.0,
-            julia_project=julia_project_path,
         ) as calc:
             atoms.calc = calc
             E = atoms.get_potential_energy()

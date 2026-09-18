@@ -44,6 +44,18 @@ keywords = ["ase", "ace", "molecular-dynamics", "machine-learning", "interatomic
 dependencies = [
     "ase>=3.22",
     "numpy>=1.20",
+    # juliapkg is a BASE dependency, not part of the `[julia]` extra, because the socket
+    # backend (`ACECalculator`) needs it too: it asks juliapkg where Julia and the Julia
+    # environment are and spawns `julia --project=<that>`.  It used to point at a
+    # `Project.toml` shipped inside site-packages and instantiate it there, which is a
+    # second declaration of the same dependency set in a directory an installed user
+    # typically cannot write.
+    #
+    # The cost is small and does not include Julia: juliapkg is pure Python with four
+    # pure-Python requirements (filelock, semver, tomli, tomlkit), and nothing is downloaded
+    # until something calls resolve().  juliacall stays in `[julia]`, so the socket backend
+    # works for someone who never installed that extra.
+    "juliapkg>=0.1.10",
 ]
 
 [project.optional-dependencies]
@@ -52,7 +64,8 @@ lib = [
     "matscipy>=0.8",
 ]
 
-# ACEJuliaCalculator - JuliaCall backend
+# ACEJuliaCalculator - JuliaCall backend.  juliapkg is listed again although it is already
+# a base dependency: this extra genuinely needs it, and saying so costs nothing.
 julia = [
     "juliacall>=0.9.20",
     "juliapkg>=0.1.10",
@@ -80,16 +93,16 @@ Repository = "https://github.com/ACEsuit/ACEpotentials.jl"
 [tool.hatch.build]
 # No Manifest.toml is shipped, in ANY artifact.
 #
-# `Manifest.toml` is untracked in this repository -- only `Project.toml`, `ace_driver.jl` and
+# `Manifest.toml` is untracked in this repository -- only `ace_driver.jl` and
 # `python_interface.jl` are -- so a shipped one is whatever the build machine's last
 # `Pkg.instantiate()` happened to resolve, which makes the artifact's contents depend on who
 # built it.  That is not hypothetical: the copy on the machine this exclusion was written for
 # is broken, pointing at a `DifferentiationInterface` source that no longer exists, so a user
 # following README section 2 would hit `failed to find source of parent package`.  It also
 # pins an exact graph for one Julia version inside a directory an installed user typically
-# cannot edit.  Every dependency resolves from the General registry, so `Pkg.instantiate()`
-# from `Project.toml` alone works on a fresh machine; what this package actually promises is
-# expressed in juliapkg.json ("julia": "~1.11, ~1.12", ACEpotentials 0.10) -- a supported
+# cannot edit.  `src/ase_ace/julia/Project.toml` is gone too, for a related reason: the Julia
+# environment is now built by juliapkg outside the package, and what this package promises is
+# expressed in the one file juliapkg reads, juliapkg.json ("julia": "~1.11, ~1.12", ACEpotentials 0.10) -- a supported
 # range rather than one build machine's exact resolve, which is the right granularity for a
 # published package: an exact `=1.11.5` made juliapkg download a second Julia for anyone
 # already running 1.11.7.
@@ -107,8 +120,7 @@ exclude = ["Manifest.toml"]
 
 [tool.hatch.build.targets.wheel]
 # `packages` ships EVERY file under src/ase_ace, not only the .py files -- juliapkg.json and
-# the whole src/ase_ace/julia/ project (Project.toml, ace_driver.jl, python_interface.jl)
-# included.  That is why the Julia assets live inside the package: one
+# the Julia scripts in src/ase_ace/julia/ (ace_driver.jl, python_interface.jl) included.  That is why the Julia assets live inside the package: one
 # `Path(__file__).parent`-relative expression then resolves in an editable install and in a
 # wheel alike.  A `force-include` for juliapkg.json used to sit here; it was a no-op, since
 # `packages` already carried it, and it is gone rather than left as a second mechanism doing

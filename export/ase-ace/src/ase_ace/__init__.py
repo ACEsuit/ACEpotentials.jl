@@ -7,9 +7,10 @@ Expansion) interatomic potentials:
 1. ACECalculator - Uses Julia/IPICalculator via sockets
    - Full Julia runtime with JIT compilation
    - Multi-threading via JULIA_NUM_THREADS
-   - Requires Julia installation
-   - First call has ~5-10s startup time
-   - Install: pip install ase-ace[ipi]
+   - Julia and its packages are installed on first use by juliapkg, from
+     ase_ace/juliapkg.json; no separate Julia install is required
+   - First call has ~5-10s startup time (minutes the very first time)
+   - Install: pip install ase-ace
 
 2. ACELibraryCalculator - Uses pre-compiled shared library
    - Instant startup (no JIT)

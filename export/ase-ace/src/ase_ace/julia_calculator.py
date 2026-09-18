@@ -21,7 +21,7 @@ import numpy as np
 from ase.calculators.calculator import all_changes
 
 from .base import ACECalculatorBase
-from .server import get_julia_project_path
+from .server import get_julia_assets_path
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,11 @@ logger = logging.getLogger(__name__)
 # out to `<prefix>/lib/pythonX.Y/julia`, which does not exist: the JuliaCall and socket
 # backends were both dead in any non-editable install.  Every CI job installs this package
 # with `pip install -e`, which is why it was never seen.  See tests/test_packaging.py.
-_INTERFACE_PATH = get_julia_project_path() / "python_interface.jl"
+#
+# This backend never passed a `--project`: juliacall has always run in juliapkg's
+# environment, which is why it was already correct.  Now that the socket backend asks
+# juliapkg too, the two genuinely share one environment declared in one file.
+_INTERFACE_PATH = get_julia_assets_path() / "python_interface.jl"
 
 
 class ACEJuliaCalculator(ACECalculatorBase):

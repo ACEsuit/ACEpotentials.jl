@@ -184,7 +184,7 @@ class TestCalculatorCalculations:
 class TestCalculatorLifecycle:
     """Test calculator lifecycle management."""
 
-    def test_context_manager(self, test_model_path, julia_project_path):
+    def test_context_manager(self, test_model_path):
         """Test using calculator as context manager."""
         from ase_ace import ACECalculator
         from ase.build import bulk
@@ -192,7 +192,6 @@ class TestCalculatorLifecycle:
         atoms = bulk('Si', 'diamond', a=5.43)
 
         with ACECalculator(test_model_path, num_threads=1,
-                          julia_project=julia_project_path,
                           timeout=120.0) as calc:
             atoms.calc = calc
             E = atoms.get_potential_energy()
@@ -201,13 +200,12 @@ class TestCalculatorLifecycle:
         # After context manager, calculator should be closed
         assert calc._started is False
 
-    def test_manual_close(self, test_model_path, julia_project_path):
+    def test_manual_close(self, test_model_path):
         """Test manual close of calculator."""
         from ase_ace import ACECalculator
         from ase.build import bulk
 
         calc = ACECalculator(test_model_path, num_threads=1,
-                            julia_project=julia_project_path,
                             timeout=120.0)
         atoms = bulk('Si', 'diamond', a=5.43)
         atoms.calc = calc

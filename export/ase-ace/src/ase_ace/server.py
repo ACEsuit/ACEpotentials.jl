@@ -11,9 +11,10 @@ import time
 import socket
 import signal
 import logging
+import warnings
 import subprocess
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -26,19 +27,105 @@ def find_free_port() -> int:
         return s.getsockname()[1]
 
 
-def get_julia_project_path() -> Path:
+def get_julia_assets_path() -> Path:
     """
-    Path to the Julia project bundled with this package.
+    Directory of the Julia *source files* shipped inside this package.
 
-    The project lives *inside* the Python package (`ase_ace/julia/`) so that this one
-    expression is correct in an editable install and in a wheel alike.  It previously read
-    `Path(__file__).parent.parent.parent / "julia"` -- the source-checkout layout
-    `export/ase-ace/julia/` -- which from `site-packages/ase_ace/` resolved to
-    `<prefix>/lib/pythonX.Y/julia` and did not exist.  Both Julia-backed calculators were
+    These are scripts -- ``ace_driver.jl`` and ``python_interface.jl`` -- and nothing else.
+    This directory used to also hold a ``Project.toml``, so one function answered two
+    questions at once: "where is the code?" and "what do I pass to ``--project``?".  Those
+    have different answers now.  The code ships in the wheel; the *environment* is created
+    at run time by juliapkg, outside the package, from ``ase_ace/juliapkg.json`` -- see
+    :func:`julia_env`.
+
+    The path is ``Path(__file__).parent``-relative so that it is correct in an editable
+    install and in a wheel alike.  It previously read
+    ``Path(__file__).parent.parent.parent / "julia"`` -- the source-checkout layout
+    ``export/ase-ace/julia/`` -- which from ``site-packages/ase_ace/`` resolved to
+    ``<prefix>/lib/pythonX.Y/julia`` and did not exist.  Both Julia-backed calculators were
     therefore broken in every non-editable install; only editable installs were ever tested.
-    tests/test_packaging.py now installs a built wheel and asserts these assets resolve.
+    tests/test_packaging.py installs a built wheel and asserts these assets resolve.
     """
     return Path(__file__).parent / "julia"
+
+
+def get_julia_project_path() -> Path:
+    """
+    Deprecated alias of :func:`get_julia_assets_path`.
+
+    It no longer names a Julia project: ``src/ase_ace/julia/Project.toml`` was deleted when
+    the socket backend was folded onto juliapkg, leaving ``ase_ace/juliapkg.json`` as this
+    package's single declaration of what Julia and which Julia packages it needs.  Callers
+    that wanted the directory of shipped ``.jl`` files should use
+    :func:`get_julia_assets_path`; callers that wanted something to pass to ``--project``
+    should use :func:`julia_env`.  Kept for one release because it was importable from
+    user code.
+    """
+    warnings.warn(
+        "ase_ace.server.get_julia_project_path() is deprecated and will be removed in a "
+        "future release.  It now returns only the directory of the shipped Julia scripts: "
+        "use get_julia_assets_path() for that, or julia_env() for the (executable, project) "
+        "pair the calculators actually run.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return get_julia_assets_path()
+
+
+def julia_env() -> Tuple[str, str]:
+    """
+    ``(executable, project)`` for the Julia side, as resolved by juliapkg.
+
+    This is the one place ``ase-ace`` decides which Julia runs and which environment it runs
+    in, and it delegates both decisions to :mod:`juliapkg`, which reads
+    ``ase_ace/juliapkg.json`` (found automatically because ``site-packages`` is on
+    ``sys.path`` and ``deps_files()`` descends one level into its entries -- which is why
+    that file must stay directly inside the package and not move into ``julia/``).
+
+    Calling this triggers ``juliapkg.resolve()``, which on first use installs a compatible
+    Julia and the declared packages.  That takes minutes, so call it lazily -- at
+    ``start()``, not at construction.  Subsequent calls are a content-hash check under a
+    cross-process file lock and return in milliseconds.
+
+    Raises
+    ------
+    ImportError
+        If juliapkg is not installed.
+    RuntimeError
+        If juliapkg cannot create its environment -- almost always a read-only Python
+        prefix.  The message names ``PYTHON_JULIAPKG_PROJECT``, which is the fix; see the
+        README's "Where the Julia environment lives".
+    """
+    try:
+        import juliapkg
+    except ImportError:
+        raise ImportError(
+            "juliapkg is required to locate the Julia environment for ase-ace's "
+            "Julia-backed calculators.  It is a base dependency of ase-ace; reinstall "
+            "with `pip install ase-ace`, or pass julia_executable= and julia_project= "
+            "explicitly to bypass juliapkg entirely."
+        ) from None
+
+    try:
+        return juliapkg.executable(), juliapkg.project()
+    except OSError as e:
+        raise RuntimeError(
+            f"ase-ace could not create its Julia environment: {e}\n"
+            "juliapkg puts that environment inside the Python prefix "
+            "(<sys.prefix>/julia_env in a virtualenv), so this usually means the prefix is "
+            "not writable: a system-wide install, a read-only container image, or a shared "
+            "install serving several users.\n"
+            "Point juliapkg at a writable directory, e.g.\n"
+            "    export PYTHON_JULIAPKG_PROJECT=$HOME/.julia/environments/ase_ace\n"
+            "and run once:\n"
+            "    python -c 'from ase_ace.utils import setup_julia_environment; "
+            "setup_julia_environment(verbose=True)'\n"
+            "Site administrators building a read-only image: set that variable and run the "
+            "same command at build time, then set PYTHON_JULIAPKG_OFFLINE=yes at run time.\n"
+            "Note that PYTHON_JULIAPKG_PROJECT is process-global and shared with juliacall "
+            "and every other juliapkg consumer, which is why ase-ace will not set it for "
+            "you."
+        ) from e
 
 
 class JuliaACEServer:
@@ -58,10 +145,11 @@ class JuliaACEServer:
         TCP port to connect to. Use 0 for automatic assignment.
     unixsocket : str, optional
         Unix socket name (mutually exclusive with port).
-    julia_executable : str
-        Path to Julia executable.
+    julia_executable : str, optional
+        Path to Julia executable.  ``None`` (the default) means "ask juliapkg".
     julia_project : str, optional
-        Path to Julia project directory. Defaults to bundled project.
+        Path to a Julia project directory.  ``None`` (the default) means "ask juliapkg".
+        Passing either this or ``julia_executable`` bypasses juliapkg entirely.
 
     Examples
     --------
@@ -77,7 +165,7 @@ class JuliaACEServer:
         num_threads: Union[int, str] = 'auto',
         port: int = 0,
         unixsocket: Optional[str] = None,
-        julia_executable: str = 'julia',
+        julia_executable: Optional[str] = None,
         julia_project: Optional[str] = None,
     ):
         self.model_path = Path(model_path).resolve()
@@ -87,16 +175,25 @@ class JuliaACEServer:
         self.num_threads = num_threads
         self.port = port
         self.unixsocket = unixsocket
-        self.julia_executable = julia_executable
-        self.julia_project = Path(julia_project) if julia_project else get_julia_project_path()
+        # Passing either of these is an explicit bypass of juliapkg: "I built this
+        # environment myself, use it as-is".  It is not an override of juliapkg's choice,
+        # and it cannot be -- juliapkg reads PYTHON_JULIAPKG_EXE once at import time in
+        # reset_state() and exposes no public setter, so a per-instance executable cannot be
+        # pushed into it through public API.  Hence `None` defaults rather than `'julia'`:
+        # "not specified" has to be distinguishable from "specified as julia", or every
+        # default-constructed calculator would take the bypass path and never see the
+        # juliapkg environment.
+        self._via_juliapkg = julia_executable is None and julia_project is None
+        self.julia_executable = julia_executable or 'julia'
+        self.julia_project = Path(julia_project) if julia_project else None
 
         self._process: Optional[subprocess.Popen] = None
         self._actual_port: Optional[int] = None
 
     @property
     def driver_script(self) -> Path:
-        """Path to the Julia driver script."""
-        return self.julia_project / "ace_driver.jl"
+        """Path to the Julia driver script shipped inside this package."""
+        return get_julia_assets_path() / "ace_driver.jl"
 
     def _get_thread_count(self) -> int:
         """Resolve thread count, handling 'auto'."""
@@ -106,12 +203,16 @@ class JuliaACEServer:
 
     def _build_command(self, port: int) -> list:
         """Build the Julia command line."""
-        cmd = [
-            self.julia_executable,
-            f"--project={self.julia_project}",
+        cmd = [self.julia_executable]
+        # `julia_project` is None only when the caller bypassed juliapkg by naming an
+        # executable but no project; then Julia's own default environment applies and
+        # emitting `--project=None` would be worse than emitting nothing.
+        if self.julia_project is not None:
+            cmd.append(f"--project={self.julia_project}")
+        cmd.extend([
             str(self.driver_script),
             "--model", str(self.model_path),
-        ]
+        ])
 
         if self.unixsocket:
             cmd.extend(["--unixsocket", self.unixsocket])
@@ -147,6 +248,12 @@ class JuliaACEServer:
         """
         if self._process is not None:
             raise RuntimeError("Server already running")
+
+        # Resolve lazily, here rather than in __init__, so that merely constructing a
+        # calculator never triggers a multi-minute Julia install.
+        if self._via_juliapkg:
+            self.julia_executable, project = julia_env()
+            self.julia_project = Path(project)
 
         # Determine port to use
         if self.unixsocket:

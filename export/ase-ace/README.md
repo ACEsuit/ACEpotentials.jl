@@ -24,9 +24,13 @@ This package provides three ASE-compatible calculators for ACE potentials:
 
 ## Installation
 
-### 1. Install Julia
+### 1. Install Julia (optional)
 
-Install Julia 1.11+ using [juliaup](https://github.com/JuliaLang/juliaup) (recommended):
+This step is optional.  juliapkg will install a compatible Julia itself if it cannot find
+one, so `pip install ase-ace` followed by section 2 is enough.  Installing
+[juliaup](https://github.com/JuliaLang/juliaup) first is still recommended: juliapkg then
+picks the newest channel matching `~1.11, ~1.12` rather than downloading a second copy of
+Julia into your Python environment.
 
 ```bash
 # Linux/macOS
@@ -41,46 +45,101 @@ Or download from [julialang.org](https://julialang.org/downloads/).
 Verify installation:
 ```bash
 julia --version
-# Should show: julia version 1.11.x or higher
+# Should show: julia version 1.11.x or 1.12.x
 ```
 
-### 2. Install Julia Packages
+Note that a Julia on `PATH` is not necessarily the one the calculators run --
+`ase_ace.server.julia_env()` reports the one juliapkg chose.
 
-Install the required Julia packages in the ase-ace Julia environment:
+### 2. Install ase-ace's Julia Packages
 
-The Julia project lives **inside** the Python package, at `src/ase_ace/julia/` (and, once
-installed, at `<site-packages>/ase_ace/julia/`).  It is there rather than beside the package
-so that one `Path(__file__).parent`-relative expression finds it in an editable install and in
-a wheel alike; `ase_ace.server.get_julia_project_path()` is the single place that resolves it,
-and `tests/test_packaging.py` is the gate that keeps it resolvable.
+`ase-ace` declares what it needs from Julia in **one** file, `src/ase_ace/juliapkg.json`
+(installed as `<site-packages>/ase_ace/juliapkg.json`): a supported Julia range
+(`~1.11, ~1.12`) and eight packages.  [juliapkg](https://github.com/JuliaPy/pyjuliapkg),
+which is a base dependency, reads that file and builds the environment; **both** Julia-backed
+calculators then use it -- `ACEJuliaCalculator` through juliacall, and `ACECalculator` by
+spawning `julia --project=<that environment>`.  There is no Julia project inside the Python
+package any more, and nothing is installed into `site-packages`.
 
-```bash
-# Navigate to the ase-ace directory
-cd path/to/ACEpotentials.jl/export/ase-ace
-
-# Install Julia dependencies (all of them are in the General registry;
-# no additional registry is required)
-julia --project=src/ase_ace/julia -e '
-    using Pkg
-    println("Installing packages...")
-    Pkg.instantiate()
-    println("Precompiling (this may take a few minutes)...")
-    Pkg.precompile()
-    println("Done!")
-'
-```
-
-**If you installed ase-ace from a wheel** there is no `src/ase_ace/julia` to point at -- the
-project is inside site-packages, and you should not be typing that path by hand.  Install the
-package first (section 3) and then let it locate its own project:
+You do not have to do anything: the environment is created on first use.  To do it once,
+deliberately -- before a batch job, or at container-build time -- run
 
 ```bash
 python -c "from ase_ace.utils import setup_julia_environment; setup_julia_environment(verbose=True)"
 ```
 
-That runs the same `Pkg.instantiate()` / `Pkg.precompile()` against
-`ase_ace.server.get_julia_project_path()`.  See [Utility Functions](#utility-functions) for the
-rest of that module.
+This is the same command in a source checkout and in a wheel install.  It installs a
+compatible Julia if there is not one already, adds the packages, resolves and precompiles,
+under a cross-process file lock.  First run takes minutes; afterwards startup is a
+content-hash check.  You never have to re-run it after upgrading `ase-ace`: juliapkg
+re-resolves automatically whenever `juliapkg.json`, the Julia version, or the set of
+`juliapkg.json` files on `sys.path` changes.
+
+To see what it chose:
+
+```python
+from ase_ace.server import julia_env
+executable, project = julia_env()
+```
+
+#### Where the Julia environment lives
+
+By default juliapkg puts it **inside the Python prefix**: `<sys.prefix>/julia_env` in a
+virtualenv or conda environment, and `~/.julia/environments/pyjuliapkg` for a system Python.
+
+**If the prefix is not writable** -- a system-wide install, a read-only container image, a
+shared install serving several users -- creating it fails, and `ase-ace` reports:
+
+```
+RuntimeError: ase-ace could not create its Julia environment: [Errno 13] Permission denied: '<prefix>/julia_env'
+```
+
+followed by the fix.  Set juliapkg's own environment variable to somewhere writable, before
+Python starts:
+
+```bash
+export PYTHON_JULIAPKG_PROJECT=$HOME/.julia/environments/ase_ace
+python -c "from ase_ace.utils import setup_julia_environment; setup_julia_environment(verbose=True)"
+```
+
+`ase-ace` deliberately does **not** set this for you: it is process-global and shared with
+juliacall and every other juliapkg consumer in the interpreter, and silently relocating
+another package's Julia environment is not ours to do.
+
+Three juliapkg variables are worth knowing:
+
+| variable | effect |
+|---|---|
+| `PYTHON_JULIAPKG_PROJECT` | Put the environment at this absolute path.  Also marks it *shared*, which changes one thing: juliapkg then adds to the existing `Project.toml` instead of rebuilding it, and does not delete `Manifest.toml`, so a dependency that `ase-ace` **removes** in a later release lingers.  Version changes still apply. |
+| `PYTHON_JULIAPKG_OFFLINE=yes` | Never touch the network; use the environment as it stands.  The run-time half of a build-time resolve, for read-only images. |
+| `PYTHON_JULIAPKG_EXE` | Use this Julia.  Read once, at import, so it must be set before Python starts -- which is why `ACECalculator(julia_executable=...)` cannot steer juliapkg and instead bypasses it (below). |
+
+For a container: build as root with `PYTHON_JULIAPKG_PROJECT` pointing somewhere
+world-readable *outside* the Python prefix, run `setup_julia_environment()` at build time,
+and set `PYTHON_JULIAPKG_OFFLINE=yes` at run time.
+
+#### Bypassing juliapkg
+
+Passing `julia_project=` or `julia_executable=` to `ACECalculator` means "I built this
+environment myself, use exactly it".  It bypasses juliapkg entirely; it is not an override of
+one of juliapkg's two choices.  That is also why both default to `None` rather than to
+`'julia'` -- "not specified" has to be distinguishable from "specified".
+
+#### A note on the Julia version specifier
+
+`juliapkg.json` says `"julia": "~1.11, ~1.12"`, and the tildes matter.  In Julia compat
+syntax a comma is a union of **caret** ranges, so the bare `"1.11, 1.12"` means `[1.11, 2.0)`
+and admits 1.13, which ACEpotentials does not support.  juliapkg resolves with
+`upgrade=True`, i.e. the newest compatible Julia available, so this distinction decides which
+Julia you actually run.
+
+One constraint this puts on the declaration: juliapkg merges every `juliapkg.json` on
+`sys.path`, and on a Python linked against OpenSSL older than 3.5 its `openssl_compat()` rule
+injects `julia = "1 - 1.11"` into that merge.  Intersected with `~1.11, ~1.12` that is
+benign -- it pins 1.11.x.  But a future declaration of 1.12 *alone* would intersect to empty
+and raise `'julia' compat entries have empty intersection` on those users' machines and not
+on others.  Widen this specifier when ACEpotentials supports a newer Julia; do not narrow it
+past 1.11.
 
 ### 3. Install ase-ace
 
@@ -102,8 +161,8 @@ pip install -e ".[dev]"
 ```
 
 **Installation options:**
-- `ase-ace` - Base package only (includes `ACECalculator`)
-- `ase-ace[julia]` - Adds `juliacall` and `juliapkg` for `ACEJuliaCalculator`
+- `ase-ace` - Base package only (includes `ACECalculator`; pulls in `juliapkg`)
+- `ase-ace[julia]` - Adds `juliacall` for `ACEJuliaCalculator`
 - `ase-ace[lib]` - Adds `matscipy` for `ACELibraryCalculator`
 - `ase-ace[all]` - All optional dependencies
 
@@ -237,8 +296,8 @@ print(f"Basis size: {calc.n_basis}")
 | `port` | int | 0 | TCP port (0 = auto) |
 | `unixsocket` | str | None | Unix socket name |
 | `timeout` | float | 60.0 | Connection timeout (seconds) |
-| `julia_executable` | str | 'julia' | Path to Julia |
-| `julia_project` | str | None | Julia project path |
+| `julia_executable` | str | None | Path to Julia; `None` = the one juliapkg resolved |
+| `julia_project` | str | None | Julia project path; `None` = juliapkg's environment. Setting either this or `julia_executable` bypasses juliapkg |
 | `log_level` | str | 'WARNING' | Logging level |
 
 ### ACEJuliaCalculator Parameters
@@ -411,10 +470,14 @@ export PATH="$HOME/.juliaup/bin:$PATH"
 ERROR: LoadError: ArgumentError: Package ACEpotentials not found
 ```
 
-Install Julia dependencies:
+Install the Julia dependencies:
 ```bash
-julia --project=src/ase_ace/julia -e 'using Pkg; Pkg.instantiate()'
+python -c "from ase_ace.utils import setup_julia_environment; setup_julia_environment(verbose=True)"
 ```
+
+If that reports `could not create its Julia environment: [Errno 13] Permission denied`, the
+Python prefix is read-only -- see
+[Where the Julia environment lives](#where-the-julia-environment-lives).
 
 ### Timeout during first calculation
 
@@ -436,22 +499,31 @@ The `ase_ace.utils` module provides helper functions for Julia setup:
 
 ```python
 from ase_ace.utils import find_julia, check_julia_version, setup_julia_environment
+from ase_ace.server import julia_env
 
-# Find Julia executable
+# Find a Julia executable on PATH (not necessarily the one the calculators use)
 julia_path = find_julia()
 
 # Check Julia version
 major, minor, patch = check_julia_version()
 
-# Set up Julia environment with required packages
+# Install the Julia side (juliapkg resolves ase_ace/juliapkg.json)
 setup_julia_environment(verbose=True)
+
+# What the calculators actually run
+executable, project = julia_env()
 ```
 
 **Available functions:**
-- `find_julia()` - Locate Julia executable in PATH
+- `find_julia()` - Locate a Julia executable on `PATH`.  Note this is *not* what the
+  calculators run -- they use the Julia juliapkg resolved; see `ase_ace.server.julia_env()`
 - `check_julia_version(julia_executable)` - Get Julia version as (major, minor, patch) tuple
-- `check_julia_packages(julia_executable, julia_project)` - Check if required packages are installed
-- `setup_julia_environment(julia_executable, julia_project, verbose)` - Install and configure Julia dependencies
+- `check_julia_packages(julia_executable, julia_project)` - Check that the declared packages
+  load; the list is read from `juliapkg.json`, not hardcoded
+- `setup_julia_environment(julia_executable, julia_project, verbose, update)` - Resolve the
+  Julia environment via juliapkg.  Passing `julia_project` instantiates that project instead,
+  bypassing juliapkg
+- `declared_julia_packages()` - The Julia packages named in the shipped `juliapkg.json`
 
 ## Running Tests
 
