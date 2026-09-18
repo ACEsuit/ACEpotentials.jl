@@ -62,11 +62,24 @@ Documentation = "https://acesuit.github.io/ACEpotentials.jl"
 Repository = "https://github.com/ACEsuit/ACEpotentials.jl"
 
 [tool.hatch.build.targets.wheel]
+# `packages` ships EVERY file under src/ase_ace, not only the .py files -- juliapkg.json and
+# the whole src/ase_ace/julia/ project (Project.toml, ace_driver.jl, python_interface.jl)
+# included.  That is why the Julia assets live inside the package: one
+# `Path(__file__).parent`-relative expression then resolves in an editable install and in a
+# wheel alike.  A `force-include` for juliapkg.json used to sit here; it was a no-op, since
+# `packages` already carried it, and it is gone rather than left as a second mechanism doing
+# the same job.  tests/test_packaging.py asserts the wheel's contents.
 packages = ["src/ase_ace"]
 
-# Include juliapkg.json for Julia dependency management
-[tool.hatch.build.targets.wheel.force-include]
-"src/ase_ace/juliapkg.json" = "ase_ace/juliapkg.json"
+# Manifest.toml is NOT shipped.  It is untracked in this repository (only Project.toml,
+# ace_driver.jl and python_interface.jl are), so it is whatever the build machine's last
+# `Pkg.instantiate()` happened to resolve -- shipping it would make the wheel's contents
+# depend on who built it.  It also pins an exact dependency graph for one Julia version,
+# inside a directory the installed user typically cannot edit, while the reproducibility this
+# package actually promises is expressed in juliapkg.json ("julia": "=1.11.5", ACEpotentials
+# 0.10).  Project.toml is enough: `Pkg.instantiate()` resolves it, and that is what
+# ase_ace.utils.setup_julia_environment() runs.
+exclude = ["src/ase_ace/julia/Manifest.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

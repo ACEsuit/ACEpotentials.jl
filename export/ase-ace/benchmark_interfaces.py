@@ -97,10 +97,11 @@ def benchmark_socket_calculator(model_path, structures, num_threads, n_iteration
     """Benchmark ACECalculator (socket-based)."""
     try:
         from ase_ace import ACECalculator
+        from ase_ace.server import get_julia_project_path
     except ImportError:
         return None
 
-    julia_project = Path(__file__).parent / "julia"
+    julia_project = get_julia_project_path()
 
     results = {}
 
@@ -217,8 +218,11 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
 
     structures_json = json.dumps(structures_data)
 
-    # Run Julia benchmark
-    julia_project = Path(__file__).parent / "julia"
+    # Run Julia benchmark.  The project ships inside the package, so ask the package where
+    # it is rather than assuming this script sits next to it in a source checkout.
+    from ase_ace.server import get_julia_project_path
+
+    julia_project = get_julia_project_path()
 
     env = os.environ.copy()
     env['JULIA_NUM_THREADS'] = str(num_threads)

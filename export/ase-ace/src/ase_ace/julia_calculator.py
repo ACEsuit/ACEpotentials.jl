@@ -21,11 +21,20 @@ import numpy as np
 from ase.calculators.calculator import all_changes
 
 from .base import ACECalculatorBase
+from .server import get_julia_project_path
 
 logger = logging.getLogger(__name__)
 
-# Path to Julia interface module (relative to this file)
-_INTERFACE_PATH = Path(__file__).parent.parent.parent / "julia" / "python_interface.jl"
+# Path to the Julia interface module shipped inside this package.
+#
+# This resolves relative to the INSTALLED package, not to a source checkout.  It used to be
+# `Path(__file__).parent.parent.parent / "julia"`, which is `export/ase-ace/julia` from
+# `export/ase-ace/src/ase_ace` and therefore correct only when the repository is on disk.  The
+# wheel ships `src/ase_ace` alone, so from `site-packages/ase_ace` the same expression climbed
+# out to `<prefix>/lib/pythonX.Y/julia`, which does not exist: the JuliaCall and socket
+# backends were both dead in any non-editable install.  Every CI job installs this package
+# with `pip install -e`, which is why it was never seen.  See tests/test_packaging.py.
+_INTERFACE_PATH = get_julia_project_path() / "python_interface.jl"
 
 
 class ACEJuliaCalculator(ACECalculatorBase):

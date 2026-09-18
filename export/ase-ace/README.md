@@ -48,13 +48,19 @@ julia --version
 
 Install the required Julia packages in the ase-ace Julia environment:
 
+The Julia project lives **inside** the Python package, at `src/ase_ace/julia/` (and, once
+installed, at `<site-packages>/ase_ace/julia/`).  It is there rather than beside the package
+so that one `Path(__file__).parent`-relative expression finds it in an editable install and in
+a wheel alike; `ase_ace.server.get_julia_project_path()` is the single place that resolves it,
+and `tests/test_packaging.py` is the gate that keeps it resolvable.
+
 ```bash
 # Navigate to the ase-ace directory
 cd path/to/ACEpotentials.jl/export/ase-ace
 
 # Install Julia dependencies (all of them are in the General registry;
 # no additional registry is required)
-julia --project=julia -e '
+julia --project=src/ase_ace/julia -e '
     using Pkg
     println("Installing packages...")
     Pkg.instantiate()
@@ -395,7 +401,7 @@ ERROR: LoadError: ArgumentError: Package ACEpotentials not found
 
 Install Julia dependencies:
 ```bash
-julia --project=julia -e 'using Pkg; Pkg.instantiate()'
+julia --project=src/ase_ace/julia -e 'using Pkg; Pkg.instantiate()'
 ```
 
 ### Timeout during first calculation
@@ -447,6 +453,18 @@ pytest -v tests/
 # Skip slow tests
 pytest -v tests/ -m "not slow"
 ```
+
+`tests/test_packaging.py` checks that the bundled Julia assets resolve from the *installed*
+package.  Its cheap tier runs in the command above; its expensive tier builds a wheel and
+installs it into a throwaway venv, which is the only way to reproduce a non-editable install:
+
+```bash
+ACE_TEST_PACKAGING=1 pytest -v tests/test_packaging.py
+```
+
+CI runs it with that variable set in the `ase-ace (imports and utils)` job.  The reason it
+exists is worth knowing before adding another asset: every other job installs this package
+with `pip install -e`, and an editable install cannot see a file that the wheel does not ship.
 
 To create the test model fixture:
 ```bash

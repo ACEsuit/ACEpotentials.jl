@@ -154,7 +154,12 @@ export/
 │   ├── src/ase_ace/              # ASE calculators
 │   │   ├── calculator.py         # ACECalculator (socket-based)
 │   │   ├── julia_calculator.py   # ACEJuliaCalculator (JuliaCall)
-│   │   └── library_calculator.py # ACELibraryCalculator (compiled .so)
+│   │   ├── library_calculator.py # ACELibraryCalculator (compiled .so)
+│   │   ├── juliapkg.json         # Julia deps for the JuliaCall backend
+│   │   └── julia/                # Julia project shipped INSIDE the package,
+│   │       ├── Project.toml      #   so it resolves from a wheel as well as
+│   │       ├── ace_driver.jl     #   from a checkout
+│   │       └── python_interface.jl
 │   └── tests/
 │
 ├── scripts/                      # Convenience scripts

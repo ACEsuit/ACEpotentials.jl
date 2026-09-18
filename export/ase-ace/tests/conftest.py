@@ -55,8 +55,17 @@ def test_model_path():
 
 @pytest.fixture(scope="session")
 def julia_project_path():
-    """Path to the Julia project for ase-ace."""
-    project_path = Path(__file__).parent.parent / "julia"
+    """
+    Path to the Julia project for ase-ace.
+
+    Resolved through the package itself rather than by walking up from this file.  A
+    `Path(__file__).parent.parent / "julia"` here would be a second, independent copy of the
+    layout assumption -- and one that is only ever right for a source checkout, which is
+    exactly the mistake tests/test_packaging.py exists to catch.
+    """
+    from ase_ace.server import get_julia_project_path
+
+    project_path = get_julia_project_path()
     if not (project_path / "Project.toml").exists():
         pytest.skip(f"Julia project not found at {project_path}")
     return str(project_path)
@@ -168,8 +177,10 @@ def create_test_model(output_path: str = None):
     println("Model saved to: ", ARGS[1])
     '''
 
-    # Get the Julia project path
-    julia_project = Path(__file__).parent.parent / "julia"
+    # Get the Julia project path (from the installed package -- see julia_project_path)
+    from ase_ace.server import get_julia_project_path
+
+    julia_project = get_julia_project_path()
 
     cmd = [
         "julia",

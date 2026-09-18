@@ -23,7 +23,7 @@ a syntax error there fails loudly on its own.  These are not:
                                profile_tensor_step, test_assert_ranks, verify_bench_models
     export/scripts/*.jl        build_deployment, build_portable, deploy_model
     export/examples/*.jl       etace_lammps_tutorial
-    export/ase-ace/julia/*.jl  ace_driver
+    export/ase-ace/src/ase_ace/julia/*.jl  ace_driver
     export/test/*.jl           bytecmp_generator, diag_virial_conditioning, debug_ylm
 
 Fifteen files at the time of writing, run by hand or by a benchmark session and by nothing

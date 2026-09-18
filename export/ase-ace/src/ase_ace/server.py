@@ -27,8 +27,18 @@ def find_free_port() -> int:
 
 
 def get_julia_project_path() -> Path:
-    """Get the path to the Julia project bundled with this package."""
-    return Path(__file__).parent.parent.parent / "julia"
+    """
+    Path to the Julia project bundled with this package.
+
+    The project lives *inside* the Python package (`ase_ace/julia/`) so that this one
+    expression is correct in an editable install and in a wheel alike.  It previously read
+    `Path(__file__).parent.parent.parent / "julia"` -- the source-checkout layout
+    `export/ase-ace/julia/` -- which from `site-packages/ase_ace/` resolved to
+    `<prefix>/lib/pythonX.Y/julia` and did not exist.  Both Julia-backed calculators were
+    therefore broken in every non-editable install; only editable installs were ever tested.
+    tests/test_packaging.py now installs a built wheel and asserts these assets resolve.
+    """
+    return Path(__file__).parent / "julia"
 
 
 class JuliaACEServer:
