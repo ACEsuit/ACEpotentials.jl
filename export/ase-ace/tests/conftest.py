@@ -180,7 +180,7 @@ def create_test_model(output_path: str = None):
         force_key = "dft_force",
         virial_key = "dft_virial",
         weights = Dict("default" => Dict("E" => 30.0, "F" => 1.0, "V" => 1.0)),
-        solver = ACEfit.BLR(),
+        solver = ACEpotentials.ACEfit.BLR(),
     )
 
     # Save the model
@@ -192,8 +192,26 @@ def create_test_model(output_path: str = None):
     # mean that fixture generation ran against whatever was on PATH, in a project that no
     # longer exists; `julia_env()` is the same pair the calculators themselves run.
     #
-    # `ACEfit.BLR()` below keeps working without ACEfit being declared, because
-    # ACEpotentials re-exports it (`@reexport using ACEfit` in src/ACEpotentials.jl).
+    # `ACEpotentials.ACEfit.BLR()` above, rather than `ACEfit.BLR()`.  ACEfit is NOT one of
+    # the eight packages juliapkg.json declares, and the three ways of reaching it are not
+    # equivalent.  Measured in a project containing exactly those eight (`julia --project=<p>
+    # -e ...`):
+    #
+    #   using ACEfit                        -> ArgumentError: Package ACEfit not found
+    #   using ACEpotentials; BLR()          -> UndefVarError: `BLR` not defined
+    #   using ACEpotentials; ACEfit.BLR()   -> works
+    #   using ACEpotentials; ACEpotentials.ACEfit.BLR()  -> works
+    #
+    # The third works because Reexport's `@reexport using ACEfit` expands to `using ACEfit`
+    # plus `export names(ACEfit)...`, and `names(M)` includes M's own name -- so the MODULE
+    # name is re-exported (`:ACEfit in names(ACEpotentials)` is true) even though `:BLR` is
+    # not.  An earlier version of this comment claimed the re-export was what made
+    # `ACEfit.BLR()` work; that is right, but it rests on a re-export whose own author wrote
+    # "should we re-export ACEfit? I'm not convinced" (src/ACEpotentials.jl:8).
+    #
+    # The fourth form does not depend on that at all -- it goes through ACEpotentials' own
+    # `using ACEfit` binding, which exists whatever ACEpotentials exports.  So it is the one
+    # used here.
     from ase_ace.server import julia_env
 
     julia_executable, julia_project = julia_env()

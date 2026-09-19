@@ -722,6 +722,24 @@ jobs:
           cd export/ase-ace
           pip install -e ".[dev,julia,lib]"
 
+      # The sufficiency gate: resolve juliapkg.json into a CLEAN project and run the
+      # fixture-fitting path in it.  It belongs in this job because this is the job that went
+      # red when ACEfit was dropped from the declaration, and it is the one that already
+      # caches ~/.julia, so the resolve is warm.
+      #
+      # Why a gate at all: every other check asserts the declaration is internally consistent
+      # -- one of it, every `using` covered, UUIDs parse, juliapkg finds it.  None of them
+      # said the declared set can RUN anything, and that gap is what shipped the red run.  It
+      # passed locally because the developer machine had a second ase_ace install
+      # contributing ACEfit to the merged environment; a clean PYTHON_JULIAPKG_PROJECT is the
+      # only way to be sure the environment under test is the one the declaration describes.
+      - name: Declared Julia environment is sufficient (clean resolve + fixture path)
+        env:
+          ACE_TEST_JULIA: '1'
+        working-directory: export/ase-ace
+        run: |
+          pytest -v tests/test_julia_environment.py
+
       - name: Create test model
         env:
           JULIA_NUM_THREADS: 2
@@ -737,7 +755,10 @@ jobs:
           from ase_ace.julia_calculator import ACEJuliaCalculator
           # Access the Julia runtime to create and fit a test model
           jl = ACEJuliaCalculator._init_julia(2)
-          jl.seval('using ACEfit')
+          # There is deliberately no 'using ACEfit' here.  ACEfit is not one of the eight
+          # packages src/ase_ace/juliapkg.json declares, so loading it as a package fails:
+          #     ArgumentError: Package ACEfit not found in current path
+          # It was never needed -- see the solver expression below.
           jl.seval('''
           # Load training data and fit model (same as export tests)
           dataset = ACEpotentials.example_dataset(\\\"Si_tiny\\\")
@@ -752,7 +773,10 @@ jobs:
           )
           weights = Dict(\\\"default\\\" => Dict(\\\"E\\\" => 30.0, \\\"F\\\" => 1.0, \\\"V\\\" => 1.0))
 
-          ACEpotentials.acefit!(data, model; data_keys..., weights=weights, solver=ACEfit.BLR())
+          # ACEpotentials.ACEfit, not bare ACEfit: reached through the ACEfit binding that
+          # ACEpotentials' own 'using ACEfit' creates, so it needs no declaration of its own
+          # and does not depend on what ACEpotentials chooses to re-export.
+          ACEpotentials.acefit!(data, model; data_keys..., weights=weights, solver=ACEpotentials.ACEfit.BLR())
           ACEpotentials.save_model(model, \\\"tests/fixtures/test_model.json\\\")
           ''')
           print('Test model created and fitted successfully')

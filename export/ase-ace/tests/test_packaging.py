@@ -246,6 +246,11 @@ USING_RE = re.compile(r"^\s*(?:using|import)\s+([^\n#]+)", re.MULTILINE)
 #      module that sevals would not be scanned at all.
 SEVAL_RE = re.compile(r"""seval\(\s*['"]\s*((?:using|import)\s[^'"]+)['"]""")
 
+# Julia source embedded in a triple-quoted block -- `jl.seval('''...''')`, or the
+# `julia_script = '''...'''` that conftest.py hands to `julia -e`.  Scanned as Julia, so
+# `using X` at the start of a line inside the block is seen.
+TRIPLE_RE = re.compile(r"(?:'''|\"\"\")(.*?)(?:'''|\"\"\")", re.DOTALL)
+
 
 def julia_packages_used(text, kind="julia"):
     """
@@ -264,7 +269,12 @@ def julia_packages_used(text, kind="julia"):
     julia_calculator.py.  Nothing had drifted, but the invariant was narrower than its name.
     """
     if kind == "python":
+        # seval strings, AND Julia embedded in triple-quoted blocks.  A Python file can
+        # reach Julia either way: julia_calculator.py uses one-line sevals, conftest.py
+        # builds a triple-quoted script for `julia -e`, and the CI workflow does both.
         clauses = [m.split(None, 1)[1] for m in SEVAL_RE.findall(text)]
+        for block in TRIPLE_RE.findall(text):
+            clauses += USING_RE.findall(block)
     elif kind == "julia":
         clauses = USING_RE.findall(text)
     else:
@@ -279,6 +289,30 @@ def julia_packages_used(text, kind="julia"):
                 continue
             found.add(name.split(".", 1)[0])
     return found
+
+
+# Every file in this repository that runs Julia in ase-ace's juliapkg environment.
+#
+# This list was ONE entry -- the package's own julia_calculator.py -- and §9.6 of the report
+# recorded that as a known limit which "would silently under-report if that changed".  It did:
+# the CI workflow's model-fitting step carried `jl.seval('using ACEfit')`, ACEfit was dropped
+# from the declaration, and nothing here looked at the workflow, so the gate passed and CI
+# went red with `ArgumentError: Package ACEfit not found in current path`.  Written down as a
+# limit is not the same as gated.
+JULIA_DRIVING_SOURCES = (
+    # (path relative to the repository root, kind)
+    ("export/ase-ace/src/ase_ace/julia/ace_driver.jl", "julia"),
+    ("export/ase-ace/src/ase_ace/julia/python_interface.jl", "julia"),
+    ("export/ase-ace/src/ase_ace/julia_calculator.py", "python"),
+    ("export/ase-ace/tests/conftest.py", "python"),
+    (".github/workflows/export-ci.yml", "python"),
+)
+
+
+def repo_root():
+    """The repository root, or None when running against an installed package."""
+    root = PACKAGE_ROOT.parent.parent
+    return root if (root / ".github").is_dir() else None
 
 
 def undeclared_packages(sources, declared, python_sources=()):
@@ -434,18 +468,42 @@ class TestOneDependencyDeclaration:
         ``using ArgParse``, ``using IPICalculator`` and ``using UnitfulAtomic``, and for the
         package's whole life none of the three was in juliapkg.json -- so the socket backend
         was unusable in any environment juliapkg had built.
+
+        It is also the invariant that went red in CI after ``ACEfit`` was dropped from the
+        declaration: the workflow's fixture-fitting step did ``jl.seval('using ACEfit')`` and
+        this gate was only looking at ``julia_calculator.py``.  ``JULIA_DRIVING_SOURCES``
+        now enumerates every file in the repository that runs Julia in this environment.
         """
         import ase_ace
 
         package_dir = Path(ase_ace.__file__).resolve().parent
         declared = json.loads((package_dir / "juliapkg.json").read_text())["packages"]
-        sources = [
-            (package_dir / "julia" / name).read_text()
-            for name in ("ace_driver.jl", "python_interface.jl")
-        ]
-        # ...and the Python file that loads Julia packages by `seval`.
-        python_sources = [(package_dir / "julia_calculator.py").read_text()]
-        assert undeclared_packages(sources, declared, python_sources) == []
+
+        root = repo_root()
+        sources, python_sources, scanned = [], [], []
+        for rel, kind in JULIA_DRIVING_SOURCES:
+            # Prefer the installed package's own copy; fall back to the checkout for the
+            # files (the workflow, conftest) that are not part of the wheel.
+            path = package_dir / Path(rel).name
+            if not path.is_file() and rel.endswith((".jl",)):
+                path = package_dir / "julia" / Path(rel).name
+            if not path.is_file():
+                if root is None:
+                    continue  # installed-only run: this source is not on disk
+                path = root / rel
+            (python_sources if kind == "python" else sources).append(path.read_text())
+            scanned.append(rel)
+
+        if root is not None:
+            assert len(scanned) == len(JULIA_DRIVING_SOURCES), (
+                f"a Julia-driving source went missing: expected "
+                f"{[r for r, _ in JULIA_DRIVING_SOURCES]}, scanned {scanned}"
+            )
+        problems = undeclared_packages(sources, declared, python_sources)
+        assert problems == [], (
+            f"loaded but not declared in juliapkg.json: {problems}\n"
+            f"scanned: {scanned}"
+        )
 
     def test_using_checker_rejects_the_pre_fold_declaration(self):
         """
