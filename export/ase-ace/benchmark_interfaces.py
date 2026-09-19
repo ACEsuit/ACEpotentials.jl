@@ -147,8 +147,15 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
     using AtomsBase
     using Unitful
     using UnitfulAtomic
-    using JSON
     using Statistics
+
+    # ACEpotentials.JSON, not bare JSON.  This script runs under --project=juliapkg's
+    # project (see julia_env() below), and JSON is not one of the eight packages
+    # src/ase_ace/juliapkg.json declares, so `using JSON` here fails with
+    #     ArgumentError: Package JSON not found in current path
+    # exactly as `using ACEfit` did in CI.  ACEpotentials imports JSON itself
+    # (src/ACEpotentials.jl), so the module is reachable through it and needs no
+    # declaration of its own -- the same route export-ci.yml takes to ACEfit.
 
     function create_system(positions, cell, species)
         n = size(positions, 2)
@@ -161,7 +168,7 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
         # Load model
         potential, meta = ACEpotentials.load_model(model_path)
 
-        structures = JSON.parse(structures_json)
+        structures = ACEpotentials.JSON.parse(structures_json)
         results = Dict{Int, Dict{String, Float64}}()
 
         for (natoms_str, data) in structures
@@ -201,7 +208,7 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
     n_iterations = parse(Int, ARGS[3])
 
     results = benchmark_model(model_path, structures_json, n_iterations)
-    println(JSON.json(results))
+    println(ACEpotentials.JSON.json(results))
     '''
 
     # Prepare structures as JSON

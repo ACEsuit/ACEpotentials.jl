@@ -242,7 +242,8 @@ class TestDeclaredSetIsSufficient:
             "ACEfit is declared now -- update this test, EXPECTED_JULIA_PACKAGES, the README "
             "and the report's 'drops ACEfit' narrative together"
         )
-        result = clean_julia_env.julia('using ACEfit; println("LOADED")')
+        probe = 'using ACEfit; println("LOADED")'  # gate-A-negative: must NOT be loadable
+        result = clean_julia_env.julia(probe)
         assert result.returncode != 0, (
             "ACEfit loaded as a package in an environment that does not declare it -- the "
             "environment under test is contaminated, so the tests above prove nothing"

@@ -251,6 +251,9 @@ SEVAL_RE = re.compile(r"""seval\(\s*['"]\s*((?:using|import)\s[^'"]+)['"]""")
 # `using X` at the start of a line inside the block is seen.
 TRIPLE_RE = re.compile(r"(?:'''|\"\"\")(.*?)(?:'''|\"\"\")", re.DOTALL)
 
+# A Julia package name, as opposed to a sentence that starts with the word "using".
+JULIA_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*$")
+
 
 def julia_packages_used(text, kind="julia"):
     """
@@ -261,7 +264,7 @@ def julia_packages_used(text, kind="julia"):
     (likewise ``A``).  Relative forms (``using .Mod``) are dropped -- they name a module
     defined in the same file, not a dependency.
 
-    With ``kind="python"`` it instead reads `jl.seval("using X")` out of Python source, and
+    With ``kind="python"`` it instead reads `jl.seval` of a `using X` line out of Python,
     ONLY that.  The two are separate because `USING_RE` is anchored to the start of a line
     and would otherwise swallow Python's own `import os` / `import numpy as np`.  Without the
     python mode this checker's name overpromised: it read .jl files only, while five of the
@@ -282,31 +285,225 @@ def julia_packages_used(text, kind="julia"):
 
     found = set()
     for clause in clauses:
+        # `using A; f()` -- the load is the half before the semicolon.  Without this split
+        # the prose table in test_julia_environment.py, which lists `using ACEpotentials;
+        # ACEfit.BLR()` and two variants of it, parsed as four package names with spaces and
+        # parentheses in them.
+        clause = clause.split(";", 1)[0]
         clause = clause.split(":", 1)[0]
         for name in clause.split(","):
             name = name.strip()
             if not name or name.startswith("."):
                 continue
-            found.add(name.split(".", 1)[0])
+            name = name.split(".", 1)[0]
+            # A Julia identifier or it is not a package name.  The scan reads docstrings and
+            # comments -- it has to, since a `using` line inside a triple-quoted block is a
+            # real dependency -- and English sentences that happen to start with the word
+            # "using" or "import" would otherwise be reported as undeclared packages.  This
+            # drops only strings no `using` statement can produce, so it cannot hide a
+            # dependency; the deliberate negatives, which DO look like package names, are
+            # handled by the per-line markers instead.
+            if not JULIA_NAME_RE.match(name):
+                continue
+            found.add(name)
     return found
 
 
-# Every file in this repository that runs Julia in ase-ace's juliapkg environment.
-#
-# This list was ONE entry -- the package's own julia_calculator.py -- and §9.6 of the report
-# recorded that as a known limit which "would silently under-report if that changed".  It did:
-# the CI workflow's model-fitting step carried `jl.seval('using ACEfit')`, ACEfit was dropped
-# from the declaration, and nothing here looked at the workflow, so the gate passed and CI
-# went red with `ArgumentError: Package ACEfit not found in current path`.  Written down as a
-# limit is not the same as gated.
-JULIA_DRIVING_SOURCES = (
-    # (path relative to the repository root, kind)
-    ("export/ase-ace/src/ase_ace/julia/ace_driver.jl", "julia"),
-    ("export/ase-ace/src/ase_ace/julia/python_interface.jl", "julia"),
-    ("export/ase-ace/src/ase_ace/julia_calculator.py", "python"),
-    ("export/ase-ace/tests/conftest.py", "python"),
-    (".github/workflows/export-ci.yml", "python"),
+# The five paths the hand-maintained tuple this replaced named at 6fb3e1a6.  NOT the scan
+# input -- the scan input is derived, below.  This is a RATCHET: whatever the derivation
+# returns has to cover these, so a later narrowing of the rule cannot quietly take coverage
+# back below where it already was.  The derivation is what finds new files; this only stops
+# it losing old ones.
+GATE_A_FLOOR = (
+    "export/ase-ace/src/ase_ace/julia/ace_driver.jl",
+    "export/ase-ace/src/ase_ace/julia/python_interface.jl",
+    "export/ase-ace/src/ase_ace/julia_calculator.py",
+    "export/ase-ace/tests/conftest.py",
+    ".github/workflows/export-ci.yml",
 )
+
+ASE_ACE_REL = "export/ase-ace"
+WORKFLOWS_REL = ".github/workflows"
+
+# A workflow is in scope when it drives THIS package's Julia environment: `seval` is the
+# juliacall route (the one that went red), and the `ase_ace`/`ase-ace` mention catches a step
+# that drives the package some other way.  Workflows that run Julia against the REPOSITORY's
+# own Project.toml -- CI.yml, and export-ci.yml's own `julia --project=export` steps -- are a
+# different environment with a different declaration, and are none of gate A's business.
+WORKFLOW_IN_SCOPE_RE = re.compile(r"seval|ase[_-]ace")
+
+# Directories a filesystem walk must not descend into.  Used only where `git ls-files` is
+# unavailable; a venv or a build tree under export/ase-ace/ would otherwise be scanned.
+WALK_SKIP = frozenset({
+    ".git", ".venv", "venv", "env", "build", "dist", "__pycache__", ".pytest_cache",
+    ".tox", ".mypy_cache", ".ruff_cache", "node_modules", ".eggs", "site-packages",
+})
+
+
+def _walk_files(root, subdirs):
+    """Every file under `subdirs`, relative to `root`, skipping build and venv trees."""
+    found = []
+    for sub in subdirs:
+        stack = [Path(root) / sub]
+        while stack:
+            directory = stack.pop()
+            if not directory.is_dir():
+                continue
+            for path in sorted(directory.iterdir()):
+                if path.is_dir():
+                    if path.name in WALK_SKIP or path.name.endswith(".egg-info"):
+                        continue
+                    stack.append(path)
+                elif path.is_file():
+                    found.append(path.relative_to(root).as_posix())
+    return sorted(found)
+
+
+def repo_files(root, use_git=True):
+    """
+    Tracked files under the two directories gate A derives its scan from.
+
+    `git ls-files` is the primary source because "tracked" is the property that matters: an
+    untracked scratch file is not something CI runs, and a vendored or copied tree under the
+    package would otherwise be scanned.  A new file is therefore invisible to gate A until
+    it is `git add`-ed -- which is before it can reach CI, and is the moment the gate starts
+    reporting it.  Where git is absent, or `root` is not a work tree (which is how the
+    synthetic trees in the tests below are read), it falls back to a pruned filesystem walk,
+    so the gate degrades to a slightly broader scan rather than to a skip.
+    """
+    subdirs = (ASE_ACE_REL, WORKFLOWS_REL)
+    if use_git:
+        try:
+            out = subprocess.run(
+                ["git", "-C", str(root), "ls-files", "-z", "--", *subdirs],
+                capture_output=True, text=True, check=True, timeout=60,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            return _walk_files(root, subdirs)
+        return sorted(p for p in out.split("\0") if p)
+    return _walk_files(root, subdirs)
+
+
+def julia_driving_sources(root, use_git=True):
+    """
+    Every file in the checkout that runs Julia in ase-ace's juliapkg environment.
+
+    DERIVED, not remembered.  This was a hand-written five-tuple, and a hand-written list is
+    worth exactly as much as whoever last remembered it: its one completeness check fired
+    when a listed file DISAPPEARED, and nothing fired when a Julia-driving file was ADDED --
+    which is precisely the failure the list was added to prevent.  CI went red at c7a471ed
+    because `ACEfit` was dropped from juliapkg.json while `.github/workflows/export-ci.yml`
+    still handed a `using ACEfit` line to `jl.seval`, and the gate was looking only at
+    julia_calculator.py.
+
+    Three parts, unioned:
+
+      * every ``.jl`` under ``export/ase-ace/`` -- today that is the two shipped driver
+        scripts in ``src/ase_ace/julia/``, which run in the environment juliapkg builds by
+        definition, and the rule does not stop covering them if a third lands elsewhere in
+        the package;
+      * every ``.py`` under ``export/ase-ace/`` -- the package, its tests, its examples and
+        its benchmarks.  NOT "every .py that imports juliacall or juliapkg": that narrower
+        rule sounds right and misses ``benchmark_interfaces.py``, which reaches Julia through
+        ``ase_ace.server.julia_env()`` and imports neither, and whose Julia script carried an
+        undeclared ``using JSON`` for as long as nothing was looking.  A file that touches no
+        Julia contributes no names, so breadth costs nothing here;
+      * every workflow that drives this package -- see ``WORKFLOW_IN_SCOPE_RE``.
+
+    Deliberately OUT of scope: ``benchmark/*.jl``, ``docs/src/tutorials/asp.jl`` and the rest
+    of the repository's own Julia.  Those run under the repository's Project.toml, where
+    ACEfit *is* a direct dependency; scanning them against ase-ace's declaration would report
+    a conflict that does not exist.  The scope is one environment, not one file extension.
+
+    Returns ``((path relative to root, kind), ...)``, sorted.
+    """
+    pairs = []
+    for rel in repo_files(root, use_git=use_git):
+        if rel.startswith(ASE_ACE_REL + "/") and rel.endswith(".jl"):
+            pairs.append((rel, "julia"))
+        elif rel.startswith(ASE_ACE_REL + "/") and rel.endswith(".py"):
+            pairs.append((rel, "python"))
+        elif rel.startswith(WORKFLOWS_REL + "/") and rel.endswith((".yml", ".yaml")):
+            text = (Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+            if WORKFLOW_IN_SCOPE_RE.search(text):
+                pairs.append((rel, "python"))
+    return tuple(sorted(pairs))
+
+
+def installed_julia_driving_sources(package_dir):
+    """
+    The same derivation against an installed package, where the checkout is not on disk.
+
+    Only the wheel's own contents exist there: the shipped ``julia/*.jl`` and the package's
+    own ``.py`` modules.  The tests, the benchmarks and the workflow are not installed, so an
+    installed run checks less than a checkout run does -- as it always has; the floor ratchet
+    below is a checkout-only assertion for that reason.
+    """
+    pairs = [(f"julia/{p.name}", "julia")
+             for p in sorted((Path(package_dir) / "julia").glob("*.jl"))]
+    pairs += [(p.name, "python") for p in sorted(Path(package_dir).glob("*.py"))]
+    return tuple(pairs)
+
+
+# ---- deliberate negatives opt out one line at a time, with a reason ----------------------
+#
+# Some `using` lines are fixtures rather than dependencies.  This file's own proof that the
+# checker reports an undeclared package feeds it a package that does not exist;
+# test_julia_environment.py loads ACEfit on purpose, in a clean environment, to prove it
+# CANNOT be loaded there.  A derivation that read those naively would go red on the negative
+# tests -- and that, not an oversight, is why the scan input used to be a hand list with
+# those files left out of it.  Whole files opting out invisibly is the thing being replaced,
+# so a negative now opts out one LINE at a time, and has to say why, on that line:
+#
+#     probe = "using Nowhere"  # gate-A-negative: fixture for the checker's own failure path
+#
+# The reason is mandatory.  A marker with nothing after the colon is an exemption with no
+# argument behind it, which is how a per-line opt-out decays back into the invisible
+# whole-file kind, so `gate_a_marker_problems` fails the gate on one.
+GATE_A_MARKER = "gate-A-" "negative:"  # written in halves: this line is not itself a marker
+# Ten characters is not a quality bar, it is a floor under "" and "x": enough that whoever
+# adds a marker has to type a clause rather than a shrug.
+MIN_GATE_A_REASON = 10
+
+
+def gate_a_marker(line):
+    """The reason on this line's negative marker: None if there is none, '' if it is empty."""
+    at = line.find(GATE_A_MARKER)
+    if at < 0:
+        return None
+    return line[at + len(GATE_A_MARKER):].strip()
+
+
+def gate_a_marker_problems(rel, text):
+    """Reasons the negative markers in `text` are not usable; empty means they are."""
+    problems = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        reason = gate_a_marker(line)
+        if reason is None:
+            continue
+        if len(reason) < MIN_GATE_A_REASON:
+            problems.append(
+                f"{rel}:{number}: a gate-A negative marker with no reason ({reason!r}).  Say "
+                f"what the line is proving, or drop the marker and declare the package -- an "
+                f"exemption nobody had to justify is how this gate stopped seeing whole "
+                f"files in the first place"
+            )
+        if "'''" in line or '"""' in line:
+            problems.append(
+                f"{rel}:{number}: a gate-A negative marker on a line that opens or closes a "
+                f"triple-quoted block.  Dropping this line moves the block's boundaries and "
+                f"silently changes what is scanned; mark the `using` line inside the block "
+                f"instead"
+            )
+    return problems
+
+
+def drop_gate_a_negatives(text):
+    """`text` with every line carrying a negative marker blanked, line numbering intact."""
+    return "".join(
+        "\n" if gate_a_marker(line.rstrip("\n")) is not None else line
+        for line in text.splitlines(keepends=True)
+    )
 
 
 def repo_root():
@@ -320,7 +517,7 @@ def undeclared_packages(sources, declared, python_sources=()):
     Package names loaded by the sources but absent from `declared`; empty means consistent.
 
     `sources` is an iterable of Julia source strings and `python_sources` of Python source
-    strings (scanned for `jl.seval("using X")` only); `declared` is the set of names in
+    strings (scanned for `jl.seval` of a `using X` line only); `declared` is the names in
     juliapkg.json.  Returns a sorted list so the failure message names them.
     """
     used = set()
@@ -462,7 +659,7 @@ class TestOneDependencyDeclaration:
 
     def test_every_shipped_julia_using_is_declared(self):
         """
-        Every package the shipped .jl files load is in juliapkg.json.
+        Every package anything in this package loads is in juliapkg.json.
 
         This is the invariant the two declarations broke: ``ace_driver.jl`` does
         ``using ArgParse``, ``using IPICalculator`` and ``using UnitfulAtomic``, and for the
@@ -470,9 +667,14 @@ class TestOneDependencyDeclaration:
         was unusable in any environment juliapkg had built.
 
         It is also the invariant that went red in CI after ``ACEfit`` was dropped from the
-        declaration: the workflow's fixture-fitting step did ``jl.seval('using ACEfit')`` and
-        this gate was only looking at ``julia_calculator.py``.  ``JULIA_DRIVING_SOURCES``
-        now enumerates every file in the repository that runs Julia in this environment.
+        declaration: the workflow's fixture-fitting step sevaled a ``using ACEfit`` line and
+        this gate was only looking at ``julia_calculator.py``.
+
+        What is scanned is now DERIVED -- see ``julia_driving_sources`` -- so a new ``.jl``
+        script, a new module, or a new workflow step that sevals is covered the moment it
+        lands, rather than when somebody remembers to extend a tuple.  The failure names the
+        file each undeclared package came from, because with a derived scan that is no longer
+        obvious.
         """
         import ase_ace
 
@@ -480,30 +682,148 @@ class TestOneDependencyDeclaration:
         declared = json.loads((package_dir / "juliapkg.json").read_text())["packages"]
 
         root = repo_root()
-        sources, python_sources, scanned = [], [], []
-        for rel, kind in JULIA_DRIVING_SOURCES:
-            # Prefer the installed package's own copy; fall back to the checkout for the
-            # files (the workflow, conftest) that are not part of the wheel.
-            path = package_dir / Path(rel).name
-            if not path.is_file() and rel.endswith((".jl",)):
-                path = package_dir / "julia" / Path(rel).name
-            if not path.is_file():
-                if root is None:
-                    continue  # installed-only run: this source is not on disk
-                path = root / rel
-            (python_sources if kind == "python" else sources).append(path.read_text())
-            scanned.append(rel)
+        base = root if root is not None else package_dir
+        scanned = (julia_driving_sources(root) if root is not None
+                   else installed_julia_driving_sources(package_dir))
+        assert scanned, f"the derivation found nothing to scan under {base}"
 
-        if root is not None:
-            assert len(scanned) == len(JULIA_DRIVING_SOURCES), (
-                f"a Julia-driving source went missing: expected "
-                f"{[r for r, _ in JULIA_DRIVING_SOURCES]}, scanned {scanned}"
-            )
-        problems = undeclared_packages(sources, declared, python_sources)
+        marker_problems, problems = [], []
+        for rel, kind in scanned:
+            text = (base / rel).read_text(encoding="utf-8", errors="replace")
+            marker_problems += gate_a_marker_problems(rel, text)
+            used = julia_packages_used(drop_gate_a_negatives(text), kind=kind)
+            problems += [f"{rel}: {name}" for name
+                         in sorted(used - set(declared) - JULIA_STDLIB_ALLOWLIST)]
+
+        assert marker_problems == [], "\n".join(marker_problems)
         assert problems == [], (
-            f"loaded but not declared in juliapkg.json: {problems}\n"
-            f"scanned: {scanned}"
+            f"loaded but not declared in juliapkg.json:\n  " + "\n  ".join(problems) +
+            f"\nscanned {len(scanned)} files: {[rel for rel, _ in scanned]}"
         )
+
+    def test_the_derived_scan_still_covers_what_the_hand_list_named(self):
+        """
+        The ratchet: the derivation may grow, and may not shrink below the old hand list.
+
+        ``GATE_A_FLOOR`` is not the scan input -- if it were, this would be the hand list
+        again under a new name.  It is the low-water mark: a future tightening of
+        ``julia_driving_sources`` that dropped, say, the workflow or conftest.py would take
+        the gate back to exactly the coverage that let CI go red, and this fails when it
+        does.
+        """
+        root = repo_root()
+        if root is None:
+            # An installed package has no tests, no benchmarks and no workflow.  The floor
+            # that still applies is the part of it the wheel actually ships.
+            import ase_ace
+
+            package_dir = Path(ase_ace.__file__).resolve().parent
+            found = {rel for rel, _ in installed_julia_driving_sources(package_dir)}
+            assert {"julia/ace_driver.jl", "julia/python_interface.jl",
+                    "julia_calculator.py"} <= found, found
+            return
+
+        found = {rel for rel, _ in julia_driving_sources(root)}
+        missing = [rel for rel in GATE_A_FLOOR if rel not in found]
+        assert missing == [], (
+            f"the derivation no longer covers {missing}, which the hand-maintained list it "
+            f"replaced did cover.  Widen the rule in julia_driving_sources -- do not narrow "
+            f"the floor"
+        )
+
+        # ...and the other half of the ratchet: it must not GROW into the repository's own
+        # Julia.  `benchmark/*.jl` and `docs/src/tutorials/asp.jl` do `using ACEfit`, legally
+        # -- they run under the repository's Project.toml, which has ACEfit as a direct
+        # dependency.  Scanning them against ase-ace's declaration would report a conflict
+        # that does not exist, and the honest fix would then look like declaring ACEfit.
+        strays = [rel for rel in found
+                  if not rel.startswith((ASE_ACE_REL + "/", WORKFLOWS_REL + "/"))]
+        assert strays == [], strays
+
+    def test_the_derivation_sees_a_file_the_hand_list_could_not(self, tmp_path):
+        """
+        The hole this replaced, as a test: a new Julia-driving file is scanned unasked.
+
+        Driven against a synthetic tree rather than the real one, because the point is what
+        happens to a file that does not exist yet.  Three arrivals, each of which the
+        five-entry tuple would have missed in silence: a new ``.jl`` beside the shipped
+        drivers, a new module in the package, and a new workflow step that sevals.  Run
+        twice -- once as a git work tree, once as plain directories -- so the fallback in
+        ``repo_files`` is exercised as well as the `git ls-files` path.
+        """
+        root = tmp_path
+        julia = root / ASE_ACE_REL / "src" / "ase_ace" / "julia"
+        julia.mkdir(parents=True)
+        (julia / "ace_driver.jl").write_text("using ACEpotentials\n")
+        (julia / "scratch.jl").write_text("using Nonexistent\n")
+        (julia.parent / "julia_calculator.py").write_text("x = 1\n")
+        (julia.parent / "later_module.py").write_text(
+            "def f(jl):\n    jl.seval('using Missing2')\n"  # gate-A-negative: a fixture tree
+        )
+        workflows = root / WORKFLOWS_REL
+        workflows.mkdir(parents=True)
+        (workflows / "export-ci.yml").write_text(
+            "run: python -c \"jl.seval('using Missing3')\"\n"  # gate-A-negative: a fixture tree
+        )
+        (workflows / "unrelated.yml").write_text("run: julia --project=. -e 'using Whatever'\n")
+
+        for use_git in (False, True):
+            if use_git:
+                try:
+                    subprocess.run(["git", "init", "-q", str(root)], check=True,
+                                   capture_output=True, text=True)
+                    subprocess.run(["git", "-C", str(root), "add", "--",
+                                    ASE_ACE_REL, WORKFLOWS_REL], check=True,
+                                   capture_output=True, text=True)
+                except (OSError, subprocess.SubprocessError):
+                    # No usable git here, so `repo_files` would fall back to the walk that
+                    # the use_git=False pass has already driven.  Nothing left to prove.
+                    continue
+            found = julia_driving_sources(root, use_git=use_git)
+            rels = [rel for rel, _ in found]
+            assert f"{ASE_ACE_REL}/src/ase_ace/julia/scratch.jl" in rels, rels
+            assert f"{ASE_ACE_REL}/src/ase_ace/later_module.py" in rels, rels
+            assert f"{WORKFLOWS_REL}/export-ci.yml" in rels, rels
+            # ...and a workflow that runs Julia against some OTHER project is not dragged in.
+            assert f"{WORKFLOWS_REL}/unrelated.yml" not in rels, rels
+
+            names = set()
+            for rel, kind in found:
+                names |= julia_packages_used((root / rel).read_text(), kind=kind)
+            assert {"Nonexistent", "Missing2", "Missing3"} <= names, names
+            assert "Whatever" not in names, names
+
+    def test_a_negative_marker_must_carry_a_reason(self):
+        """
+        An exemption nobody had to justify is the failure mode being designed out.
+
+        The marker is written in halves here for the same reason it is in the constant: a
+        literal one with an empty reason, sitting in a file the gate scans, would fail the
+        gate on its own negative test.
+        """
+        marker = "# " + GATE_A_MARKER
+        assert gate_a_marker_problems("f.py", f"probe = 'using Nowhere'  {marker}\n") != []
+        assert gate_a_marker_problems("f.py", f"probe = 'using Nowhere'  {marker}  \n") != []
+        assert gate_a_marker_problems("f.py", f"probe = 'using Nowhere'  {marker} eh\n") != []
+
+        good = f"probe = 'using Nowhere'  {marker} fixture for the failure path\n"
+        assert gate_a_marker_problems("f.py", good) == []
+        assert julia_packages_used(drop_gate_a_negatives(good), kind="julia") == set()
+
+        # A marker on a line that delimits a triple-quoted block would move the block's
+        # boundaries when the line is dropped, changing what is scanned somewhere else.
+        fence = "probe = '" + "''" + f"  {marker} a reason long enough\n"
+        assert [p for p in gate_a_marker_problems("f.py", fence) if "triple" in p]
+
+    def test_a_negative_marker_exempts_only_its_own_line(self):
+        """A per-line opt-out that took its neighbours with it would be the old hole again."""
+        text = (
+            f"using Real\n"
+            f"using Fixture  # {GATE_A_MARKER} a fixture, and this reason is long enough\n"
+            f"using AlsoReal\n"
+        )
+        assert julia_packages_used(drop_gate_a_negatives(text)) == {"Real", "AlsoReal"}
+        assert drop_gate_a_negatives(text).count("\n") == 3
 
     def test_using_checker_rejects_the_pre_fold_declaration(self):
         """
@@ -543,17 +863,29 @@ class TestOneDependencyDeclaration:
 
         # ...and it must see the Python-embedded form, or the four lines added above are
         # decoration.
-        assert julia_packages_used(
-            "        jl.seval('using StaticArrays')\n", kind="python"
-        ) == {"StaticArrays"}
-        assert undeclared_packages(
-            [], declared, python_sources=["jl.seval('using Nowhere')\n"]
-        ) == ["Nowhere"]
+        one_seval = "jl.seval('using StaticArrays')\n"  # gate-A-negative: a fixture line
+        assert julia_packages_used(one_seval, kind="python") == {"StaticArrays"}
+        nowhere = "jl.seval('using Nowhere')\n"  # gate-A-negative: the checker's own probe
+        assert undeclared_packages([], declared, python_sources=[nowhere]) == ["Nowhere"]
         # ...without mistaking Python's own imports for Julia dependencies, which is why the
         # two modes are separate rather than one regex over everything.
         assert julia_packages_used(
             "import os\nimport numpy as np\nfrom pathlib import Path\n", kind="python"
         ) == set()
+
+        # ...and it must not invent dependencies out of English.  The scan reads docstrings
+        # and comments on purpose, so prose beginning with the word "using" reaches the
+        # parser; every one of these came out of a real file in this repository before the
+        # name was required to be an identifier.
+        prose = (
+            "using ACEfit                        -> ArgumentError: not found\n"
+            "import -- but it routes the same failure through juliapkg_environment_error\n"
+        )
+        assert julia_packages_used(prose) == set()
+        # `using A; f()` is a load of A and a call, not a package called "A; f()".
+        assert julia_packages_used("using ACEpotentials; ACEfit.BLR()\n") == {
+            "ACEpotentials"
+        }
 
     def test_juliapkg_json_is_well_formed(self):
         """
@@ -1093,9 +1425,9 @@ class TestNonEditableInstall:
                        check=True, capture_output=True, text=True)
 
         probe = r"""
-import json
+import json  # gate-A-negative: this block is Python for a subprocess, not Julia
 from pathlib import Path
-import ase_ace
+import ase_ace  # gate-A-negative: this block is Python for a subprocess, not Julia
 from ase_ace.server import get_julia_assets_path
 from ase_ace.julia_calculator import _INTERFACE_PATH
 from juliapkg.deps import deps_files, find_requirements
