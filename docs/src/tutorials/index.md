@@ -8,4 +8,5 @@
 * [Descriptors](../literate_tutorials/descriptor.md) : `ACEpotentials` can be used as descriptors of atomic environments or structures, which is described here.
 * [Sparse Solvers](../literate_tutorials/asp.md) : basic tutorial on using the `ASP` and `OMP` solvers.
 * [ETACE Models](../literate_tutorials/etace_tutorial.md) : using the EquivariantTensors backend for ACE models, including conversion from standard ACE models and creating ETACE models from scratch.
+* [ETACE LAMMPS Export](../literate_tutorials/etace_lammps_tutorial.md) : end-to-end workflow for fitting an ETACE model and exporting it for use with LAMMPS molecular dynamics.
 

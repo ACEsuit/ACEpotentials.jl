@@ -1,0 +1,149 @@
+[build-system]
+# `>=1.27` is not cosmetic: 1.27.0 is the first hatchling that understands the PEP 639
+# metadata below (`license = "MIT"` as an SPDX expression plus `license-files`), and this
+# table previously carried no lower bound at all, so an old hatchling on the build machine
+# would have silently produced metadata without a License-Expression.
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ase-ace"
+version = "0.1.0"
+description = "ASE calculators for ACE potentials (socket and compiled library backends)"
+readme = "README.md"
+requires-python = ">=3.9"
+# PEP 639 form: an SPDX expression plus the file(s) that carry the text.  The older
+# `license = {text = "MIT"}` table is deprecated, and -- more to the point -- it put the
+# string "MIT" in the metadata while shipping no licence text at all, which is what a
+# PyPI release must not do.
+#
+# `license-files` globs are resolved against THIS directory and cannot escape it.  Pointing
+# at the repository root's copy with `["../LICENSE"]` is accepted by hatchling but is a
+# trap: it writes an archive member literally named
+# `ase_ace-0.1.0.dist-info/licenses/../LICENSE` and a `License-File: ../LICENSE` metadata
+# line, i.e. a path-traversing entry that no installer is obliged to honour.  So the root
+# LICENSE is *copied* here instead; `export/ase-ace/LICENSE` is a byte-identical copy of the
+# repository root's, and both are the standard MIT text.
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "ACEsuit contributors"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+keywords = ["ase", "ace", "molecular-dynamics", "machine-learning", "interatomic-potentials"]
+dependencies = [
+    "ase>=3.22",
+    "numpy>=1.20",
+    # juliapkg is a BASE dependency, not part of the `[julia]` extra, because the socket
+    # backend (`ACECalculator`) needs it too: it asks juliapkg where Julia and the Julia
+    # environment are and spawns `julia --project=<that>`.  It used to point at a
+    # `Project.toml` shipped inside site-packages and instantiate it there, which is a
+    # second declaration of the same dependency set in a directory an installed user
+    # typically cannot write.
+    #
+    # The cost is small and does not include Julia: juliapkg is pure Python with four
+    # pure-Python requirements (filelock, semver, tomli, tomlkit), and nothing is downloaded
+    # until something calls resolve().  juliacall stays in `[julia]`, so the socket backend
+    # works for someone who never installed that extra.
+    #
+    # THE FLOOR IS 0.1.22 BECAUSE THAT IS WHAT THIS CODE CAN CALL, not because 0.1.22 is
+    # recent.  It was `>=0.1.10`, which admits versions where:
+    #   * `resolve()` is `def resolve(force=False, dry_run=False)` -- no `update=` (0.1.10,
+    #     0.1.11, 0.1.12), so `utils.setup_julia_environment()`, the command the README puts
+    #     front and centre, raises `TypeError: resolve() got an unexpected keyword argument
+    #     'update'`;
+    #   * `_UUID_RE` does not exist through 0.1.12, and `find_requirements` through 0.1.11,
+    #     so two tests in tests/test_packaging.py fail with ImportError;
+    #   * there is no `FileLock` at all through 0.1.12 -- 0.1.10 depends only on
+    #     `semantic_version` -- so the cross-process lock this package now relies on for
+    #     concurrent resolves is absent, and the four-requirement sentence above is untrue
+    #     of every version the old floor admitted.
+    # 0.1.22 is the oldest version this was tested against.  All of the above was reproduced
+    # against real installs of `juliapkg==0.1.12` and `==0.1.22`, not read off a changelog;
+    # tests/test_packaging.py::test_juliapkg_floor_covers_the_api_we_call is the gate.
+    "juliapkg>=0.1.22",
+]
+
+[project.optional-dependencies]
+# ACELibraryCalculator - compiled .so backend
+lib = [
+    "matscipy>=0.8",
+]
+
+# ACEJuliaCalculator - JuliaCall backend.  juliapkg is listed again although it is already
+# a base dependency: this extra genuinely needs it, and saying so costs nothing.
+julia = [
+    "juliacall>=0.9.20",
+    "juliapkg>=0.1.22",   # see the base dependency above for why the floor is 0.1.22
+]
+
+# Development dependencies
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "matscipy>=0.8",
+]
+
+# All optional dependencies
+all = [
+    "matscipy>=0.8",
+    "juliacall>=0.9.20",
+    "juliapkg>=0.1.22",
+]
+
+[project.urls]
+Homepage = "https://github.com/ACEsuit/ACEpotentials.jl"
+Documentation = "https://acesuit.github.io/ACEpotentials.jl"
+Repository = "https://github.com/ACEsuit/ACEpotentials.jl"
+
+[tool.hatch.build]
+# No Manifest.toml is shipped, in ANY artifact.
+#
+# `Manifest.toml` is untracked in this repository -- only `ace_driver.jl` and
+# `python_interface.jl` are -- so a shipped one is whatever the build machine's last
+# `Pkg.instantiate()` happened to resolve, which makes the artifact's contents depend on who
+# built it.  That is not hypothetical: the copy on the machine this exclusion was written for
+# is broken, pointing at a `DifferentiationInterface` source that no longer exists, so a user
+# following README section 2 would hit `failed to find source of parent package`.  It also
+# pins an exact graph for one Julia version inside a directory an installed user typically
+# cannot edit.  `src/ase_ace/julia/Project.toml` is gone too, for a related reason: the Julia
+# environment is now built by juliapkg outside the package, and what this package promises is
+# expressed in the one file juliapkg reads, juliapkg.json ("julia": "~1.11, ~1.12", ACEpotentials 0.10) -- a supported
+# range rather than one build machine's exact resolve, which is the right granularity for a
+# published package: an exact `=1.11.5` made juliapkg download a second Julia for anyone
+# already running 1.11.7.
+#
+# THIS KEY IS UNDER `[tool.hatch.build]`, NOT `[...targets.wheel]`, ON PURPOSE.  A
+# wheel-target exclusion leaves the sdist shipping exactly what the wheel refuses -- an
+# earlier version of this file did, and the sdist carried both this package's
+# `src/ase_ace/julia/Manifest.toml` and a stray `test/Manifest.toml` from an accidental
+# `julia --project=test` in the build root.  Hatchling reads `export/ase-ace/.gitignore` and
+# not the repository root's, and only the root one carries `*Manifest.toml`, so nothing else
+# stops them.  The pattern is gitignore-style and unanchored, so it matches at any depth --
+# including build-root junk this project does not own.  tests/test_packaging.py asserts both
+# the wheel and the sdist.
+exclude = ["Manifest.toml"]
+
+[tool.hatch.build.targets.wheel]
+# `packages` ships EVERY file under src/ase_ace, not only the .py files -- juliapkg.json and
+# the Julia scripts in src/ase_ace/julia/ (ace_driver.jl, python_interface.jl) included.  That is why the Julia assets live inside the package: one
+# `Path(__file__).parent`-relative expression then resolves in an editable install and in a
+# wheel alike.  A `force-include` for juliapkg.json used to sit here; it was a no-op, since
+# `packages` already carried it, and it is gone rather than left as a second mechanism doing
+# the same job.  tests/test_packaging.py asserts the wheel's contents.
+packages = ["src/ase_ace"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

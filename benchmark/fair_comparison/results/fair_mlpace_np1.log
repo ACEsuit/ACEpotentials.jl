@@ -1,0 +1,103 @@
+LAMMPS (22 Jul 2025 - Update 1)
+  using 1 OpenMP thread(s) per MPI task
+Lattice spacing in x,y,z = 3.19 3.19 3.19
+Created orthogonal box = (0 0 0) to (31.9 31.9 31.9)
+  1 by 1 by 1 MPI processor grid
+Created 2000 atoms
+  using lattice units in orthogonal box = (0 0 0) to (31.9 31.9 31.9)
+  create_atoms CPU = 0.000 seconds
+ACE version: 2023.11.25
+Recursive evaluator is used
+Loading /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/benchmark/fair_comparison/deployments/mlpace/fair_mlpace.yace
+Total number of basis functions
+	Al: 28 (r=1) 361 (r>1)
+	Ti: 28 (r=1) 361 (r>1)
+Mapping LAMMPS atom type #1(Ti) -> ACE species type #1
+Mapping LAMMPS atom type #2(Al) -> ACE species type #0
+Reading pair table potential file /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/benchmark/fair_comparison/deployments/mlpace/fair_mlpace_pairpot.table with DATE: none
+WARNING: 1 of 5500 force values in table Ti_Ti are inconsistent with -dE/dr.
+WARNING:  Should only be flagged at inflection points (src/pair_table.cpp:469)
+Reading pair table potential file /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/benchmark/fair_comparison/deployments/mlpace/fair_mlpace_pairpot.table with DATE: none
+WARNING: 1 of 5500 force values in table Al_Ti are inconsistent with -dE/dr.
+WARNING:  Should only be flagged at inflection points (src/pair_table.cpp:469)
+Reading pair table potential file /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/benchmark/fair_comparison/deployments/mlpace/fair_mlpace_pairpot.table with DATE: none
+WARNING: 1 of 5500 force values in table Al_Al are inconsistent with -dE/dr.
+WARNING:  Should only be flagged at inflection points (src/pair_table.cpp:469)
+Created B2 TiAl structure (ML-PACE)
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.5
+  ghost atom cutoff = 7.5
+  binsize = 3.75, bins = 9 9 9
+  2 neighbor lists, perpetual/occasional/extra = 2 0 0
+  (1) pair pace, perpetual
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+  (2) pair table, perpetual, half/full from (1)
+      attributes: half, newton on
+      pair build: halffull/newton
+      stencil: none
+      bin: none
+Setting up cg style minimization ...
+  Unit style    : metal
+  Current step  : 0
+Per MPI rank memory allocation (min/avg/max) = 6.147 | 6.147 | 6.147 Mbytes
+   Step          Temp          E_pair         E_mol          TotEng         Press     
+         0   0             -3397902.7      0             -3397902.7     -1853815.4    
+         1   0             -3397902.7      0             -3397902.7     -1853815.4    
+Loop time of 0.339688 on 1 procs for 1 steps with 2000 atoms
+
+99.9% CPU use with 1 MPI tasks x 1 OpenMP threads
+
+Minimization stats:
+  Stopping criterion = energy tolerance
+  Energy initial, next-to-last, final = 
+     -3397902.71402182  -3397902.71402182  -3397902.71402183
+  Force two-norm initial, final = 1.9938499e-11 3.6541504e-11
+  Force max component initial, final = 1.3642421e-12 2.0214941e-12
+  Final line search alpha, max atom move = 1 2.0214941e-12
+  Iterations, force evaluations = 1 2
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.3395     | 0.3395     | 0.3395     |   0.0 | 99.95
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 6.1756e-05 | 6.1756e-05 | 6.1756e-05 |   0.0 |  0.02
+Output  | 0          | 0          | 0          |   0.0 |  0.00
+Modify  | 0          | 0          | 0          |   0.0 |  0.00
+Other   |            | 0.000122   |            |       |  0.04
+
+Nlocal:           2000 ave        2000 max        2000 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:           4119 ave        4119 max        4119 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:         112000 ave      112000 max      112000 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:       224000 ave      224000 max      224000 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 224000
+Ave neighs/atom = 112
+Neighbor list builds = 0
+Dangerous builds = 0
+New timer settings: style=full  mode=nosync  timeout=off
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 0
+  Time step     : 0.001
+Per MPI rank memory allocation (min/avg/max) = 5.022 | 5.022 | 5.022 Mbytes
+   Step         PotEng         KinEng         TotEng         Press           Temp     
+         0  -3397902.7      77.517309     -3397825.2     -1851264.8      300          
+        10  -3397851.7      26.735423     -3397825       -1766097.8      103.46885    
+        20  -3397886        60.870277     -3397825.1     -1710929.9      235.57427    
+        30  -3397949.2      124.30745     -3397824.9     -1513334.5      481.08269    
+        40  -3398270.7      445.72194     -3397825       -842104.75      1724.99      
+        50  -3398712.2      886.02332     -3397826.2      357971.67      3429.0019    
+        60  -3398713.9      888.38013     -3397825.5      914852.57      3438.1229    
+        70  -3398959.2      6357.1174     -3392602.1      961249.42      24602.702    
+ERROR: Lost atoms: original 2000 current 1992
+For more information see https://docs.lammps.org/err0008 (src/thermo.cpp:526)

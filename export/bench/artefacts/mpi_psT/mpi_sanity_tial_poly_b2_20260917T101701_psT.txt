@@ -1,0 +1,7 @@
+# ps -T census of the 4 ranks, MPI_BIND='<defaults>', 2026-09-17 10:17:01
+# loadavg 0.38 0.72 0.78 1/675 615379
+pid 615383: 5 thread(s)  cores:   0  16  16  16  16 
+pid 615384: 5 thread(s)  cores:   1  17  17  17  17 
+pid 615385: 5 thread(s)  cores:   2   2  18   2   2 
+pid 615386: 5 thread(s)  cores:   3  19  19  19  19 
+# (a count of 0 means the run had already finished -- take more steps)
