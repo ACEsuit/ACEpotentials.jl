@@ -212,6 +212,16 @@ def resolve_julia_env(
     as it sees fit, and will say so if it cannot; that is a legible failure, and a far better
     one than silently using an environment without ACEpotentials in it.
     """
+    # Normalise "" (and any other falsy value) to None FIRST, so that every entry point
+    # agrees on what "unset" means.  JuliaACEServer.__init__ stores
+    # `Path(julia_project) if julia_project else None` -- a truthiness test -- so without
+    # this line `julia_project=""` was "unset" through the server but a full bypass emitting
+    # a bare `--project=` through a direct call here or through check_julia_packages.
+    # Unrealistic input, but two entry points disagreeing about one rule is the thing this
+    # function exists to prevent.
+    julia_executable = julia_executable or None
+    julia_project = julia_project or None
+
     if julia_project is not None:
         return (julia_executable or "julia", str(julia_project))
 

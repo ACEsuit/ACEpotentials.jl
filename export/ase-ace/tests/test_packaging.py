@@ -569,11 +569,16 @@ class TestOneDependencyDeclaration:
             "/my/proj",
         )
 
-        # The project is NEVER None, for any combination -- that is the invariant that stops
-        # anything running Julia in an environment nobody chose.
+        # The project is NEVER None or empty, for any combination -- that is the invariant
+        # that stops anything running Julia in an environment nobody chose.  "" is in the
+        # list because JuliaACEServer.__init__ stores the project with a truthiness test
+        # while this function keys on `is not None`; without normalisation the two entry
+        # points disagreed, and `julia_project=""` meant "unset" through the server but a
+        # bypass emitting a bare `--project=` through a direct call.
         for exe, proj in [(None, None), ("/my/julia", None), (None, "/my/proj"),
-                          ("/my/julia", "/my/proj")]:
-            assert server.resolve_julia_env(exe, proj)[1] is not None
+                          ("/my/julia", "/my/proj"), ("", ""), (None, ""), ("", None)]:
+            assert server.resolve_julia_env(exe, proj)[1] not in (None, "")
+        assert server.resolve_julia_env("", "") == ("/juliapkg/julia", "/juliapkg/project")
 
         # ...and the two consumers route through that one function rather than reimplementing
         # it.  `JuliaACEServer` resolves in start(), not __init__.

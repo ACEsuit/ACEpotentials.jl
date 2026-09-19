@@ -112,18 +112,53 @@ Three juliapkg variables are worth knowing:
 |---|---|
 | `PYTHON_JULIAPKG_PROJECT` | Put the environment at this absolute path.  Also marks it *shared*, which changes one thing: juliapkg then adds to the existing `Project.toml` instead of rebuilding it, and does not delete `Manifest.toml`, so a dependency that `ase-ace` **removes** in a later release lingers.  Version changes still apply. |
 | `PYTHON_JULIAPKG_OFFLINE=yes` | Never touch the network; use the environment as it stands.  The run-time half of a build-time resolve, for read-only images. |
-| `PYTHON_JULIAPKG_EXE` | Use this Julia.  Read once, at import, so it must be set before Python starts -- which is why `ACECalculator(julia_executable=...)` cannot steer juliapkg and instead bypasses it (below). |
+| `PYTHON_JULIAPKG_EXE` | Use this Julia.  Read once, at import, so it must be set before Python starts.  This is the only way to change which Julia *juliapkg itself* uses; `ACECalculator(julia_executable=...)` cannot -- it changes which Julia `ase-ace` runs against juliapkg's project (below). |
 
 For a container: build as root with `PYTHON_JULIAPKG_PROJECT` pointing somewhere
 world-readable *outside* the Python prefix, run `setup_julia_environment()` at build time,
 and set `PYTHON_JULIAPKG_OFFLINE=yes` at run time.
 
-#### Bypassing juliapkg
+#### Overriding the executable, or bypassing juliapkg entirely
 
-Passing `julia_project=` or `julia_executable=` to `ACECalculator` means "I built this
-environment myself, use exactly it".  It bypasses juliapkg entirely; it is not an override of
-one of juliapkg's two choices.  That is also why both default to `None` rather than to
-`'julia'` -- "not specified" has to be distinguishable from "specified".
+juliapkg makes two choices -- *which Julia* and *which project* -- and `ACECalculator` takes
+one argument for each.  They do not do the same thing:
+
+| you pass | what happens |
+|---|---|
+| neither | juliapkg chooses both.  The normal case. |
+| `julia_executable=` only | **Executable override.**  That Julia is run, still against juliapkg's project. |
+| `julia_project=` (with or without an executable) | **Full bypass.**  juliapkg is not consulted at all; the executable is the one you named, else `julia`. |
+
+The asymmetry is the point, and it is not arbitrary: **a project is a complete answer on its
+own; an executable is not.**  "Use this environment I built" tells `ase-ace` everything it
+needs, so it costs no resolve.  "Use this Julia" leaves the more important question
+unanswered, and the only sensible completion is juliapkg's project -- so an executable alone
+overrides the executable and nothing else.
+
+An earlier release did treat either argument as a full bypass, and it was a trap: naming only
+an executable then meant *no project at all*, so the driver ran in Julia's default global
+environment -- where ACEpotentials is not installed -- and
+`setup_julia_environment(julia_executable=...)` ran `Pkg.instantiate()` against that same
+global environment and reported success having installed nothing.
+
+Both arguments default to `None` rather than to `'julia'` so that "not specified" is
+distinguishable from "specified"; otherwise every default-constructed calculator would look
+like a request to override the executable.
+
+One thing an executable override cannot do: change which Julia *juliapkg* uses.  juliapkg
+reads `PYTHON_JULIAPKG_EXE` once, at import, and exposes no setter, so that variable is the
+only lever on juliapkg's own choice.  `setup_julia_environment()` is the one place where this
+bites -- its normal path *is* a juliapkg resolve, so there is no executable to override, and
+passing one alone warns, points you at `PYTHON_JULIAPKG_EXE`, and then does the real resolve
+rather than quietly doing something else.
+
+Note also that an override runs a Julia which may differ from the one juliapkg resolved the
+project's `Manifest.toml` for.  Julia will reuse or re-precompile as it sees fit and will say
+so if it cannot -- a legible failure, and a better one than silently using an environment
+without ACEpotentials in it.
+
+The same rule applies to `ase_ace.utils.check_julia_packages()`; it is implemented once, in
+`ase_ace.server.resolve_julia_env()`.
 
 #### A note on the Julia version specifier
 
@@ -296,8 +331,8 @@ print(f"Basis size: {calc.n_basis}")
 | `port` | int | 0 | TCP port (0 = auto) |
 | `unixsocket` | str | None | Unix socket name |
 | `timeout` | float | 60.0 | Connection timeout (seconds) |
-| `julia_executable` | str | None | Path to Julia; `None` = the one juliapkg resolved |
-| `julia_project` | str | None | Julia project path; `None` = juliapkg's environment. Setting either this or `julia_executable` bypasses juliapkg |
+| `julia_executable` | str | None | Path to Julia; `None` = the one juliapkg resolved.  Naming one overrides *only* the executable -- juliapkg's project is still used ([why](#overriding-the-executable-or-bypassing-juliapkg-entirely)) |
+| `julia_project` | str | None | Julia project path; `None` = juliapkg's environment.  Naming one bypasses juliapkg entirely |
 | `log_level` | str | 'WARNING' | Logging level |
 
 ### ACEJuliaCalculator Parameters
