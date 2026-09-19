@@ -33,11 +33,16 @@ def julia_available():
     """
     Whether a Julia the calculators could use is reachable.
 
-    Not `shutil.which("julia")`: the calculators do not run the Julia on PATH.  They run the
-    one juliapkg resolved from `ase_ace/juliapkg.json`, which may be a juliaup channel or a
-    build juliapkg downloaded, and which exists on machines with no `julia` on PATH at all.
-    Gating on PATH therefore skipped tests that would have worked and ran tests that could
-    not.
+    A strict WIDENING of the old `shutil.which("julia") is not None`, not a correction of
+    it: PATH is still the first branch.  What it adds is the case PATH misses -- the
+    calculators do not run the Julia on PATH, they run the one juliapkg resolved from
+    `ase_ace/juliapkg.json`, which may be a juliaup channel or a build juliapkg downloaded
+    into the prefix, and which can exist on a machine with no `julia` on PATH at all.  Those
+    machines used to skip tests that would have worked.
+
+    (It does not fix the converse -- `julia` on PATH with no usable juliapkg environment
+    still reports True -- because ruling that out means resolving, which is the one thing a
+    collection-time fixture must not do.  See below.)
 
     `juliapkg.executable()` and `juliapkg.project()` are deliberately NOT called here: both
     call `resolve()`, so on a cold machine this fixture would install Julia and the eight

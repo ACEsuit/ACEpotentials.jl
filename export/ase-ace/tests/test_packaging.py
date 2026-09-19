@@ -51,6 +51,7 @@ Manifests) -- so that no gate here is one of those checks that passes because it
 nothing.
 """
 
+import inspect
 import json
 import os
 import re
@@ -236,6 +237,13 @@ USING_RE = re.compile(r"^\s*(?:using|import)\s+([^\n#]+)", re.MULTILINE)
 # inside Python string literals, so USING_RE (anchored to the start of a line) cannot see
 # them.  They are as much a dependency as anything in a .jl file: five of them run at
 # ACEJuliaCalculator._init_julia.
+#
+# TWO KNOWN LIMITS, recorded rather than fixed -- both are complete coverage of what this
+# package ships today, and both would silently under-report if that changed:
+#   1. a plain quote must follow `seval(`, so an f-string (`seval(f'using {pkg}')`) or a
+#      triple-quoted seval is invisible to this;
+#   2. `python_sources` below is the single hardcoded file julia_calculator.py, so a future
+#      module that sevals would not be scanned at all.
 SEVAL_RE = re.compile(r"""seval\(\s*['"]\s*((?:using|import)\s[^'"]+)['"]""")
 
 
@@ -309,19 +317,45 @@ JULIAPKG_FLOOR_RE = re.compile(r'"juliapkg\s*>=\s*([0-9]+(?:\.[0-9]+)*)"')
 # The oldest juliapkg this package's code can actually call.  Not a "keep it fresh" number:
 # each entry below is an API `ase-ace` uses that is absent from older published sdists.
 MIN_JULIAPKG = (0, 1, 22)
+# name -> (probe, what depends on it).  The reason travels with the probe so a failure says
+# what is actually broken instead of "an API is missing".
 JULIAPKG_APIS_WE_CALL = {
-    # utils.setup_julia_environment() passes update=; resolve() has no such parameter up to
-    # and including 0.1.12, so the README's headline install command raises TypeError there.
-    "resolve(update=)": lambda jp: "update" in __import__("inspect").signature(
-        jp.deps.resolve
-    ).parameters,
-    "executable": lambda jp: callable(jp.executable),
-    "project": lambda jp: callable(jp.project),
-    # used by the tier-2 probe and by test_juliapkg_json_is_well_formed
-    "deps.find_requirements": lambda jp: callable(jp.deps.find_requirements),
-    "deps._UUID_RE": lambda jp: jp.deps._UUID_RE is not None,
-    # the cross-process lock the fold claims to inherit; absent in 0.1.12 and earlier
-    "deps.FileLock": lambda jp: jp.deps.FileLock is not None,
+    "resolve(update=)": (
+        lambda jp: "update" in inspect.signature(jp.deps.resolve).parameters,
+        "utils.setup_julia_environment() passes update=; resolve() has no such parameter "
+        "up to and including 0.1.12, so the README's headline install command raises "
+        "TypeError there",
+    ),
+    "executable": (
+        lambda jp: callable(jp.executable),
+        "server.julia_env() calls it to pick the Julia both backends run",
+    ),
+    "project": (
+        lambda jp: callable(jp.project),
+        "server.julia_env() calls it to pick the environment both backends run in",
+    ),
+    "deps.find_requirements": (
+        lambda jp: callable(jp.deps.find_requirements),
+        "the tier-2 installed-wheel probe calls it to check the merged declaration",
+    ),
+    "deps._UUID_RE": (
+        lambda jp: jp.deps._UUID_RE is not None,
+        "test_juliapkg_json_is_well_formed imports it to validate the UUIDs we ship "
+        "(private upstream symbol -- if it is merely RENAMED, fix this test rather than "
+        "assuming ase-ace is broken)",
+    ),
+    "deps.FileLock": (
+        lambda jp: jp.deps.FileLock is not None,
+        # Deliberately kept despite being a private symbol ase-ace never calls itself.  What
+        # depends on it is a CLAIM -- that folding onto juliapkg inherited a cross-process
+        # lock for concurrent resolves -- and that claim was false at the old `>=0.1.10`
+        # floor, where juliapkg had no FileLock at all and depended only on
+        # semantic_version.  A gate on a claim the README and two commit messages make is
+        # worth a small false-alarm risk; the wording says which kind of failure this is.
+        "ase-ace does not call it, but relies on juliapkg holding it during resolve() -- "
+        "this package's concurrency claim.  Absent entirely in 0.1.12 and earlier.  Private "
+        "upstream symbol: if it is merely RENAMED, fix this probe, do not assume breakage",
+    ),
 }
 
 
@@ -351,7 +385,7 @@ def juliapkg_floor_problems(pyproject_text, installed=None):
                 f"semantic_version"
             )
     if installed is not None:
-        for name, probe in sorted(JULIAPKG_APIS_WE_CALL.items()):
+        for name, (probe, why) in sorted(JULIAPKG_APIS_WE_CALL.items()):
             try:
                 ok = probe(installed)
             except Exception as e:  # AttributeError on an old version
@@ -359,7 +393,7 @@ def juliapkg_floor_problems(pyproject_text, installed=None):
                 name = f"{name} ({type(e).__name__})"
             if not ok:
                 problems.append(
-                    f"installed juliapkg does not provide {name}, which ase-ace calls"
+                    f"installed juliapkg does not provide {name}: {why}"
                 )
     return problems
 
@@ -495,6 +529,148 @@ class TestOneDependencyDeclaration:
         assert Version.parse("1.13.0") not in compat
         assert Version.parse("1.10.10") not in compat
 
+    def test_the_bypass_rule_has_one_implementation(self, monkeypatch):
+        """
+        The `julia_executable` / `julia_project` rule is implemented ONCE and obeyed thrice.
+
+        It spans `JuliaACEServer`, `utils.check_julia_packages` and
+        `utils.setup_julia_environment`, and an earlier round had all three disagreeing:
+        one treated either argument as a total bypass, one resolved for whichever argument
+        was absent, one silently ignored the executable.  Worse, "either argument bypasses"
+        made `setup_julia_environment(julia_executable=...)` run `Pkg.instantiate()` with no
+        `--project` -- against the user's *global* Julia environment -- and return True
+        having installed none of ase-ace's packages.  This is the gate on that not coming
+        back, and it needs no Julia: `julia_env` is stubbed.
+        """
+        from ase_ace import server, utils
+
+        calls = []
+
+        def fake_julia_env():
+            calls.append("resolved")
+            return ("/juliapkg/julia", "/juliapkg/project")
+
+        monkeypatch.setattr(server, "julia_env", fake_julia_env)
+
+        # 1. neither: juliapkg decides both.
+        assert server.resolve_julia_env() == ("/juliapkg/julia", "/juliapkg/project")
+        # 2. executable only: OVERRIDE -- their Julia, juliapkg's project.  Not "no project".
+        assert server.resolve_julia_env("/my/julia", None) == (
+            "/my/julia",
+            "/juliapkg/project",
+        )
+        # 3. project only: FULL BYPASS -- juliapkg is not consulted at all.
+        before = len(calls)
+        assert server.resolve_julia_env(None, "/my/proj") == ("julia", "/my/proj")
+        assert len(calls) == before, "a named project must cost no juliapkg resolve"
+        # 4. both: full bypass, both honoured.
+        assert server.resolve_julia_env("/my/julia", "/my/proj") == (
+            "/my/julia",
+            "/my/proj",
+        )
+
+        # The project is NEVER None, for any combination -- that is the invariant that stops
+        # anything running Julia in an environment nobody chose.
+        for exe, proj in [(None, None), ("/my/julia", None), (None, "/my/proj"),
+                          ("/my/julia", "/my/proj")]:
+            assert server.resolve_julia_env(exe, proj)[1] is not None
+
+        # ...and the two consumers route through that one function rather than reimplementing
+        # it.  `JuliaACEServer` resolves in start(), not __init__.
+        assert "resolve_julia_env" in inspect.getsource(server.JuliaACEServer.start)
+        assert "resolve_julia_env" in inspect.getsource(utils.check_julia_packages)
+
+
+    def test_setup_julia_environment_never_instantiates_an_unnamed_environment(
+        self, monkeypatch
+    ):
+        """
+        `setup_julia_environment` is the deliberate exception to the rule above, and this is
+        a BEHAVIOURAL gate on it -- no source grepping, which a previous draft of this test
+        did and which quietly passed the regression because the same `if` appears twice in
+        the function.
+
+        Its juliapkg path IS a resolve, so there is no executable to override.  Keying its
+        bypass on either argument -- as an earlier round did -- meant
+        `setup_julia_environment(julia_executable=...)` ran `Pkg.instantiate()` with no
+        `--project`, against the user's global Julia environment, and returned True having
+        installed nothing this package declares.  Two invariants: an executable alone must
+        still RESOLVE (and say the argument was ignored), and no subprocess may ever run
+        without an explicit `--project`.
+        """
+        from ase_ace import utils
+
+        resolves, runs = [], []
+
+        class FakeJuliapkg:
+            def resolve(self, **kw):
+                resolves.append(kw)
+
+            def project(self):
+                return "/juliapkg/project"
+
+            def executable(self):
+                return "/juliapkg/julia"
+
+        class FakeCompleted:
+            returncode = 0
+
+        monkeypatch.setitem(sys.modules, "juliapkg", FakeJuliapkg())
+        monkeypatch.setattr(
+            utils.subprocess, "run", lambda cmd, **kw: runs.append(cmd) or FakeCompleted()
+        )
+
+        # 1. executable alone: resolves, warns, and runs NO subprocess of its own.
+        with pytest.warns(RuntimeWarning, match="was ignored"):
+            assert utils.setup_julia_environment(julia_executable="/my/julia") is True
+        assert len(resolves) == 1, "an executable-only call must still do the real resolve"
+        assert runs == [], (
+            "an executable-only call must not instantiate anything itself -- that is how it "
+            "used to write to the user's global environment"
+        )
+
+        # 2. project named: full bypass, one subprocess, and it carries --project.
+        resolves.clear()
+        assert utils.setup_julia_environment(julia_project="/my/proj") is True
+        assert resolves == [], "a named project must cost no juliapkg resolve"
+        assert len(runs) == 1
+        assert "--project=/my/proj" in runs[0]
+
+        # 3. the invariant, over every form that reaches a subprocess: never project-less.
+        runs.clear()
+        utils.setup_julia_environment(julia_executable="/my/julia", julia_project="/my/proj")
+        assert runs[0][0] == "/my/julia"
+        assert any(a.startswith("--project=") for a in runs[0]), (
+            "no Pkg.instantiate() may run without an explicit --project"
+        )
+
+    def test_bypass_rule_checker_rejects_the_either_argument_form(self, monkeypatch):
+        """
+        Negative case: the "either argument bypasses" rule this replaced must not pass.
+
+        Reimplemented here exactly as it was written, and driven through the same assertions
+        the real rule is held to.  It fails on the one that matters -- an executable-only
+        call returning no project.
+        """
+        def either_argument_bypasses(julia_executable=None, julia_project=None):
+            if julia_executable is None and julia_project is None:
+                return ("/juliapkg/julia", "/juliapkg/project")
+            return (julia_executable or "julia", julia_project)  # project may be None!
+
+        assert either_argument_bypasses()[1] is not None
+        assert either_argument_bypasses(None, "/my/proj") == ("julia", "/my/proj")
+
+        # ...and here is the regression, caught:
+        exe, project = either_argument_bypasses("/my/julia", None)
+        assert project is None, (
+            "the old rule returned no project for an executable-only call -- if this ever "
+            "stops being true the negative case has lost its point"
+        )
+
+        # A `--project`-less command line is what that produced, and it is exactly what the
+        # driver must never be launched with.
+        assert [exe, "-e", "..."] == ["/my/julia", "-e", "..."]
+
     def test_juliapkg_floor_covers_the_api_we_call(self):
         """
         The declared `juliapkg>=` floor admits only versions whose API this code has.
@@ -539,6 +715,9 @@ class TestOneDependencyDeclaration:
         )
         assert len(problems) == len(JULIAPKG_APIS_WE_CALL)
         assert all("does not provide" in p for p in problems)
+        # every probe carries its reason into the message, so a red gate says what broke
+        assert any("concurrency claim" in p for p in problems)
+        assert any("headline install command" in p for p in problems)
 
     def test_juliapkg_discovery_descends_exactly_one_level(self, tmp_path, monkeypatch):
         """

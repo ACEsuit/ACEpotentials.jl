@@ -46,12 +46,13 @@ class ACECalculator(ACECalculatorBase):
         Timeout in seconds for Julia startup and connection.
     julia_executable : str, optional
         Path to Julia executable.  The default, ``None``, means the Julia that juliapkg
-        resolved from this package's ``juliapkg.json``.
+        resolved from this package's ``juliapkg.json``.  Naming one is an **executable
+        override**: that Julia is run, still against juliapkg's project.
     julia_project : str, optional
         Path to a Julia project directory.  The default, ``None``, means the environment
-        juliapkg manages for this Python installation.  Passing *either* this or
-        ``julia_executable`` bypasses juliapkg entirely and uses what you name -- it is not
-        an override of one of juliapkg's two choices.
+        juliapkg manages for this Python installation.  Naming one is a **full bypass**:
+        juliapkg is not consulted at all.  See ``ase_ace.server.resolve_julia_env`` for the
+        rule, which is shared with ``ase_ace.utils``.
     log_level : str, default='WARNING'
         Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR').
 

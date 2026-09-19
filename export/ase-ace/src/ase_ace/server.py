@@ -167,6 +167,58 @@ def julia_env() -> Tuple[str, str]:
         raise juliapkg_environment_error(e) from e
 
 
+def resolve_julia_env(
+    julia_executable: Optional[str] = None,
+    julia_project: Optional[Union[str, Path]] = None,
+) -> Tuple[str, str]:
+    """
+    ase-ace's ONE rule for the ``julia_executable`` / ``julia_project`` pair.
+
+    Returns a complete ``(executable, project)``; the project is never ``None``, so no
+    caller ever runs Julia in an environment nobody chose.
+
+    ==========================  ====================================================
+    arguments                   meaning
+    ==========================  ====================================================
+    neither                     juliapkg decides both.
+    ``julia_executable`` only   **Executable override**: run *this* Julia, still
+                                against juliapkg's resolved project.
+    ``julia_project`` (either)  **Full bypass**: juliapkg is not consulted at all.
+                                The executable is the one named, else ``julia``.
+    ==========================  ====================================================
+
+    Why the split is asymmetric rather than "either argument bypasses".  That rule was
+    tried and was worse: naming only an executable then meant *no project at all*, so
+    ``ACECalculator(julia_executable=...)`` ran the driver in Julia's default global
+    environment -- where ACEpotentials is not installed -- and
+    ``setup_julia_environment(julia_executable=...)`` ran ``Pkg.instantiate()`` against that
+    same global environment and returned ``True`` having installed none of ase-ace's
+    declared packages.  Consistency across the three modules is worth having; consistency
+    that writes to a shared environment and reports success for achieving nothing is not.
+
+    A project, by contrast, IS a complete answer on its own -- "use this environment I
+    built" -- so it stays a full bypass, which is what an HPC user with a hand-built module
+    environment wants and it costs them no resolve.
+
+    Note what an executable override cannot do: it cannot change which Julia *juliapkg*
+    uses, because juliapkg reads ``PYTHON_JULIAPKG_EXE`` once in ``reset_state()`` at import
+    and exposes no setter.  It changes which Julia *ase-ace* then runs against juliapkg's
+    project.  For an operation that IS a juliapkg resolve -- ``setup_julia_environment()``
+    on its normal path -- there is nothing to override, and that function says so out loud
+    rather than appearing to honour the argument.
+
+    One consequence worth knowing: an override runs a Julia that may differ from the one
+    juliapkg resolved the project's ``Manifest.toml`` for.  Julia will reuse or re-precompile
+    as it sees fit, and will say so if it cannot; that is a legible failure, and a far better
+    one than silently using an environment without ACEpotentials in it.
+    """
+    if julia_project is not None:
+        return (julia_executable or "julia", str(julia_project))
+
+    exe, project = julia_env()
+    return (julia_executable or exe, project)
+
+
 class JuliaACEServer:
     """
     Manages a Julia ACE driver subprocess.
@@ -185,10 +237,11 @@ class JuliaACEServer:
     unixsocket : str, optional
         Unix socket name (mutually exclusive with port).
     julia_executable : str, optional
-        Path to Julia executable.  ``None`` (the default) means "ask juliapkg".
+        Path to Julia executable.  ``None`` (the default) means "ask juliapkg"; naming one
+        overrides only the executable, still against juliapkg's project.
     julia_project : str, optional
-        Path to a Julia project directory.  ``None`` (the default) means "ask juliapkg".
-        Passing either this or ``julia_executable`` bypasses juliapkg entirely.
+        Path to a Julia project directory.  ``None`` (the default) means "ask juliapkg";
+        naming one bypasses juliapkg entirely.  See :func:`resolve_julia_env`.
 
     Examples
     --------
@@ -214,16 +267,12 @@ class JuliaACEServer:
         self.num_threads = num_threads
         self.port = port
         self.unixsocket = unixsocket
-        # Passing either of these is an explicit bypass of juliapkg: "I built this
-        # environment myself, use it as-is".  It is not an override of juliapkg's choice,
-        # and it cannot be -- juliapkg reads PYTHON_JULIAPKG_EXE once at import time in
-        # reset_state() and exposes no public setter, so a per-instance executable cannot be
-        # pushed into it through public API.  Hence `None` defaults rather than `'julia'`:
-        # "not specified" has to be distinguishable from "specified as julia", or every
-        # default-constructed calculator would take the bypass path and never see the
-        # juliapkg environment.
-        self._via_juliapkg = julia_executable is None and julia_project is None
-        self.julia_executable = julia_executable or 'julia'
+        # Stored as given -- including None -- and turned into a concrete (executable,
+        # project) pair by resolve_julia_env() in start().  `None` defaults rather than
+        # `'julia'` because "not specified" has to be distinguishable from "specified as
+        # julia": otherwise every default-constructed calculator would look like a request
+        # to override the executable.  See resolve_julia_env for the rule itself.
+        self.julia_executable = julia_executable
         self.julia_project = Path(julia_project) if julia_project else None
 
         self._process: Optional[subprocess.Popen] = None
@@ -242,16 +291,16 @@ class JuliaACEServer:
 
     def _build_command(self, port: int) -> list:
         """Build the Julia command line."""
-        cmd = [self.julia_executable]
-        # `julia_project` is None only when the caller bypassed juliapkg by naming an
-        # executable but no project; then Julia's own default environment applies and
-        # emitting `--project=None` would be worse than emitting nothing.
-        if self.julia_project is not None:
-            cmd.append(f"--project={self.julia_project}")
-        cmd.extend([
+        # Both are concrete by now: start() ran resolve_julia_env, which never returns a
+        # None project.  There is deliberately no "run without --project" path -- that was
+        # the old `julia_executable`-alone behaviour, and it launched the driver into Julia's
+        # global environment, where ACEpotentials is not installed.
+        cmd = [
+            self.julia_executable,
+            f"--project={self.julia_project}",
             str(self.driver_script),
             "--model", str(self.model_path),
-        ])
+        ]
 
         if self.unixsocket:
             cmd.extend(["--unixsocket", self.unixsocket])
@@ -289,10 +338,10 @@ class JuliaACEServer:
             raise RuntimeError("Server already running")
 
         # Resolve lazily, here rather than in __init__, so that merely constructing a
-        # calculator never triggers a multi-minute Julia install.
-        if self._via_juliapkg:
-            self.julia_executable, project = julia_env()
-            self.julia_project = Path(project)
+        # calculator never triggers a multi-minute Julia install.  With a project named this
+        # is pure bookkeeping and touches juliapkg not at all.
+        exe, project = resolve_julia_env(self.julia_executable, self.julia_project)
+        self.julia_executable, self.julia_project = exe, Path(project)
 
         # Determine port to use
         if self.unixsocket:
