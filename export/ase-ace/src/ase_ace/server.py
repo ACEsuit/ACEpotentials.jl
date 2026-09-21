@@ -13,10 +13,30 @@ import signal
 import logging
 import warnings
 import subprocess
+import threading
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
+
+# What the driver prints immediately before it connects back to us.  ace_driver.jl logs
+# `@info "Connecting to Unix socket"` / `"Connecting to TCP socket"`, and Julia's logging
+# goes to stderr.  This is the only readiness signal available from outside the process:
+# we are the i-PI *server* here, so the driver is the client and the accept happens later,
+# inside SocketIOCalculator, on the first calculation.
+_READY_MARKER = "Connecting to"
+
+# NOTE ON WHAT THIS MARKER PROVES.  It is logged immediately *before* connect(), so it
+# means "the driver reached its connect call", NOT "the driver connected".  The gap is
+# not small and not fixed: Julia JIT-compiles run_driver for the concrete model type in
+# between, which was measured at several seconds, so a driver whose connection is refused
+# can still be alive seconds after the marker.  A timed survival window was tried here and
+# does not work -- it reported ready on a driver that died moments later.
+#
+# The authoritative check is ACECalculator._await_driver_connection(), which watches our
+# own listening socket for the completed connection.  This wait stays because it still
+# catches the driver dying during load (a bad model file, a missing package), which is
+# the common case and produces a much clearer error than a socket timeout.
 
 
 def find_free_port() -> int:
@@ -267,6 +287,7 @@ class JuliaACEServer:
         num_threads: Union[int, str] = 'auto',
         port: int = 0,
         unixsocket: Optional[str] = None,
+        species: Optional[list] = None,
         julia_executable: Optional[str] = None,
         julia_project: Optional[str] = None,
     ):
@@ -285,7 +306,11 @@ class JuliaACEServer:
         self.julia_executable = julia_executable
         self.julia_project = Path(julia_project) if julia_project else None
 
+        self.species = list(species) if species else None
         self._process: Optional[subprocess.Popen] = None
+        self._stdout_lines: list = []
+        self._stderr_lines: list = []
+        self._drain_threads: list = []
         self._actual_port: Optional[int] = None
 
     @property
@@ -316,6 +341,12 @@ class JuliaACEServer:
             cmd.extend(["--unixsocket", self.unixsocket])
         else:
             cmd.extend(["--port", str(port)])
+
+        # Without this the driver builds its template from the model's element list, which
+        # is one atom per element TYPE, and IPICalculator asserts the incoming POSDATA
+        # position count against it on every step.
+        if self.species:
+            cmd.extend(["--species", ",".join(self.species)])
 
         return cmd
 
@@ -385,20 +416,77 @@ class JuliaACEServer:
                 "Please install Julia: https://julialang.org/downloads/"
             )
 
-        # Give Julia a moment to start
-        time.sleep(0.5)
+        # Drain both pipes continuously.  With stdout=PIPE and stderr=PIPE and nobody
+        # reading them, a driver that logs enough -- `--verbose` sets JULIA_DEBUG -- fills
+        # the 64 KiB pipe buffer and blocks forever inside write(), with no error anywhere.
+        # Draining removes that deadlock and is also what makes the wait below possible:
+        # readiness is a line the driver prints, so something has to be reading.
+        self._stdout_lines = []
+        self._stderr_lines = []
+        self._drain_threads = [
+            self._start_drain(self._process.stdout, self._stdout_lines),
+            self._start_drain(self._process.stderr, self._stderr_lines),
+        ]
 
-        # Check if process crashed immediately
-        if self._process.poll() is not None:
-            stdout, stderr = self._process.communicate()
-            raise RuntimeError(
-                f"Julia driver failed to start:\n"
-                f"stdout: {stdout}\n"
-                f"stderr: {stderr}"
-            )
+        # Wait until the driver is actually ready, bounded by `timeout`.
+        #
+        # This used to be `time.sleep(0.5)` followed by a single poll(), while `timeout`
+        # -- documented right above as "Maximum time to wait for server to be ready" and
+        # as raising "if the server fails to start or connect within timeout" -- was
+        # accepted and then never used.  Half a second is not close: Julia needs tens of
+        # seconds to load ACEpotentials before it reaches the socket at all, so start()
+        # reported success on a process that had barely begun, and every failure after
+        # that half-second became a silent stall at the first calculation instead of an
+        # error here.
+        deadline = time.monotonic() + timeout
+        while True:
+            if self._process.poll() is not None:
+                out, err = self.get_output()
+                raise RuntimeError(
+                    f"Julia driver exited during startup with code "
+                    f"{self._process.returncode}:\n"
+                    f"stdout: {out}\n"
+                    f"stderr: {err}"
+                )
 
-        logger.info(f"Julia driver started (PID: {self._process.pid})")
+            if any(_READY_MARKER in line for line in list(self._stderr_lines)):
+                break
+
+            if time.monotonic() >= deadline:
+                out, err = self.get_output()
+                self.stop()
+                raise RuntimeError(
+                    f"Julia driver was not ready within {timeout:.0f}s (it never reported "
+                    f"{_READY_MARKER!r}).  Loading ACEpotentials can take tens of seconds "
+                    f"on a cold Julia; pass a larger timeout= if the machine is slow.\n"
+                    f"stdout: {out}\n"
+                    f"stderr: {err}"
+                )
+
+            time.sleep(0.05)
+
+        logger.info(f"Julia driver started and ready (PID: {self._process.pid})")
         return actual_port
+
+    @staticmethod
+    def _start_drain(stream, sink: list) -> threading.Thread:
+        """Continuously move lines off `stream` into `sink`; see start() for why."""
+
+        def drain():
+            try:
+                for line in iter(stream.readline, ""):
+                    sink.append(line)
+            except (ValueError, OSError):
+                pass  # pipe closed underneath us during shutdown
+            finally:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
+
+        t = threading.Thread(target=drain, daemon=True)
+        t.start()
+        return t
 
     def stop(self, timeout: float = 5.0):
         """
@@ -424,6 +512,10 @@ class JuliaACEServer:
             self._process.kill()
             self._process.wait()
 
+        for t in self._drain_threads:
+            t.join(timeout=1.0)
+        self._drain_threads = []
+
         self._process = None
         self._actual_port = None
 
@@ -442,13 +534,12 @@ class JuliaACEServer:
         tuple
             (stdout, stderr) strings. Empty if process still running.
         """
-        if self._process is None:
-            return "", ""
-
-        if self._process.poll() is None:
-            return "", ""
-
-        return self._process.communicate()
+        # Read the buffers the drain threads fill, NOT communicate(): the pipes are
+        # owned by those threads, and communicate() would deadlock against them.  This
+        # also means output is available while the process is still running -- it used to
+        # return ("", "") until the driver had exited, which is precisely when a caller
+        # diagnosing a stall needs it most.
+        return "".join(self._stdout_lines), "".join(self._stderr_lines)
 
     @property
     def actual_port(self) -> Optional[int]:

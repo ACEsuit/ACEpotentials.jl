@@ -118,6 +118,7 @@ class ACECalculator(ACECalculatorBase):
         self._server: Optional[JuliaACEServer] = None
         self._socket_calc = None
         self._started = False
+        self._started_symbols: Optional[list] = None
         self._actual_port: Optional[int] = None
 
     def _start(self):
@@ -126,6 +127,12 @@ class ACECalculator(ACECalculatorBase):
             return
 
         logger.info(f"Starting ACECalculator with model: {self.model_path}")
+
+        # Calculator.calculate() sets self.atoms before _start() runs, so the
+        # composition is known here.  None only if _start() is called directly.
+        symbols = (
+            list(self.atoms.get_chemical_symbols()) if self.atoms is not None else None
+        )
 
         from ase.calculators.socketio import SocketIOCalculator
 
@@ -166,13 +173,66 @@ class ACECalculator(ACECalculatorBase):
             unixsocket=socket_name,
             julia_executable=self.julia_executable,
             julia_project=self.julia_project,
+            # The driver's template must match the system we are about to send: i-PI
+            # transmits positions and cell only, never species, so IPICalculator asserts
+            # the incoming position count against the template it was started with.
+            species=symbols,
         )
 
         # Start Julia driver - it will connect to SocketIOCalculator
         self._server.start(timeout=self.timeout)
 
+        # server.start() returns when the driver reaches its connect() call, which is not
+        # the same as having connected -- Julia JIT-compiles run_driver in between.  We are
+        # the i-PI server, so the completed connection is observable right here.
+        self._await_driver_connection()
+
         self._started = True
+        self._started_symbols = symbols
         logger.info("ACECalculator started successfully")
+
+    def _await_driver_connection(self):
+        """
+        Block until the Julia driver's connection actually arrives.
+
+        A completed TCP connection sits on our listening socket's accept queue and makes
+        it select()-readable; peeking this way does not consume it, so ASE still accepts
+        it later in SocketServer._accept().  Without this wait, a driver that fails to
+        connect -- the IPv6 case, where ASE binds AF_INET and "localhost" resolved to ::1
+        -- left start() reporting success and turned the failure into a silent stall at
+        the first calculation instead of an error here.
+        """
+        import select
+
+        server = getattr(self._socket_calc, "server", None)
+        sock = getattr(server, "serversocket", None)
+        if sock is None:
+            # Older ASE, or a path that exposes no listening socket: nothing to observe.
+            return
+
+        deadline = time.monotonic() + self.timeout
+        while True:
+            readable, _, _ = select.select([sock], [], [], 0.2)
+            if readable:
+                logger.info("Julia driver connected")
+                return
+
+            if not self._server.is_alive():
+                out, err = self._server.get_output()
+                raise RuntimeError(
+                    f"Julia driver exited before connecting:\n"
+                    f"stdout: {out}\n"
+                    f"stderr: {err}"
+                )
+
+            if time.monotonic() >= deadline:
+                out, err = self._server.get_output()
+                self._server.stop()
+                raise RuntimeError(
+                    f"Julia driver did not connect within {self.timeout:.0f}s.\n"
+                    f"stdout: {out}\n"
+                    f"stderr: {err}"
+                )
 
     def calculate(self, atoms=None, properties=None, system_changes=all_changes):
         """
@@ -194,6 +254,18 @@ class ACECalculator(ACECalculatorBase):
 
         # Start server on first calculation
         if not self._started:
+            self._start()
+        elif (
+            self._started_symbols is not None
+            and self.atoms is not None
+            and list(self.atoms.get_chemical_symbols()) != self._started_symbols
+        ):
+            # The running driver's template is fixed at launch and i-PI cannot renegotiate
+            # it, so a different composition (or atom count) needs a new driver.  Without
+            # this, IPICalculator's assert fires, the driver dies mid-protocol, and the
+            # socket read blocks.
+            logger.info("Composition changed; restarting the Julia driver")
+            self.close()
             self._start()
 
         # Delegate to socket calculator
@@ -221,6 +293,7 @@ class ACECalculator(ACECalculatorBase):
             self._server = None
 
         self._started = False
+        self._started_symbols = None
         logger.info("ACECalculator closed")
 
     def __enter__(self):

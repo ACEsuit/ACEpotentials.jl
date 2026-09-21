@@ -128,12 +128,27 @@ class TestCalculatorCalculations:
         assert np.isfinite(E)
 
     def test_energy_reasonable(self, ace_calculator, si_diamond):
-        """Test energy is in reasonable range."""
+        """Test energy is in a physically plausible range."""
         si_diamond.calc = ace_calculator
         E = si_diamond.get_potential_energy()
         E_per_atom = E / len(si_diamond)
-        # Energy per atom should be reasonable (not NaN or huge)
-        assert abs(E_per_atom) < 100
+
+        # The bound used to be abs(E_per_atom) < 100, which assumes a COHESIVE energy.
+        # An ACE total energy includes the one-body reference E0, and for Si fitted to
+        # Si_tiny that is around -160 eV/atom, so the old bound failed on a correct
+        # result: this model gives -163.2 eV/atom.  It is not a socket-backend artefact
+        # -- ACEJuliaCalculator returns -326.402818 eV for the same cell against the
+        # socket backend's -326.402816 eV, a 2.6e-06 eV difference that is the i-PI
+        # protocol's atomic-unit round trip, and the juliacall suite asserts no magnitude
+        # bound at all.
+        #
+        # What is worth asserting is that the value is finite and of a sane order: a
+        # blown-up model gives 1e10 or larger, and a dropped reference gives ~0.
+        assert np.isfinite(E_per_atom)
+        assert 1e-3 < abs(E_per_atom) < 1e4, (
+            f"{E_per_atom} eV/atom is outside any plausible range for an ACE total "
+            f"energy including E0"
+        )
 
     def test_forces_finite(self, ace_calculator, si_diamond):
         """Test that forces are finite."""
