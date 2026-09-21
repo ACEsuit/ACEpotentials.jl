@@ -744,13 +744,20 @@ jobs:
         env:
           JULIA_NUM_THREADS: 2
           PYTHON_JULIACALL_HANDLE_SIGNALS: yes
+          ACE_TEST_MODEL: ${{ runner.temp }}/ace-test-model/test_model.json
         working-directory: export/ase-ace
         run: |
-          # Create fixtures directory and a FITTED test model using ase_ace module
-          # This ensures juliapkg finds the correct juliapkg.json
+          # Fit the test model into the runner's temp directory, NOT into the repository.
+          # It used to be written to tests/fixtures/test_model.json, which is a tracked
+          # file: every CI run overwrote it, so the committed copy was never the one under
+          # test, and anyone following these steps locally dirtied their working tree.
+          # Nothing reads the committed copy -- ACE_TEST_MODEL is the only input (see
+          # tests/test_julia_calculator.py:37) and conftest's TEST_MODEL_PATH is just a
+          # default output path for create_test_model().
           python3 -c "
           import os
-          os.makedirs('tests/fixtures', exist_ok=True)
+          out = os.environ['ACE_TEST_MODEL']
+          os.makedirs(os.path.dirname(out), exist_ok=True)
           # Import ase_ace to trigger juliapkg resolution with our dependencies
           from ase_ace.julia_calculator import ACEJuliaCalculator
           # Access the Julia runtime to create and fit a test model
@@ -777,7 +784,7 @@ jobs:
           # ACEpotentials' own 'using ACEfit' creates, so it needs no declaration of its own
           # and does not depend on what ACEpotentials chooses to re-export.
           ACEpotentials.acefit!(data, model; data_keys..., weights=weights, solver=ACEpotentials.ACEfit.BLR())
-          ACEpotentials.save_model(model, \\\"tests/fixtures/test_model.json\\\")
+          ACEpotentials.save_model(model, ENV[\\\"ACE_TEST_MODEL\\\"])
           ''')
           print('Test model created and fitted successfully')
           "
@@ -786,7 +793,7 @@ jobs:
         env:
           JULIA_NUM_THREADS: 2
           PYTHON_JULIACALL_HANDLE_SIGNALS: yes
-          ACE_TEST_MODEL: ${{ github.workspace }}/export/ase-ace/tests/fixtures/test_model.json
+          ACE_TEST_MODEL: ${{ runner.temp }}/ace-test-model/test_model.json
           ACE_TEST_LIBRARY: ${{ github.workspace }}/export/test/build/libace_test.so
         working-directory: export/ase-ace
         run: |
