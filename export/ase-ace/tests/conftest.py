@@ -80,12 +80,23 @@ def test_model_path():
     return str(TEST_MODEL_PATH)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def ace_calculator(test_model_path, julia_available):
     """
     Create an ACECalculator instance for testing.
 
     Uses single-threaded mode for deterministic results.
+
+    Session-scoped on purpose: starting the driver costs ~50s (Julia loads ACEpotentials
+    before it reaches the socket), and function scope paid that for EVERY test that asked
+    for a calculator.  Sharing is safe here because no test using this fixture mutates the
+    calculator -- they hand it to atoms.calc and read results -- and the lifecycle tests
+    (close, context manager, bad model path) build their own ACECalculator rather than
+    taking this one.  A test that computes a different composition is fine too: the
+    calculator restarts its driver when the composition changes.
+
+    Both fixtures this depends on are already session-scoped, which is what makes this
+    legal -- pytest forbids a broader fixture depending on a narrower one.
     """
     if not julia_available:
         pytest.skip("Julia not available")

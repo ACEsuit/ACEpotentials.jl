@@ -17,15 +17,22 @@ REFERENCE_ENERGY = None
 REFERENCE_FORCES = None
 
 
-@pytest.fixture(params=[1, 4, 8, 'auto'])
+@pytest.fixture(scope="module", params=[1, 4, 8, 'auto'])
 def num_threads(request):
     """Parametrized fixture for different thread counts."""
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def threaded_calculator(test_model_path, julia_available, num_threads):
-    """Create calculator with specified thread count."""
+    """
+    Create calculator with specified thread count.
+
+    Module-scoped: one driver per thread count instead of one per (test, thread count).
+    Each ~50s driver start was being paid twice over, once for each test that consumes
+    this fixture.  Parametrised fixtures create one instance per param value, so the four
+    thread counts still get four genuinely separate calculators.
+    """
     if not julia_available:
         pytest.skip("Julia not available")
 
