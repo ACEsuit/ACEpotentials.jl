@@ -22,7 +22,7 @@ declares ``ACEfit``.  Measured:
                       'Unitful', 'UnitfulAtomic']
     julia compat: =1.11.5
 
-Eleven packages, not eight, and a Julia pin from a release two versions old.  Every local run
+More packages than we declare, and a Julia pin from a release two versions old.  Every local run
 was against an environment the declaration does not describe.
 
 So "clean" here has to mean clean in **three** senses, and a first draft of this file got only

@@ -1,7 +1,7 @@
 """
 Pytest fixtures for ase-ace tests.
 
-This module provides fixtures for testing the ACECalculator.
+This module provides fixtures for testing the ase-ace calculators.
 It requires a pre-fitted test model and Julia installation.
 """
 
@@ -45,7 +45,7 @@ def julia_available():
     collection-time fixture must not do.  See below.)
 
     `juliapkg.executable()` and `juliapkg.project()` are deliberately NOT called here: both
-    call `resolve()`, so on a cold machine this fixture would install Julia and the eight
+    call `resolve()`, so on a cold machine this fixture would install Julia and the declared
     packages as a side effect of *collecting* the suite.  `juliapkg.state.STATE` is populated
     by `reset_state()` at import, so the paths can be read without resolving anything; the
     existence of its `meta.json` means juliapkg has resolved here before and doing so again
@@ -78,41 +78,6 @@ def test_model_path():
             "or see tests/README.md for instructions."
         )
     return str(TEST_MODEL_PATH)
-
-
-@pytest.fixture(scope="session")
-def ace_calculator(test_model_path, julia_available):
-    """
-    Create an ACECalculator instance for testing.
-
-    Uses single-threaded mode for deterministic results.
-
-    Session-scoped on purpose: starting the driver costs ~50s (Julia loads ACEpotentials
-    before it reaches the socket), and function scope paid that for EVERY test that asked
-    for a calculator.  Sharing is safe here because no test using this fixture mutates the
-    calculator -- they hand it to atoms.calc and read results -- and the lifecycle tests
-    (close, context manager, bad model path) build their own ACECalculator rather than
-    taking this one.  A test that computes a different composition is fine too: the
-    calculator restarts its driver when the composition changes.
-
-    Both fixtures this depends on are already session-scoped, which is what makes this
-    legal -- pytest forbids a broader fixture depending on a narrower one.
-    """
-    if not julia_available:
-        pytest.skip("Julia not available")
-
-    from ase_ace import ACECalculator
-
-    # No julia_project=: the calculator asks juliapkg, which is the one mechanism this
-    # package has for deciding where Julia and its packages live.  Naming a project here
-    # would take the explicit-bypass path and test something the shipped default does not do.
-    calc = ACECalculator(
-        test_model_path,
-        num_threads=1,
-        timeout=120.0,  # 2 minutes for Julia startup
-    )
-    yield calc
-    calc.close()
 
 
 @pytest.fixture
@@ -204,8 +169,8 @@ def create_test_model(output_path: str = None):
     # longer exists; `julia_env()` is the same pair the calculators themselves run.
     #
     # `ACEpotentials.ACEfit.BLR()` above, rather than `ACEfit.BLR()`.  ACEfit is NOT one of
-    # the eight packages juliapkg.json declares, and the three ways of reaching it are not
-    # equivalent.  Measured in a project containing exactly those eight (`julia --project=<p>
+    # the packages juliapkg.json declares, and the three ways of reaching it are not
+    # equivalent.  Measured in a project containing exactly those (`julia --project=<p>
     # -e ...`):
     #
     #   using ACEfit                        -> ArgumentError: Package ACEfit not found

@@ -16,7 +16,7 @@ From ``export/ase-ace/src/ase_ace/`` that is ``export/ase-ace/julia/`` -- correc
 while the repository is on disk.  The wheel ships ``src/ase_ace`` and nothing else, so from
 ``site-packages/ase_ace/`` the identical expression climbed out to
 ``<prefix>/lib/pythonX.Y/julia``, which does not exist.  Two of the three calculators
-(``ACECalculator``, socket/i-PI, and ``ACEJuliaCalculator``, JuliaCall) could therefore never
+(``ACEJuliaCalculator``, JuliaCall, and ``ACELibraryCalculator``) could therefore never
 work from a ``pip install ase-ace``; only ``ACELibraryCalculator``, which takes an explicit
 path to a ``.so``, was unaffected.
 
@@ -73,22 +73,22 @@ PACKAGE_ROOT = Path(__file__).resolve().parent.parent
 # Julia and which Julia packages this package needs.  ``TestOneDependencyDeclaration`` is what
 # stops the second declaration coming back.
 REQUIRED_ASSETS = (
-    "julia/ace_driver.jl",
     "julia/python_interface.jl",
     "juliapkg.json",
 )
 
-# The eight Julia packages the merged declaration must carry.  Written out rather than read
+# The Julia packages the merged declaration must carry.  Written out rather than read
 # from juliapkg.json, because a test that reads the file it is checking asserts nothing.
+# ArgParse, IPICalculator and UnitfulAtomic were here for the socket backend's
+# ace_driver.jl, which parsed a command line, spoke i-PI and built a Unitful template.
+# That backend is gone; nothing shipped loads them any more, and the `using` scan below
+# is what keeps this list honest if that changes.
 EXPECTED_JULIA_PACKAGES = frozenset({
     "ACEpotentials",
-    "ArgParse",
     "AtomsBase",
     "AtomsCalculators",
-    "IPICalculator",
     "StaticArrays",
     "Unitful",
-    "UnitfulAtomic",
 })
 
 # Julia stdlib and self-references that a `using` line may name without a juliapkg.json entry.
@@ -163,7 +163,6 @@ class TestPackageRelativeAssets:
         # `relative_to` raises if `assets` is not under the package -- which is exactly what
         # the pre-fix `parent.parent.parent / "julia"` did, editable install or not.
         assets.relative_to(package_dir)
-        assert (assets / "ace_driver.jl").exists()
         assert (assets / "python_interface.jl").exists()
 
     def test_interface_path_is_inside_the_package(self):
@@ -315,7 +314,6 @@ def julia_packages_used(text, kind="julia"):
 # back below where it already was.  The derivation is what finds new files; this only stops
 # it losing old ones.
 GATE_A_FLOOR = (
-    "export/ase-ace/src/ase_ace/julia/ace_driver.jl",
     "export/ase-ace/src/ase_ace/julia/python_interface.jl",
     "export/ase-ace/src/ase_ace/julia_calculator.py",
     "export/ase-ace/tests/conftest.py",
@@ -972,7 +970,7 @@ class TestOneDependencyDeclaration:
 
         # ...and the two consumers route through that one function rather than reimplementing
         # it.  `JuliaACEServer` resolves in start(), not __init__.
-        assert "resolve_julia_env" in inspect.getsource(server.JuliaACEServer.start)
+        assert "resolve_julia_env" in inspect.getsource(utils.check_julia_packages)
         assert "resolve_julia_env" in inspect.getsource(utils.check_julia_packages)
 
 
@@ -1285,7 +1283,7 @@ class TestBuiltWheel:
         problems = wheel_problems(pre_fix)
         assert len(problems) == len(REQUIRED_ASSETS) - 1  # juliapkg.json it did ship
         assert all("not in the wheel" in p for p in problems)
-        assert {"ase_ace/julia/ace_driver.jl", "ase_ace/julia/python_interface.jl"} == {
+        assert {"ase_ace/julia/python_interface.jl"} == {
             p.split(":")[0] for p in problems
         }
 
@@ -1391,7 +1389,7 @@ class TestBuiltSdist:
         root = "ase_ace-0.1.0"
         good = [f"{root}/src/ase_ace/{rel}" for rel in REQUIRED_ASSETS]
         assert sdist_problems(good) == []
-        problems = sdist_problems([n for n in good if not n.endswith("ace_driver.jl")])
+        problems = sdist_problems([n for n in good if not n.endswith("python_interface.jl")])
         assert len(problems) == 1
         assert "not in the sdist" in problems[0]
 
@@ -1442,7 +1440,6 @@ print(json.dumps({
     "package_dir": str(pkg),
     "assets": str(assets),
     "assets_exists": assets.is_dir(),
-    "driver_exists": (assets / "ace_driver.jl").is_file(),
     "interface": str(iface),
     "interface_exists": iface.is_file(),
     "juliapkg_exists": (pkg / "juliapkg.json").is_file(),
@@ -1480,7 +1477,6 @@ print(json.dumps({
         info = self._probe_installed_wheel(tmp_path)
 
         assert info["assets_exists"], f"Julia assets missing: {info['assets']}"
-        assert info["driver_exists"], "ace_driver.jl missing from the installed package"
         assert info["interface_exists"], f"python_interface.jl missing: {info['interface']}"
         assert info["juliapkg_exists"], "juliapkg.json missing from the installed package"
         assert not info["manifest_shipped"], (

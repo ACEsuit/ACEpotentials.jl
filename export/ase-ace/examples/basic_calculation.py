@@ -14,7 +14,7 @@ Usage:
 import sys
 import numpy as np
 from ase.build import bulk
-from ase_ace import ACECalculator
+from ase_ace import ACEJuliaCalculator
 
 
 def main():
@@ -35,42 +35,42 @@ def main():
     print(f"\nStructure: Si diamond, {len(atoms)} atoms")
     print(f"Cell:\n{atoms.cell}")
 
-    # Use ACECalculator with context manager
+    # Use ACEJuliaCalculator with context manager
     print(f"\nLoading model: {model_path}")
     print("Starting Julia driver (first run may take 5-10 seconds)...")
 
     try:
-        with ACECalculator(model_path, num_threads=4, timeout=120.0) as calc:
-            atoms.calc = calc
+        calc = ACEJuliaCalculator(model_path, num_threads=4)
+        atoms.calc = calc
 
-            # Single-point calculation
-            print("\n--- Single Point Calculation ---")
-            energy = atoms.get_potential_energy()
-            forces = atoms.get_forces()
-            stress = atoms.get_stress()
+        # Single-point calculation
+        print("\n--- Single Point Calculation ---")
+        energy = atoms.get_potential_energy()
+        forces = atoms.get_forces()
+        stress = atoms.get_stress()
 
-            print(f"Energy: {energy:.6f} eV")
-            print(f"Energy per atom: {energy/len(atoms):.6f} eV/atom")
-            print(f"Max force: {np.abs(forces).max():.6f} eV/A")
+        print(f"Energy: {energy:.6f} eV")
+        print(f"Energy per atom: {energy/len(atoms):.6f} eV/atom")
+        print(f"Max force: {np.abs(forces).max():.6f} eV/A")
 
-            # Pressure from stress (GPa)
-            pressure = -stress[:3].mean() * 160.21766208
-            print(f"Pressure: {pressure:.2f} GPa")
+        # Pressure from stress (GPa)
+        pressure = -stress[:3].mean() * 160.21766208
+        print(f"Pressure: {pressure:.2f} GPa")
 
-            # Create a supercell
-            print("\n--- Supercell Calculation ---")
-            supercell = bulk('Si', 'diamond', a=5.43) * (2, 2, 2)
-            supercell.calc = calc
+        # Create a supercell
+        print("\n--- Supercell Calculation ---")
+        supercell = bulk('Si', 'diamond', a=5.43) * (2, 2, 2)
+        supercell.calc = calc
 
-            E_super = supercell.get_potential_energy()
-            print(f"Structure: Si diamond 2x2x2, {len(supercell)} atoms")
-            print(f"Energy: {E_super:.6f} eV")
-            print(f"Energy per atom: {E_super/len(supercell):.6f} eV/atom")
+        E_super = supercell.get_potential_energy()
+        print(f"Structure: Si diamond 2x2x2, {len(supercell)} atoms")
+        print(f"Energy: {E_super:.6f} eV")
+        print(f"Energy per atom: {E_super/len(supercell):.6f} eV/atom")
 
-            # Verify consistency
-            ratio = E_super / energy
-            expected_ratio = len(supercell) / len(atoms)
-            print(f"\nEnergy ratio (should be ~{expected_ratio}): {ratio:.4f}")
+        # Verify consistency
+        ratio = E_super / energy
+        expected_ratio = len(supercell) / len(atoms)
+        print(f"\nEnergy ratio (should be ~{expected_ratio}): {ratio:.4f}")
 
     except FileNotFoundError as e:
         print(f"\nError: {e}")

@@ -6,7 +6,6 @@ This package provides three ASE-compatible calculators for ACE potentials:
 
 | Calculator | Backend | Threading | Startup | Julia Required |
 |------------|---------|-----------|---------|----------------|
-| `ACECalculator` | Socket/IPICalculator | Multi-threaded | 5-10s (JIT) | Yes (runtime) |
 | `ACEJuliaCalculator` | JuliaCall | Multi-threaded | 10-30s (JIT) | Yes (managed) |
 | `ACELibraryCalculator` | Compiled .so | Single-threaded | Instant | No (at runtime) |
 
@@ -16,7 +15,6 @@ This package provides three ASE-compatible calculators for ACE potentials:
 - ACE descriptor computation via `get_descriptors()` method
 - Multi-threaded evaluation via `JULIA_NUM_THREADS`
 - Three backends:
-  - **Socket-based** (`ACECalculator`): Full Julia, multi-threaded, requires Julia installation
   - **JuliaCall** (`ACEJuliaCalculator`): Direct Julia integration, multi-threaded, auto-manages Julia
   - **Compiled library** (`ACELibraryCalculator`): Instant startup, single-threaded, no Julia at runtime
 - Automatic Julia subprocess/environment management
@@ -76,10 +74,9 @@ that actually applied, `juliapkg.deps.find_requirements()` returns the merged ra
 
 `ase-ace` declares what it needs from Julia in **one** file, `src/ase_ace/juliapkg.json`
 (installed as `<site-packages>/ase_ace/juliapkg.json`): a supported Julia range
-(`~1.11, ~1.12`) and eight packages.  [juliapkg](https://github.com/JuliaPy/pyjuliapkg),
+(`~1.11, ~1.12`) and five packages.  [juliapkg](https://github.com/JuliaPy/pyjuliapkg),
 which is a base dependency, reads that file and builds the environment; **both** Julia-backed
-calculators then use it -- `ACEJuliaCalculator` through juliacall, and `ACECalculator` by
-spawning `julia --project=<that environment>`.  There is no Julia project inside the Python
+calculator then uses it -- `ACEJuliaCalculator`, through juliacall.  There is no Julia project inside the Python
 package any more, and nothing is installed into `site-packages`.
 
 You do not have to do anything: the environment is created on first use.  To do it once,
@@ -133,7 +130,7 @@ Three juliapkg variables are worth knowing:
 |---|---|
 | `PYTHON_JULIAPKG_PROJECT` | Put the environment at this absolute path.  Also marks it *shared*, which changes one thing: juliapkg then adds to the existing `Project.toml` instead of rebuilding it, and does not delete `Manifest.toml`, so a dependency that `ase-ace` **removes** in a later release lingers.  Version changes still apply. |
 | `PYTHON_JULIAPKG_OFFLINE=yes` | Never touch the network; use the environment as it stands.  The run-time half of a build-time resolve, for read-only images. |
-| `PYTHON_JULIAPKG_EXE` | Use this Julia.  Read once, at import, so it must be set before Python starts.  This is the only way to change which Julia *juliapkg itself* uses; `ACECalculator(julia_executable=...)` cannot -- it changes which Julia `ase-ace` runs against juliapkg's project (below). |
+| `PYTHON_JULIAPKG_EXE` | Use this Julia.  Read once, at import, so it must be set before Python starts.  This is the only way to change which Julia *juliapkg itself* uses; `setup_julia_environment(julia_executable=...)` cannot -- it changes which Julia `ase-ace` runs against juliapkg's project (below). |
 
 For a container: build as root with `PYTHON_JULIAPKG_PROJECT` pointing somewhere
 world-readable *outside* the Python prefix, run `setup_julia_environment()` at build time,
@@ -141,7 +138,7 @@ and set `PYTHON_JULIAPKG_OFFLINE=yes` at run time.
 
 #### Overriding the executable, or bypassing juliapkg entirely
 
-juliapkg makes two choices -- *which Julia* and *which project* -- and `ACECalculator` takes
+juliapkg makes two choices -- *which Julia* and *which project* -- and `ase-ace` takes
 one argument for each.  They do not do the same thing:
 
 | you pass | what happens |
@@ -217,35 +214,12 @@ pip install -e ".[dev]"
 ```
 
 **Installation options:**
-- `ase-ace` - Base package only (includes `ACECalculator`; pulls in `juliapkg`)
+- `ase-ace` - Base package only (pulls in `juliapkg`)
 - `ase-ace[julia]` - Adds `juliacall` for `ACEJuliaCalculator`
 - `ase-ace[lib]` - Adds `matscipy` for `ACELibraryCalculator`
 - `ase-ace[all]` - All optional dependencies
 
 ## Quick Start
-
-### Socket-based Calculator (ACECalculator)
-
-Uses Julia runtime via sockets. Requires Julia installation.
-
-```python
-from ase.build import bulk
-from ase_ace import ACECalculator
-
-# Create a silicon structure
-atoms = bulk('Si', 'diamond', a=5.43)
-
-# Use ACECalculator with context manager (recommended)
-with ACECalculator('path/to/model.json', num_threads=4) as calc:
-    atoms.calc = calc
-
-    energy = atoms.get_potential_energy()
-    forces = atoms.get_forces()
-    stress = atoms.get_stress()
-
-    print(f"Energy: {energy:.4f} eV")
-    print(f"Max force: {abs(forces).max():.4f} eV/A")
-```
 
 ### JuliaCall-based Calculator (ACEJuliaCalculator)
 
@@ -306,7 +280,6 @@ The `get_descriptors()` method returns the raw ACE basis vectors for each atom,
 useful for fitting, analysis, and transfer learning.
 
 **Availability:** `ACEJuliaCalculator` and `ACELibraryCalculator` only.
-`ACECalculator` does not support descriptors (socket protocol limitation).
 
 ### Example
 
@@ -343,19 +316,6 @@ print(f"Basis size: {calc.n_basis}")
 
 ## Configuration
 
-### ACECalculator Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `model_path` | str | required | Path to ACE model JSON file |
-| `num_threads` | int/str | 'auto' | Julia threads |
-| `port` | int | 0 | TCP port (0 = auto) |
-| `unixsocket` | str | None | Unix socket name |
-| `timeout` | float | 60.0 | Connection timeout (seconds) |
-| `julia_executable` | str | None | Path to Julia; `None` = the one juliapkg resolved.  Naming one overrides *only* the executable -- juliapkg's project is still used ([why](#overriding-the-executable-or-bypassing-juliapkg-entirely)) |
-| `julia_project` | str | None | Julia project path; `None` = juliapkg's environment.  Naming one bypasses juliapkg entirely |
-| `log_level` | str | 'WARNING' | Logging level |
-
 ### ACEJuliaCalculator Parameters
 
 | Parameter | Type | Default | Description |
@@ -375,21 +335,13 @@ The calculator uses Julia's multi-threading for parallel ACE evaluation:
 
 ```python
 # Explicit thread count
-calc = ACECalculator('model.json', num_threads=8)
+calc = ACEJuliaCalculator('model.json', num_threads=8)
 
 # Auto-detect available cores
-calc = ACECalculator('model.json', num_threads='auto')
+calc = ACEJuliaCalculator('model.json', num_threads='auto')
 
 # Single-threaded (deterministic)
-calc = ACECalculator('model.json', num_threads=1)
-```
-
-### Unix Sockets (Faster for Local)
-
-For local connections, Unix sockets have lower latency than TCP:
-
-```python
-calc = ACECalculator('model.json', unixsocket='ace_socket')
+calc = ACEJuliaCalculator('model.json', num_threads=1)
 ```
 
 ## Examples
@@ -400,14 +352,13 @@ calc = ACECalculator('model.json', unixsocket='ace_socket')
 import numpy as np
 from ase.build import bulk
 from ase.optimize import BFGS
-from ase_ace import ACECalculator
+from ase_ace import ACEJuliaCalculator
 
 # Create perturbed structure
 atoms = bulk('Si', 'diamond', a=5.43) * (2, 2, 2)
 atoms.positions += np.random.randn(*atoms.positions.shape) * 0.1
 
-with ACECalculator('model.json', num_threads='auto') as calc:
-    atoms.calc = calc
+atoms.calc = ACEJuliaCalculator('model.json', num_threads='auto')
 
     opt = BFGS(atoms, logfile='opt.log')
     opt.run(fmax=0.01)
@@ -422,12 +373,11 @@ from ase.build import bulk
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.md.verlet import VelocityVerlet
 from ase import units
-from ase_ace import ACECalculator
+from ase_ace import ACEJuliaCalculator
 
 atoms = bulk('Si', 'diamond', a=5.43) * (3, 3, 3)
 
-with ACECalculator('model.json', num_threads=8) as calc:
-    atoms.calc = calc
+atoms.calc = ACEJuliaCalculator('model.json', num_threads=8)
 
     # Initialize velocities at 300 K
     MaxwellBoltzmannDistribution(atoms, temperature_K=300)
@@ -483,7 +433,7 @@ Subsequent calculations are fast. For interactive use, consider:
 
 ```python
 # Keep calculator alive between calculations
-calc = ACECalculator('model.json', num_threads=4)
+calc = ACEJuliaCalculator('model.json', num_threads=4)
 
 for atoms in structures:
     atoms.calc = calc
@@ -496,12 +446,11 @@ calc.close()  # Clean up when done
 
 | Calculator | Julia Required | Threading | Startup | Best For |
 |------------|---------------|-----------|---------|----------|
-| `ACECalculator` | Yes (runtime) | Multi-threaded | 5-10s | Development, interactive use |
 | `ACEJuliaCalculator` | Yes (managed) | Multi-threaded | 10-30s | Self-contained scripts, descriptors |
 | `ACELibraryCalculator` | No (at runtime) | Single-threaded | Instant | Quick calculations, deployment |
 | LAMMPS plugin | No | MPI + OpenMP | N/A | Large-scale MD, HPC |
 
-- **Development/prototyping**: Use `ACECalculator` for convenience and threading
+- **Development/prototyping**: Use `ACEJuliaCalculator` for convenience and threading
 - **Self-contained scripts**: Use `ACEJuliaCalculator` - no manual Julia setup needed
 - **Quick calculations**: Use `ACELibraryCalculator` for instant startup
 - **Descriptor computation**: Use `ACEJuliaCalculator` or `ACELibraryCalculator`
@@ -534,20 +483,6 @@ python -c "from ase_ace.utils import setup_julia_environment; setup_julia_enviro
 If that reports `could not create its Julia environment: [Errno 13] Permission denied`, the
 Python prefix is read-only -- see
 [Where the Julia environment lives](#where-the-julia-environment-lives).
-
-### Timeout during first calculation
-
-The first calculation may take longer due to JIT compilation:
-```python
-calc = ACECalculator('model.json', timeout=120.0)  # 2 minutes
-```
-
-### Connection refused
-
-If using a specific port that's in use:
-```python
-calc = ACECalculator('model.json', port=0)  # Auto-assign port
-```
 
 ## Utility Functions
 
@@ -622,6 +557,4 @@ MIT License.  The full text ships with the package, as `LICENSE` in the source t
 ## References
 
 - [ACEpotentials.jl](https://github.com/ACEsuit/ACEpotentials.jl) - Julia ACE potentials package
-- [IPICalculator.jl](https://github.com/JuliaMolSim/IPICalculator.jl) - i-PI socket protocol for Julia
 - [ASE](https://wiki.fysik.dtu.dk/ase/) - Atomic Simulation Environment
-- [i-PI](https://ipi-code.org/) - Universal force engine protocol

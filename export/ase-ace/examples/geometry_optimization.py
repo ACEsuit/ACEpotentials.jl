@@ -15,7 +15,7 @@ import sys
 import numpy as np
 from ase.build import bulk
 from ase.optimize import BFGS
-from ase_ace import ACECalculator
+from ase_ace import ACEJuliaCalculator
 
 
 def main():
@@ -37,37 +37,37 @@ def main():
     print(f"\nStructure: Si diamond 2x2x2, {len(atoms)} atoms")
     print(f"Random perturbation: 0.1 A std")
 
-    with ACECalculator(model_path, num_threads='auto', timeout=120.0) as calc:
-        atoms.calc = calc
+    calc = ACEJuliaCalculator(model_path, num_threads='auto')
+    atoms.calc = calc
 
-        # Initial state
-        E_init = atoms.get_potential_energy()
-        F_init = atoms.get_forces()
-        max_f_init = np.abs(F_init).max()
+    # Initial state
+    E_init = atoms.get_potential_energy()
+    F_init = atoms.get_forces()
+    max_f_init = np.abs(F_init).max()
 
-        print(f"\n--- Initial State ---")
-        print(f"Energy: {E_init:.6f} eV")
-        print(f"Max force: {max_f_init:.4f} eV/A")
+    print(f"\n--- Initial State ---")
+    print(f"Energy: {E_init:.6f} eV")
+    print(f"Max force: {max_f_init:.4f} eV/A")
 
-        # Run optimization
-        print(f"\n--- Running BFGS Optimization ---")
-        opt = BFGS(atoms, logfile='-')  # Print to stdout
+    # Run optimization
+    print(f"\n--- Running BFGS Optimization ---")
+    opt = BFGS(atoms, logfile='-')  # Print to stdout
 
-        fmax = 0.01  # eV/A
-        max_steps = 100
-        converged = opt.run(fmax=fmax, steps=max_steps)
+    fmax = 0.01  # eV/A
+    max_steps = 100
+    converged = opt.run(fmax=fmax, steps=max_steps)
 
-        # Final state
-        E_final = atoms.get_potential_energy()
-        F_final = atoms.get_forces()
-        max_f_final = np.abs(F_final).max()
+    # Final state
+    E_final = atoms.get_potential_energy()
+    F_final = atoms.get_forces()
+    max_f_final = np.abs(F_final).max()
 
-        print(f"\n--- Final State ---")
-        print(f"Energy: {E_final:.6f} eV")
-        print(f"Max force: {max_f_final:.4f} eV/A")
-        print(f"Energy change: {E_final - E_init:.6f} eV")
-        print(f"Steps: {opt.nsteps}")
-        print(f"Converged: {converged or max_f_final < fmax}")
+    print(f"\n--- Final State ---")
+    print(f"Energy: {E_final:.6f} eV")
+    print(f"Max force: {max_f_final:.4f} eV/A")
+    print(f"Energy change: {E_final - E_init:.6f} eV")
+    print(f"Steps: {opt.nsteps}")
+    print(f"Converged: {converged or max_f_final < fmax}")
 
     print("\n" + "=" * 60)
     print("Optimization completed!")

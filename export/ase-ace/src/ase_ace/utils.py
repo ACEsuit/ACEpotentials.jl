@@ -244,7 +244,7 @@ def setup_julia_environment(
         logging.getLogger("juliapkg").setLevel(logging.INFO)
 
     # resolve() directly, rather than calling server.julia_env() first: julia_env() resolves
-    # too, so the pre-flight version made a cold machine install Julia and the eight packages
+    # too, so the pre-flight version made a cold machine install Julia and the declared packages
     # and *then* do it again under force=True.  The actionable message comes from the same
     # place either way.
     #

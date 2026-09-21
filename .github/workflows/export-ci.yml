@@ -600,16 +600,18 @@ jobs:
       - name: Run import and utility tests
         run: |
           cd export/ase-ace
-          pytest -v tests/test_calculator.py::TestImports tests/test_calculator.py::TestUtilities tests/test_calculator.py::TestCalculatorInit -m "not requires_julia"
+          # tests/test_calculator.py held these; it went with the socket backend, and its
+          # import/utility coverage lives in the library and packaging suites now.
+          pytest -v tests/test_library_calculator.py -m "not requires_julia"
 
       # The packaging gate, including its expensive tier.  ACE_TEST_PACKAGING=1 builds the
       # wheel and installs it into a throwaway venv, which is the only way to see a defect
       # that an editable install cannot: `get_julia_project_path()` used to climb out of the
       # package to `export/ase-ace/julia`, right in a checkout and absent from every wheel, so
-      # the socket and JuliaCall backends were dead for anyone who ran `pip install ase-ace`.
+      # the JuliaCall backend was dead for anyone who ran `pip install ase-ace`.
       # It is also the gate on ase-ace having exactly ONE Julia dependency declaration
       # (src/ase_ace/juliapkg.json) and on juliapkg finding it from site-packages, which is
-      # what the socket backend now relies on to locate Julia and its project.
+      # what the JuliaCall backend relies on to locate Julia and its project.
       # It belongs in THIS job because it needs neither Julia nor a compiled library, and it
       # runs *after* the editable install above precisely so both install modes are covered.
       - name: Run packaging tests (wheel + sdist build, non-editable install)

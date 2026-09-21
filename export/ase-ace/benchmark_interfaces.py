@@ -4,7 +4,6 @@ Benchmark comparison of ACE potential interfaces.
 
 Compares:
 1. Native Julia (via subprocess)
-2. Python ACECalculator (socket-based, multi-threaded)
 3. Python ACELibraryCalculator (compiled library, single-threaded)
 4. LAMMPS with ACE plugin (MPI + OpenMP)
 
@@ -93,51 +92,6 @@ def benchmark_library_calculator(library_path, structures, n_iterations=5):
     return results
 
 
-def benchmark_socket_calculator(model_path, structures, num_threads, n_iterations=5, timeout=180):
-    """Benchmark ACECalculator (socket-based)."""
-    try:
-        from ase_ace import ACECalculator
-    except ImportError:
-        return None
-
-    results = {}
-
-    try:
-        # No julia_project=: the calculator asks juliapkg, as a shipped install does.
-        with ACECalculator(
-            model_path,
-            num_threads=num_threads,
-            timeout=timeout,
-        ) as calc:
-            for natoms, atoms in structures.items():
-                atoms = atoms.copy()
-                atoms.calc = calc
-
-                # Warmup (includes JIT on first call)
-                atoms.get_potential_energy()
-                atoms.get_forces()
-
-                # Timed iterations
-                times = []
-                for _ in range(n_iterations):
-                    start = time.perf_counter()
-                    atoms.get_potential_energy()
-                    atoms.get_forces()
-                    elapsed = time.perf_counter() - start
-                    times.append(elapsed)
-
-                results[natoms] = {
-                    'mean': np.mean(times),
-                    'std': np.std(times),
-                    'min': np.min(times),
-                }
-    except Exception as e:
-        print(f"Socket calculator failed: {e}")
-        return None
-
-    return results
-
-
 def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
     """Benchmark native Julia evaluation."""
 
@@ -146,11 +100,15 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
     using ACEpotentials
     using AtomsBase
     using Unitful
-    using UnitfulAtomic
+    # UnitfulAtomic is no longer declared in src/ase_ace/juliapkg.json -- it was there
+    # for the socket backend's ace_driver.jl, which is gone.  ACEpotentials depends on
+    # it, so its binding is reachable without a declaration of our own, the same route
+    # this script already takes for JSON.
+    using ACEpotentials.UnitfulAtomic
     using Statistics
 
     # ACEpotentials.JSON, not bare JSON.  This script runs under --project=juliapkg's
-    # project (see julia_env() below), and JSON is not one of the eight packages
+    # project (see julia_env() below), and JSON is not one of the packages
     # src/ase_ace/juliapkg.json declares, so `using JSON` here fails with
     #     ArgumentError: Package JSON not found in current path
     # exactly as `using ACEfit` did in CI.  ACEpotentials imports JSON itself
@@ -460,8 +418,6 @@ def main():
                        help="Number of timed iterations (default: 5)")
     parser.add_argument("--threads", type=int, nargs="+", default=[1, 4, 8],
                        help="Thread counts to test (default: 1 4 8)")
-    parser.add_argument("--skip-socket", action="store_true",
-                       help="Skip socket calculator benchmarks")
     parser.add_argument("--skip-julia", action="store_true",
                        help="Skip native Julia benchmarks")
     parser.add_argument("--lammps", type=str, default="lmp",
@@ -518,21 +474,6 @@ def main():
                 print_results(lammps_results, f"LAMMPS ({threads} OpenMP threads)")
             else:
                 print(f"LAMMPS benchmark failed with {threads} threads")
-
-    # Benchmark socket calculator with different thread counts
-    if not args.skip_socket and args.model:
-        for threads in args.threads:
-            print("\n" + "-" * 60)
-            print(f"Benchmarking ACECalculator (socket, {threads} threads)...")
-            os.environ['JULIA_NUM_THREADS'] = str(threads)
-            socket_results = benchmark_socket_calculator(
-                args.model, structures, threads, args.iterations
-            )
-            if socket_results:
-                all_results[f"Socket ({threads}T)"] = socket_results
-                print_results(socket_results, f"ACECalculator (socket, {threads} threads)")
-            else:
-                print(f"Socket calculator failed with {threads} threads")
 
     # Benchmark native Julia with different thread counts
     if not args.skip_julia and args.model:
