@@ -51,6 +51,27 @@ julia --version
 Note that a Julia on `PATH` is not necessarily the one the calculators run --
 `ase_ace.server.julia_env()` reports the one juliapkg chose.
 
+One reason they differ is worth knowing before you go looking for a bug.  juliacall
+declares `OpenSSL_jll` as `"<=python"`, so the Julia it picks must not ship a newer
+OpenSSL than the one your Python is linked against -- otherwise the two OpenSSLs clash
+inside a single process.  juliapkg turns that into an extra *Julia* version bound and
+intersects it with the `~1.11, ~1.12` above.  A Python built against OpenSSL 3.0, which
+includes the CPython builds `uv` downloads, yields `1 - 1.11` and so pins you to Julia
+1.11 even with 1.12 on `PATH` and installed:
+
+```python
+>>> from juliapkg.deps import openssl_compat
+>>> import ssl; ssl.OPENSSL_VERSION
+'OpenSSL 3.0.15 3 Sep 2024'
+>>> openssl_compat()
+('3 - 3.0', '1 - 1.11')          # (OpenSSL_jll bound, implied Julia bound)
+```
+
+This is juliacall working correctly, not a misconfiguration, and the 1.11 environment it
+builds is fully supported.  If you specifically need Julia 1.12, use a Python linked
+against OpenSSL 3.5 or newer (most system Pythons are) and re-resolve.  To see the bound
+that actually applied, `juliapkg.deps.find_requirements()` returns the merged range.
+
 ### 2. Install ase-ace's Julia Packages
 
 `ase-ace` declares what it needs from Julia in **one** file, `src/ase_ace/juliapkg.json`
@@ -557,7 +578,11 @@ executable, project = julia_env()
   load; the list is read from `juliapkg.json`, not hardcoded
 - `setup_julia_environment(julia_executable, julia_project, verbose, update)` - Resolve the
   Julia environment via juliapkg.  Passing `julia_project` instantiates that project instead,
-  bypassing juliapkg
+  bypassing juliapkg.  Leave `update=False` (the default) unless you mean it: `update=True`
+  asks juliapkg for the newest compatible Julia *exactly*, so if juliaup has 1.11.7 but
+  1.11.9 is the latest, the juliaup copy no longer qualifies and juliapkg downloads a
+  second Julia (~385 MB) into `<prefix>/julia_env/pyjuliapkg`.  With the default, the same
+  environment resolves to the juliaup Julia already on disk and downloads nothing
 - `declared_julia_packages()` - The Julia packages named in the shipped `juliapkg.json`
 
 ## Running Tests

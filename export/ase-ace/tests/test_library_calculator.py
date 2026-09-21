@@ -7,7 +7,7 @@ Run with:
 Requires:
     - Compiled ACE library (.so file)
     - Set ACE_TEST_LIBRARY environment variable to library path
-    - pip install ase-ace[library]
+    - pip install ase-ace[lib]
 """
 
 import os
@@ -41,7 +41,7 @@ def library_calculator(library_path):
     try:
         from ase_ace import ACELibraryCalculator
     except ImportError:
-        pytest.skip("matscipy not installed. Run: pip install ase-ace[library]")
+        pytest.skip("matscipy not installed. Run: pip install ase-ace[lib]")
 
     return ACELibraryCalculator(library_path)
 
@@ -147,10 +147,17 @@ class TestLibraryInit:
 
     def test_init_missing_library(self):
         """Test that missing library raises FileNotFoundError."""
-        try:
-            from ase_ace import ACELibraryCalculator
-        except ImportError:
-            pytest.skip("matscipy not installed")
+        # Guard on HAS_MATSCIPY, not on the import.  `from ase_ace import
+        # ACELibraryCalculator` SUCCEEDS without matscipy -- the class is exported
+        # unconditionally and raises ImportError from __init__ instead -- so the
+        # `except ImportError` this used to sit behind never fired, and without
+        # matscipy the test failed with that ImportError rather than skipping.
+        from ase_ace.library_calculator import HAS_MATSCIPY
+
+        if not HAS_MATSCIPY:
+            pytest.skip("matscipy not installed. Run: pip install ase-ace[lib]")
+
+        from ase_ace import ACELibraryCalculator
 
         with pytest.raises(FileNotFoundError):
             ACELibraryCalculator('/nonexistent/libace.so')
