@@ -47,7 +47,7 @@ julia --version
 ```
 
 Note that a Julia on `PATH` is not necessarily the one the calculators run --
-`ase_ace.server.julia_env()` reports the one juliapkg chose.
+`ase_ace.julia_env.julia_env()` reports the one juliapkg chose.
 
 One reason they differ is worth knowing before you go looking for a bug.  juliacall
 declares `OpenSSL_jll` as `"<=python"`, so the Julia it picks must not ship a newer
@@ -96,7 +96,7 @@ re-resolves automatically whenever `juliapkg.json`, the Julia version, or the se
 To see what it chose:
 
 ```python
-from ase_ace.server import julia_env
+from ase_ace.julia_env import julia_env
 executable, project = julia_env()
 ```
 
@@ -176,7 +176,7 @@ so if it cannot -- a legible failure, and a better one than silently using an en
 without ACEpotentials in it.
 
 The same rule applies to `ase_ace.utils.check_julia_packages()`; it is implemented once, in
-`ase_ace.server.resolve_julia_env()`.
+`ase_ace.julia_env.resolve_julia_env()`.
 
 #### A note on the Julia version specifier
 
@@ -490,7 +490,7 @@ The `ase_ace.utils` module provides helper functions for Julia setup:
 
 ```python
 from ase_ace.utils import find_julia, check_julia_version, setup_julia_environment
-from ase_ace.server import julia_env
+from ase_ace.julia_env import julia_env
 
 # Find a Julia executable on PATH (not necessarily the one the calculators use)
 julia_path = find_julia()
@@ -507,7 +507,7 @@ executable, project = julia_env()
 
 **Available functions:**
 - `find_julia()` - Locate a Julia executable on `PATH`.  Note this is *not* what the
-  calculators run -- they use the Julia juliapkg resolved; see `ase_ace.server.julia_env()`
+  calculators run -- they use the Julia juliapkg resolved; see `ase_ace.julia_env.julia_env()`
 - `check_julia_version(julia_executable)` - Get Julia version as (major, minor, patch) tuple
 - `check_julia_packages(julia_executable, julia_project)` - Check that the declared packages
   load; the list is read from `juliapkg.json`, not hardcoded

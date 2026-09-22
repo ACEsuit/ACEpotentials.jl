@@ -7,7 +7,7 @@ This file grew a second job when the socket backend was folded onto juliapkg: it
 gate that keeps ase-ace's Julia dependencies declared in exactly ONE place.  See
 ``TestOneDependencyDeclaration`` at the bottom of tier 1.
 
-`ase_ace.server.get_julia_assets_path()` and `ase_ace.julia_calculator._INTERFACE_PATH` used
+`ase_ace.julia_env.get_julia_assets_path()` and `ase_ace.julia_calculator._INTERFACE_PATH` used
 to read
 
     Path(__file__).parent.parent.parent / "julia"
@@ -155,7 +155,7 @@ class TestPackageRelativeAssets:
 
     def test_julia_assets_path_is_inside_the_package(self):
         import ase_ace
-        from ase_ace.server import get_julia_assets_path
+        from ase_ace.julia_env import get_julia_assets_path
 
         package_dir = Path(ase_ace.__file__).resolve().parent
         assets = get_julia_assets_path().resolve()
@@ -403,7 +403,7 @@ def julia_driving_sources(root, use_git=True):
       * every ``.py`` under ``export/ase-ace/`` -- the package, its tests, its examples and
         its benchmarks.  NOT "every .py that imports juliacall or juliapkg": that narrower
         rule sounds right and misses ``benchmark_interfaces.py``, which reaches Julia through
-        ``ase_ace.server.julia_env()`` and imports neither, and whose Julia script carried an
+        ``ase_ace.julia_env.julia_env()`` and imports neither, and whose Julia script carried an
         undeclared ``using JSON`` for as long as nothing was looking.  A file that touches no
         Julia contributes no names, so breadth costs nothing here;
       * every workflow that drives this package -- see ``WORKFLOW_IN_SCOPE_RE``.
@@ -557,11 +557,11 @@ JULIAPKG_APIS_WE_CALL = {
     ),
     "executable": (
         lambda jp: callable(jp.executable),
-        "server.julia_env() calls it to pick the Julia both backends run",
+        "julia_env.julia_env() calls it to pick the Julia both backends run",
     ),
     "project": (
         lambda jp: callable(jp.project),
-        "server.julia_env() calls it to pick the environment both backends run in",
+        "julia_env.julia_env() calls it to pick the environment both backends run in",
     ),
     "deps.find_requirements": (
         lambda jp: callable(jp.deps.find_requirements),
@@ -930,7 +930,7 @@ class TestOneDependencyDeclaration:
         having installed none of ase-ace's packages.  This is the gate on that not coming
         back, and it needs no Julia: `julia_env` is stubbed.
         """
-        from ase_ace import server, utils
+        from ase_ace import julia_env as julia_env_mod, utils
 
         calls = []
 
@@ -938,21 +938,21 @@ class TestOneDependencyDeclaration:
             calls.append("resolved")
             return ("/juliapkg/julia", "/juliapkg/project")
 
-        monkeypatch.setattr(server, "julia_env", fake_julia_env)
+        monkeypatch.setattr(julia_env_mod, "julia_env", fake_julia_env)
 
         # 1. neither: juliapkg decides both.
-        assert server.resolve_julia_env() == ("/juliapkg/julia", "/juliapkg/project")
+        assert julia_env_mod.resolve_julia_env() == ("/juliapkg/julia", "/juliapkg/project")
         # 2. executable only: OVERRIDE -- their Julia, juliapkg's project.  Not "no project".
-        assert server.resolve_julia_env("/my/julia", None) == (
+        assert julia_env_mod.resolve_julia_env("/my/julia", None) == (
             "/my/julia",
             "/juliapkg/project",
         )
         # 3. project only: FULL BYPASS -- juliapkg is not consulted at all.
         before = len(calls)
-        assert server.resolve_julia_env(None, "/my/proj") == ("julia", "/my/proj")
+        assert julia_env_mod.resolve_julia_env(None, "/my/proj") == ("julia", "/my/proj")
         assert len(calls) == before, "a named project must cost no juliapkg resolve"
         # 4. both: full bypass, both honoured.
-        assert server.resolve_julia_env("/my/julia", "/my/proj") == (
+        assert julia_env_mod.resolve_julia_env("/my/julia", "/my/proj") == (
             "/my/julia",
             "/my/proj",
         )
@@ -961,12 +961,12 @@ class TestOneDependencyDeclaration:
         # that stops anything running Julia in an environment nobody chose.  "" is in the
         # list because JuliaACEServer.__init__ stores the project with a truthiness test
         # while this function keys on `is not None`; without normalisation the two entry
-        # points disagreed, and `julia_project=""` meant "unset" through the server but a
+        # points disagreed, and `julia_project=""` meant "unset" through julia_env but a
         # bypass emitting a bare `--project=` through a direct call.
         for exe, proj in [(None, None), ("/my/julia", None), (None, "/my/proj"),
                           ("/my/julia", "/my/proj"), ("", ""), (None, ""), ("", None)]:
-            assert server.resolve_julia_env(exe, proj)[1] not in (None, "")
-        assert server.resolve_julia_env("", "") == ("/juliapkg/julia", "/juliapkg/project")
+            assert julia_env_mod.resolve_julia_env(exe, proj)[1] not in (None, "")
+        assert julia_env_mod.resolve_julia_env("", "") == ("/juliapkg/julia", "/juliapkg/project")
 
         # ...and the two consumers route through that one function rather than reimplementing
         # it.  `JuliaACEServer` resolves in start(), not __init__.
@@ -1273,7 +1273,7 @@ class TestBuiltWheel:
             "ase_ace/calculator.py",
             "ase_ace/julia_calculator.py",
             "ase_ace/library_calculator.py",
-            "ase_ace/server.py",
+            "ase_ace/julia_env.py",
             "ase_ace/utils.py",
             "ase_ace/juliapkg.json",
             "ase_ace-0.1.0.dist-info/METADATA",
@@ -1426,7 +1426,7 @@ class TestNonEditableInstall:
 import json  # gate-A-negative: this block is Python for a subprocess, not Julia
 from pathlib import Path
 import ase_ace  # gate-A-negative: this block is Python for a subprocess, not Julia
-from ase_ace.server import get_julia_assets_path
+from ase_ace.julia_env import get_julia_assets_path
 from ase_ace.julia_calculator import _INTERFACE_PATH
 from juliapkg.deps import deps_files, find_requirements
 

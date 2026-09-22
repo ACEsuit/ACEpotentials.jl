@@ -188,7 +188,7 @@ def create_test_model(output_path: str = None):
     # The fourth form does not depend on that at all -- it goes through ACEpotentials' own
     # `using ACEfit` binding, which exists whatever ACEpotentials exports.  So it is the one
     # used here.
-    from ase_ace.server import julia_env
+    from ase_ace.julia_env import julia_env
 
     julia_executable, julia_project = julia_env()
 

@@ -21,7 +21,7 @@ import numpy as np
 from ase.calculators.calculator import all_changes
 
 from .base import ACECalculatorBase
-from .server import get_julia_assets_path
+from .julia_env import get_julia_assets_path
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class ACEJuliaCalculator(ACECalculatorBase):
         # cannot write, this line raises `PermissionError: [Errno 13] ...` -- an OSError.
         # Catching only ImportError let that escape bare, with no mention of
         # PYTHON_JULIAPKG_PROJECT, the container recipe, or the README: exactly the
-        # experience server.julia_env()'s wrapper exists to prevent, reappearing on the
+        # experience julia_env.julia_env()'s wrapper exists to prevent, reappearing on the
         # backend that does not go through it.  Both backends now produce the same message
         # from the same function.
         try:
@@ -125,7 +125,7 @@ class ACEJuliaCalculator(ACECalculatorBase):
                 "juliacall not installed. Install with: pip install ase-ace[julia]"
             ) from None
         except OSError as e:
-            from .server import juliapkg_environment_error
+            from .julia_env import juliapkg_environment_error
 
             raise juliapkg_environment_error(e) from e
 

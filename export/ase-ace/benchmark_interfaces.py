@@ -182,7 +182,7 @@ def benchmark_native_julia(model_path, structures, num_threads, n_iterations=5):
 
     # Run the Julia benchmark in the same environment the calculators use, rather than in
     # whatever project happens to be next to this script in a source checkout.
-    from ase_ace.server import julia_env
+    from ase_ace.julia_env import julia_env
 
     julia_executable, julia_project = julia_env()
 

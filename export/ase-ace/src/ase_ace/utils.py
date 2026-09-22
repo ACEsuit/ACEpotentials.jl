@@ -17,7 +17,7 @@ def find_julia() -> Optional[str]:
     Find a Julia executable on ``PATH``.
 
     This is *not* what the calculators run.  They use the Julia that juliapkg resolved
-    against this package's ``juliapkg.json`` (``ase_ace.server.julia_env()``), which may be
+    against this package's ``juliapkg.json`` (``ase_ace.julia_env.julia_env()``), which may be
     a different build entirely -- a juliaup channel, or one juliapkg downloaded.  This
     function is here for the "is there a Julia on this machine at all?" question.
 
@@ -91,7 +91,7 @@ def check_julia_packages(
         overrides only the executable.
     julia_project : str, optional
         Path to a Julia project directory.  Defaults to the one juliapkg manages; naming one
-        bypasses juliapkg.  See ``ase_ace.server.resolve_julia_env``.
+        bypasses juliapkg.  See ``ase_ace.julia_env.resolve_julia_env``.
 
     Returns
     -------
@@ -99,10 +99,10 @@ def check_julia_packages(
         ``{package_name: bool}`` for every package in ``juliapkg.json``.
     """
     # One rule for these two arguments, shared with JuliaACEServer and
-    # setup_julia_environment: server.resolve_julia_env() is the single implementation, so
+    # setup_julia_environment: julia_env.resolve_julia_env() is the single implementation, so
     # the three cannot drift.  It always returns a concrete project, so the loop below can
     # always pass --project.
-    from .server import resolve_julia_env
+    from .julia_env import resolve_julia_env
 
     julia_executable, julia_project = resolve_julia_env(julia_executable, julia_project)
 
@@ -215,7 +215,7 @@ def setup_julia_environment(
             return False
 
     # The normal path: one environment, declared in one file, managed by juliapkg.
-    from .server import juliapkg_environment_error
+    from .julia_env import juliapkg_environment_error
 
     try:
         import juliapkg
@@ -243,7 +243,7 @@ def setup_julia_environment(
         logging.basicConfig()
         logging.getLogger("juliapkg").setLevel(logging.INFO)
 
-    # resolve() directly, rather than calling server.julia_env() first: julia_env() resolves
+    # resolve() directly, rather than calling julia_env.julia_env() first: it resolves
     # too, so the pre-flight version made a cold machine install Julia and the declared packages
     # and *then* do it again under force=True.  The actionable message comes from the same
     # place either way.

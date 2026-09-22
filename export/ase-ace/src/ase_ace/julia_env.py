@@ -7,8 +7,12 @@ was removed; what remains here is the juliapkg plumbing the juliacall backend an
 ``utils`` depend on -- :func:`julia_env`, :func:`resolve_julia_env`,
 :func:`get_julia_assets_path` and :func:`juliapkg_environment_error`.
 
-The module keeps its name so the removal stays a deletion rather than a rename
-touching every import; it is a candidate for renaming to ``julia_env`` later.
+It was called ``server.py`` while it managed that subprocess; the name outlived the
+thing it described, so it is now ``julia_env``.
+
+Note the module and one of its functions share a name.  ``from ase_ace.julia_env
+import julia_env`` is fine, but binding that function at package level would shadow
+the module, so ``__init__`` deliberately imports neither.
 """
 
 import os
@@ -19,16 +23,12 @@ from typing import Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
-# What the driver prints immediately before it connects back to us.  ace_driver.jl logs
-# `@info "Connecting to Unix socket"` / `"Connecting to TCP socket"`, and Julia's logging
-# goes to stderr.  This is the only readiness signal available from outside the process:
-# we are the i-PI *server* here, so the driver is the client and the accept happens later,
-# inside SocketIOCalculator, on the first calculation.
+
 def get_julia_assets_path() -> Path:
     """
     Directory of the Julia *source files* shipped inside this package.
 
-    These are scripts -- ``ace_driver.jl`` and ``python_interface.jl`` -- and nothing else.
+    These are scripts -- ``python_interface.jl`` -- and nothing else.
     This directory used to also hold a ``Project.toml``, so one function answered two
     questions at once: "where is the code?" and "what do I pass to ``--project``?".  Those
     have different answers now.  The code ships in the wheel; the *environment* is created
@@ -39,7 +39,7 @@ def get_julia_assets_path() -> Path:
     install and in a wheel alike.  It previously read
     ``Path(__file__).parent.parent.parent / "julia"`` -- the source-checkout layout
     ``export/ase-ace/julia/`` -- which from ``site-packages/ase_ace/`` resolved to
-    ``<prefix>/lib/pythonX.Y/julia`` and did not exist.  Both Julia-backed calculators were
+    ``<prefix>/lib/pythonX.Y/julia`` and did not exist.  The Julia-backed calculator was
     therefore broken in every non-editable install; only editable installs were ever tested.
     tests/test_packaging.py installs a built wheel and asserts these assets resolve.
     """
@@ -59,7 +59,7 @@ def get_julia_project_path() -> Path:
     user code.
     """
     warnings.warn(
-        "ase_ace.server.get_julia_project_path() is deprecated and will be removed in a "
+        "ase_ace.julia_env.get_julia_project_path() is deprecated and will be removed in a "
         "future release.  It now returns only the directory of the shipped Julia scripts: "
         "use get_julia_assets_path() for that, or julia_env() for the (executable, project) "
         "pair the calculators actually run.",
@@ -212,7 +212,7 @@ def resolve_julia_env(
     # Normalise "" (and any other falsy value) to None FIRST, so that every entry point
     # agrees on what "unset" means.  JuliaACEServer.__init__ stores
     # `Path(julia_project) if julia_project else None` -- a truthiness test -- so without
-    # this line `julia_project=""` was "unset" through the server but a full bypass emitting
+    # this line `julia_project=""` was "unset" through this module but a full bypass emitting
     # a bare `--project=` through a direct call here or through check_julia_packages.
     # Unrealistic input, but two entry points disagreeing about one rule is the thing this
     # function exists to prevent.
