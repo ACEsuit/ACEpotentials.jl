@@ -15,9 +15,9 @@ to read
 From ``export/ase-ace/src/ase_ace/`` that is ``export/ase-ace/julia/`` -- correct, but only
 while the repository is on disk.  The wheel ships ``src/ase_ace`` and nothing else, so from
 ``site-packages/ase_ace/`` the identical expression climbed out to
-``<prefix>/lib/pythonX.Y/julia``, which does not exist.  Two of the three calculators
-(``ACEJuliaCalculator``, JuliaCall, and ``ACELibraryCalculator``) could therefore never
-work from a ``pip install ase-ace``; only ``ACELibraryCalculator``, which takes an explicit
+``<prefix>/lib/pythonX.Y/julia``, which does not exist.  The Julia-backed calculators
+could therefore never work from a ``pip install ase-ace``; only ``ACELibraryCalculator``,
+which takes an explicit
 path to a ``.so``, was unaffected.
 
 The defect survived the package's entire life because **every** CI job installs it with
@@ -557,11 +557,11 @@ JULIAPKG_APIS_WE_CALL = {
     ),
     "executable": (
         lambda jp: callable(jp.executable),
-        "julia_env.julia_env() calls it to pick the Julia both backends run",
+        "julia_env.julia_env() calls it to pick the Julia the JuliaCall backend runs",
     ),
     "project": (
         lambda jp: callable(jp.project),
-        "julia_env.julia_env() calls it to pick the environment both backends run in",
+        "julia_env.julia_env() calls it to pick the environment the JuliaCall backend runs in",
     ),
     "deps.find_requirements": (
         lambda jp: callable(jp.deps.find_requirements),

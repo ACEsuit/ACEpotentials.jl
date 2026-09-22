@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 # `Path(__file__).parent.parent.parent / "julia"`, which is `export/ase-ace/julia` from
 # `export/ase-ace/src/ase_ace` and therefore correct only when the repository is on disk.  The
 # wheel ships `src/ase_ace` alone, so from `site-packages/ase_ace` the same expression climbed
-# out to `<prefix>/lib/pythonX.Y/julia`, which does not exist: the JuliaCall and socket
-# backends were both dead in any non-editable install.  Every CI job installs this package
+# out to `<prefix>/lib/pythonX.Y/julia`, which does not exist: the JuliaCall backend
+# (and the socket backend, since removed) were dead in any non-editable install.  Every CI job installs this package
 # with `pip install -e`, which is why it was never seen.  See tests/test_packaging.py.
 #
 # This backend never passed a `--project`: juliacall has always run in juliapkg's
-# environment, which is why it was already correct.  Now that the socket backend asks
-# juliapkg too, the two genuinely share one environment declared in one file.
+# environment, which is why it was already correct.  It is now the only Julia backend,
+# and juliapkg.json is the one file declaring the environment it runs in.
 _INTERFACE_PATH = get_julia_assets_path() / "python_interface.jl"
 
 
@@ -116,7 +116,7 @@ class ACEJuliaCalculator(ACECalculatorBase):
         # Catching only ImportError let that escape bare, with no mention of
         # PYTHON_JULIAPKG_PROJECT, the container recipe, or the README: exactly the
         # experience julia_env.julia_env()'s wrapper exists to prevent, reappearing on the
-        # backend that does not go through it.  Both backends now produce the same message
+        # backend that does not go through it.  Every Julia path now produces the same message
         # from the same function.
         try:
             from juliacall import Main as jl

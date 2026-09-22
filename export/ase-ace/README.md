@@ -2,7 +2,7 @@
 
 ASE calculators for ACE (Atomic Cluster Expansion) potentials.
 
-This package provides three ASE-compatible calculators for ACE potentials:
+This package provides two ASE-compatible calculators for ACE potentials:
 
 | Calculator | Backend | Threading | Startup | Julia Required |
 |------------|---------|-----------|---------|----------------|

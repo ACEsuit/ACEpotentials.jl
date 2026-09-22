@@ -68,8 +68,8 @@ def declared_julia_packages() -> list:
     The Julia packages this package declares, read from the shipped ``juliapkg.json``.
 
     Derived rather than hardcoded on purpose.  A literal list here would be a *second* copy
-    of the dependency set, and the whole point of folding the socket backend onto juliapkg
-    was that two copies of that set had silently drifted apart: one said ACEfit and no
+    of the dependency set, and the whole point of folding the (since removed) socket backend
+    onto juliapkg was that two copies of that set had silently drifted apart: one said ACEfit and no
     ArgParse, the other said ArgParse and no AtomsCalculators, and nothing compared them.
     """
     decl = Path(__file__).parent / "juliapkg.json"

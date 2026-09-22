@@ -2,7 +2,7 @@
 ACE Calculator using compiled Julia shared library.
 
 This module provides an ASE calculator that uses a pre-compiled ACE potential
-shared library (.so file) instead of running Julia via sockets. This approach:
+shared library (.so file) instead of running Julia via JuliaCall. This approach:
 - Has instant startup (no JIT compilation)
 - Requires a deployment package created by ACEpotentials.jl
 - No Julia installation needed at runtime

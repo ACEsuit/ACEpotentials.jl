@@ -153,7 +153,7 @@ def julia_env() -> Tuple[str, str]:
     except ImportError:
         raise ImportError(
             "juliapkg is required to locate the Julia environment for ase-ace's "
-            "Julia-backed calculators.  It is a base dependency of ase-ace; reinstall "
+            "Julia-backed calculator.  It is a base dependency of ase-ace; reinstall "
             "with `pip install ase-ace`, or pass julia_executable= and julia_project= "
             "explicitly to bypass juliapkg entirely."
         ) from None
@@ -186,11 +186,12 @@ def resolve_julia_env(
 
     Why the split is asymmetric rather than "either argument bypasses".  That rule was
     tried and was worse: naming only an executable then meant *no project at all*, so
-    ``ACECalculator(julia_executable=...)`` ran the driver in Julia's default global
+    the socket backend (since removed) ran its driver in Julia's default global
     environment -- where ACEpotentials is not installed -- and
     ``setup_julia_environment(julia_executable=...)`` ran ``Pkg.instantiate()`` against that
     same global environment and returned ``True`` having installed none of ase-ace's
-    declared packages.  Consistency across the three modules is worth having; consistency
+    declared packages.  Consistency across the modules that take these arguments is worth
+    having; consistency
     that writes to a shared environment and reports success for achieving nothing is not.
 
     A project, by contrast, IS a complete answer on its own -- "use this environment I

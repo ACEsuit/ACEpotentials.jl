@@ -19,7 +19,6 @@ class ACECalculatorBase(Calculator, ABC):
     Provides a unified API across different backends:
     - ACELibraryCalculator (compiled .so via ctypes) - full support
     - ACEJuliaCalculator (JuliaCall) - full support
-    - ACECalculator (socket-based) - energy/forces/stress only, no descriptors
 
     Subclasses must implement the abstract properties and methods.
 

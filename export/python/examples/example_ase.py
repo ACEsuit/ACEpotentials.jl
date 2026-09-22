@@ -20,7 +20,7 @@ Requires:
 
 import os
 import sys
-from ase_ace import ACELibraryCalculator as ACECalculator
+from ase_ace import ACELibraryCalculator
 from ase.build import bulk
 from ase.optimize import BFGS
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
@@ -45,7 +45,7 @@ def main():
 
     # Load the ACE potential
     print(f"\nLoading ACE potential from: {lib_path}")
-    calc = ACECalculator(lib_path)
+    calc = ACELibraryCalculator(lib_path)
 
     # Print model information
     print(f"  Cutoff: {calc.cutoff:.2f} Å")
