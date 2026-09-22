@@ -13,6 +13,8 @@ Or manually:
 """
 
 import os
+import sys
+import warnings
 import logging
 from pathlib import Path
 from typing import Optional, Union, List, Dict
@@ -105,6 +107,38 @@ class ACEJuliaCalculator(ACECalculatorBase):
         if num_threads == 'auto':
             num_threads = os.cpu_count() or 1
         os.environ['JULIA_NUM_THREADS'] = str(num_threads)
+
+        # ... and, above one thread, let Julia install its signal handlers, for the same
+        # reason and in the same window: juliacall reads this at import.
+        #
+        # Without it a multi-threaded juliacall SEGFAULTS -- exit 139, no traceback, no
+        # message a user can act on.  Measured on this package's own test model: one thread
+        # returns an energy, two threads die.  juliacall warns about it, but the warning
+        # arrives on stderr from an already-doomed process and says "restart Python", which
+        # is not something a caller several frames down can do.
+        #
+        # It is NOT set unconditionally, because it is not free: Julia takes over SIGINT, so
+        # Ctrl-C stops raising KeyboardInterrupt.  Single-threaded callers do not have the
+        # crash and should not pay that.  setdefault, so an explicit choice by the caller --
+        # including "no" -- still wins.
+        if int(num_threads) > 1:
+            os.environ.setdefault('PYTHON_JULIACALL_HANDLE_SIGNALS', 'yes')
+
+            # Too late if something else already started Julia.  Say so plainly rather than
+            # letting the process segfault later with no explanation.
+            if (
+                'juliacall' in sys.modules
+                and os.environ.get('PYTHON_JULIACALL_HANDLE_SIGNALS') != 'yes'
+            ):
+                warnings.warn(
+                    "juliacall was imported before ase-ace could set "
+                    "PYTHON_JULIACALL_HANDLE_SIGNALS=yes, and Julia is running with "
+                    f"{num_threads} threads.  Multi-threaded juliacall is liable to segfault "
+                    "in this configuration.  Set PYTHON_JULIACALL_HANDLE_SIGNALS=yes in the "
+                    "environment before starting Python, or use num_threads=1.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
 
         logger.info(f"Initializing Julia with {num_threads} threads...")
 

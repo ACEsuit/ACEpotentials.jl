@@ -418,3 +418,84 @@ class TestLibraryConsistency:
             D_julia, D_lib, rtol=1e-10,
             err_msg="JuliaCall and Library descriptors differ"
         )
+
+
+class TestMultithreadedSignalHandling:
+    """
+    Multi-threaded juliacall segfaults unless Julia may install its signal handlers.
+
+    Measured on this package's test model before the guard existed: num_threads=1 returned
+    an energy, num_threads=2 exited 139 with no traceback.  juliacall does warn -- "It is
+    recommended to restart Python with the environment variable
+    PYTHON_JULIACALL_HANDLE_SIGNALS=yes set, otherwise you may experience segfaults" -- but
+    the warning reaches stderr from a process that is already doomed, and "restart Python"
+    is not available to a caller several frames down.  _init_julia sets it before importing
+    juliacall, in the same window it already uses for JULIA_NUM_THREADS.
+
+    The whole ase-ace suite was exposed to this: every previous green run happened to have
+    the variable exported, and a run without it segfaulted mid-file.
+    """
+
+    def test_guard_is_conditional_and_does_not_override(self):
+        """
+        Offline. The guard must stay conditional and must not overwrite a caller's choice.
+
+        Setting it unconditionally is not free -- Julia takes over SIGINT, so Ctrl-C stops
+        raising KeyboardInterrupt -- and single-threaded callers do not have the crash.
+        """
+        import inspect
+        from ase_ace.julia_calculator import ACEJuliaCalculator
+
+        src = inspect.getsource(ACEJuliaCalculator._init_julia)
+        assert "PYTHON_JULIACALL_HANDLE_SIGNALS" in src, (
+            "the multi-threaded segfault guard is gone from _init_julia"
+        )
+        assert "setdefault" in src, (
+            "the guard must use setdefault so an explicit caller choice, including 'no', wins"
+        )
+        assert "> 1" in src, (
+            "the guard must stay conditional on the thread count: forcing it single-threaded "
+            "would take SIGINT away from callers who never had the crash"
+        )
+
+    @pytest.mark.skipif(
+        os.environ.get("ACE_TEST_JULIA") != "1",
+        reason="set ACE_TEST_JULIA=1 to start Julia in a subprocess",
+    )
+    def test_multithreaded_calculation_survives_without_the_variable(self, model_path):
+        """
+        The regression itself: two threads, variable absent from the environment.
+
+        Runs in a SUBPROCESS with PYTHON_JULIACALL_HANDLE_SIGNALS unset, so the result does
+        not depend on how this suite happened to be invoked -- which is exactly what hid the
+        crash before.
+        """
+        import subprocess
+        import sys
+        import textwrap
+
+        env = dict(os.environ)
+        env.pop("PYTHON_JULIACALL_HANDLE_SIGNALS", None)
+
+        script = textwrap.dedent(
+            """
+            from ase.build import bulk
+            from ase_ace import ACEJuliaCalculator
+            atoms = bulk('Si', 'diamond', a=5.43)
+            atoms.calc = ACEJuliaCalculator(MODEL, num_threads=2)
+            print('ENERGY', atoms.get_potential_energy())
+            """
+        ).replace("MODEL", repr(model_path))
+
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            env=env, capture_output=True, text=True, timeout=900,
+        )
+        assert proc.returncode == 0, (
+            f"multi-threaded juliacall exited {proc.returncode} with "
+            f"PYTHON_JULIACALL_HANDLE_SIGNALS unset -- the bug this guards.  A segfault "
+            f"shows up here as -11 (subprocess reports the signal) and as 139 from a "
+            f"shell (128+11).\n"
+            f"stdout: {proc.stdout[-500:]}\nstderr: {proc.stderr[-1500:]}"
+        )
+        assert "ENERGY" in proc.stdout
