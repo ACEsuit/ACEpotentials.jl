@@ -1,0 +1,247 @@
+
+====================================================================================================
+generator parity reference: EXPORT_REF_SHA=b826c831  ->  b826c831  "export/bench: summarise_rows.py applies its exclusions instead of printing them"
+relative tolerance 1.0e-13 (energy and forces, every case; the virial too except on TiAl, where its conditioning sets 3e-13 -- see virial_tol), export gate 1.0e-12
+====================================================================================================
+WARNING: Detected access to binding `Gen_b826c831.export_ace_model` in a world prior to its definition world.
+  Julia 1.12 has introduced more strict world age semantics for global bindings.
+  !!! This code may malfunction under Revise.
+  !!! This code will error in future versions of Julia.
+Hint: Add an appropriate `invokelatest` around the access to this binding.
+To make this warning an error, and hence obtain a stack trace, use `julia --depwarn=error`.
+[cantor_poly] generated source: ref 0.35 MB, new 0.35 MB (1.00x)
+[cantor_poly] generator parity vs b826c831
+    relative:  dE 0.000e+00   dF 0.000e+00   dV 0.000e+00   (tol 1e-13; virial tol 1e-13)
+    absolute:  dE 0.000e+00 eV   dF 0.000e+00 eV/Å   dV 0.000e+00 eV
+    bit-identical on every configuration: true
+cantor_poly NEW vs its reference calculator:
+    max|dE|/atom = 1.6579330501069005e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.8398660046026005e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.557272829207553e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 7.474909580196254e-12 eV   [absolute; reported only, never gated]
+[cantor_h50] generated source: ref 1.09 MB, new 1.09 MB (1.00x)
+[cantor_h50] generator parity vs b826c831
+    relative:  dE 0.000e+00   dF 0.000e+00   dV 0.000e+00   (tol 1e-13; virial tol 1e-13)
+    absolute:  dE 0.000e+00 eV   dF 0.000e+00 eV/Å   dV 0.000e+00 eV
+    bit-identical on every configuration: true
+cantor_h50 NEW vs its reference calculator:
+    max|dE|/atom = 1.8947806286936004e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.9308751233658214e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.794120407794253e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 8.611777957412414e-12 eV   [absolute; reported only, never gated]
+[tial_poly] generated source: ref 0.50 MB, new 0.50 MB (1.00x)
+[tial_poly] generator parity vs b826c831
+    relative:  dE 0.000e+00   dF 0.000e+00   dV 0.000e+00   (tol 1e-13; virial tol 3e-13)
+    absolute:  dE 0.000e+00 eV   dF 0.000e+00 eV/Å   dV 0.000e+00 eV
+    bit-identical on every configuration: true
+tial_poly NEW vs its reference calculator:
+    max|dE|/atom = 2.2737367544323206e-13 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 5.798960131720724e-13 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 6.927791673660977e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 8.86757334228605e-11 eV   [absolute; reported only, never gated]
+[tial_h50] generated source: ref 0.76 MB, new 0.76 MB (1.00x)
+[tial_h50] generator parity vs b826c831
+    relative:  dE 0.000e+00   dF 0.000e+00   dV 0.000e+00   (tol 1e-13; virial tol 3e-13)
+    absolute:  dE 0.000e+00 eV   dF 0.000e+00 eV/Å   dV 0.000e+00 eV
+    bit-identical on every configuration: true
+tial_h50 NEW vs its reference calculator:
+    max|dE|/atom = 2.6947991163642317e-13 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 5.357271890211858e-13 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 7.379117892856744e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 8.606093615526333e-11 eV   [absolute; reported only, never gated]
+[dense_poly] generated source: ref 0.06 MB, new 0.06 MB (1.00x)
+[dense_poly] generator parity vs b826c831
+    relative:  dE 0.000e+00   dF 0.000e+00   dV 0.000e+00   (tol 1e-13; virial tol 1e-13)
+    absolute:  dE 0.000e+00 eV   dF 0.000e+00 eV/Å   dV 0.000e+00 eV
+    bit-identical on every configuration: true
+dense_poly NEW vs its reference calculator:
+    max|dE|/atom = 2.105311809659556e-15 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 7.280896430443987e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 2.8632240611369964e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 1.546140993013978e-11 eV   [absolute; reported only, never gated]
+[dense_h50] generated source: ref 0.18 MB, new 0.18 MB (1.00x)
+[dense_h50] generator parity vs b826c831
+    relative:  dE 0.000e+00   dF 0.000e+00   dV 0.000e+00   (tol 1e-13; virial tol 1e-13)
+    absolute:  dE 0.000e+00 eV   dF 0.000e+00 eV/Å   dV 0.000e+00 eV
+    bit-identical on every configuration: true
+dense_h50 NEW vs its reference calculator:
+    max|dE|/atom = 4.210623619319112e-15 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 8.046720021259634e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 4.715898453637405e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 2.546585164964199e-11 eV   [absolute; reported only, never gated]
+[ Info: generator at b826c831 does not contain symmprod_dag.jl -- skipped
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/cantor_poly_ref.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/cantor_poly_new.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/cantor_h50_ref.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/cantor_h50_new.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/tial_poly_ref.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/tial_poly_new.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/tial_h50_ref.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/tial_h50_new.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1.1
+└      13 => -2.2
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/dense_poly_ref.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1.1
+└      13 => -2.2
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/dense_poly_new.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1.1
+└      13 => -2.2
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/dense_h50_ref.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1.1
+└      13 => -2.2
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/parity/dense_h50_new.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/cantor_poly_ref.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/cantor_poly_new.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/cantor_h50_ref.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/cantor_h50_new.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/tial_poly_ref.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/tial_poly_new.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/tial_h50_ref.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 2 entries:
+│      22 => -1586.02
+└      13 => -105.595
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/bytecmp/tial_h50_new.jl (radial_basis=hermite_spline)
+Test Summary:                 | Pass  Total     Time
+generator parity vs b826c831  |   39     39  3m17.1s
+  cantor_poly (polynomial)    |    7      7    56.1s
+  cantor_h50 (hermite_spline) |    6      6    24.2s
+  tial_poly (polynomial)      |    7      7    23.9s
+  tial_h50 (hermite_spline)   |    6      6    18.5s
+  dense_poly (polynomial)     |    7      7     9.7s
+  dense_h50 (hermite_spline)  |    6      6     7.2s
+
+bytecmp_generator.jl -- shipped default vs b826c831, for_library = true
+
+cantor_poly  ref   383506 B   new   383506 B   BYTE-IDENTICAL: true
+             EXPORT_BUILD_ID ref 0x2cfebebf9f5051cb  new 0x2cfebebf9f5051cb  (unchanged)
+cantor_h50   ref  1155635 B   new  1155635 B   BYTE-IDENTICAL: true
+             EXPORT_BUILD_ID ref 0x458694e923788530  new 0x458694e923788530  (unchanged)
+tial_poly    ref   541808 B   new   541808 B   BYTE-IDENTICAL: true
+             EXPORT_BUILD_ID ref 0x06bb278d69cdd0f8  new 0x06bb278d69cdd0f8  (unchanged)
+tial_h50     ref   815456 B   new   815456 B   BYTE-IDENTICAL: true
+             EXPORT_BUILD_ID ref 0xf5e57a140fc3069b  new 0xf5e57a140fc3069b  (unchanged)
+
+ALL FOUR MODELS BYTE-IDENTICAL, EXPORT_BUILD_ID UNCHANGED vs b826c831.

@@ -1,0 +1,13 @@
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_ws_poly.jl (radial_basis=polynomial)
+threaded (4 tasks, 4 threads) vs serial over 48 sites: 0 site(s) differ (must be 0, bitwise); max|dE| = 0.0, max|dF| = 0.0, max|dV| = 0.0
+one re-used workspace vs one per call: max|dE| = 0.0, forces identical: true, virials identical: true
+Test Summary:                          | Pass  Total   Time
+workspace API: re-entrant and cap-free |   10     10  48.7s

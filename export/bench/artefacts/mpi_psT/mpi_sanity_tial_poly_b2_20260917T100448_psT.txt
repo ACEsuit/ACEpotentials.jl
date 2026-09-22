@@ -1,0 +1,7 @@
+# ps -T census of the 4 ranks, MPI_BIND='--bind-to core --map-by core', 2026-09-17 10:04:48
+# loadavg 2.12 0.79 0.74 2/668 611213
+pid 611217: 5 thread(s)  cores:   0  16  16  16  16 
+pid 611218: 5 thread(s)  cores:  17   1   1   1   1 
+pid 611219: 5 thread(s)  cores:   2  18  18  18  18 
+pid 611220: 5 thread(s)  cores:  19   3   3   3   3 
+# (a count of 0 means the run had already finished -- take more steps)
