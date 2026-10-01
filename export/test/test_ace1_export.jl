@@ -97,6 +97,78 @@ function a1_asym_pairbasis(pb)
                                   pb.rin0cuts, pb.spec; Winit = :onehot)
 end
 
+"Whether `lib` exists and was compiled from `src` (build stamp, read out of process)."
+function a1_library_in_step(lib, src)
+    isfile(lib) || return (false, "no library at $lib")
+    Sys.which("python3") === nothing && return (false, "no python3 to read its build id")
+    want = export_build_id(src)
+    got = library_build_id(lib, ace_runtime_env(dirname(lib)))
+    got === nothing && return (false, "$(basename(lib)) exports no ace_build_id()")
+    got == want || return (false, "$(basename(lib)) was compiled from a different " *
+                                  "$(basename(src)) -- recompile it")
+    return (true, "build id 0x$(string(want; base = 16)) matches")
+end
+
+"""
+    a1_library_vs_module(lib, ex, held, rcut) -> (dE, dF, dV)
+
+Every site of `held` through the compiled library's `ace_site_energy_forces_virial` (in a
+python3/ctypes subprocess) and through the in-process module `ex`; the maximum per-site
+absolute differences of the site energy, the neighbour forces and the Voigt virial.
+"""
+function a1_library_vs_module(lib, ex, held, rcut)
+    sites = reduce(vcat, site_sets(held, rcut))
+    dir = mktempdir()
+    fin, fout = joinpath(dir, "sites.bin"), joinpath(dir, "out.bin")
+    open(fin, "w") do io
+        write(io, Int64(length(sites)))
+        for (Rs, Zs, Z0, _) in sites
+            write(io, Int64(Z0), Int64(length(Rs)))
+            write(io, Int32.(Zs))
+            write(io, reinterpret(Float64, Rs))
+        end
+    end
+    script = """
+import ctypes, sys, numpy as np
+lib = ctypes.CDLL(sys.argv[1])
+lib.ace_workspace_new.restype = ctypes.c_void_p
+lib.ace_site_energy_forces_virial.restype = ctypes.c_double
+dp = ctypes.POINTER(ctypes.c_double); ip = ctypes.POINTER(ctypes.c_int)
+lib.ace_site_energy_forces_virial.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
+                                              ip, dp, dp, dp]
+ws = lib.ace_workspace_new()
+buf = open(sys.argv[2], 'rb').read(); off = 0
+def take(dt, n):
+    global off
+    a = np.frombuffer(buf, dtype=dt, count=n, offset=off); off += a.nbytes; return a
+out = []
+for _ in range(int(take(np.int64, 1)[0])):
+    z0, n = (int(v) for v in take(np.int64, 2))
+    Z = np.ascontiguousarray(take(np.int32, n)); R = np.ascontiguousarray(take(np.float64, 3 * n))
+    F = np.zeros(3 * n); V = np.zeros(6)
+    E = lib.ace_site_energy_forces_virial(ws, z0, n, Z.ctypes.data_as(ip), R.ctypes.data_as(dp),
+                                          F.ctypes.data_as(dp), V.ctypes.data_as(dp))
+    out += [np.array([E]), F, V]
+np.concatenate(out).tofile(sys.argv[3])
+"""
+    run(setenv(`python3 -c $script $lib $fin $fout`, ace_runtime_env(dirname(lib))))
+    got = reinterpret(Float64, read(fout))
+    dE = dF = dV = 0.0
+    off = 0
+    for (Rs, Zs, Z0, _) in sites
+        n = length(Rs)
+        E, F, V = Base.invokelatest(ex.site_energy_forces_virial, Rs, Zs, Z0)
+        Fl = reshape(got[off+2:off+1+3n], 3, n)
+        Vl = got[off+2+3n:off+7+3n]
+        dE = max(dE, abs(got[off+1] - E))
+        dF = max(dF, maximum(abs.(Fl .- reduce(hcat, F))))
+        dV = max(dV, maximum(abs.(Vl .- [V[1,1], V[2,2], V[3,3], V[2,3], V[1,3], V[1,2]])))
+        off += 7 + 3n
+    end
+    @assert off == length(got)
+    return dE, dF, dV
+end
+
 function a1_refusal(calc, f)
     isfile(f) && rm(f)
     err = try
@@ -187,6 +259,39 @@ end
         @test dE <= 1e-12
         @test dF <= 1e-12
         @test dV <= 1e-12
+    end
+
+    # COMPILED-LIBRARY TIER.  The same model, exported `for_library = true` to
+    # build/ace1_lib.jl, which CI compiles with juliac --trim=safe to build/libace_ace1.so
+    # (export-ci.yml, "Compile ETACE model to shared library") and then re-runs this group
+    # against.  The library is driven out of process through its C API (ccalling a juliac
+    # library from this process aborts it -- see runtests.jl:library_build_id) on every site
+    # of the held-out configurations, and compared with the in-process module at 1e-12.
+    # Where the library is absent or was compiled from a different ace1_lib.jl the check
+    # is a visible skip (@test_skip), and a FAILURE when ACE_REQUIRE_ACE1_LIB=1 -- which is
+    # how the CI step that runs after the compile asks for it.  (Not ACE_REQUIRE_GROUPS:
+    # the in-process half of this group is required BEFORE the library can exist.)
+    @testset "compiled library (C API) vs the in-process export, 1e-12" begin
+        f_lib = joinpath(build, "ace1_lib.jl")
+        Base.invokelatest(export_ace_model, a1_stack(), f_lib; for_library = true)
+        lib = joinpath(build, "libace_ace1.so")
+        ok, why = a1_library_in_step(lib, f_lib)
+        if ok
+            @info "compiled ace1 library in step with its source: $why"
+        elseif get(ENV, "ACE_REQUIRE_ACE1_LIB", "") == "1"
+            @error "ACE_REQUIRE_ACE1_LIB=1 but the compiled ace1 library check cannot run" why
+            @test ("compiled ace1 library: $why", :available) == ("compiled ace1 library: $why", :required)
+        else
+            @test_skip "compiled ace1 library: $why"
+        end
+        if ok
+            ex = Base.invokelatest(load_exported, f_lib)
+            dE, dF, dV = a1_library_vs_module(lib, ex, held, rcut)
+            @info "ace1 compiled library vs in-process module (per site)" dE dF dV
+            @test dE <= 1e-12
+            @test dF <= 1e-12
+            @test dV <= 1e-12
+        end
     end
 
     @testset "asymmetric ACE1 pair envelope (ordered pairs), 1e-12" begin

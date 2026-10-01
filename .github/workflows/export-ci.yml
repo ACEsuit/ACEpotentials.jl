@@ -5,10 +5,14 @@ on:
   push:
     paths:
       - 'export/**'
+      - 'src/et_models/**'
+      - 'test/etmodels/ace1_exact_twin.jl'
       - '.github/workflows/export-ci.yml'
   pull_request:
     paths:
       - 'export/**'
+      - 'src/et_models/**'
+      - 'test/etmodels/ace1_exact_twin.jl'
       - '.github/workflows/export-ci.yml'
 
 env:
@@ -131,12 +135,16 @@ jobs:
       # `hermite_accuracy` is now `accuracy`.  Passing a retired name here would FAIL the run
       # at runtests.jl's group check rather than quietly select nothing -- which is why the
       # names below were changed rather than left to rot.
-      - name: Run ETACE export tests (syntax, polynomial, accuracy, multispecies, pair)
+      #
+      # `ace1` exports an ace1_model-derived stack (spherical harmonics, ACE1 pair envelope)
+      # and gates it in-process at 1e-12; its compiled-library check is a visible skip here
+      # and is run for real by the step after the compile.
+      - name: Run ETACE export tests (syntax, polynomial, accuracy, multispecies, ace1, pair)
         env:
-          ACE_REQUIRE_GROUPS: syntax,etace,accuracy,multispecies
+          ACE_REQUIRE_GROUPS: syntax,etace,accuracy,multispecies,ace1
         run: |
           set -o pipefail
-          julia --project=export export/test/runtests.jl syntax etace accuracy multispecies pair \
+          julia --project=export export/test/runtests.jl syntax etace accuracy multispecies ace1 pair \
             2>&1 | tee export-tests.log
 
       # K3: a gate that did not execute must never be reported as a gate that passed.
@@ -278,6 +286,31 @@ jobs:
 
           ls -la libace_test.so
           echo "library-built=true" >> $GITHUB_OUTPUT
+
+      # The ace1 group's compiled-library tier: build/ace1_lib.jl (written by the `ace1` group
+      # above) compiled the same way, then the group re-run with the check REQUIRED.  It
+      # drives libace_ace1.so through its C API on every held-out site and compares with the
+      # in-process module at 1e-12 -- the only compiled check of a Ytype = :spherical model.
+      - name: Compile the ace1_model-derived model and check the library
+        env:
+          ACE_REQUIRE_GROUPS: ace1
+          ACE_REQUIRE_ACE1_LIB: "1"
+        run: |
+          set -o pipefail
+          cd export/test/build
+          test -f ace1_lib.jl || { echo "::error::ace1_lib.jl missing (the ace1 group did not run)"; exit 1; }
+          julia --startup-file=no --project=../../ -e '
+            using JuliaC
+            img = ImageRecipe(; file = "ace1_lib.jl", output_type = "sharedlib",
+                              trim_mode = "safe", add_ccallables = true,
+                              cpu_target = "generic", verbose = true)
+            link = LinkRecipe(; image_recipe = img, outname = "libace_ace1.so")
+            compile_products(img)
+            link_products(link)
+          '
+          test -f libace_ace1.so || { echo "::error::Failed to compile libace_ace1.so"; exit 1; }
+          cd ../../..
+          julia --project=export export/test/runtests.jl ace1 2>&1 | tee export-ace1-lib.log
 
       # test_lammps.jl's own 1e-10 gate (`load_exported(model_file)`) reads the generated
       # `.jl` source, not just the compiled `.so` -- it needs both PAIR_C/E0_1 for the pair

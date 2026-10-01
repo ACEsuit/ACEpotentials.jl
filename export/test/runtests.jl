@@ -8,7 +8,10 @@ This file orchestrates all export-related tests for ETACE models:
 2. Export accuracy on a small Si model (:polynomial vs the fitted model at 1e-12, plus the
    refusals that replaced the removed spline export)
 3. Multi-species model tests
-3b. ace1_model-derived models (spherical harmonics, ACE1 pair envelope; NZ = 3)
+3b. ace1_model-derived models (spherical harmonics, ACE1 pair envelope; NZ = 3).  Its
+    compiled-library check needs build/libace_ace1.so (compiled by CI from the group's own
+    build/ace1_lib.jl); without it that check is a @test_skip, or a failure under
+    ACE_REQUIRE_ACE1_LIB=1.
 4. Pair-potential export (ETOneBody + ETPairModel + ETACE, Cantor fixture)
 4b. AA product DAG (Task 7 / B3), both benchmark models
 5. Python calculator integration
