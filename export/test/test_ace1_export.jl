@@ -129,7 +129,9 @@ function a1_library_vs_module(lib, ex, held, rcut)
         end
     end
     script = """
-import ctypes, sys, numpy as np
+import ctypes, sys, struct
+from array import array
+# standard library only (no numpy): this runs under whatever python3 is on PATH
 lib = ctypes.CDLL(sys.argv[1])
 lib.ace_workspace_new.restype = ctypes.c_void_p
 lib.ace_site_energy_forces_virial.restype = ctypes.c_double
@@ -138,18 +140,18 @@ lib.ace_site_energy_forces_virial.argtypes = [ctypes.c_void_p, ctypes.c_int, cty
                                               ip, dp, dp, dp]
 ws = lib.ace_workspace_new()
 buf = open(sys.argv[2], 'rb').read(); off = 0
-def take(dt, n):
+def take(fmt, n):
     global off
-    a = np.frombuffer(buf, dtype=dt, count=n, offset=off); off += a.nbytes; return a
-out = []
-for _ in range(int(take(np.int64, 1)[0])):
-    z0, n = (int(v) for v in take(np.int64, 2))
-    Z = np.ascontiguousarray(take(np.int32, n)); R = np.ascontiguousarray(take(np.float64, 3 * n))
-    F = np.zeros(3 * n); V = np.zeros(6)
-    E = lib.ace_site_energy_forces_virial(ws, z0, n, Z.ctypes.data_as(ip), R.ctypes.data_as(dp),
-                                          F.ctypes.data_as(dp), V.ctypes.data_as(dp))
-    out += [np.array([E]), F, V]
-np.concatenate(out).tofile(sys.argv[3])
+    v = struct.unpack_from('<%d%s' % (n, fmt), buf, off); off += struct.calcsize('<%d%s' % (n, fmt)); return v
+out = array('d')
+for _ in range(take('q', 1)[0]):
+    z0, n = take('q', 2)
+    Z = (ctypes.c_int * n)(*take('i', n)); R = (ctypes.c_double * (3 * n))(*take('d', 3 * n))
+    F = (ctypes.c_double * (3 * n))(); V = (ctypes.c_double * 6)()
+    E = lib.ace_site_energy_forces_virial(ws, z0, n, Z, R, F, V)
+    out.append(E); out.extend(F); out.extend(V)
+with open(sys.argv[3], 'wb') as f:
+    out.tofile(f)
 """
     run(setenv(`python3 -c $script $lib $fin $fout`, ace_runtime_env(dirname(lib))))
     got = reinterpret(Float64, read(fout))
