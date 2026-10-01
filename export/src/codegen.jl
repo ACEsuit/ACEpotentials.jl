@@ -20,15 +20,22 @@ using Pkg
 using Printf
 
 """
-    generate_solid_harmonics_code(maxl::Int; T=Float64, normalisation=:L2)
+    generate_solid_harmonics_code(maxl::Int; T=Float64, normalisation=:L2,
+                                  fname="eval_ylm", fname_ed="eval_ylm_ed")
 
 Generate trim-safe inline solid harmonics code for a specific maxl value.
 Uses SpheriCart's internal code generators but produces output that doesn't
 require Val-based dispatch at runtime.
 
+`fname` / `fname_ed` name the emitted value and value+gradient functions.  The defaults
+are what the evaluation kernel calls; a model with real SPHERICAL harmonics emits the solid
+harmonics under other names and wraps them (see `_write_spherical_harmonics`).
+
 Returns a String containing Julia code.
 """
-function generate_solid_harmonics_code(maxl::Int; T=Float64, normalisation=:L2)
+function generate_solid_harmonics_code(maxl::Int; T=Float64, normalisation=:L2,
+                                       fname::AbstractString="eval_ylm",
+                                       fname_ed::AbstractString="eval_ylm_ed")
     n_ylm = (maxl + 1)^2
 
     io = IOBuffer()
@@ -61,7 +68,7 @@ const N_YLM = $n_ylm
 
     println(io, """
 # Solid harmonics evaluation (values only)
-@inline function eval_ylm(R::SVector{3, TT}) where {TT}
+@inline function $(fname)(R::SVector{3, TT}) where {TT}
     x, y, z = R[1], R[2], R[3]
 """)
 
@@ -82,7 +89,7 @@ const N_YLM = $n_ylm
         println(io, """
 # Solid harmonics with gradients (L=0 special case)
 # Y_0^0 is a constant, so its gradient is zero
-@inline function eval_ylm_ed(R::SVector{3, TT}) where {TT}
+@inline function $(fname_ed)(R::SVector{3, TT}) where {TT}
     x, y, z = R[1], R[2], R[3]
     # Y_0^0 = 1/(2*sqrt(pi)) = 0.28209479177387814
     Z_1 = TT(0.28209479177387814)
@@ -97,7 +104,7 @@ end
 
         println(io, """
 # Solid harmonics with gradients
-@inline function eval_ylm_ed(R::SVector{3, TT}) where {TT}
+@inline function $(fname_ed)(R::SVector{3, TT}) where {TT}
     x, y, z = R[1], R[2], R[3]
 """)
 

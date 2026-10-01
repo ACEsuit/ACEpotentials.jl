@@ -515,136 +515,70 @@ end
     return mix_rows
 end
 
-# ============================================================================
-# PAIR POTENTIAL (ETPairModel)
-# ============================================================================
-#
-# Model (src/et_models/et_pair.jl + src/et_models/convert.jl:`convertpair`):
-#
-#   rembed  = EdgeEmbed( EnvRBranchL(envelope, EmbedDP(agnesi, polys, SelectLinL)) )
-#   readout = SelectLinL(n_pairbasis -> 1, NZ, selector = centre species)
-#
-#   Rnl_pair[edge, n] = env(r_ij) * Σ_q W[n, q, (iz0,jz)] * P_q(y_ij)
-#   𝔹[i, n]           = Σ_{j ∈ N(i)} Rnl_pair[edge, n]          (et_pair.jl:48-57)
-#   E_pair(i)         = Σ_n Wread[1, n, iz0] * 𝔹[i, n]          (et_pair.jl:25-33)
-#
-# so, folding the readout into the polynomial coefficients at export time,
-#
-#   E_pair(i) = Σ_{j ∈ N(i)} env(r_ij) * dot( PAIR_C[(iz0,jz)], P(y_ij) )
-#   PAIR_C[(iz0,jz)][q] = Σ_n Wread[1, n, iz0] * W[n, q, (iz0,jz)]
-#
-# Index conventions, all verified against the sources rather than guessed:
-#  * `ET.catcat2idx` (utils/selector.jl) = (i1-1)*NZ + i2 with i1 the *centre* species
-#    (the graph stores z0 = species(i), z1 = species(j); EquivariantTensors
-#    ext/NeighbourListsExt.jl:19-21), so the SelectLinL weights W and PAIR_C are indexed by
-#    the ORDERED pair (iz0, jz) -- same convention as the many-body RBASIS_W above.
-#  * the Agnesi transform parameters are stored per SYMMETRIC pair
-#    (`_convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and the selector is
-#    `catcat2idx_sym`), i.e. NZ*(NZ+1)/2 entries addressed by `symidx`.  The ordered ->
-#    symmetric mapping below goes through the shared `_sym_pair_index` helper (pair_index.jl),
-#    exactly as TRANSFORM_PARAMS does.
-#  * the readout weight Wread is per CENTRE species only (shape (1, n_pairbasis, NZ)).
-#
-# Numerics:
-#  * the polynomials are the raw P4ML `OrthPolyBasis1D3T` -- unlike the many-body radial
-#    basis the pair basis has NO quartic envelope wrapped around them; the envelope is the
-#    separate `PolyEnvelope1sR` branch.
-#  * the envelope is `_eval_env_1sr` (src/et_models/convert.jl:233-237):
-#        env(r) = (s^-p - 1) * (1 - s) * (s < 1),  s = r / rcut
-#  * the transform is `ET.eval_agnesi` (EquivariantTensors src/transforms/agnesi.jl:53-61).
-#    A dedicated `_pair_transform_d` is emitted rather than reusing `agnesi_transform_d`
-#    because the latter carries `r <= rin -> +1` / `r >= rcut -> -1` shortcuts that
-#    `eval_agnesi` does not have (it only clamps), and because the stored parameter tuple
-#    has no `rcut` field of its own.  `pin`/`pcut` are kept as `Int` so that `s^pin` is the
-#    same *integer* power `eval_agnesi` evaluates (`s^4` by squaring, not `pow(s, 4.0)`).
-#    That is not full bit-exactness: `_pair_transform_d` forms `s` by reciprocal-multiply
-#    (it needs `ds/dr` anyway) where `eval_agnesi` divides, which can differ by 1 ulp.
-#
-# `etace_zlist` and `rcut` come from the ETACE model -- they are what the generated `NZ`,
-# `z2i` and `RCUT_MAX` are built from -- and are passed in only so they can be checked
-# against the pair model's own species ordering and cutoff.
-function _write_pair_basis(io, pair_calc, NZ, etace_zlist, rcut)
-    pm, ps = pair_calc.model, pair_calc.ps
+"""
+    _pair_envelope_kind(envelope) -> :poly1sr | :ace1
 
-    branch = pm.rembed.layer            # EnvRBranchL(envelope, rbasis)
-    rb     = branch.rbasis              # EmbedDP(trans, basis, post)
-    polys  = rb.basis                   # Polynomials4ML.OrthPolyBasis1D3T
-    pA, pB, pC = polys.refstate.A, polys.refstate.B, polys.refstate.C
-    nq = length(pA)
+Which pair envelope an `ETPairModel`'s `EnvRBranchL` carries, and a refusal for anything else.
 
-    W     = ps.rembed.rbasis.post.W     # (n_pairbasis, n_pairpolys, NZ^2)
-    Wr    = ps.readout.W                # (1, n_pairbasis, NZ)
-    env   = branch.envelope.refstate    # (rcut, p) of the PolyEnvelope1sR branch
-    trans = rb.trans.refstate.params    # SVector{NZ(NZ+1)/2} of Agnesi parameters
+  * `:ace1` -- `ACE1_PolyEnvelope1sR` (ace1_model), recognised by its named function
+    `ETModels.ACE1PairEnvelopeFn`; (rcut, r0) per ORDERED pair in `refstate.params`.
+  * `:poly1sr` -- `PolyEnvelope1sR` (ace_model's default), whose converted form is a closure
+    with `refstate = (rcut, p)`; recognised by that state.
 
-    # The generated NZ / z2i / RCUT_MAX are built from the *ETACE* model, while W, Wr and
-    # `trans` are indexed by the *pair* model's own species ordering.  Size checks alone pass
-    # under any permutation of the species, so compare the orderings themselves: a pair basis
-    # whose `_i2z` differs from the many-body one would otherwise export a silently permuted
-    # PAIR_C / PAIR_TRANSFORM_PARAMS.
-    pair_zs  = [Int(z.atomic_number) for z in rb.trans.refstate.zlist]
-    etace_zs = [Int(z.atomic_number) for z in etace_zlist]
-    @assert pair_zs == etace_zs """
-        pair and many-body species orderings differ -- the exported pair weights would be
-        permuted relative to the generated z2i.
-          ETACE zlist (defines NZ and z2i) : $etace_zs
-          pair  zlist (indexes W and trans): $pair_zs"""
+An unrecognised envelope used to fail with a `FieldError` on `refstate.rcut` (or, had its
+state happened to carry `rcut` and `p`, be exported as the wrong function); it now raises
+naming what is supported.
+"""
+# `ET.dp_transform(f, refstate)` returns an `NTtransformST` in EquivariantTensors 0.4 and a
+# `DPTransform` in 0.5; both carry `f` and `refstate`, which is all that is read here.
+_pair_envelope_kind(env) =
+    hasproperty(env, :f) && hasproperty(env, :refstate) ?
+        _pair_envelope_kind(env.f, env.refstate) : _pair_envelope_kind(env, nothing)
+_pair_envelope_kind(::ACE1PairEnvelopeFn, st) = :ace1
+_pair_envelope_kind(f, st::NamedTuple{(:rcut, :p)}) = :poly1sr
+_pair_envelope_kind(f, st) = error("""
+    export_ace_model: cannot export the pair envelope $(typeof(f)) with state $(typeof(st)).
+    Supported pair envelopes are the ones ETModels.convertpair produces: PolyEnvelope1sR
+    (ace_model's default) and ACE1_PolyEnvelope1sR (ace1_model's).""")
 
-    n_pairbasis = size(W, 1)
-    @assert size(W, 2) == nq "pair SelectLinL in_dim $(size(W,2)) != n polys $nq"
-    @assert size(W, 3) == NZ^2 "pair SelectLinL has $(size(W,3)) categories, expected NZ^2 = $(NZ^2)"
-    @assert size(Wr) == (1, n_pairbasis, NZ) "pair readout W has size $(size(Wr)), expected (1, $n_pairbasis, $NZ)"
-    @assert length(trans) == (NZ * (NZ + 1)) ÷ 2 "pair transform params: $(length(trans)) entries, expected $((NZ*(NZ+1))÷2) (per symmetric pair)"
-    # The neighbour lists the generated code is driven with are built at RCUT_MAX, so a pair
-    # envelope reaching further would be silently truncated.
-    @assert env.rcut <= rcut """
-        pair envelope cutoff $(env.rcut) Å exceeds the exported RCUT_MAX $(rcut) Å; the pair
-        term would be silently truncated by the neighbour list."""
+# The pair-envelope pieces of the pair kernel that differ between the two envelope kinds.
+# The `:poly1sr` strings are the generator's original text, so a PolyEnvelope1sR export is
+# byte-identical to what it always was; `:ace1` replaces exactly these two pieces.
+const _PAIR_ENV_FN_POLY1SR = raw"""
+# Pair envelope with derivative d/dr
+@inline function _pair_env_d(r::Float64)
+    s = r / PAIR_ENV_RCUT
+    s >= 1.0 && return 0.0, 0.0
+    sp = s^(-PAIR_ENV_P)
+    e = (sp - 1.0) * (1.0 - s)
+    de = (-PAIR_ENV_P * sp / s) * (1.0 - s) - (sp - 1.0)
+    return e, de / PAIR_ENV_RCUT
+end
+"""
+const _PAIR_ENV_FN_ACE1 = raw"""
+# Pair envelope with derivative d/dr: ACE1_PolyEnvelope1sR of the ORDERED pair k,
+# as ETModels._eval_env_ace1 / Models.evaluate(::ACE1_PolyEnvelope1sR, r, x).
+@inline function _pair_env_d(r::Float64, k::Int)
+    @inbounds rc = PAIR_ENV_RC[k]
+    @inbounds r0 = PAIR_ENV_R0[k]
+    r > rc && return 0.0, 0.0
+    s = r / r0
+    sc = rc / r0
+    e = s^(-PAIR_ENV_P) - sc^(-PAIR_ENV_P) + PAIR_ENV_P * sc^(-PAIR_ENV_P - 1) * (s - sc)
+    de = PAIR_ENV_P * (sc^(-PAIR_ENV_P - 1) - s^(-PAIR_ENV_P - 1)) / r0
+    return e, de
+end
+"""
+# (plain strings, not triple-quoted: a triple-quoted string would strip the indentation)
+const _PAIR_ENV_HEAD_POLY1SR = "    e, de = _pair_env_d(r)\n" *
+                               "    e == 0.0 && return 0.0, 0.0\n" *
+                               "    k = pair_idx(iz0, jz)\n"
+const _PAIR_ENV_HEAD_ACE1 = "    k = pair_idx(iz0, jz)\n" *
+                            "    e, de = _pair_env_d(r, k)\n" *
+                            "    e == 0.0 && return 0.0, 0.0\n"
 
-    println(io, """
-# ============================================================================
-# PAIR POTENTIAL (ETPairModel; readout folded into per-ordered-pair coefficients)
-# ============================================================================
-""")
-
-    println(io, "# Orthogonal polynomial basis of the pair term (3-term recurrence)")
-    println(io, "const N_PAIRPOLYS = $(nq)")
-    println(io, "const PAIRPOLY_A = SVector{$(nq), Float64}($(repr(collect(pA))))")
-    println(io, "const PAIRPOLY_B = SVector{$(nq), Float64}($(repr(collect(pB))))")
-    println(io, "const PAIRPOLY_C = SVector{$(nq), Float64}($(repr(collect(pC))))")
-    println(io)
-
-    println(io, "# PolyEnvelope1sR:  env(r) = (s^-p - 1) * (1 - s) * (s < 1),  s = r / rcut")
-    println(io, "const PAIR_ENV_RCUT = $(Float64(env.rcut))")
-    println(io, "const PAIR_ENV_P = $(Int(env.p))")
-    println(io)
-
-    println(io, "# Readout-folded polynomial coefficients, one entry per ORDERED pair,")
-    println(io, "# indexed by pair_idx(iz0, jz) with iz0 the CENTRE species.")
-    println(io, "const PAIR_C = (")
-    for (k, iz0, jz) in _ordered_pairs(NZ)
-        c = vec(transpose(Wr[1, :, iz0]) * W[:, :, k])
-        @assert length(c) == nq
-        println(io, "    SVector{$(nq), Float64}($(repr(collect(c)))),  # pair $k: ($iz0, $jz)")
-    end
-    println(io, ")")
-    println(io)
-
-    println(io, "# Agnesi transform parameters, expanded from the symmetric-pair storage")
-    println(io, "# to one entry per ORDERED pair, indexed by pair_idx(iz0, jz) -- the same")
-    println(io, "# table layout as PAIR_C above, so no runtime mapping is needed.")
-    println(io, "const PAIR_TRANSFORM_PARAMS = (")
-    for (k, iz0, jz) in _ordered_pairs(NZ)
-        sym_idx = _sym_pair_index(iz0, jz, NZ)
-        p = trans[sym_idx]
-        println(io, "    (pin=$(Int(p.pin)), pcut=$(Int(p.pcut)), a=$(Float64(p.a)), " *
-                    "b0=$(Float64(p.b0)), b1=$(Float64(p.b1)), rin=$(Float64(p.rin)), " *
-                    "req=$(Float64(p.req))),  # pair $k: ($iz0, $jz) -> sym $sym_idx")
-    end
-    println(io, ")")
-    println(io)
-
-    println(io, raw"""
+# The pair kernel as the generator has always emitted it (PolyEnvelope1sR form).
+const _PAIR_KERNEL = raw"""
 # Pair envelope with derivative d/dr
 @inline function _pair_env_d(r::Float64)
     s = r / PAIR_ENV_RCUT
@@ -701,7 +635,175 @@ end
 end
 
 @inline pair_energy(r::Float64, iz0::Int, jz::Int) = pair_energy_d(r, iz0, jz)[1]
+"""
+
+"Replace the single occurrence of `p.first` in `s`; anything else is a generator bug."
+function _replace_once(s::AbstractString, p::Pair)
+    n = length(findall(p.first, s))
+    n == 1 || error("pair kernel template: expected one occurrence of a replaced piece, found $n")
+    return replace(s, p)
+end
+
+# ============================================================================
+# PAIR POTENTIAL (ETPairModel)
+# ============================================================================
+#
+# Model (src/et_models/et_pair.jl + src/et_models/convert.jl:`convertpair`):
+#
+#   rembed  = EdgeEmbed( EnvRBranchL(envelope, EmbedDP(agnesi, polys, SelectLinL)) )
+#   readout = SelectLinL(n_pairbasis -> 1, NZ, selector = centre species)
+#
+#   Rnl_pair[edge, n] = env(r_ij) * Σ_q W[n, q, (iz0,jz)] * P_q(y_ij)
+#   𝔹[i, n]           = Σ_{j ∈ N(i)} Rnl_pair[edge, n]          (et_pair.jl:48-57)
+#   E_pair(i)         = Σ_n Wread[1, n, iz0] * 𝔹[i, n]          (et_pair.jl:25-33)
+#
+# so, folding the readout into the polynomial coefficients at export time,
+#
+#   E_pair(i) = Σ_{j ∈ N(i)} env(r_ij) * dot( PAIR_C[(iz0,jz)], P(y_ij) )
+#   PAIR_C[(iz0,jz)][q] = Σ_n Wread[1, n, iz0] * W[n, q, (iz0,jz)]
+#
+# Index conventions, all verified against the sources rather than guessed:
+#  * `ET.catcat2idx` (utils/selector.jl) = (i1-1)*NZ + i2 with i1 the *centre* species
+#    (the graph stores z0 = species(i), z1 = species(j); EquivariantTensors
+#    ext/NeighbourListsExt.jl:19-21), so the SelectLinL weights W and PAIR_C are indexed by
+#    the ORDERED pair (iz0, jz) -- same convention as the many-body RBASIS_W above.
+#  * the Agnesi transform parameters are stored per SYMMETRIC pair
+#    (`_convert_agnesi` loops `for i = 1:NZ, j = i:NZ` and the selector is
+#    `catcat2idx_sym`), i.e. NZ*(NZ+1)/2 entries addressed by `symidx`.  The ordered ->
+#    symmetric mapping below goes through the shared `_sym_pair_index` helper (pair_index.jl),
+#    exactly as TRANSFORM_PARAMS does.
+#  * the readout weight Wread is per CENTRE species only (shape (1, n_pairbasis, NZ)).
+#
+# Numerics:
+#  * the polynomials are the raw P4ML `OrthPolyBasis1D3T` -- unlike the many-body radial
+#    basis the pair basis has NO quartic envelope wrapped around them; the envelope is the
+#    separate `PolyEnvelope1sR` branch.
+#  * the envelope is `_eval_env_1sr` (src/et_models/convert.jl) for a PolyEnvelope1sR:
+#        env(r) = (s^-p - 1) * (1 - s) * (s < 1),  s = r / rcut
+#    or, for ace1_model's ACE1_PolyEnvelope1sR, `_eval_env_ace1` with (rcut, r0) per ORDERED
+#    pair (`ETModels.ACE1PairEnvelopeFn`, `refstate.params[k]`, k = catcat2idx):
+#        env(r) = s^-p - sc^-p + p sc^(-p-1) (s - sc),  s = r / r0,  sc = rcut / r0,
+#        env(r) = 0 for r > rcut
+#    `_pair_envelope_kind` tells them apart and refuses anything else.
+#  * the transform is `ET.eval_agnesi` (EquivariantTensors src/transforms/agnesi.jl:53-61).
+#    A dedicated `_pair_transform_d` is emitted rather than reusing `agnesi_transform_d`
+#    because the latter carries `r <= rin -> +1` / `r >= rcut -> -1` shortcuts that
+#    `eval_agnesi` does not have (it only clamps), and because the stored parameter tuple
+#    has no `rcut` field of its own.  `pin`/`pcut` are kept as `Int` so that `s^pin` is the
+#    same *integer* power `eval_agnesi` evaluates (`s^4` by squaring, not `pow(s, 4.0)`).
+#    That is not full bit-exactness: `_pair_transform_d` forms `s` by reciprocal-multiply
+#    (it needs `ds/dr` anyway) where `eval_agnesi` divides, which can differ by 1 ulp.
+#
+# `etace_zlist` and `rcut` come from the ETACE model -- they are what the generated `NZ`,
+# `z2i` and `RCUT_MAX` are built from -- and are passed in only so they can be checked
+# against the pair model's own species ordering and cutoff.
+function _write_pair_basis(io, pair_calc, NZ, etace_zlist, rcut)
+    pm, ps = pair_calc.model, pair_calc.ps
+
+    branch = pm.rembed.layer            # EnvRBranchL(envelope, rbasis)
+    rb     = branch.rbasis              # EmbedDP(trans, basis, post)
+    polys  = rb.basis                   # Polynomials4ML.OrthPolyBasis1D3T
+    pA, pB, pC = polys.refstate.A, polys.refstate.B, polys.refstate.C
+    nq = length(pA)
+
+    W     = ps.rembed.rbasis.post.W     # (n_pairbasis, n_pairpolys, NZ^2)
+    Wr    = ps.readout.W                # (1, n_pairbasis, NZ)
+    envkind = _pair_envelope_kind(branch.envelope)   # :poly1sr | :ace1, or refuses
+    env   = branch.envelope.refstate    # :poly1sr (rcut, p); :ace1 (zlist, params, p)
+    trans = rb.trans.refstate.params    # SVector{NZ(NZ+1)/2} of Agnesi parameters
+
+    # The generated NZ / z2i / RCUT_MAX are built from the *ETACE* model, while W, Wr and
+    # `trans` are indexed by the *pair* model's own species ordering.  Size checks alone pass
+    # under any permutation of the species, so compare the orderings themselves: a pair basis
+    # whose `_i2z` differs from the many-body one would otherwise export a silently permuted
+    # PAIR_C / PAIR_TRANSFORM_PARAMS.
+    pair_zs  = [Int(z.atomic_number) for z in rb.trans.refstate.zlist]
+    etace_zs = [Int(z.atomic_number) for z in etace_zlist]
+    @assert pair_zs == etace_zs """
+        pair and many-body species orderings differ -- the exported pair weights would be
+        permuted relative to the generated z2i.
+          ETACE zlist (defines NZ and z2i) : $etace_zs
+          pair  zlist (indexes W and trans): $pair_zs"""
+
+    n_pairbasis = size(W, 1)
+    @assert size(W, 2) == nq "pair SelectLinL in_dim $(size(W,2)) != n polys $nq"
+    @assert size(W, 3) == NZ^2 "pair SelectLinL has $(size(W,3)) categories, expected NZ^2 = $(NZ^2)"
+    @assert size(Wr) == (1, n_pairbasis, NZ) "pair readout W has size $(size(Wr)), expected (1, $n_pairbasis, $NZ)"
+    @assert length(trans) == (NZ * (NZ + 1)) ÷ 2 "pair transform params: $(length(trans)) entries, expected $((NZ*(NZ+1))÷2) (per symmetric pair)"
+    # The neighbour lists the generated code is driven with are built at RCUT_MAX, so a pair
+    # envelope reaching further would be silently truncated.
+    env_rcut = envkind === :ace1 ? maximum(q.rcut for q in env.params) : env.rcut
+    @assert env_rcut <= rcut """
+        pair envelope cutoff $(env_rcut) Å exceeds the exported RCUT_MAX $(rcut) Å; the pair
+        term would be silently truncated by the neighbour list."""
+    if envkind === :ace1
+        # the envelope table is indexed by the pair model's own ordered pairs, which the
+        # species-ordering check above has just tied to the generated pair_idx
+        @assert [Int(z.atomic_number) for z in env.zlist] == pair_zs """
+            ACE1 pair envelope species ordering $([Int(z.atomic_number) for z in env.zlist])
+            differs from the pair basis's $pair_zs"""
+        @assert length(env.params) == NZ^2 "ACE1 pair envelope: $(length(env.params)) entries, expected NZ^2 = $(NZ^2)"
+    end
+
+    println(io, """
+# ============================================================================
+# PAIR POTENTIAL (ETPairModel; readout folded into per-ordered-pair coefficients)
+# ============================================================================
 """)
+
+    println(io, "# Orthogonal polynomial basis of the pair term (3-term recurrence)")
+    println(io, "const N_PAIRPOLYS = $(nq)")
+    println(io, "const PAIRPOLY_A = SVector{$(nq), Float64}($(repr(collect(pA))))")
+    println(io, "const PAIRPOLY_B = SVector{$(nq), Float64}($(repr(collect(pB))))")
+    println(io, "const PAIRPOLY_C = SVector{$(nq), Float64}($(repr(collect(pC))))")
+    println(io)
+
+    if envkind === :poly1sr
+        println(io, "# PolyEnvelope1sR:  env(r) = (s^-p - 1) * (1 - s) * (s < 1),  s = r / rcut")
+        println(io, "const PAIR_ENV_RCUT = $(Float64(env.rcut))")
+        println(io, "const PAIR_ENV_P = $(Int(env.p))")
+        println(io)
+    else
+        println(io, "# ACE1_PolyEnvelope1sR (ace1_model), (rcut, r0) per ORDERED pair k = pair_idx(iz0, jz):")
+        println(io, "#   env(r) = s^-p - sc^-p + p sc^(-p-1) (s - sc),  s = r / r0[k],  sc = rcut[k] / r0[k],")
+        println(io, "#   env(r) = 0 for r > rcut[k]")
+        println(io, "const PAIR_ENV_P = $(Int(env.p))")
+        println(io, "const PAIR_ENV_RC = SVector{$(NZ^2), Float64}($(repr([Float64(env.params[k].rcut) for (k, _, _) in _ordered_pairs(NZ)])))")
+        println(io, "const PAIR_ENV_R0 = SVector{$(NZ^2), Float64}($(repr([Float64(env.params[k].r0) for (k, _, _) in _ordered_pairs(NZ)])))")
+        println(io)
+    end
+
+    println(io, "# Readout-folded polynomial coefficients, one entry per ORDERED pair,")
+    println(io, "# indexed by pair_idx(iz0, jz) with iz0 the CENTRE species.")
+    println(io, "const PAIR_C = (")
+    for (k, iz0, jz) in _ordered_pairs(NZ)
+        c = vec(transpose(Wr[1, :, iz0]) * W[:, :, k])
+        @assert length(c) == nq
+        println(io, "    SVector{$(nq), Float64}($(repr(collect(c)))),  # pair $k: ($iz0, $jz)")
+    end
+    println(io, ")")
+    println(io)
+
+    println(io, "# Agnesi transform parameters, expanded from the symmetric-pair storage")
+    println(io, "# to one entry per ORDERED pair, indexed by pair_idx(iz0, jz) -- the same")
+    println(io, "# table layout as PAIR_C above, so no runtime mapping is needed.")
+    println(io, "const PAIR_TRANSFORM_PARAMS = (")
+    for (k, iz0, jz) in _ordered_pairs(NZ)
+        sym_idx = _sym_pair_index(iz0, jz, NZ)
+        p = trans[sym_idx]
+        println(io, "    (pin=$(Int(p.pin)), pcut=$(Int(p.pcut)), a=$(Float64(p.a)), " *
+                    "b0=$(Float64(p.b0)), b1=$(Float64(p.b1)), rin=$(Float64(p.rin)), " *
+                    "req=$(Float64(p.req))),  # pair $k: ($iz0, $jz) -> sym $sym_idx")
+    end
+    println(io, ")")
+    println(io)
+
+    kernel = _PAIR_KERNEL
+    if envkind === :ace1
+        kernel = _replace_once(kernel, _PAIR_ENV_FN_POLY1SR => _PAIR_ENV_FN_ACE1)
+        kernel = _replace_once(kernel, _PAIR_ENV_HEAD_POLY1SR => _PAIR_ENV_HEAD_ACE1)
+    end
+    println(io, kernel)
 end
 
 # Stub emitted when the exported model has no ETPairModel term, so that the generated
@@ -719,12 +821,97 @@ function _write_no_pair_basis(io)
 end
 
 
-function _write_spherical_harmonics(io, maxl)
-    # Generate inline solid harmonics code using SpheriCart's code generators
-    # This produces trim-safe code that doesn't require SpheriCart at runtime
-    ylm_code = generate_solid_harmonics_code(maxl)
+"""
+    _angular_basis_kind(ybasis) -> :solid | :spherical
 
-    # Write the generated code
-    print(io, ylm_code)
-    println(io)
+Which angular basis the model's `yembed` evaluates, decided by DISPATCH on its type, and a
+refusal for anything the generator cannot express.
+
+  * `:solid` -- real solid harmonics `Z_lm(r)` (`SpheriCart.SolidHarmonics`;
+    `ace_model`'s default `Ytype = :solid`);
+  * `:spherical` -- real spherical harmonics `Y_lm(r) = Z_lm(r / |r|)`
+    (`SpheriCart.SphericalHarmonics`; `ace1_model`, i.e. `Ytype = :spherical`).
+
+Everything else raises: a complex basis, or a normalisation other than the L2 one the
+emitted recurrence uses.  This is the check whose absence made every `ace1_model` export
+WRONG WITH NO ERROR -- the generator emitted solid harmonics whatever the model used -- so
+an angular basis is either recognised here or the export does not happen.
+"""
+_angular_basis_kind(b::P4ML.RealSCWrapper) = _angular_basis_kind(b.scbasis)
+
+function _angular_basis_kind(::SpheriCart.SolidHarmonics{L, NORM}) where {L, NORM}
+    _check_ylm_normalisation(NORM)
+    return :solid
+end
+
+function _angular_basis_kind(::SpheriCart.SphericalHarmonics{L, NORM}) where {L, NORM}
+    _check_ylm_normalisation(NORM)
+    return :spherical
+end
+
+_angular_basis_kind(b) = error("""
+    export_ace_model: cannot export the angular basis $(typeof(b)).
+    The generator emits the REAL solid harmonics (SpheriCart.SolidHarmonics, Ytype = :solid)
+    or the REAL spherical harmonics (SpheriCart.SphericalHarmonics, Ytype = :spherical),
+    each wrapped in Polynomials4ML.RealSCWrapper, with the L2 normalisation.  Exporting
+    anything else as one of those would give wrong energies and forces with no error.""")
+
+# `:sphericart` is SpheriCart's name for the same Flm as `:L2` (normalisations.jl).
+_check_ylm_normalisation(NORM) = NORM in (:L2, :sphericart) || error("""
+    export_ace_model: cannot export harmonics with normalisation = $(repr(NORM)).
+    The emitted recurrence carries the L2 (= :sphericart) prefactors only; exporting a
+    $(repr(NORM))-normalised basis with them would give wrong energies and forces.""")
+
+"""
+    _write_spherical_harmonics(io, maxl, kind = :solid)
+
+Emit `eval_ylm(R)` / `eval_ylm_ed(R)`, the angular basis the evaluation kernel calls, for the
+`kind` returned by `_angular_basis_kind`.
+
+`:solid` emits SpheriCart's solid-harmonics recurrence directly (byte-for-byte what this
+function always emitted).  `:spherical` emits the same recurrence as `_eval_zlm` /
+`_eval_zlm_ed` and wraps it the way `SpheriCart.compute` / `compute_with_gradients` do for a
+`SphericalHarmonics` basis:
+
+    Y(R) = Z(R / r),   ∇Y(R) = dz - (r̂ · dz) r̂,  dz = ∇Z(r̂) / r,   r = |R|, r̂ = R / r.
+"""
+function _write_spherical_harmonics(io, maxl, kind::Symbol = :solid)
+    if kind === :solid
+        # Generate inline solid harmonics code using SpheriCart's code generators
+        # This produces trim-safe code that doesn't require SpheriCart at runtime
+        ylm_code = generate_solid_harmonics_code(maxl)
+
+        # Write the generated code
+        print(io, ylm_code)
+        println(io)
+    elseif kind === :spherical
+        print(io, generate_solid_harmonics_code(maxl; fname = "_eval_zlm",
+                                                fname_ed = "_eval_zlm_ed"))
+        println(io)
+        println(io, raw"""
+# ============================================================================
+# REAL SPHERICAL HARMONICS  Y_lm(R) = Z_lm(R / |R|)   (the model's Ytype = :spherical)
+# ============================================================================
+# The solid harmonics above evaluated on the unit sphere, exactly as SpheriCart's
+# compute / compute_with_gradients(::SphericalHarmonics, R) do; the gradient is the
+# solid-harmonic gradient at R/|R|, divided by |R| and projected onto the tangent plane.
+@inline function eval_ylm(R::SVector{3, TT}) where {TT}
+    r = sqrt(R[1] * R[1] + R[2] * R[2] + R[3] * R[3])
+    return _eval_zlm(R / r)
+end
+
+@inline function eval_ylm_ed(R::SVector{3, TT}) where {TT}
+    r = sqrt(R[1] * R[1] + R[2] * R[2] + R[3] * R[3])
+    u = R / r
+    Z, dZu = _eval_zlm_ed(u)
+    dY = map(dZu) do g
+        dz = g / r
+        dz - (u[1] * dz[1] + u[2] * dz[2] + u[3] * dz[3]) * u
+    end
+    return Z, dY
+end
+""")
+    else
+        error("_write_spherical_harmonics: unknown angular basis kind $(repr(kind))")
+    end
 end

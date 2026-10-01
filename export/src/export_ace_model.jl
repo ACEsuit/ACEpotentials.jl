@@ -8,7 +8,8 @@
 #   juliac --output-lib libace.so --trim=safe model.jl
 
 using ACEpotentials
-using ACEpotentials.ETModels: ETACEPotential, ETACE, StackedCalculator, ETOneBody, ETPairModel
+using ACEpotentials.ETModels: ETACEPotential, ETACE, StackedCalculator, ETOneBody, ETPairModel,
+                               ACE1PairEnvelopeFn
 using StaticArrays
 using SparseArrays
 using LinearAlgebra
@@ -308,9 +309,13 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     # Tensor components (same structure as old ACE)
     tensor = etace.basis
 
-    # Spherical harmonics - extract maxl from the yembed layer
-    # yembed_layer.basis is RealSCWrapper{SolidHarmonics}
+    # Angular basis - extract maxl from the yembed layer.
+    # yembed_layer.basis is RealSCWrapper{SolidHarmonics} (ace_model, Ytype = :solid) or
+    # RealSCWrapper{SphericalHarmonics} (ace1_model, Ytype = :spherical).  Which one is
+    # decided by dispatch on its type, and anything else is refused HERE, before any work:
+    # emitting the wrong angular basis gives wrong energies and forces with no error.
     ybasis = yembed_layer.basis
+    ykind = _angular_basis_kind(ybasis)
     maxl = P4ML.maxl(ybasis)
 
     # Radial basis spec and weights.
@@ -370,7 +375,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
             _write_no_pair_basis(io)
         end
 
-        _write_spherical_harmonics(io, maxl)
+        _write_spherical_harmonics(io, maxl, ykind)
         _write_etace_weights(io, W_readout, NZ, E0_dict, _i2z)
         _write_evaluation_functions(io, tensor, dag, NZ, pair_calc !== nothing, pair_rows;
                                     aa_products = aa_products)
