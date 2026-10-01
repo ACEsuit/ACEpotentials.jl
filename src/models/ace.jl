@@ -297,8 +297,28 @@ end
 
 
 
-function evaluate_ed(model::ACEModel, 
-                     Rs::AbstractVector{SVector{3, T}}, Zs, Z0, 
+# Function barrier for the gradient assembly in `evaluate_ed`. Because
+# `EquivariantTensors.pullback` is not type-stable, ∂Rnl / ∂Ylm reach the caller as
+# `Any`; passing them through this function call forces Julia to re-specialise on
+# their concrete runtime types, turning the inner products back into statically
+# dispatched (fast, non-allocating) operations.
+function _assemble_grad_ed!(∇Ei, ∂Rnl, dRnl, ∂Ylm, dYlm, ∇rs)
+   @inbounds for t = 1:size(∂Rnl, 2)
+      for j = 1:size(∂Rnl, 1)
+         ∇Ei[j] += (∂Rnl[j, t] * dRnl[j, t]) * ∇rs[j]
+      end
+   end
+   @inbounds for t = 1:size(∂Ylm, 2)
+      for j = 1:size(∂Ylm, 1)
+         ∇Ei[j] += ∂Ylm[j, t] * dYlm[j, t]
+      end
+   end
+   return ∇Ei
+end
+
+
+function evaluate_ed(model::ACEModel,
+                     Rs::AbstractVector{SVector{3, T}}, Zs, Z0,
                      ps, st) where {T}
 
    i_z0 = _z2i(model.rbasis, Z0)
@@ -345,21 +365,18 @@ function evaluate_ed(model::ACEModel,
    ∂Rnl, ∂Ylm = EquivariantTensors.pullback([∂B], model.tensor, Rnl, Ylm, A)
    
    # ---------- ASSEMBLE DERIVATIVES ------------
-   # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm 
-   # as follows: 
-   #    ∂Ei / ∂𝐫ⱼ = ∑_nl ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂𝐫ⱼ 
+   # The ∂Ei / ∂𝐫ⱼ can now be obtained from the ∂Ei / ∂Rnl, ∂Ei / ∂Ylm
+   # as follows:
+   #    ∂Ei / ∂𝐫ⱼ = ∑_nl ∂Ei / ∂Rnl[j] * ∂Rnl[j] / ∂𝐫ⱼ
    #              + ∑_lm ∂Ei / ∂Ylm[j] * ∂Ylm[j] / ∂𝐫ⱼ
+   # NB: `EquivariantTensors.pullback` is not type-stable (returns Tuple{Any,Any}),
+   #     so ∂Rnl / ∂Ylm are inferred as `Any`. The assembly is therefore done in a
+   #     separate function (_assemble_grad_ed!) which acts as a function barrier:
+   #     it re-specialises on the concrete runtime types. Doing it inline makes the
+   #     element-wise products dynamically dispatched and is ~10x slower (see
+   #     benchmark/bench_forces_regression.jl).
    ∇Ei = zeros(SVector{3, T}, length(Rs))
-   for t = 1:size(∂Rnl, 2)
-      for j = 1:size(∂Rnl, 1)
-         ∇Ei[j] += (∂Rnl[j, t] * dRnl[j, t]) * ∇rs[j]
-      end
-   end
-   for t = 1:size(∂Ylm, 2)
-      for j = 1:size(∂Ylm, 1)
-         ∇Ei[j] += ∂Ylm[j, t] * dYlm[j, t]
-      end
-   end
+   _assemble_grad_ed!(∇Ei, ∂Rnl, dRnl, ∂Ylm, dYlm, ∇rs)
 
    # ------------------- 
    #  pair potential 

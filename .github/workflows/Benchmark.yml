@@ -1,0 +1,62 @@
+name: Benchmark
+# Performance guard for force/energy evaluation.
+#
+# Runs the PkgBenchmark suite in benchmark/benchmarks.jl on the PR head and posts
+# the results to the job summary. Non-blocking (continue-on-error) so noisy shared
+# runners never block a merge.
+#
+# NOTE: comparison against the base branch (PkgBenchmark `judge`) is intentionally
+# NOT enabled yet — the benchmark suite does not exist on `main` until this lands.
+# Once merged, a follow-up can switch the run step to `judge` against the base ref
+# (e.g. via BenchmarkCI) to get automatic regression detection on the same runner.
+on:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  benchmark:
+    name: Force/energy benchmark (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    continue-on-error: true   # keep non-blocking
+    permissions:
+      actions: write
+      contents: read
+    env:
+      JULIA_NUM_THREADS: '1'   # classic path is threaded via Folds; pin for stable timings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.12'
+          arch: x64
+      - name: Add registries
+        run: |
+          using Pkg
+          Pkg.Registry.add("General")
+          Pkg.Registry.add(Pkg.RegistrySpec(url = "https://github.com/ACEsuit/ACEregistry"))
+        shell: bash -c "julia --color=yes {0}"
+      - uses: julia-actions/cache@v2
+      - name: Instantiate benchmark env
+        run: julia --color=yes --project=benchmark -e 'using Pkg; Pkg.instantiate()'
+      - name: Run benchmark suite
+        # Must run from the benchmark project: PkgBenchmark propagates the active
+        # project to the benchmark subprocess, so benchmark/Project.toml (which has
+        # ACEpotentials, BenchmarkTools, PkgBenchmark, …) must be active here.
+        run: |
+          using PkgBenchmark
+          results = benchmarkpkg(".")          # uses benchmark/benchmarks.jl + benchmark/Project.toml
+          export_markdown("benchmark_results.md", results)
+          println(read("benchmark_results.md", String))
+        shell: bash -c "julia --color=yes --project=benchmark {0}"
+      - name: Post results to job summary
+        if: always()
+        run: |
+          echo "## Force/energy benchmark results" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f benchmark_results.md ]; then
+            cat benchmark_results.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_Benchmark run did not produce results (see job log)._" >> "$GITHUB_STEP_SUMMARY"
+          fi

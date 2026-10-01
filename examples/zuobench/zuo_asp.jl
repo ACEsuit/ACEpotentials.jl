@@ -80,8 +80,8 @@ f_table = hcat( [ string(sym) ],
 
 
 println("Energy Error (MAE)")
-pretty_table(e_table; header = header)
+pretty_table(e_table; column_labels = header)
 
 println("Force Error (MAE)")
-pretty_table(f_table; header = header)
+pretty_table(f_table; column_labels = header)
 

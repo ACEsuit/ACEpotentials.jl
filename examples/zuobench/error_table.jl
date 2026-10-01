@@ -59,10 +59,10 @@ f_table = hcat(string.(syms),
          f_table_gap_mtp)         
 
 println("Energy Error")         
-pretty_table(e_table; header = header)
+pretty_table(e_table; column_labels = header)
 
-println("Force Error")         
-pretty_table(f_table; header = header)
+println("Force Error")
+pretty_table(f_table; column_labels = header)
 
 ##
 
