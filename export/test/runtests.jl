@@ -8,6 +8,7 @@ This file orchestrates all export-related tests for ETACE models:
 2. Export accuracy on a small Si model (:polynomial vs the fitted model at 1e-12, plus the
    refusals that replaced the removed spline export)
 3. Multi-species model tests
+3b. ace1_model-derived models (spherical harmonics, ACE1 pair envelope; NZ = 3)
 4. Pair-potential export (ETOneBody + ETPairModel + ETACE, Cantor fixture)
 4b. AA product DAG (Task 7 / B3), both benchmark models
 5. Python calculator integration
@@ -21,6 +22,7 @@ Usage:
     julia --project=.. runtests.jl etace        # Run ETACE polynomial export tests
     julia --project=.. runtests.jl accuracy     # Run the small-Si accuracy + refusal tests
     julia --project=.. runtests.jl multispecies # Run multi-species tests
+    julia --project=.. runtests.jl ace1         # Run ace1_model-derived export tests
     julia --project=.. runtests.jl pair         # Run pair-potential export tests (Cantor fixture)
     julia --project=.. runtests.jl dag          # Run AA-DAG tests (both benchmark models)
     julia --project=.. runtests.jl python       # Run Python tests
@@ -400,7 +402,7 @@ group -- `hermite`, `hermite_accuracy`, `hermite_cantor`, all retired with the
 run of zero tests.  `ACE_REQUIRE_GROUPS` already catches the CI form of that mistake; this
 catches the command-line form.  Add a name here in the same edit that adds its group.
 """
-const KNOWN_GROUPS = (:all, :syntax, :etace, :accuracy, :multispecies, :dag, :pair,
+const KNOWN_GROUPS = (:all, :syntax, :etace, :accuracy, :multispecies, :ace1, :dag, :pair,
                       :python, :lammps, :mpi, :parity)
 
 """
@@ -491,6 +493,16 @@ function main()
             run_group("multispecies") do
                 @info "Running multi-species export tests..."
                 include(joinpath(TEST_DIR, "test_multispecies.jl"))
+            end
+        end
+
+        # ace1_model-derived models: real SPHERICAL harmonics (Ytype = :spherical) and the
+        # per-species-pair ACE1 pair envelope, exported from the unsplinified exact twin and
+        # gated at 1e-12 against both the ET stack and the ACEModel.  Needs no fixture.
+        if should_run_test(selection, :ace1) || should_run_test(selection, :all)
+            run_group("ace1") do
+                @info "Running ace1_model-derived export tests..."
+                include(joinpath(TEST_DIR, "test_ace1_export.jl"))
             end
         end
 
@@ -634,7 +646,7 @@ assert that each required group actually executed.
 
 `ACE_REQUIRE_GROUPS=all` requires every group that was selected and reached a decision;
 otherwise it is a comma-separated list of group names (`syntax`, `etace`, `accuracy`,
-`multispecies`, `dag`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
+`multispecies`, `ace1`, `dag`, `pair`, `parity`, `python`, `lammps`, `mpi`). A required group that
 was skipped, or that was never reached because the selection excluded it, fails.
 """
 function report_group_status(selection)
