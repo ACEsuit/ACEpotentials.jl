@@ -13,22 +13,71 @@ The export workflow:
 ## Quick Start
 
 ```julia
-using ACEpotentials
+using ACEpotentials, Lux, Random
+ETM = ACEpotentials.ETModels
 
-# Fit your model (example)
-model = ACEpotentials.ace1_model(elements=[:Si], order=3, totaldegree=10)
-ACEpotentials.acefit!(data, model)
+# An ACE model with LEARNABLE (unsplinified) radial bases, fitted as usual ...
+model = ACEpotentials.Models.ace_model(elements = (:Si,), order = 3, ...)
+ps, st = Lux.setup(Random.default_rng(), model)
+# ... fit, giving ps ...
 
-# Create deployment package
+# ... converted to an ETACE stack (one-body + pair + many-body) ...
+calc = ETM.convert2et_full(model, ps, st)
+
+# ... and packaged.
 include("export/scripts/build_deployment.jl")
-build_deployment(model, "silicon_ace"; output_dir="deployments/")
+build_deployment(calc, "silicon_ace"; output_dir="deployments/")
 ```
+
+`export_ace_model` / `build_deployment` take the converted ETACE stack (a `StackedCalculator`
+of `ETOneBody` + `ETPairModel` + `ETACE`) or a bare `ETACEPotential`; they do not take an
+`ACEPotential` directly. For a model built with `ace1_model`, see
+[Models built with `ace1_model`](#models-built-with-ace1_model).
 
 This creates a self-contained deployment in `deployments/silicon_ace/` containing:
 - Compiled shared library
 - Julia runtime libraries (no Julia installation needed)
 - LAMMPS plugin and examples
 - Python/ASE calculator and examples
+
+## Supported models
+
+The exporter reproduces the ETACE stack it is given to 1e-12 (energies, forces, virial), and
+it **refuses** what it cannot express rather than exporting an approximation of it:
+
+| component | exported | refused |
+|---|---|---|
+| radial basis | learnable `LearnableRnlrzzBasis` (any polynomials, dense or one-hot mixing, per-pair cutoffs) | a splinified model (see below) |
+| angular basis | real **solid** harmonics (`Ytype = :solid`, `ace_model`'s default) and real **spherical** harmonics (`Ytype = :spherical`, what `ace1_model` uses), L2 normalisation | complex harmonics; any other normalisation (e.g. `:racah`) |
+| pair envelope | `PolyEnvelope1sR` (`ace_model`'s default) and `ACE1_PolyEnvelope1sR` (`ace1_model`'s; `rcut`, `r0` per species pair) | anything else |
+| reference potential | one-body `E0`s | ZBL (`convert2et_full` has no ZBL term) |
+
+Before the angular-basis check existed, a `Ytype = :spherical` model was exported with solid
+harmonics and gave wrong energies and forces **with no error**; `test/test_ace1_export.jl`
+(group `ace1`) is the regression gate for it.
+
+### Models built with `ace1_model`
+
+`ace1_model` splinifies both of its radial bases, and a splinified model cannot be exported
+(nor converted with `convert2et`). Export it through its **exact twin**: the same model built
+without the two `splinify()` calls, which `test/etmodels/ace1_exact_twin.jl` (at the
+repository root) provides. Its basis -- the A/AA specification, the A2B maps, the radial and
+pair specifications -- is identical to `ace1_model`'s, so it takes the same `WB` / `Wpair`.
+
+```julia
+include(joinpath(pkgdir(ACEpotentials), "test", "etmodels", "ace1_exact_twin.jl"))
+twin = ace1_exact_twin(elements = [:Si, :Ge], order = 3, totaldegree = 8)  # ace1_model kwargs
+ps, st = Lux.setup(Random.default_rng(), twin)
+# ... fit the twin, OR copy the fitted weights of the splinified ace1_model:
+#     ps.WB .= spl_ps.WB;  ps.Wpair .= spl_ps.Wpair
+calc = ACEpotentials.ETModels.convert2et_full(twin, ps, st)
+export_ace_model(calc, "model.jl")
+```
+
+The export reproduces the twin exactly. Weights fitted on the splinified `ace1_model` and
+copied across give the *polynomial* model those splines were tabulated from, which differs from
+the splinified one by the spline tabulation error (measured 3e-6 to 5.5e-4 eV/Å on random-weight
+SiGe/Cantor models); fit the twin itself when the deployed model must match the fit exactly.
 
 ## Choosing ACE vs ETACE
 
@@ -37,25 +86,13 @@ ACEpotentials supports two evaluation backends. Choose based on your needs:
 | Feature | Standard ACE | ETACE |
 |---------|-------------|-------|
 | **Evaluation speed** | not measured on this branch | not measured on this branch |
-| **Export complexity** | Simple (`ace1_model`) | Requires conversion step |
+| **Export** | via conversion to ETACE (`convert2et_full`) | direct |
 | **Use case** | Development, small MD | Production MD, HPC |
 
 There is no measured speed comparison between the two backends in this repository. Any
 figure quoted here previously was unsourced; benchmark numbers belong in
 `export/bench/README.md`, whose measurement protocol is fixed and whose "## Results" section
 is filled in by the benchmarking step of the export-parity plan.
-
-### Standard ACE Export (Simpler)
-
-```julia
-# Fit model
-model = ace1_model(elements=[:Si], order=3, totaldegree=10)
-acefit!(data, model)
-
-# Export directly
-include("export/scripts/build_deployment.jl")
-build_deployment(model, "silicon_ace")
-```
 
 ### ETACE Export (Recommended for Production)
 
@@ -386,7 +423,9 @@ Typical deployment sizes (measured on `libace_cantor_poly_b2.so`, a 5-species or
    current ABI; it is inside every timing row in [`bench/README.md`](bench/README.md), so the
    published throughput already includes it.
 3. **A splinified model cannot be exported.** See the section above: `:hermite_spline` was
-   removed and it was the only path such a model had. Export the unsplinified model instead.
+   removed and it was the only path such a model had. Export the unsplinified model instead
+   -- for `ace1_model`, which always splinifies, its exact twin (see
+   [Models built with `ace1_model`](#models-built-with-ace1_model)).
 4. **One workspace per concurrent caller, from a pool of 32.** Not a physical limit — see the
    C API section — but it is fixed when the library is built.
 5. **The minimal-export path is gone.** It was inoperable — `pair_ace_minimal.cpp` looked for
