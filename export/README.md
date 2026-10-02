@@ -40,6 +40,9 @@ This creates a self-contained deployment in `deployments/silicon_ace/` containin
 - LAMMPS plugin and examples
 - Python/ASE calculator and examples
 
+Be aware that `build_deployment` uses binary building tools that sometimes have issues with network file systems. 
+If you are compiling e.g. in an HPC environment and run into issues with processes like `ldd` failing, please try compiling the same model on a directory local to the machine you're using. 
+
 ## Supported models
 
 The exporter reproduces the ETACE stack it is given to 1e-12 (energies, forces, virial), and
