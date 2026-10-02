@@ -27,6 +27,7 @@ benchmark/deployments/**/Makefile
 benchmark/deployments/**/cmake_install.cmake
 benchmark/**/log.lammps
 benchmark/log.lammps
+benchmark/tune.json
 log.lammps
 
 # Python

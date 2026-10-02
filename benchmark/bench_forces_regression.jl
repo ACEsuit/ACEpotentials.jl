@@ -84,13 +84,13 @@ function run_table()
 end
 
 # ---------------------------------------------------------------------------
-# Isolation: time the gradient step itself (Zygote `site_grads`) vs the
-# analytic `site_basis_jacobian`, with the graph precomputed — isolates the AD
-# cost from graph construction and force assembly.
+# Isolation: time the ETACE gradient step `site_grads` vs the full basis jacobian
+# `site_basis_jacobian`, with the graph precomputed — isolates the gradient cost
+# from graph construction and force assembly.
 # ---------------------------------------------------------------------------
 function run_isolation()
    println("\nIsolation: gradient step only (graph precomputed)")
-   println("| Atoms | site_grads (Zygote, ms) | site_basis_jacobian (analytic, ms) | ratio |")
+   println("| Atoms | site_grads (ms) | site_basis_jacobian (full, ms) | ratio |")
    println("|-------|-------------------------|------------------------------------|-------|")
    # Reach into the StackedCalculator to grab the ETACE many-body component.
    ace_sub = et_calc.calcs[end]   # ETACE WrappedSiteCalculator (last in the stack)
