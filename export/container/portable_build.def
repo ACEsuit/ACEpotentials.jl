@@ -1,0 +1,92 @@
+Bootstrap: docker
+From: quay.io/pypa/manylinux_2_28_x86_64
+
+%labels
+    Author ACEsuit developers
+    Description Portable build environment for ACEpotentials LAMMPS plugins
+    Version 1.0
+    GlibcTarget 2.28
+
+%help
+    This container builds portable ACE model libraries and LAMMPS plugins
+    using the manylinux_2_28 environment (glibc 2.28).
+
+    Binaries built in this container are compatible with:
+    - RHEL 8 / AlmaLinux 8 / Rocky Linux 8
+    - Ubuntu 20.04+
+    - Debian 11+
+    - Any Linux with glibc >= 2.28
+
+    Usage:
+        apptainer exec portable_build.sif julia build_portable.jl config.yaml
+
+    Or use the wrapper script:
+        ./build_portable.sh config.yaml
+
+%post
+    # ============================================================
+    # Install Julia 1.12
+    # ============================================================
+    JULIA_VERSION=1.12.0
+    JULIA_URL="https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
+
+    echo "Installing Julia ${JULIA_VERSION}..."
+    curl -fsSL "${JULIA_URL}" | tar --no-same-owner -xz -C /opt
+    ln -sf /opt/julia-${JULIA_VERSION}/bin/julia /usr/local/bin/julia
+
+    # Verify Julia installation
+    julia --version
+
+    # ============================================================
+    # Install build tools
+    # ============================================================
+    echo "Installing build tools..."
+
+    # manylinux_2_28 is AlmaLinux 8 based, uses dnf
+    dnf install -y cmake make zip unzip
+
+    # GCC should already be available (devtoolset in manylinux)
+    gcc --version
+    g++ --version
+
+    # ============================================================
+    # Create workspace directories
+    # ============================================================
+    mkdir -p /workspace
+    mkdir -p /opt/julia_depot
+
+    # ============================================================
+    # Pre-install Julia registry to speed up builds
+    # ============================================================
+    echo "Initializing Julia registry..."
+    export JULIA_DEPOT_PATH=/opt/julia_depot
+
+    # Just add the General registry - packages will be installed when needed
+    julia -e '
+        using Pkg
+        println("Julia version: ", VERSION)
+        println("Depot path: ", DEPOT_PATH)
+        # Registry is auto-added on first Pkg operation
+        Pkg.status()
+    '
+
+    echo "Container setup complete!"
+
+%environment
+    # Julia paths
+    export PATH=/opt/julia-1.12.0/bin:$PATH
+    export JULIA_DEPOT_PATH=/workspace/.julia:/opt/julia_depot
+
+    # Ensure we use the container's compilers
+    export CC=gcc
+    export CXX=g++
+
+%runscript
+    exec julia "$@"
+
+%test
+    echo "Testing container..."
+    julia --version
+    gcc --version
+    cmake --version
+    echo "All tests passed!"

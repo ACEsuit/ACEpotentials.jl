@@ -1,0 +1,529 @@
+#=
+LAMMPS Plugin Tests (serial, plus a two-rank parity run)
+
+The gate this file exists for, and WHICH REFERENCE EACH CHECK USES:
+
+  1. `pair_style ace` in LAMMPS  vs  the exported model evaluated in Julia   **1e-10**
+     (`exported_efv` from check_export.jl, on the geometry LAMMPS itself wrote out with
+     `write_data`).  This is the plan's LAMMPS gate.  It replaced a comparison to Python at
+     1e-6 that, on top of being 4 orders of magnitude loose, was DEAD: it ran only
+     `if haskey(TEST_ARTIFACTS, "python_energy_8atom")` and nothing ever set that key.
+
+  2. the compiled library through the Python C API  vs  the same Julia numbers   **1e-12**
+     Kept as a second, independent check so that a failure of (1) is attributable: if (2)
+     also fails, the exported model and the library disagree; if only (1) fails, the fault
+     is on the LAMMPS side (neighbour list, pair style, MPI).
+
+  3. two MPI ranks  vs  one rank, same geometry, same library   **1e-12**
+     Delegated to `export/lammps/test/run_two_ranks.sh` so CI can run it standalone.
+
+Both sides of (1) and (2) evaluate the *same* coordinates: LAMMPS builds the cell, perturbs
+it and writes `geom.data`; Julia and Python read that file back.  The test additionally
+asserts that the coordinates in `geom.data` are bit-identical to the ones in the 17-digit
+dump, so "identical coordinates" is checked rather than assumed.
+
+WHAT MODEL THESE GATES RUN ON, AND WHY IT MATTERS.  `build/test_etace_model.jl` (and the
+`libace_test.so` compiled from it) is exported from a FULL `StackedCalculator` --
+`ETOneBody + ETPairModel + ETACE` -- built by `setup_stacked_model` in
+`test_etace_export.jl`.  It used to be exported from a bare `ETACEPotential`, whose
+generated file said `# PAIR POTENTIAL: none in this model` and whose `pair_energy_d`
+returned a hard `(0.0, 0.0)`.  All three gates above therefore ran on a many-body-only
+model: a sign error or a wrong per-pair cutoff in the generated pair code would have left
+every LAMMPS-side check green, and the only thing that would have caught it
+(`test_pair_export.jl`) is Julia-only and guarded on host-local fixture data, so it never
+runs on a hosted CI runner.  The gate below asserts `PAIR_C`, `E0_1` and a non-zero
+`pair_energy_d` so that this cannot silently regress.
+
+The pair coefficients here are random, not fitted -- that is fine, and is the point: the
+pair *code path* is what these gates are covering.  Quantitative pair parity against a
+fitted model remains `test_pair_export.jl`'s job.
+
+Everything else here (plugin loading, stress symmetry, NVE) is a smoke test of the plugin
+and is labelled as such -- the CI model has random parameters, so its energy conservation
+carries no physics.
+=#
+
+using Test
+using DelimitedFiles
+using Statistics: std, mean
+using LinearAlgebra: norm
+using Printf: @sprintf
+
+include(joinpath(@__DIR__, "check_export.jl"))
+
+@testset "LAMMPS Plugin" verbose=true begin
+    setup = lammps_setup()
+    lib_path = setup.lib_path
+    plugin_path = setup.plugin_path
+    lmp_exe = setup.exe
+    env = setup.env
+    lammps_test_dir = joinpath(TEST_DIR, "lammps")
+    model_file = joinpath(TEST_DIR, "build", "test_etace_model.jl")
+    mkpath(lammps_test_dir)
+
+    if !isfile(lib_path)
+        @test_skip "ACE library not compiled - skipping LAMMPS tests"
+        return
+    end
+    if isempty(lmp_exe)
+        @test_skip "LAMMPS not found - skipping tests"
+        return
+    end
+    @info "Using LAMMPS: $lmp_exe"
+
+    # Build the plugin if it is not there yet.
+    if !isfile(plugin_path)
+        @info "Building LAMMPS ACE plugin..."
+        cmake_dir = joinpath(EXPORT_DIR, "lammps", "plugin", "cmake")
+        lammps_src = get(ENV, "LAMMPS_SRC", "")
+        if isempty(lammps_src) || !isdir(lammps_src)
+            for src in [joinpath(dirname(dirname(lmp_exe)), "src"),
+                        joinpath(dirname(lmp_exe), "..", "src"),
+                        "/usr/local/include/lammps", "/usr/include/lammps"]
+                if isdir(src)
+                    lammps_src = src
+                    break
+                end
+            end
+        end
+        if isempty(lammps_src) || !isdir(lammps_src)
+            @test_skip "LAMMPS source not found - cannot build plugin"
+            return
+        end
+        @info "Using LAMMPS source: $lammps_src"
+        mkpath(dirname(plugin_path))
+        cd(dirname(plugin_path)) do
+            run(`cmake $(cmake_dir) -DLAMMPS_HEADER_DIR=$(lammps_src)`)
+            run(`make -j4`)
+        end
+        if !isfile(plugin_path)
+            @test_skip "Plugin build failed"
+            return
+        end
+    end
+
+    """
+    Run a LAMMPS input under the environment `find_lammps_exe` proved the executable runs in,
+    and return stdout+stderr combined.  A non-zero exit appends `LAMMPS_EXIT_NONZERO` instead
+    of throwing, so a failing run shows up as a test failure with LAMMPS's own message in the
+    log rather than as a bare `failed process` error.
+    """
+    function run_lmp(input::AbstractString, name::AbstractString)
+        input_file = joinpath(lammps_test_dir, name)
+        write(input_file, input)
+        buf = IOBuffer()
+        ok = try
+            success(pipeline(setenv(`$(lmp_exe) -in $(input_file)`, env);
+                             stdout = buf, stderr = buf))
+        catch e
+            @error "LAMMPS run failed to start" input_file exception = e
+            false
+        end
+        out = String(take!(buf))
+        ok || (out *= "\nLAMMPS_EXIT_NONZERO\n")
+        return out
+    end
+
+    "The `ACE_ENERGY` line every input below prints at 17 significant digits."
+    function parse_ace_energy(output)
+        m = match(r"ACE_ENERGY\s+(\S+)", output)
+        return m === nothing ? nothing : parse(Float64, m.captures[1])
+    end
+
+    @testset "Plugin Loading" begin
+        out = run_lmp("""
+        units metal
+        atom_style atomic
+        boundary p p p
+        lattice diamond 5.43
+        region box block 0 1 0 1 0 1
+        create_box 1 box
+        create_atoms 1 box
+        mass 1 28.0855
+        plugin load $(plugin_path)
+        pair_style ace
+        pair_coeff * * $(lib_path) Si
+        run 0
+        """, "test_load.lmp")
+        @test !occursin("ERROR", out)
+        @test occursin("Loop time", out) || occursin("Total wall time", out)
+    end
+
+    # =====================================================================================
+    # THE GATE: LAMMPS vs the exported model evaluated in Julia, 1e-10
+    # =====================================================================================
+    geom_file = joinpath(lammps_test_dir, "geom.data")
+    dump_file = joinpath(lammps_test_dir, "forces.dump")
+    E_lmp = Ref{Union{Nothing,Float64}}(nothing)
+    E_jl = Ref(0.0); F_jl = Ref(SVector{3,Float64}[]); natoms = Ref(0)
+
+    @testset "LAMMPS vs Julia (reference: exported model in Julia, tol 1e-10)" begin
+        out = run_lmp("""
+        units metal
+        atom_style atomic
+        boundary p p p
+        lattice diamond 5.43
+        region box block 0 1 0 1 0 1
+        create_box 1 box
+        create_atoms 1 box
+        mass 1 28.0855
+
+        # Perturb, then hand the exact geometry to the Julia side through a file rather than
+        # rebuilding it there: two builders agreeing is an assumption, a file is not.
+        displace_atoms all random 0.01 0.01 0.01 42
+        write_data $(geom_file)
+
+        plugin load $(plugin_path)
+        pair_style ace
+        pair_coeff * * $(lib_path) Si
+
+        variable e equal pe
+        dump d all custom 1 $(dump_file) id type x y z fx fy fz
+        dump_modify d sort id format float %.17g
+        run 0
+        print "ACE_ENERGY \$(v_e:%.17g)"
+        """, "test_parity.lmp")
+
+        @test !occursin("ERROR", out)
+        @test isfile(geom_file)
+        @test isfile(dump_file)
+
+        E_lmp[] = parse_ace_energy(out)
+        @test E_lmp[] !== nothing
+        @test isfinite(E_lmp[])
+
+        dump = read_lammps_dump(dump_file)
+        sys = read_lammps_data(geom_file, (:Si,))
+        natoms[] = length(sys)
+        @test natoms[] == 8
+
+        # Both sides evaluate identical coordinates -- checked, not assumed.  `write_data`
+        # and the %.17g dump must round-trip to the same doubles.
+        Xdata = [SVector{3,Float64}(ustrip.(u"Å", p)) for p in position(sys, :)]
+        maxdx = maximum(maximum(abs.(a .- b)) for (a, b) in zip(Xdata, dump.X))
+        @info "geometry round-trip: max|x_data - x_dump| = $maxdx Å"
+        @test maxdx == 0.0
+
+        ex = load_exported(model_file)
+        @test ex.I2Z == [14]        # the `(:Si,)` type map above is only valid for a Si model
+        rcut = ex.RCUT_MAX
+
+        # The library model must actually CONTAIN a pair term and an E0, or all three gates
+        # in this file quietly degrade into many-body-only checks.  That is not hypothetical:
+        # until Task 3's fix round the library was exported from a bare ETACEPotential, whose
+        # generated `pair_energy_d` returned a hard `(0.0, 0.0)`.  Asserted here, at the gate,
+        # as well as at the export site in test_etace_export.jl, because it is here that a
+        # regression would go unnoticed.
+        @test isdefined(ex, :PAIR_C)
+        @test isdefined(ex, :E0_1)
+        Vpair, dVpair = Base.invokelatest(ex.pair_energy_d, 2.35, 1, 1)
+        @info @sprintf("library pair term at r = 2.35 Å: V = %.6e eV, dV/dr = %.6e eV/Å",
+                       Vpair, dVpair)
+        @test abs(Vpair) > 1e-8     # a live pair term, not the (0.0, 0.0) stub
+        @test abs(dVpair) > 1e-8
+        E, F, _ = Base.invokelatest(exported_efv, ex, sys, rcut)
+        E_jl[] = E; F_jl[] = F
+
+        dE_atom = abs(E - E_lmp[]) / natoms[]
+        dF = maximum(norm.(F .- dump.F))
+        @info @sprintf("LAMMPS vs Julia: |dE|/atom = %.3e eV/atom, max|dF| = %.3e eV/Å (tol 1e-10)",
+                       dE_atom, dF)
+        @test dE_atom <= 1e-10
+        @test dF <= 1e-10
+
+        TEST_ARTIFACTS["lammps_energy_8atom"] = E_lmp[]
+        TEST_ARTIFACTS["julia_energy_8atom"] = E
+    end
+
+    # =====================================================================================
+    # Attribution check: the compiled library through the Python C API vs the same Julia
+    # numbers, 1e-12.  Same geometry file, so a discrepancy here is the library, not LAMMPS.
+    # =====================================================================================
+    @testset "Python library vs Julia (reference: exported model in Julia, tol 1e-12)" begin
+        # `required_check` makes an unavailable prerequisite a FAILURE, not a skip, whenever
+        # ACE_REQUIRE_GROUPS names `lammps`.  Without that, a CI job that never installed
+        # `ase` would report `lammps=ran` with this attribution gate silently absent.
+        #
+        # The reason string names only what `check_python_available()` (runtests.jl) actually
+        # imports: `numpy` and `ase`.  It does NOT import `ase_ace`, which `eval_library.py`
+        # needs (`from ase_ace import ACELibraryCalculator`).  A host with `ase` but no
+        # `ase-ace` therefore passes this guard and fails a few lines below instead, inside
+        # the `catch` that reports "python library evaluation failed" -- attributed correctly
+        # there, just not by this string.  `ase_ace` is deliberately NOT added to
+        # `check_python_available()` itself: that function also gates the whole `python`
+        # group, most of whose testsets need `ase_ace`, but two (`Library Loading`,
+        # `Utility Functions`) do not, and folding `ase_ace` into the shared guard would skip
+        # those on a host that could still run them. Both `required_check`s below are called
+        # unconditionally (not short-circuited with `&&`), so a host missing BOTH
+        # prerequisites gets BOTH reasons registered instead of only the first; `&&` on the
+        # two resulting booleans is what decides whether to proceed.
+        python_ok = required_check(check_python_available(), "lammps",
+                          "python3 with numpy and ase is needed for the 1e-12 " *
+                          "library-vs-Julia attribution gate (ase_ace's own absence " *
+                          "surfaces below, as an eval_library.py failure, not here)")
+        geom_ok = required_check(natoms[] > 0, "lammps", "the parity geometry was not produced")
+        if python_ok && geom_ok
+            penv = ace_runtime_env(dirname(lib_path))
+            penv["ACE_LIB_PATH"] = lib_path
+            penv["ACE_GEOM"] = geom_file
+            penv["ACE_TYPE_MAP"] = "1:14"
+            script = joinpath(TEST_DIR, "python", "eval_library.py")
+            out = try
+                read(setenv(`python3 $script`, penv), String)
+            catch e
+                @error "python library evaluation failed" exception = e
+                ""
+            end
+            @test !isempty(out)
+            if !isempty(out)
+                rows = filter(!isempty, strip.(split(out, '\n')))
+                E_py = parse(Float64, rows[1])
+                F_py = [SVector{3,Float64}(parse.(Float64, split(r))...) for r in rows[2:end]]
+                @test length(F_py) == natoms[]
+                dE_atom = abs(E_py - E_jl[]) / natoms[]
+                dF = maximum(norm.(F_py .- F_jl[]))
+                @info @sprintf("library vs Julia: |dE|/atom = %.3e eV/atom, max|dF| = %.3e eV/Å (tol 1e-12)",
+                               dE_atom, dF)
+                @test dE_atom <= 1e-12
+                @test dF <= 1e-12
+            end
+        end
+    end
+
+    # =====================================================================================
+    # Two MPI ranks vs one rank, 1e-12.  The comparison itself lives in
+    # export/lammps/test/run_two_ranks.sh (+ compare_dump.py) so that CI, Task 6 and Task 8
+    # can run it without Julia.
+    # =====================================================================================
+    @testset "two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)" begin
+        script = joinpath(EXPORT_DIR, "lammps", "test", "run_two_ranks.sh")
+        if required_check(!isempty(setup.mpirun), "lammps",
+                          "no mpirun matching this LAMMPS executable, so the 1-rank vs " *
+                          "2-rank gate cannot run")
+            workdir = joinpath(lammps_test_dir, "two_ranks")
+            cmd = `bash $script --lmp $(lmp_exe) --mpirun $(setup.mpirun) --plugin $(plugin_path) --lib $(lib_path) --workdir $workdir --tol 1e-12`
+            buf = IOBuffer()
+            try
+                run(pipeline(setenv(cmd, env); stdout = buf, stderr = buf))
+            catch e
+                @error "run_two_ranks.sh failed" exception = e
+            end
+            out = String(take!(buf))
+            println(out)
+            @test occursin("TWO_RANK_PARITY PASS", out)
+        end
+    end
+
+    @testset "Virial vs Julia (rattled cell, all six components, tol 1e-10)" begin
+        # THE ONE QUANTITY WHOSE WHOLE PATH HAD NO ASSERTION.  The virial travels Julia ->
+        # `ace_site_energy_forces_virial`'s Voigt packing -> the plugin's remap into LAMMPS'
+        # `virial[6]` -> LAMMPS' pressure tensor, and this branch changed two of those links
+        # (the per-neighbour kernel builds the virial from the same `∂A` as the forces, and the
+        # plugin gained a `need_virial` branch that calls a different entry point on steps that
+        # do not need it).  The testset below asserts `isfinite` and cubic symmetry on a perfect
+        # diamond cell, under which an off-diagonal transposition, a global sign error or the
+        # wrong `need_virial` entry are ALL invisible: every off-diagonal is zero and the three
+        # diagonals are equal by symmetry, so the assertions pass on numbers that carry no
+        # information about those defects.
+        #
+        # This one uses a RATTLED cell, so all six components are large and distinct, and
+        # compares each against the Julia reference on the identical geometry.
+        #
+        # THE UNITS CONSTANT IS LAMMPS', NOT CODATA'S.  With zero velocities, LAMMPS reports
+        # `P_ab = virial_ab / V`, converting eV/Å³ to bar with `force->nktv2p`, which in `metal`
+        # units is **1.6021765e6** (src/update.cpp:197) -- the pre-2019 value.  Using CODATA
+        # 2018's 1.602176634e6 instead leaves a constant 8.36e-8 relative offset on all six
+        # components, which is exactly the ratio of the two constants and nothing to do with
+        # the potential.  That was measured before this gate was written, not guessed.
+        #
+        # IF THIS TEST EVER FAILS WITH A UNIFORM ~8.4e-8 OFFSET ON ALL SIX COMPONENTS, LAMMPS
+        # HAS CHANGED ITS CONSTANT.  Update `nktv2p` below to match `src/update.cpp`; do NOT
+        # touch the tolerance.  A uniform relative offset on every component at once is a units
+        # constant, never a potential defect -- a real error in the virial path would move some
+        # components and not others, or change a sign.  This branch's own history is the reason
+        # the instruction is spelled out: the tolerance is the thing people reach for.
+        #
+        # THE MAPPING WAS ESTABLISHED BY MEASUREMENT, NOT DERIVED.  `P_ab = V_ab / vol` with no
+        # sign flip and no transposition, where `V` is the 3x3 returned by `exported_efv`
+        # (itself `-Σ R ⊗ ∂E/∂R` summed over sites).  Worth stating because it is easy to derive
+        # the opposite sign on paper: LAMMPS' virial is `Σ r ⊗ f` and `f = -∂E/∂R`, so the two
+        # minus signs cancel.  If this gate ever fails on sign alone, check that reasoning
+        # before changing the generator.
+        vgeom = joinpath(lammps_test_dir, "virial_geom.data")
+        out = run_lmp("""
+        units metal
+        atom_style atomic
+        boundary p p p
+        lattice diamond 5.43
+        region box block 0 1 0 1 0 1
+        create_box 1 box
+        create_atoms 1 box
+        mass 1 28.0855
+
+        # 0.05 Å, not the 0.01 Å of the force gate: the off-diagonals must be far enough from
+        # zero that agreeing with the reference is a real constraint.  Asserted below.
+        displace_atoms all random 0.05 0.05 0.05 4242
+        write_data $(vgeom)
+
+        plugin load $(plugin_path)
+        pair_style ace
+        pair_coeff * * $(lib_path) Si
+
+        variable e equal pe
+        variable v equal vol
+        thermo_style custom step pe pxx pyy pzz pxy pxz pyz
+        run 0
+        print "ACE_VOL \$(v_v:%.17g)"
+        print "ACE_P \$(pxx:%.17g) \$(pyy:%.17g) \$(pzz:%.17g) \$(pxy:%.17g) \$(pxz:%.17g) \$(pyz:%.17g)"
+        """, "test_virial_parity.lmp")
+
+        @test !occursin("ERROR", out)
+        @test !occursin("LAMMPS_EXIT_NONZERO", out)
+        mP = match(r"ACE_P\s+(.*)", out)
+        mV = match(r"ACE_VOL\s+(\S+)", out)
+        @test mP !== nothing && mV !== nothing
+        if mP !== nothing && mV !== nothing && isfile(vgeom)
+            P = parse.(Float64, split(strip(mP.captures[1])))       # bar: xx yy zz xy xz yz
+            vol = parse(Float64, mV.captures[1])
+            @test length(P) == 6
+            @test all(isfinite, P)
+
+            exv = load_exported(model_file)
+            sysv = read_lammps_data(vgeom, (:Si,))
+            _, _, Vjl = Base.invokelatest(exported_efv, exv, sysv, exv.RCUT_MAX)
+
+            # The reference is symmetric by construction (R ⊗ ∂E/∂R summed both ways); if it
+            # ever is not, the six-component comparison below is comparing the wrong thing.
+            @test maximum(abs.(Vjl - Vjl')) < 1e-12
+
+            nktv2p = 1.6021765e6
+            ref = [Vjl[1, 1], Vjl[2, 2], Vjl[3, 3], Vjl[1, 2], Vjl[1, 3], Vjl[2, 3]] ./ vol .* nktv2p
+            names = ("pxx", "pyy", "pzz", "pxy", "pxz", "pyz")
+
+            # NOT VACUOUS: every component, the off-diagonals included, must be far from zero
+            # BEFORE it is compared -- otherwise this gate degrades into the cubic smoke test
+            # it was added to replace.  On this geometry the off-diagonals are ~1e5-1e6 bar.
+            @test minimum(abs.(ref)) > 1e4
+
+            for k in 1:6
+                rel = abs(P[k] - ref[k]) / abs(ref[k])
+                @info @sprintf("virial %s: LAMMPS %+.10e bar, Julia %+.10e bar, rel %.3e",
+                               names[k], P[k], ref[k], rel)
+                @test rel <= 1e-10
+            end
+        end
+    end
+
+    @testset "Stress/Virial (smoke: cubic symmetry only)" begin
+        out = run_lmp("""
+        units metal
+        atom_style atomic
+        boundary p p p
+        lattice diamond 5.43
+        region box block 0 1 0 1 0 1
+        create_box 1 box
+        create_atoms 1 box
+        mass 1 28.0855
+        plugin load $(plugin_path)
+        pair_style ace
+        pair_coeff * * $(lib_path) Si
+        variable e equal pe
+        thermo_style custom step pe pxx pyy pzz pxy pxz pyz
+        run 0
+        print "ACE_ENERGY \$(v_e:%.17g)"
+        """, "test_stress.lmp")
+
+        lines = split(out, "\n")
+        stress = nothing
+        for (i, line) in enumerate(lines)
+            if occursin("Step", line) && occursin("PotEng", line) && i < length(lines)
+                parts = split(strip(lines[i+1]))
+                length(parts) >= 8 && (stress = [parse(Float64, parts[j]) for j in 3:8])
+                break
+            end
+        end
+        @test stress !== nothing
+        @test all(isfinite.(stress))
+        rel_std = std(stress[1:3]) / abs(mean(stress[1:3]))
+        @test rel_std < 0.01
+    end
+
+    # LIVENESS.  This testset already ran 100 NVE steps before Task 6 and still missed the
+    # Task 6 crash (a workspace collected by the library's first garbage collection).  The
+    # reason is size, and the numbers below are MEASURED -- through `ace_gc_count()` and
+    # `ace_alloc_bytes()`, which exist precisely because two attempts to derive them were
+    # wrong (once from LAMMPS' `Ave neighs/atom`, which is the UNFILTERED list including the
+    # 2 A skin; once from the abort banner's allocation counter):
+    #
+    #   * a site call allocates about 56n + 208 bytes for n neighbours (measured 5136 B at
+    #     n = 88 against the 4928 the formula's leading term predicts);
+    #   * the library's FIRST collection lands at **43.1 MB** allocated -- measured directly
+    #     on libace_cantor_poly_b2.so, 8 796 site calls, 0.6 s;
+    #   * the plugin filters to rcut before building its arrays, so the n that matters is the
+    #     FILTERED count: 34 for this diamond-Si cell at rcut 5.5 (82.5 for the Cantor
+    #     benchmark box, where LAMMPS reports 201).
+    #
+    # So at `0 2` (64 atoms) this testset allocated 2112 B x 64 x 100 = **12.9 MB over the
+    # whole run, 0.30x the first-collection point** -- it never collected, and could not have
+    # seen the fault.  At `0 4` (512 atoms) it allocates **103 MB, 2.4x**, i.e. two or three
+    # collections with a live workspace in hand.
+    #
+    # 2.4x is adequate but not generous, which is why the DECISIVE check is the separate
+    # `liveness_gc.py` testset below: it drives the library until `ace_gc_count()` reports
+    # three collections and fails if they do not happen, so it cannot pass vacuously at any
+    # cell size.  This NVE run is the one that exercises the real `pair_style ace` path.
+    @testset "NVE runs (liveness: 512 atoms, ~103 MB allocated, 2.4x the first-GC point)" begin
+        out = run_lmp("""
+        units metal
+        atom_style atomic
+        boundary p p p
+        lattice diamond 5.43
+        region box block 0 4 0 4 0 4
+        create_box 1 box
+        create_atoms 1 box
+        mass 1 28.0855
+        plugin load $(plugin_path)
+        pair_style ace
+        pair_coeff * * $(lib_path) Si
+        velocity all create 100.0 42 dist gaussian
+        velocity all zero linear
+        fix nve all nve
+        thermo_style custom step pe ke etotal
+        thermo 10
+        run 100
+        """, "test_nve.lmp")
+
+        energies = Float64[]
+        in_thermo = false
+        for line in split(out, "\n")
+            if occursin("Step", line) && occursin("TotEng", line)
+                in_thermo = true
+                continue
+            end
+            if in_thermo
+                parts = split(strip(line))
+                if length(parts) >= 4 && tryparse(Int, parts[1]) !== nothing
+                    push!(energies, parse(Float64, parts[4]))
+                elseif occursin("Loop", line) || occursin("---", line)
+                    break
+                end
+            end
+        end
+
+        @test length(energies) >= 10
+        # NOT a physics gate: the CI model's coefficients are random, so conservation is not
+        # expected.  These only assert the integrator ran without blowing up.
+        #
+        # The bounds are PER ATOM because the energy is EXTENSIVE.  Keeping the old absolute
+        # 10.0 / 5.0 eV on a cell 8x larger would have made them 8x TIGHTER per atom -- the
+        # test would have been asserting something stricter than it ever did, for no reason
+        # connected to the change.  Per atom they assert exactly what they asserted at 64
+        # atoms, which is the point; in absolute terms that is 80 eV rather than 10, and that
+        # is the correct consequence of measuring an extensive quantity per atom, not a
+        # relaxation aimed at getting a larger cell to pass.
+        natoms = 8 * 4^3
+        @test abs(energies[end] - energies[1]) / natoms < 10.0 / 64
+        @test std(energies) / natoms < 5.0 / 64
+    end
+
+end

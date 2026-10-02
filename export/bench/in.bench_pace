@@ -1,0 +1,12 @@
+# pair_style pace RECURSIVE (ML-PACE) comparator on the same box.
+#   -var box <box file>  -var yace <file.yace|.ace>  -var steps <n>
+# `recursive` is stated explicitly: the plan's protocol compares against the recursive
+# evaluator, and `pair_style pace` on its own leaves the choice to the build's default.
+include ${box}
+pair_style pace recursive
+pair_coeff * * ${yace} ${species}
+velocity all create 300.0 4928459
+fix 1 all nve
+timestep 0.0
+thermo 50
+run ${steps}

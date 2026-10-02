@@ -1,0 +1,43 @@
+# gate manifest for 'cantor_h50_b2' -- written by export/bench/verify_bench_models.jl
+# consumed by export/bench/bench_parity.sh; do not hand-edit
+tag=cantor_h50_b2
+date=2026-09-17T00:37:39
+model_file=/home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/bench_parity/cantor_h50_b2_model.jl
+model_sha256=5eb0ea6dabd34c0bd2b364b0837d7dee8030a4652292afa0c00b0538da85e0d0
+source_gate_reference=E0 + pair + splinified(Nspl=50) ETACE
+source_gate_tol=1.0e-12
+source_gate_dE_per_atom=1.894781e-14
+source_gate_dF=1.930875e-14
+source_gate_dV_per_atom=1.794120e-13
+source_gate=PASS
+# reported only, never asserted: vs the FITTED stack dE/atom=4.962e-06 dF=2.679e-04 dV/atom=3.153e-04
+# library-level gates -- export/bench/gate_bench_libs.jl, 2026-09-17T00:41:19
+gate_box=box_cantor.lmp cells=5 natoms=500
+gate_lammps_exe=/home/eng/essswb/lammps/lammps-22Jul2025/build/lmp
+gate_mpirun=/software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+mpi2_decomposition_confirmed=1x1x2 procs=2   # asserted, not assumed
+lammps_vs_julia_tol=1e-10 dE_per_atom=5.456968e-15 dF=1.690321e-14
+library_vs_julia_tol=1e-12 dE_per_atom=9.094947e-15 dF=3.902086e-14
+mpi2_vs_mpi1_energy_tol_relative=1e-13 dE_relative=0.000000e+00   # GATED
+mpi2_vs_mpi1_force_tol_absolute=1e-12 dF=2.514600e-15   # GATED
+# reported only, never gated: mpi2 |dE| = 0.000000e+00 eV total = 0 ulp of E = -6768.19 eV; |dE|/atom = 0.000000e+00 eV/atom
+geometry_roundtrip_max_dx=0.0e+00
+liveness=PASS   # L1 LIVENESS_GC: 31261 calls, 72 neighbours, 129.3 MB allocated, 3 collection(s), 1.79 s | L2 100 NVE steps through pair_style ace
+library_gates=PASS
+gates=src,lib,lammps,mpi2,live
+lib_sha256=c279a7458e7d25229673f89ab6c16383470858f29907fbe00d29f7280d90f54b
+# library-level gates -- export/bench/gate_bench_libs.jl, 2026-09-17T01:29:21
+gate_box=box_cantor.lmp cells=5 natoms=500
+gate_lammps_exe=/home/eng/essswb/lammps/lammps-22Jul2025/build/lmp
+gate_mpirun=/software/easybuild/software/OpenMPI/4.1.6-GCC-13.2.0/bin/mpirun
+mpi2_decomposition_confirmed=1x1x2 procs=2   # asserted, not assumed
+lammps_vs_julia_tol=1e-10 dE_per_atom=5.456968e-15 dF=1.690321e-14
+library_vs_julia_tol=1e-12 dE_per_atom=9.094947e-15 dF=3.902086e-14
+mpi2_vs_mpi1_energy_tol_relative=1e-13 dE_relative=0.000000e+00   # GATED
+mpi2_vs_mpi1_force_tol_absolute=1e-12 dF=2.514600e-15   # GATED
+# reported only, never gated: mpi2 |dE| = 0.000000e+00 eV total = 0 ulp of E = -6768.19 eV; |dE|/atom = 0.000000e+00 eV/atom
+geometry_roundtrip_max_dx=0.0e+00
+liveness=PASS   # L1 LIVENESS_GC: 31261 calls, 72 neighbours, 129.3 MB allocated, 3 collection(s), 1.91 s | L2 100 NVE steps through pair_style ace
+library_gates=PASS
+gates=src,lib,lammps,mpi2,live
+lib_sha256=c279a7458e7d25229673f89ab6c16383470858f29907fbe00d29f7280d90f54b

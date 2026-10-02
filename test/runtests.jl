@@ -20,6 +20,7 @@ using ACEpotentials, Test, LazyArtifacts
     @testset "ET ACE" begin include("etmodels/test_etace.jl") end
     @testset "ET OneBody" begin include("etmodels/test_etonebody.jl") end
     @testset "ET Pair" begin include("etmodels/test_etpair.jl") end
+    @testset "ET Pair (ace1_model)" begin include("etmodels/test_etpair_ace1.jl") end
     @testset "ET Calculators" begin include("et_models/test_et_calculators.jl") end
 
     # ACE1 compatibility tests 

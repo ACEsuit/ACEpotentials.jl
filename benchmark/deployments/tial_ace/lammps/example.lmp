@@ -1,0 +1,51 @@
+# LAMMPS input script for ACE potential test
+# Silicon diamond structure
+
+# Initialize
+units           metal
+atom_style      atomic
+boundary        p p p
+
+# Load ACE plugin (adjust path as needed)
+plugin load plugin/build/aceplugin.so
+
+# Create diamond Si structure
+# a = 5.43 Angstrom for Si diamond
+lattice         diamond 5.43
+region          box block 0 2 0 2 0 2
+create_box      1 box
+create_atoms    1 box
+
+# Assign mass (Si = 28.0855)
+mass            1 28.0855
+
+# Set up ACE potential (adjust model path as needed)
+pair_style      ace
+pair_coeff * * ../lib/libace_tial_ace.so Si
+
+# Initial minimization
+minimize        1.0e-6 1.0e-8 1000 10000
+
+# Reset timestep after minimization
+reset_timestep  0
+
+# Output settings
+thermo_style    custom step temp pe ke etotal press vol
+thermo          100
+
+# Dump trajectory (optional)
+# dump            1 all custom 100 dump.ace.lammpstrj id type x y z fx fy fz
+
+# Run NVE to verify energy conservation
+velocity        all create 300.0 12345 dist gaussian
+fix             1 all nve
+timestep        0.001
+
+# Run for 1000 steps
+run             1000
+
+# Final energy check
+variable        final_pe equal pe
+variable        final_etotal equal etotal
+print           "Final potential energy: ${final_pe} eV"
+print           "Final total energy: ${final_etotal} eV"

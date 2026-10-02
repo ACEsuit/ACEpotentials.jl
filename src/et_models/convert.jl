@@ -6,7 +6,8 @@ import EquivariantTensors as ET
 import Polynomials4ML as P4ML
 
 import ACEpotentials.Models: LearnableRnlrzzBasis, PolyEnvelope2sX, 
-         _i2z, GeneralizedAgnesiTransform, PolyEnvelope1sR
+         _i2z, GeneralizedAgnesiTransform, PolyEnvelope1sR, 
+         ACE1_PolyEnvelope1sR
 
 using LinearAlgebra: norm, dot 
 
@@ -236,13 +237,21 @@ function _eval_env_1sr(r, rcut, p)
    return (s^(-p) - _1) * (_1 - s) * (s < _1)
 end
 
+# The pair envelope conversion.  `convertpair` calls the two-argument form; the
+# species list is only needed by envelopes that differ between species pairs.
+_convert_pair_envelope(envelopes, zlist) = _convert_pair_envelope(envelopes)
+
 function _convert_pair_envelope(envelopes) 
    TENV = typeof(envelopes[1]) 
    for env in envelopes
       @assert typeof(env) == TENV
    end 
    env1 = envelopes[1]
-   @assert env1 isa PolyEnvelope1sR 
+   if !(env1 isa PolyEnvelope1sR)
+      error("""convertpair: cannot convert a pair basis with envelope type $(TENV).
+             Supported pair envelopes: PolyEnvelope1sR (ace_model's default) and
+             ACE1_PolyEnvelope1sR (ace1_model's).""")
+   end
    for env in envelopes
       @assert env == env1 
    end
@@ -250,6 +259,53 @@ function _convert_pair_envelope(envelopes)
    f_env = ET.dp_transform( (x, st) -> _eval_env_1sr( norm(x.𝐫), st.rcut, st.p ), 
                             refst )
    return f_env                             
+end
+
+"""
+    _eval_env_ace1(r, rcut, r0, p)
+
+The ACE1 pair envelope, exactly as `evaluate(::ACE1_PolyEnvelope1sR, r, x)`:
+
+    env(r) = s^-p - sc^-p + p sc^(-p-1) (s - sc),  s = r / r0,  sc = rcut / r0,
+    env(r) = 0  for r > rcut.
+"""
+function _eval_env_ace1(r, rcut, r0, p)
+   if r > rcut; return zero(r); end
+   s = r / r0; scut = rcut / r0 
+   return s^(-p) - scut^(-p) + p * scut^(-p-1) * (s - scut)
+end
+
+"""
+    ACE1PairEnvelopeFn
+
+The `(x, st) -> env` function of the converted `ACE1_PolyEnvelope1sR` pair envelope.
+Its (rcut, r0) depend on the species pair: `st.params[k]` holds those of the ORDERED
+pair `k = ET.catcat2idx(st.zlist, x.z0, x.z1)` (centre species first), i.e. of
+`envelopes[iz0, jz]`, which is how `LearnableRnlrzzBasis` indexes them.  It is a named
+type, rather than a closure, so that code consuming a converted model (the LAMMPS
+exporter) can recognise the envelope by dispatch.
+"""
+struct ACE1PairEnvelopeFn <: Function end
+
+function (::ACE1PairEnvelopeFn)(x, st)
+   k = ET.catcat2idx(st.zlist, x.z0, x.z1)
+   prm = st.params[k]
+   return _eval_env_ace1(norm(x.𝐫), prm.rcut, prm.r0, st.p)
+end
+
+function _convert_pair_envelope(envelopes::AbstractMatrix{<: ACE1_PolyEnvelope1sR}, 
+                                zlist)
+   NZ = length(zlist)
+   @assert size(envelopes) == (NZ, NZ)
+   p = envelopes[1, 1].p
+   if any(env.p != p for env in envelopes)
+      error("convertpair: ACE1_PolyEnvelope1sR with different exponents p per species pair is not supported")
+   end
+   # one (rcut, r0) per ORDERED pair, in ET.catcat2idx order: k = (i - 1) * NZ + j
+   params = SVector{NZ^2}([ (rcut = envelopes[i, j].rcut, r0 = envelopes[i, j].r0) 
+                            for i in 1:NZ for j in 1:NZ ])
+   refst = ( zlist = tuple(zlist...), params = params, p = p )
+   return ET.dp_transform(ACE1PairEnvelopeFn(), refst)
 end
 
 
@@ -279,7 +335,7 @@ function convertpair(model)
    rbasis_1 = ET.EmbedDP(dp_agnesi, polys, et_linl)
 
    # 2: envelope 
-   dp_envelope = _convert_pair_envelope(basis.envelopes)
+   dp_envelope = _convert_pair_envelope(basis.envelopes, zlist)
    # _env_r = _convert_envelope(basis.envelopes)
    # dp_envelope = ET.dp_transform( (x, st) -> _env_r.f( norm(x.𝐫), st ), 
    #                                 _env_r.refstate )

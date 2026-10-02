@@ -1,0 +1,306 @@
+  syntax gate: 40 tracked export/*.jl files parsed
+
+================================================================================
+Testing export accuracy (:polynomial) and the removed spline path's refusals
+================================================================================
+
+[1] Polynomial export ...
+   Reference energy (FITTED calc): -19.566523701254148 eV
+   Polynomial export energy: -19.566523701254148 eV
+   |dE| vs FITTED:           0.0 eV
+   max|dF| vs FITTED:        3.4111139459141383e-15 eV/Å
+
+[2] Verifying Polynomial forces with finite differences...
+   Max FD error: 1.3314176998604536e-9 eV/Å
+   Polynomial FD verification passed
+
+[3] Testing the :polynomial export with random perturbations...
+   5 random perturbation tests passed
+
+[4] :hermite_spline and splinified models must be REFUSED...
+   ✓ radial_basis=:hermite_spline refused, no file written
+   ✓ splinified model refused in the default mode, no file written
+
+================================================================================
+All export accuracy tests passed!
+================================================================================
+
+NZ=3 asym :polynomial vs FITTED stack:
+    max|dE|/atom = 1.052655904829778e-15 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.718780149979097e-13 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 6.315935428978669e-14 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 3.410605131648481e-12 eV   [absolute; reported only, never gated]
+NZ=3 uniform :polynomial vs FITTED stack:
+    max|dE|/atom = 2.105311809659556e-15 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.7775998542847838e-13 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 4.7369515717340014e-14 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 2.5579538487363607e-12 eV   [absolute; reported only, never gated]
+DAG export:
+    max|dE|/atom = 1.6579330501069005e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 2.9688243872164413e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.5661546134045542e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 7.51754214434186e-12 eV   [absolute; reported only, never gated]
+task-1 :polynomial + pair vs full stack:
+    max|dE|/atom = 1.6579330501069005e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.8398660046026005e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.557272829207553e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 7.474909580196254e-12 eV   [absolute; reported only, never gated]
+site-function cross-check over 384 sites (pair export / pair-less export of the same model):
+    max|site_energy        - site_energy_forces_virial[1]| = 0.0 / 0.0
+    max|site_energy_forces[1] - site_energy_forces_virial[1]| = 0.0 / 0.0
+    max|site_energy_forces[2] - site_energy_forces_virial[2]| = 0.0 / 0.0
+    max|Rnl(value route) - Rnl(derivative route)| = 0.0 / 0.0  [must be 0.0]
+    max|Ylm(value route) - Ylm(derivative route)| = 3.552713678800501e-15 / 3.552713678800501e-15  [SpheriCart, not gated to 0]
+/home/eng/essswb/.local/lib/python3.9/site-packages/ase/io/lammpsdata.py:51: FutureWarning: "style" is deprecated; please use "atom_style".
+  warnings.warn(
+WARNING: Detected access to binding `Exported_6769433145112826836.RCUT_MAX` in a world prior to its definition world.
+  Julia 1.12 has introduced more strict world age semantics for global bindings.
+  !!! This code may malfunction under Revise.
+  !!! This code will error in future versions of Julia.
+Hint: Add an appropriate `invokelatest` around the access to this binding.
+To make this warning an error, and hence obtain a stack trace, use `julia --depwarn=error`.
+LIVENESS_GC: 31261 calls, 72 neighbours, 129.3 MB allocated, 3 collection(s), 1.99 s
+LIVENESS_GC PASS
+TWO_RANK_PARITY: 64 atoms   max|F| = 5.118419e+01 eV/A   min-force gate = 1.0e-03
+TWO_RANK_PARITY: max|dF| = 1.475553e-14 eV/A   mean|dF| = 2.401642e-15   tol = 1.0e-12   [absolute, per atom vector norm]
+TWO_RANK_PARITY: max|dx| = 0.000000e+00 A   [reported only -- a non-zero value means the two runs did not evaluate the same geometry]
+TWO_RANK_PARITY: |dE|/atom = 0.000000e+00 eV/atom   tol = 1.0e-12   [per atom]
+TWO_RANK_PARITY PASS
+TWO_RANK_PARITY workdir: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/lammps/two_ranks
+
+
+Test group execution status:
+    accuracy         ran
+    dag              ran
+    etace            ran
+    lammps           ran
+    mpi              ran
+    multispecies     ran
+    pair             ran
+    python           ran
+    syntax           ran
+ACE_GROUP_STATUS accuracy=ran
+ACE_GROUP_STATUS dag=ran
+ACE_GROUP_STATUS etace=ran
+ACE_GROUP_STATUS lammps=ran
+ACE_GROUP_STATUS mpi=ran
+ACE_GROUP_STATUS multispecies=ran
+ACE_GROUP_STATUS pair=ran
+ACE_GROUP_STATUS python=ran
+ACE_GROUP_STATUS syntax=ran
+    ACE_REQUIRE_GROUPS = all -> requiring: accuracy, dag, etace, lammps, mpi, multispecies, pair, python, syntax
+[ Info: ACE Export Test Suite (ETACE)
+[ Info: ==============================
+[ Info: Test selection: [:all]
+[ Info: Cantor fixture available: true
+[ Info: Parity gate runnable: false  EXPORT_REF_SHA is not set (this gate has no default)
+[ Info: Python available: true
+┌ Info:   lmp candidate rejected: /home/eng/essswb/.local/bin/lmp ([moriarty:741249] *** Process received signal ***
+│ [moriarty:741249] Signal: Segmentation fault (11)
+│ [moriarty:741249] Signal code: Address not mapped (1)
+│ [moriarty:741249] Failing at address: 0x44000098
+│ [moriarty:741249] [ 0] /lib64/libc.so.6(+0x3fb30)[0x149f5983fb30]
+│ [moriarty:741249] [ 1] /software/easybuild/software/CASA/5.3.0-143.el7/lib64/libmpi.so.12(PMPI_Comm_rank+0x3e)[0x149f5a1c5b9e]
+│ [moriarty:741249] [ 2] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS8UniverseC1EPNS_6LAMMPSEi+0x12f)[0x149f5b1e490f]
+│ [moriarty:741249] [ 3] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS6LAMMPSC1EiPPci+0xaf)[0x149f5afd00af]
+│ [moriarty:741249] [ 4] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(main+0x3f)[0x4023ff]
+│ [moriarty:741249] [ 5] /lib64/libc.so.6(+0x2a610)[0x149f5982a610]
+│ [moriarty:741249] [ 6] /lib64/libc.so.6(__libc_start_main+0x80)[0x149f5982a6c0]
+│ [moriarty:741249] [ 7] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(_start+0x2e)[0x40249e]
+└ [moriarty:741249] *** End of error message ***)
+[ Info: LAMMPS available: true
+[ Info: MPI available: true
+[ Info: 
+[ Info: Running syntax checks (every tracked export/*.jl parses)...
+[ Info: Running ETACE export tests (polynomial)...
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 1 entry:
+└      14 => -5.0
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_model.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_exe.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_energy.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_forces.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_virial.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_fd.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_multispecies.jl (radial_basis=polynomial)
+[ Info: Running export accuracy tests (:polynomial + refusals)...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/poly_accuracy_test.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/poly_fd_test.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/poly_random_test.jl (radial_basis=polynomial)
+[ Info: Running multi-species export tests...
+[ Info: NZ=3 asym model: 6 distinct symmetric transform tuples, asymmetric ordered weights
+[ Info: NZ=3 uniform model: 6 distinct symmetric transform tuples, asymmetric ordered weights
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/ms3_poly.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/ms3_poly_uniform.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/ms3_uniform_poly_ok.jl (radial_basis=polynomial)
+[ Info: Running AA-DAG tests...
+┌ Info: cantor DAG
+│   nodes = 2006
+│   leaves = 72
+└   flat_AA = 1964
+┌ Info: tial DAG
+│   nodes = 7523
+│   leaves = 133
+└   flat_AA = 7272
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_flat_default.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_dag.jl (radial_basis=polynomial)
+[ Info: Running pair-potential export tests...
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_pair_poly.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_nopair_poly.jl (radial_basis=polynomial)
+[ Info: Compiled library in step with its source: build id 0x9f4dc62cf0018a3c matches
+[ Info: Running Python tests...
+[ Info: Compiled library in step with its source: build id 0x9f4dc62cf0018a3c matches
+[ Info: Running LAMMPS tests (serial)...
+[ Info: Using LAMMPS: /home/eng/essswb/lammps/lammps-22Jul2025/build/lmp
+[ Info: geometry round-trip: max|x_data - x_dump| = 0.0 Å
+[ Info: library pair term at r = 2.35 Å: V = -2.341248e-01 eV, dV/dr = -2.002127e+00 eV/Å
+[ Info: LAMMPS vs Julia: |dE|/atom = 1.776e-15 eV/atom, max|dF| = 8.054e-14 eV/Å (tol 1e-10)
+[ Info: library vs Julia: |dE|/atom = 1.776e-15 eV/atom, max|dF| = 8.294e-14 eV/Å (tol 1e-12)
+[ Info: virial pxx: LAMMPS -2.0679535110e+06 bar, Julia -2.0679535110e+06 bar, rel 3.603e-15
+[ Info: virial pyy: LAMMPS -1.9981888311e+06 bar, Julia -1.9981888311e+06 bar, rel 2.680e-15
+[ Info: virial pzz: LAMMPS -2.0853290901e+06 bar, Julia -2.0853290901e+06 bar, rel 2.791e-15
+[ Info: virial pxy: LAMMPS +4.8523857606e+05 bar, Julia +4.8523857606e+05 bar, rel 5.398e-15
+[ Info: virial pxz: LAMMPS -5.2471935644e+05 bar, Julia -5.2471935644e+05 bar, rel 0.000e+00
+[ Info: virial pyz: LAMMPS +1.2037289440e+06 bar, Julia +1.2037289440e+06 bar, rel 1.934e-16
+[ Info: Running MPI tests...
+[ Info: Using LAMMPS: /home/eng/essswb/lammps/lammps-22Jul2025/build/lmp with /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+[ Info: MPI force consistency: max|F| = 5.118e+01 eV/Å, max|dF| (4 ranks vs serial) = 1.476e-14 eV/Å
+[ Info: Test suite completed!
+Test Summary:                                                                  |  Pass  Total     Time
+ACE Export Tests                                                               | 32485  32485  3m39.0s
+  every tracked export/*.jl parses                                             |    13     13     0.6s
+    the file set is non-empty and plausible                                    |     7      7     0.1s
+    the check actually detects a broken file                                   |     5      5     0.3s
+    all 40 tracked files                                                       |     1      1     0.1s
+  ETACE Export                                                                 |    26     26  1m23.6s
+    Model Export                                                               |    11     11    37.6s
+    Energy Correctness                                                         |     1      1    10.7s
+    Force Correctness                                                          |     4      4    22.3s
+    Virial Correctness                                                         |     1      1     3.4s
+    Finite Difference Verification                                             |     3      3     3.6s
+    Multi-species Export                                                       |     6      6     6.1s
+  Export Accuracy (:polynomial)                                                |    26     26     8.6s
+    Polynomial vs the FITTED reference, 1e-12 (Si)                             |     6      6     7.4s
+    Finite Difference Verification (Polynomial)                                |     4      4     0.7s
+    Random Perturbation Tests (Polynomial)                                     |     5      5     0.5s
+    the removed spline export path refuses, and says what to do                |    11     11     0.0s
+  Multi-Species ETACE Export                                                   |   123    123    27.3s
+    the NZ=3 models discriminate the two pair conventions                      |    26     26     0.4s
+    :polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12               |     4      4    15.1s
+    :polynomial (uniform cutoff) vs the fitted ET stack, 1e-12                 |     4      4     1.6s
+    a splinified model is refused, whatever the keyword                        |    13     13     2.0s
+    one ordered pair index keys every per-pair table                           |    70     70     0.8s
+    a 300-neighbour site evaluates; the cap and the global scratch are gone    |     6      6     1.8s
+  set partitions                                                               |  3479   3479     0.6s
+  DAG reproduces the flat AA basis and the readout                             | 28269  28269    21.8s
+  has0 (a CONSTANT AA term): the paths no real model reaches                   |   403    403     0.3s
+  aa_products = :flat is the default and emits no DAG                          |     5      5     2.3s
+  exported DAG evaluator is exact                                              |    12     12    13.5s
+  Pair potential is exported                                                   |    12     12     8.8s
+  site_energy / _forces / _forces_virial agree, with a live pair term          |    12     12    11.0s
+  Unknown calculator in the stack is refused                                   |     2      2     0.0s
+  Python Calculator                                                            |    20     20     6.1s
+    Library Loading                                                            |     1      1     0.1s
+    Utility Functions                                                          |     3      3     0.1s
+    Site Energy Calculation                                                    |     1      1     0.1s
+    Site Forces Calculation                                                    |     1      1     0.2s
+    ACE Calculator with matscipy                                               |     1      1     1.2s
+    Larger System Test                                                         |     2      2     0.5s
+    ASE MD Energy Conservation                                                 |     2      2     0.7s
+    Triclinic Cell                                                             |     1      1     0.2s
+    Descriptor API                                                             |     1      1     0.1s
+    Get Descriptors via Calculator                                             |     3      3     0.5s
+    Descriptor Supercell Consistency                                           |     1      1     0.5s
+    library survives its own garbage collector (bitwise, >= 3 collections)     |     3      3     2.2s
+  LAMMPS Plugin                                                                |    40     40    17.9s
+    Plugin Loading                                                             |     2      2     1.6s
+    LAMMPS vs Julia (reference: exported model in Julia, tol 1e-10)            |    14     14     3.6s
+    Python library vs Julia (reference: exported model in Julia, tol 1e-12)    |     4      4     0.8s
+    two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)          |     1      1     4.7s
+    Virial vs Julia (rattled cell, all six components, tol 1e-10)              |    13     13     2.5s
+    Stress/Virial (smoke: cubic symmetry only)                                 |     3      3     1.6s
+    NVE runs (liveness: 512 atoms, ~103 MB allocated, 2.4x the first-GC point) |     3      3     3.0s
+  MPI Parallelization                                                          |    25     25    11.5s
+    MPI Energy Consistency                                                     |     7      7     3.3s
+    MPI Force Consistency (4 ranks vs serial, non-trivial forces)              |     7      7     4.6s
+    Domain Decomposition                                                       |     6      6     1.8s
+    Ghost Atom Handling                                                        |     5      5     1.8s
+  every selected group reached a dispatch branch                               |     9      9     0.0s
+  required test groups executed                                                |     9      9     0.0s

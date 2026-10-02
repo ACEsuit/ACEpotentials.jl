@@ -1,0 +1,458 @@
+
+================================================================================
+Testing Hermite Spline Export
+================================================================================
+
+[1] Creating ETACE model...
+[2] Converting to ETACE...
+[3] Splinifying model (Nspl=50)...
+   ✓ Model splinified
+[3b] Creating ETOneBody model...
+[3c] Creating StackedCalculator...
+   ✓ StackedCalculator created (ETOneBody + ETACE)
+[4] Creating test system...
+[5] Computing reference energy with calculator...
+   ETACE only energy: -19.561827268980544 eV
+   E0 only energy: -20.0 eV
+   StackedCalculator energy: -39.561827268980544 eV
+   Expected (E0 + ETACE): -39.561827268980544 eV
+[6] Exporting model with Hermite splines...
+[6a] :polynomial on a splinified model must be REFUSED, not promoted...
+   ✓ :polynomial refused for the splinified model, no file written
+[6b] Testing ETACE-only export with Hermite splines...
+   ✓ Hermite spline export complete
+[6b] Exporting with StackedCalculator...
+   ✓ Model exported to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_hermite_spline.jl
+   ✓ Hermite spline code detected
+[7b] Testing Hermite spline exported model...
+   Hermite spline exported energy: -19.561827268980544 eV
+   ETACE calculator energy: -19.561827268980544 eV
+   Hermite difference: 0.0 eV
+[7b] Loading StackedCalculator exported model...
+   ✓ Exported model loaded
+[8] Computing energy with StackedCalculator exported model...
+   Exported energy:   -39.56182726898054 eV
+   Difference vs StackedCalculator: 7.105427357601002e-15 eV
+   Difference vs E0+ETACE expected: 7.105427357601002e-15 eV
+
+[9] Testing forces...
+   Atom 1 force error: 2.8780270159990897e-15 eV/Å
+   Atom 2 force error: 7.215595591812694e-15 eV/Å
+   Atom 3 force error: 3.352800008858181e-15 eV/Å
+   Atom 4 force error: 3.66205343881779e-15 eV/Å
+
+================================================================================
+✓ Hermite Spline Export Test Complete
+================================================================================
+
+================================================================================
+Testing Hermite Spline Export Accuracy
+================================================================================
+
+[1] Hermite export, Nspl=50 ...
+   Reference energy (SPLINIFIED calc, Nspl=50): -19.561827268980544 eV
+   Hermite export energy:  -19.561827268980544 eV
+   |dE| vs SPLINIFIED:     0.0 eV
+   max|dF| vs SPLINIFIED:  7.215595591812694e-15 eV/Å
+   |dE| vs FITTED (splinification error, reported only):    0.0046964322736045006 eV
+   max|dF| vs FITTED (splinification error, reported only): 0.02579303207920411 eV/Å
+
+[1] Hermite export, Nspl=200 ...
+   Reference energy (SPLINIFIED calc, Nspl=200): -19.56652340094088 eV
+   Hermite export energy:  -19.56652340094088 eV
+   |dE| vs SPLINIFIED:     0.0 eV
+   max|dF| vs SPLINIFIED:  3.3232593448441795e-15 eV/Å
+   |dE| vs FITTED (splinification error, reported only):    3.0031326758717114e-7 eV
+   max|dF| vs FITTED (splinification error, reported only): 0.0008873069481995604 eV/Å
+
+[2] Polynomial export ...
+   Reference energy (FITTED calc): -19.566523701254148 eV
+   Polynomial export energy: -19.566523701254148 eV
+   |dE| vs FITTED:           0.0 eV
+   max|dF| vs FITTED:        3.4111139459141383e-15 eV/Å
+
+[3] Verifying Hermite forces with finite differences...
+   Max FD error: 7.029666543254014e-10 eV/Å
+   Finite difference verification passed
+
+[4] Verifying Polynomial forces with finite differences...
+   Max FD error: 1.3314176998604536e-9 eV/Å
+   Polynomial FD verification passed
+
+[5] Testing Hermite export with random perturbations...
+   5 random perturbation tests passed
+
+================================================================================
+All Hermite Spline Accuracy Tests Passed!
+================================================================================
+
+Cantor :hermite_spline(Nspl=50) vs SPLINIFIED stack:
+    max|dE|/atom = 1.8947806286936004e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.9308751233658214e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.794120407794253e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 8.611777957412414e-12 eV   [absolute; reported only, never gated]
+Cantor :hermite_spline(Nspl=50) vs FITTED stack [informational, log.chain: 2.3e-4 @50, 3.0e-6 @200]:
+    max|dE|/atom = 4.962219946946789e-6 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 0.0002679161110052019 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 0.0003152674567671321 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 0.010088558616548227 eV   [absolute; reported only, never gated]
+cantor_spline_stack(with_pair = false, Nspl = 50) vs ref_k.txt column c50:
+    max|dE|/atom = 0.0 eV/atom
+    max|dF|      = 0.0 eV/Å
+Cantor :hermite_spline(Nspl=200) vs SPLINIFIED stack:
+    max|dE|/atom = 3.019806626980426e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 2.2169951710916063e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.1997810152782526e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 5.758948873335612e-12 eV   [absolute; reported only, never gated]
+Cantor :hermite_spline(Nspl=200) vs FITTED stack [informational, log.chain: 2.3e-4 @50, 3.0e-6 @200]:
+    max|dE|/atom = 1.4116887806873516e-8 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 2.9523946494683193e-6 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 4.809479987738507e-7 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 1.9326460659385702e-5 eV   [absolute; reported only, never gated]
+cantor_spline_stack(with_pair = false, Nspl = 200) vs ref_k.txt column c200:
+    max|dE|/atom = 0.0 eV/atom
+    max|dF|      = 0.0 eV/Å
+NZ=3 asym :polynomial vs FITTED stack:
+    max|dE|/atom = 1.052655904829778e-15 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.718780149979097e-13 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 6.315935428978669e-14 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 3.410605131648481e-12 eV   [absolute; reported only, never gated]
+NZ=3 uniform :hermite_spline(Nspl=50) vs SPLINIFIED stack:
+    max|dE|/atom = 1.052655904829778e-15 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.7466204203176765e-13 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 5.368545114631868e-14 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 2.8990143619012088e-12 eV   [absolute; reported only, never gated]
+NZ=3 uniform :hermite_spline(Nspl=50) vs FITTED stack [informational]:
+    max|dE|/atom = 0.00021100338857296365 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 0.1900162131663328 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 0.028237208631891362 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 1.5248092661221335 eV   [absolute; reported only, never gated]
+DAG export:
+    max|dE|/atom = 1.6579330501069005e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 2.9688243872164413e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.5661546134045542e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 7.51754214434186e-12 eV   [absolute; reported only, never gated]
+task-1 :polynomial + pair vs full stack:
+    max|dE|/atom = 1.6579330501069005e-14 eV/atom   [per atom; returned as maxdE]
+    max|dF|      = 1.8398660046026005e-14 eV/Å   [absolute; returned as maxdF]
+    max|dV|/atom = 1.557272829207553e-13 eV/atom   [per atom; returned as maxdV]
+    max|dV|      = 7.474909580196254e-12 eV   [absolute; reported only, never gated]
+site-function cross-check over 384 sites (pair export / pair-less export of the same model):
+    max|site_energy        - site_energy_forces_virial[1]| = 0.0 / 0.0
+    max|site_energy_forces[1] - site_energy_forces_virial[1]| = 0.0 / 0.0
+    max|site_energy_forces[2] - site_energy_forces_virial[2]| = 0.0 / 0.0
+    max|Rnl(value route) - Rnl(derivative route)| = 0.0 / 0.0  [must be 0.0]
+    max|Ylm(value route) - Ylm(derivative route)| = 3.552713678800501e-15 / 3.552713678800501e-15  [SpheriCart, not gated to 0]
+/home/eng/essswb/.local/lib/python3.9/site-packages/ase/io/lammpsdata.py:51: FutureWarning: "style" is deprecated; please use "atom_style".
+  warnings.warn(
+WARNING: Detected access to binding `Exported_6769433145112826836.RCUT_MAX` in a world prior to its definition world.
+  Julia 1.12 has introduced more strict world age semantics for global bindings.
+  !!! This code may malfunction under Revise.
+  !!! This code will error in future versions of Julia.
+Hint: Add an appropriate `invokelatest` around the access to this binding.
+To make this warning an error, and hence obtain a stack trace, use `julia --depwarn=error`.
+LIVENESS_GC: 31261 calls, 72 neighbours, 129.3 MB allocated, 3 collection(s), 2.01 s
+LIVENESS_GC PASS
+TWO_RANK_PARITY: 64 atoms   max|F| = 5.118419e+01 eV/A   min-force gate = 1.0e-03
+TWO_RANK_PARITY: max|dF| = 1.475553e-14 eV/A   mean|dF| = 2.401642e-15   tol = 1.0e-12   [absolute, per atom vector norm]
+TWO_RANK_PARITY: max|dx| = 0.000000e+00 A   [reported only -- a non-zero value means the two runs did not evaluate the same geometry]
+TWO_RANK_PARITY: |dE|/atom = 0.000000e+00 eV/atom   tol = 1.0e-12   [per atom]
+TWO_RANK_PARITY PASS
+TWO_RANK_PARITY workdir: /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/lammps/two_ranks
+
+
+Test group execution status:
+    dag              ran
+    etace            ran
+    hermite          ran
+    hermite_accuracy ran
+    hermite_cantor   ran
+    lammps           ran
+    mpi              ran
+    multispecies     ran
+    pair             ran
+    python           ran
+ACE_GROUP_STATUS dag=ran
+ACE_GROUP_STATUS etace=ran
+ACE_GROUP_STATUS hermite=ran
+ACE_GROUP_STATUS hermite_accuracy=ran
+ACE_GROUP_STATUS hermite_cantor=ran
+ACE_GROUP_STATUS lammps=ran
+ACE_GROUP_STATUS mpi=ran
+ACE_GROUP_STATUS multispecies=ran
+ACE_GROUP_STATUS pair=ran
+ACE_GROUP_STATUS python=ran
+    ACE_REQUIRE_GROUPS = all -> requiring: dag, etace, hermite, hermite_accuracy, hermite_cantor, lammps, mpi, multispecies, pair, python
+[ Info: ACE Export Test Suite (ETACE)
+[ Info: ==============================
+[ Info: Test selection: [:all]
+[ Info: Cantor fixture available: true
+[ Info: Parity gate runnable: false  EXPORT_REF_SHA is not set (this gate has no default)
+[ Info: Python available: true
+┌ Info:   lmp candidate rejected: /home/eng/essswb/.local/bin/lmp ([moriarty:631514] *** Process received signal ***
+│ [moriarty:631514] Signal: Segmentation fault (11)
+│ [moriarty:631514] Signal code: Address not mapped (1)
+│ [moriarty:631514] Failing at address: 0x44000098
+│ [moriarty:631514] [ 0] /lib64/libc.so.6(+0x3fb30)[0x14b2be83fb30]
+│ [moriarty:631514] [ 1] /software/easybuild/software/CASA/5.3.0-143.el7/lib64/libmpi.so.12(PMPI_Comm_rank+0x3e)[0x14b2bf202b9e]
+│ [moriarty:631514] [ 2] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS8UniverseC1EPNS_6LAMMPSEi+0x12f)[0x14b2c022190f]
+│ [moriarty:631514] [ 3] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/liblammps.so.0(_ZN9LAMMPS_NS6LAMMPSC1EiPPci+0xaf)[0x14b2c000d0af]
+│ [moriarty:631514] [ 4] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(main+0x3f)[0x4023ff]
+│ [moriarty:631514] [ 5] /lib64/libc.so.6(+0x2a610)[0x14b2be82a610]
+│ [moriarty:631514] [ 6] /lib64/libc.so.6(__libc_start_main+0x80)[0x14b2be82a6c0]
+│ [moriarty:631514] [ 7] /home/eng/essswb/.local/lib/python3.9/site-packages/lammps/lmp(_start+0x2e)[0x40249e]
+└ [moriarty:631514] *** End of error message ***)
+[ Info: LAMMPS available: true
+[ Info: MPI available: true
+[ Info: 
+[ Info: Running ETACE export tests (polynomial)...
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 1 entry:
+└      14 => -5.0
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_model.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_exe.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_energy.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_forces.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_virial.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_fd.jl (radial_basis=polynomial)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_etace_multispecies.jl (radial_basis=polynomial)
+[ Info: Running Hermite spline export tests...
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_hermite_etace_only.jl (radial_basis=hermite_spline)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 1 entry:
+└      14 => -5.0
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/test_hermite_spline.jl (radial_basis=hermite_spline)
+[ Info: Running Hermite/polynomial export accuracy tests...
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/hermite_accuracy_test_50.jl (radial_basis=hermite_spline)
+┌ Info: Hermite export error against the FITTED model -- reported, never gated
+│   Nspl = 50
+│   dE_eV = 0.0046964322736045006
+└   dF_eV_per_A = 0.02579303207920411
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/hermite_accuracy_test_200.jl (radial_basis=hermite_spline)
+┌ Info: Hermite export error against the FITTED model -- reported, never gated
+│   Nspl = 200
+│   dE_eV = 3.0031326758717114e-7
+└   dF_eV_per_A = 0.0008873069481995604
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/poly_accuracy_test.jl (radial_basis=polynomial)
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/hermite_fd_test.jl (radial_basis=hermite_spline)
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/poly_fd_test.jl (radial_basis=polynomial)
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/hermite_random_test.jl (radial_basis=hermite_spline)
+[ Info: Running Cantor Hermite export tests...
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_hermite50.jl (radial_basis=hermite_spline)
+┌ Info: Cantor Hermite error against the FITTED model -- reported, never gated
+│   Nspl = 50
+│   dE_atom = 4.962219946946789e-6
+│   dF = 0.0002679161110052019
+└   dV_atom = 0.0003152674567671321
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_hermite200.jl (radial_basis=hermite_spline)
+┌ Info: Cantor Hermite error against the FITTED model -- reported, never gated
+│   Nspl = 200
+│   dE_atom = 1.4116887806873516e-8
+│   dF = 2.9523946494683193e-6
+└   dV_atom = 4.809479987738507e-7
+[ Info: Running multi-species export tests...
+[ Info: NZ=3 asym model: 6 distinct symmetric transform tuples, asymmetric ordered weights
+[ Info: NZ=3 uniform model: 6 distinct symmetric transform tuples, asymmetric ordered weights
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/ms3_poly.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+[ Info: Extracting Hermite cubic spline data for exact trim-safe export...
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/ms3_hermite50.jl (radial_basis=hermite_spline)
+┌ Info: Hermite error against the FITTED model -- reported, never gated
+│   dE_atom = 0.00021100338857296365
+│   dF = 0.1900162131663328
+└   dV_atom = 0.028237208631891362
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 3 entries:
+│      22 => -1.1
+│      13 => -2.2
+└      23 => -3.3
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/ms3_asym_poly_ok.jl (radial_basis=polynomial)
+[ Info: Running AA-DAG tests...
+┌ Info: cantor DAG
+│   nodes = 2006
+│   leaves = 72
+└   flat_AA = 1964
+┌ Info: tial DAG
+│   nodes = 7523
+│   leaves = 133
+└   flat_AA = 7272
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_flat_default.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_dag.jl (radial_basis=polynomial)
+[ Info: Running pair-potential export tests...
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_pair_poly.jl (radial_basis=polynomial)
+┌ Info: Extracted E0 values from ETOneBody
+│   E0_dict =
+│    Dict{Int64, Float64} with 5 entries:
+│      25 => -14.7187
+│      27 => -13.0616
+│      26 => -14.3813
+│      24 => -14.4121
+└      28 => -11.6979
+[ Info: Exported ETACE model to /home/eng/essswb/ace-potentials-julia-1.2/ACEpotentials.jl/export/test/build/cantor_nopair_poly.jl (radial_basis=polynomial)
+[ Info: Compiled library in step with its source: build id 0x9f4dc62cf0018a3c matches
+[ Info: Running Python tests...
+[ Info: Compiled library in step with its source: build id 0x9f4dc62cf0018a3c matches
+[ Info: Running LAMMPS tests (serial)...
+[ Info: Using LAMMPS: /home/eng/essswb/lammps/lammps-22Jul2025/build/lmp
+[ Info: geometry round-trip: max|x_data - x_dump| = 0.0 Å
+[ Info: library pair term at r = 2.35 Å: V = -2.341248e-01 eV, dV/dr = -2.002127e+00 eV/Å
+[ Info: LAMMPS vs Julia: |dE|/atom = 1.776e-15 eV/atom, max|dF| = 8.054e-14 eV/Å (tol 1e-10)
+[ Info: library vs Julia: |dE|/atom = 1.776e-15 eV/atom, max|dF| = 8.294e-14 eV/Å (tol 1e-12)
+[ Info: virial pxx: LAMMPS -2.0679535110e+06 bar, Julia -2.0679535110e+06 bar, rel 3.603e-15
+[ Info: virial pyy: LAMMPS -1.9981888311e+06 bar, Julia -1.9981888311e+06 bar, rel 2.680e-15
+[ Info: virial pzz: LAMMPS -2.0853290901e+06 bar, Julia -2.0853290901e+06 bar, rel 2.791e-15
+[ Info: virial pxy: LAMMPS +4.8523857606e+05 bar, Julia +4.8523857606e+05 bar, rel 5.398e-15
+[ Info: virial pxz: LAMMPS -5.2471935644e+05 bar, Julia -5.2471935644e+05 bar, rel 0.000e+00
+[ Info: virial pyz: LAMMPS +1.2037289440e+06 bar, Julia +1.2037289440e+06 bar, rel 1.934e-16
+[ Info: Running MPI tests...
+[ Info: Using LAMMPS: /home/eng/essswb/lammps/lammps-22Jul2025/build/lmp with /software/easybuild/software/OpenMPI/5.0.3-GCC-13.3.0/bin/mpirun
+[ Info: MPI force consistency: max|F| = 5.118e+01 eV/Å, max|dF| (4 ranks vs serial) = 1.476e-14 eV/Å
+[ Info: Test suite completed!
+Test Summary:                                                                  |  Pass  Total     Time
+ACE Export Tests                                                               | 32562  32562  4m49.5s
+  ETACE Export                                                                 |    26     26  1m24.0s
+    Model Export                                                               |    11     11    36.8s
+    Energy Correctness                                                         |     1      1    10.8s
+    Force Correctness                                                          |     4      4    22.9s
+    Virial Correctness                                                         |     1      1     4.0s
+    Finite Difference Verification                                             |     3      3     3.1s
+    Multi-species Export                                                       |     6      6     6.3s
+  Hermite Spline Export                                                        |    10     10    12.2s
+  Hermite Spline Export Accuracy                                               |    31     31    11.0s
+    Hermite (Nspl=50) vs the SPLINIFIED reference, atol 1e-8 (Si)              |     6      6     5.2s
+    Hermite (Nspl=200) vs the SPLINIFIED reference, atol 1e-8 (Si)             |     6      6     2.6s
+    Polynomial vs the FITTED reference, 1e-12 (Si)                             |     6      6     1.4s
+    Finite Difference Verification (Hermite)                                   |     4      4     0.6s
+    Finite Difference Verification (Polynomial)                                |     4      4     0.7s
+    Random Perturbation Tests (Hermite)                                        |     5      5     0.5s
+  Hermite export of the fitted Cantor model (NZ=5)                             |    24     24  1m08.9s
+  Multi-Species ETACE Export                                                   |   182    182    28.1s
+    the NZ=3 models discriminate the two pair conventions                      |    26     26     0.4s
+    :polynomial (per-pair cutoffs) vs the fitted ET stack, 1e-12               |     4      4    11.0s
+    :hermite_spline (uniform cutoff) vs the SPLINIFIED stack, 1e-12            |     5      5    10.3s
+    upstream: splinified evaluation is impossible with per-pair cutoffs        |    18     18     0.3s
+    one ordered pair index keys every per-pair table                           |   123    123     1.3s
+    a 300-neighbour site evaluates; the cap and the global scratch are gone    |     6      6     1.8s
+  set partitions                                                               |  3479   3479     0.6s
+  DAG reproduces the flat AA basis and the readout                             | 28269  28269    13.0s
+  has0 (a CONSTANT AA term): the paths no real model reaches                   |   403    403     0.3s
+  aa_products = :flat is the default and emits no DAG                          |     5      5     2.5s
+  exported DAG evaluator is exact                                              |    12     12     6.6s
+  Pair potential is exported                                                   |    12     12     9.0s
+  site_energy / _forces / _forces_virial agree, with a live pair term          |    12     12    11.5s
+  Unknown calculator in the stack is refused                                   |     2      2     0.0s
+  Python Calculator                                                            |    20     20     6.2s
+    Library Loading                                                            |     1      1     0.1s
+    Utility Functions                                                          |     3      3     0.1s
+    Site Energy Calculation                                                    |     1      1     0.1s
+    Site Forces Calculation                                                    |     1      1     0.2s
+    ACE Calculator with matscipy                                               |     1      1     1.2s
+    Larger System Test                                                         |     2      2     0.5s
+    ASE MD Energy Conservation                                                 |     2      2     0.7s
+    Triclinic Cell                                                             |     1      1     0.2s
+    Descriptor API                                                             |     1      1     0.1s
+    Get Descriptors via Calculator                                             |     3      3     0.5s
+    Descriptor Supercell Consistency                                           |     1      1     0.5s
+    library survives its own garbage collector (bitwise, >= 3 collections)     |     3      3     2.2s
+  LAMMPS Plugin                                                                |    40     40    17.9s
+    Plugin Loading                                                             |     2      2     1.6s
+    LAMMPS vs Julia (reference: exported model in Julia, tol 1e-10)            |    14     14     3.5s
+    Python library vs Julia (reference: exported model in Julia, tol 1e-12)    |     4      4     0.8s
+    two MPI ranks vs one rank (reference: the 1-rank dump, tol 1e-12)          |     1      1     4.7s
+    Virial vs Julia (rattled cell, all six components, tol 1e-10)              |    13     13     2.6s
+    Stress/Virial (smoke: cubic symmetry only)                                 |     3      3     1.7s
+    NVE runs (liveness: 512 atoms, ~103 MB allocated, 2.4x the first-GC point) |     3      3     3.0s
+  MPI Parallelization                                                          |    25     25    11.5s
+    MPI Energy Consistency                                                     |     7      7     3.3s
+    MPI Force Consistency (4 ranks vs serial, non-trivial forces)              |     7      7     4.6s
+    Domain Decomposition                                                       |     6      6     1.8s
+    Ghost Atom Handling                                                        |     5      5     1.8s
+  required test groups executed                                                |    10     10     0.0s

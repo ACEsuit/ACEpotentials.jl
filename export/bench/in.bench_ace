@@ -1,0 +1,13 @@
+# pair_style ace (exported juliac library) throughput input.
+#   -var box <box file>  -var lib <libace*.so>  -var plugin <aceplugin.so>  -var steps <n>
+# timestep 0.0: the atoms never move, so every step costs exactly one force evaluation of the
+# same configuration and the run is a pure throughput measurement.
+include ${box}
+plugin load ${plugin}
+pair_style ace
+pair_coeff * * ${lib} ${species}
+velocity all create 300.0 4928459
+fix 1 all nve
+timestep 0.0
+thermo 50
+run ${steps}

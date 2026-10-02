@@ -1,0 +1,24 @@
+[deps]
+ACE1 = "e3f9bc04-086e-409a-ba78-e9769fe067bb"
+ACEfit = "ad31a8ef-59f5-4a01-b543-a85c2f73e95c"
+ACEpotentials = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
+AtomsBase = "a963bdd2-2df7-4f54-a1ee-49d51e6be12a"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DecoratedParticles = "023d0394-cb16-4d2d-a5c7-724bed42bbb6"
+EquivariantTensors = "5e107534-7145-4f8f-b06f-47a52840c895"
+ExtXYZ = "352459e4-ddd7-4360-8937-99dcb397b478"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+JuLIP = "945c410c-986d-556a-acb1-167a618e0462"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+LuxCore = "bb33d45b-7691-41d6-9220-0943567d0623"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+Polynomials4ML = "03c4bcba-a943-47e9-bfa1-b1661fc2974f"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+
+[sources]
+ACEpotentials = {path = "../.."}

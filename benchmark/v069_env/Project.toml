@@ -1,0 +1,4 @@
+[deps]
+ACEpotentials = "3b96b61c-0fcc-4693-95ed-1ef9f35fcc53"
+ExtXYZ = "352459e4-ddd7-4360-8937-99dcb397b478"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
