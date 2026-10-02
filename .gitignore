@@ -6,3 +6,6 @@ scratch
 .vscode
 .ipynb_checkpoints
 .CondaPkg
+
+# PkgBenchmark tuning artifact
+benchmark/tune.json

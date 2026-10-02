@@ -60,30 +60,38 @@ end
 #  Efficient implementations using @generated for compile-time unrolling
 # ============================================================================
 
+# `gcache` caches one interaction graph per distinct cutoff within a single call,
+# so stacked components that share a cutoff (e.g. pair + many-body) build the
+# graph once instead of once each. See `_cached_*` in et_calculators.jl.
+
 @generated function _stacked_energy(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
    quote
-      @nexprs $N i -> E_i = AtomsCalculators.potential_energy(sys, calc.calcs[i])
+      gcache = Dict{Float64, Any}()
+      @nexprs $N i -> E_i = _cached_energy(calc.calcs[i], sys, gcache)
       return sum(@ntuple $N E)
    end
 end
 
 @generated function _stacked_forces(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
    quote
-      @nexprs $N i -> F_i = AtomsCalculators.forces(sys, calc.calcs[i])
+      gcache = Dict{Float64, Any}()
+      @nexprs $N i -> F_i = _cached_forces(calc.calcs[i], sys, gcache)
       return reduce(.+, @ntuple $N F)
    end
 end
 
 @generated function _stacked_virial(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
    quote
-      @nexprs $N i -> V_i = AtomsCalculators.virial(sys, calc.calcs[i])
+      gcache = Dict{Float64, Any}()
+      @nexprs $N i -> V_i = _cached_virial(calc.calcs[i], sys, gcache)
       return sum(@ntuple $N V)
    end
 end
 
 @generated function _stacked_efv(sys::AbstractSystem, calc::StackedCalculator{N}) where {N}
    quote
-      @nexprs $N i -> efv_i = AtomsCalculators.energy_forces_virial(sys, calc.calcs[i])
+      gcache = Dict{Float64, Any}()
+      @nexprs $N i -> efv_i = _cached_efv(calc.calcs[i], sys, gcache)
       return (
          energy = sum(@ntuple $N i -> efv_i.energy),
          forces = reduce(.+, @ntuple $N i -> efv_i.forces),
