@@ -18,6 +18,7 @@ Requirements:
 =#
 
 using JSON
+import Pkg
 
 """
     build_deployment(model, name; kwargs...)
@@ -76,15 +77,35 @@ function build_deployment(
     verbose && println("\n[2/6] Compiling shared library with juliac --trim...")
     lib_path = joinpath(deploy_dir, "lib", "libace_$(name).so")
     juliac_path = joinpath(dirname(Sys.BINDIR), "share", "julia", "juliac", "juliac.jl")
+    function generate_juliac_command()
+        arguments = [
+            "--experimental",
+            "--trim=safe",
+            "--compile-ccallable",
+        ]
+        if VERSION < v"1.13"
+            return ```
+                $julia_path --project=$export_dir $juliac_path
+                --output-lib $lib_path
+                $arguments
+                $model_jl
+            ```
+        elseif VERSION >= v"1.13"
+            if VERSION >= v"1.14"
+                @warn "JuliaC behaviour is defined for Julia v1.12 and v1.13. Using later versions may lead to unforeseen errors!"
+            end
+            return ```
+                $(joinpath(Pkg.Apps.julia_bin_path(), "juliac")) --project=$export_dir
+                --output-lib $lib_path
+                $(arguments)
+                $model_jl
+            ```
+        end
+    end
 
-    compile_cmd = ```
-        $julia_path --project=$(export_dir) $juliac_path
-        --output-lib $lib_path
-        --experimental --trim=safe --compile-ccallable
-        $model_jl
-    ```
+    compile_cmd = generate_juliac_command()
 
-    verbose && println("  Running: julia juliac.jl --output-lib ... $model_jl")
+    verbose && println("  Running: $(compile_cmd)")
     run(compile_cmd)
     verbose && println("  → Compiled: $lib_path ($(round(filesize(lib_path)/1024/1024, digits=1)) MB)")
 
