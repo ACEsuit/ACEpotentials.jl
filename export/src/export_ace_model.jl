@@ -222,8 +222,8 @@ function export_ace_model(calc::ETACEPotential, filename::String;
 
     # EdgeEmbed wraps EmbedDP which has: trans, basis, post
     # etace.rembed is EdgeEmbed, etace.rembed.layer is EmbedDP
-    rembed_layer = etace.rembed.layer  # EmbedDP{NTtransformST, WrappedBasis, SelectLinL}
-    yembed_layer = etace.yembed.layer  # EmbedDP{NTtransformST, RealSCWrapper, IDpost}
+    rembed_layer = etace.rembed.layer  # EmbedDP{DPTransform, WrappedBasis, SelectLinL}
+    yembed_layer = etace.yembed.layer  # EmbedDP{DPTransform, RealSCWrapper, IDpost}
 
     # Auto-detect if model is splinified
     is_splinified = isa(rembed_layer, ET.TransSelSplines)
@@ -297,7 +297,7 @@ function export_ace_model(calc::ETACEPotential, filename::String;
     end
 
     # Extract species information from radial embedding state
-    # NTtransformST has fields: f, refstate (not st)
+    # DPTransform has fields: f, refstate (not st)
     trans_st = rembed_layer.trans.refstate
     zlist = trans_st.zlist  # Tuple of ChemicalSpecies
     _i2z = [Int(z.atomic_number) for z in zlist]
