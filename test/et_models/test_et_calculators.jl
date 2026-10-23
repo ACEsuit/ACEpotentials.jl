@@ -712,6 +712,8 @@ stacked_calc = ETM.convert2et_full(model_pair, ps_pair, st_pair)
 
 # Verify structure: 3 components (ETOneBody, ETPairModel, ETACE)
 @test length(stacked_calc.calcs) == 3
+@test AtomsCalculators.energy_unit(stacked_calc) == u"eV"
+@test AtomsCalculators.length_unit(stacked_calc) == u"Å"
 
 # Test length_basis is sum of components
 n_onebody = ETM.length_basis(stacked_calc.calcs[1])
