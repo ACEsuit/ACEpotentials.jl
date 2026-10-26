@@ -582,33 +582,35 @@ function evaluate_basis(model::ACEModel,
       return zeros(T, length_basis(model))
    end
 
-   # get the radii 
-   rs = @withalloc radii!(Rs) 
+   @no_escape begin
+      # get the radii 
+      rs = @withalloc radii!(Rs) 
 
-   # evaluate the radial basis
-   Rnl = evaluate_batched(model.rbasis, rs, Z0, Zs, 
-                           ps.rbasis, st.rbasis)
+      # evaluate the radial basis
+      Rnl = evaluate_batched(model.rbasis, rs, Z0, Zs, 
+                              ps.rbasis, st.rbasis)
 
-   # evaluate the Y basis
-   Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
-
-   # equivariant tensor product
-   # Note: SparseACEbasis returns BB as tuple of vectors (for multi-L), we use [1] for L=0
-   BB = EquivariantTensors.evaluate(model.tensor, Rnl, Ylm, NamedTuple(), NamedTuple())
-   Bi = BB[1]
-
-   B = zeros(eltype(Bi), length_basis(model))
-   B[get_basis_inds(model, Z0)] .= Bi
-   
-   # ------------------- 
-   #  pair potential 
-   if model.pairbasis != nothing 
-      Rpair = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
-                                    ps.pairbasis, st.pairbasis)
-      Apair = sum(Rpair, dims=1)[:]
-      B[get_pairbasis_inds(model, Z0)] .= Apair
-   end 
-
+      # evaluate the Y basis
+      Ylm = @withalloc P4ML.evaluate!(model.ybasis, Rs)
+      
+      # equivariant tensor product
+      # Note: SparseACEbasis returns BB as tuple of vectors (for multi-L), we use [1] for L=0
+      BB = EquivariantTensors.evaluate(model.tensor, Rnl, Ylm, NamedTuple(), NamedTuple())
+      Bi = BB[1]
+      
+      B = zeros(eltype(Bi), length_basis(model))
+      B[get_basis_inds(model, Z0)] .= Bi
+      
+      # ------------------- 
+      #  pair potential 
+      if model.pairbasis != nothing 
+         Rpair = evaluate_batched(model.pairbasis, rs, Z0, Zs, 
+         ps.pairbasis, st.pairbasis)
+         Apair = sum(Rpair, dims=1)[:]
+         B[get_pairbasis_inds(model, Z0)] .= Apair
+      end 
+   end # @no_escape
+      
    return B
 end
 

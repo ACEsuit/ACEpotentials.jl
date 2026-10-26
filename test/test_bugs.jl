@@ -2,7 +2,7 @@
 using ACEpotentials, Test
 using Random: seed! 
 using ACEpotentials.ACE1compat: ace1_model
-using ACEpotentials.Models: ACEPotential, potential_energy
+using ACEpotentials.Models: ACEPotential, potential_energy, energy_forces_virial_basis, Bumper
 using AtomsBuilder
 using Unitful
 using ACEbase.Testing: println_slim 
@@ -49,7 +49,6 @@ else
     @test ustrip(u"eV", maxdiff) < 1e-9
 end
 
-
 @info(" ============================================================")
 @info(" ============== Testing for no Eref bug ====================")
 
@@ -62,5 +61,25 @@ model1 = ace1_model(; params1...)
 model2 = ace1_model(; params2...) 
 sys = bulk(:Si, cubic=true) * 2
 println_slim(@test potential_energy(sys, model1) == potential_energy(sys, model2) == 0.0u"eV")
+
+@info(" ============================================================")
+
+@info(" ============== Testing for memory leaks ====================")
+
+# check that the memory leak described in
+# https://github.com/ACEsuit/ACEpotentials.jl/issues/333
+# is plugged
+
+n_slabs() = length(Bumper.default_buffer().slabs)
+model = ace1_model(elements = [:Si], order = 3, totaldegree = 12, rcut = 5.5)
+sys = rattle!(bulk(:Si, cubic = true) * 2, 0.1)
+
+ref = energy_forces_virial_basis(sys, model)
+n_slabs_ref = n_slabs()
+for k in 1:10
+    @test energy_forces_virial_basis(sys, model) == ref
+end
+
+@test n_slabs() == n_slabs_ref # no drift in Bumper allocations
 
 @info(" ============================================================")
