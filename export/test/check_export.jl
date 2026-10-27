@@ -80,7 +80,7 @@ of the atom in the cell, which is what makes the force accumulation in `exported
 function site_sets(sys, rcut)
     X = [SVector{3,Float64}(ustrip.(u"Å", p)) for p in position(sys, :)]
     C = Matrix(ustrip.(u"Å", hcat(cell_vectors(sys)...)'))
-    nl = NL.PairList(X, rcut, C, (true, true, true))
+    nl = NL.PairList(X, rcut, C, (true, true, true), int_type = Int)
     Zs_all = atomic_number(sys, :)
     out = Vector{Tuple{Vector{SVector{3,Float64}}, Vector{Int}, Int, Vector{Int}}}(undef, length(X))
     for i in 1:length(X)

@@ -323,7 +323,7 @@ end
         et = ETM.ETACEPotential(et_m, et_ps, et_st, rcut)
         function with_ybasis(yb)
             m = et.model
-            yembed = ET.EdgeEmbed(ET.EmbedDP(ET.NTtransformST((x, st) -> x.𝐫, NamedTuple()), yb))
+            yembed = ET.EdgeEmbed(ET.EmbedDP(ET.DPTransform((x, st) -> x.𝐫, NamedTuple()), yb))
             m2 = ETM.ETACE(m.rembed, yembed, m.basis, m.readout)
             return ETM.ETACEPotential(m2, et.ps, et.st, et.rcut)
         end

@@ -33,7 +33,7 @@ function convert2et(model)
    # ---------------------------- YEMBED 
    # convert the angular basis
    ybasis = model.ybasis
-   et_ybasis = ET.EmbedDP( ET.NTtransformST( (x, st) -> x.𝐫, NamedTuple()), 
+   et_ybasis = ET.EmbedDP( ET.DPTransform( (x, st) -> x.𝐫, NamedTuple()), 
                            ybasis )
    et_yspec = P4ML.natural_indices(et_ybasis.basis)
    yembed = ET.EdgeEmbed( et_ybasis)
@@ -197,7 +197,7 @@ function _convert_agnesi(rbasis::LearnableRnlrzzBasis)
       end   
    end
          
-   return ET.NTtransformST(f_agnesi, st)
+   return ET.DPTransform(f_agnesi, st)
 end 
 
 
@@ -226,9 +226,10 @@ function _convert_env_TENV(::Type{<: PolyEnvelope1sR}, envelopes)
    for env in envelopes
       @assert env == env1 
    end
-   f_env = (r, st) -> _eval_env_1sr(r, st.rcut, st.p)
-   refst = ( rcut = env1.rcut, p = env1.p )
-   return ET.st_transform(f_env, refst)
+   f_env = let rcut = env1.rcut, p = env1.p
+      r -> _eval_env_1sr(r, rcut, p)
+   end
+   return WrappedFunction(f_env)
 end 
 
 function _eval_env_1sr(r, rcut, p)

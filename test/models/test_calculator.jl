@@ -4,7 +4,7 @@
 
 ##
 
-using Test, ACEbase 
+using Test, ACEbase
 using Polynomials4ML.Testing: print_tf, println_slim
 
 using ACEpotentials
@@ -23,12 +23,12 @@ using Random, LuxCore, StaticArrays, LinearAlgebra
 rng = Random.MersenneTwister(1234)
 
 function _calc_E0s(at, calc)
-   out = 0.0 
-   Zs = AtomsBase.atomic_number(at, :) 
+   out = 0.0
+   Zs = AtomsBase.atomic_number(at, :)
    for z in Zs
-      out += calc.model.Vref.E0[z] 
+      out += calc.model.Vref.E0[z]
    end
-   return out 
+   return out
 end
 
 ##
@@ -37,11 +37,11 @@ elements = (:Si, :O)
 level = M.TotalDegree()
 max_level = 15
 order = 3
-E0s = Dict( :Si => -158.54496821u"eV", 
+E0s = Dict( :Si => -158.54496821u"eV",
             :O => -2042.0330099956639u"eV")
 NZ = length(elements)
 
-function make_rin0cut(zi, zj) 
+function make_rin0cut(zi, zj)
    r0 = ACEpotentials.DefaultHypers.bond_len(zi, zj)
    return (rin = 0.0, r0 = r0, rcut = 6.5)
 end
@@ -49,9 +49,9 @@ end
 rin0cuts = SMatrix{NZ, NZ}([make_rin0cut(zi, zj) for zi in elements, zj in elements])
 
 
-model = M.ace_model(; elements = elements, order = order, Ytype = :solid, 
-                      level = level, max_level = max_level, maxl = 8, 
-                      pair_maxn = 15, 
+model = M.ace_model(; elements = elements, order = order, Ytype = :solid,
+                      level = level, max_level = max_level, maxl = 8,
+                      pair_maxn = 15,
                       init_WB = :glorot_normal, init_Wpair = :glorot_normal,
                       E0s = E0s,
                       rin0cuts = rin0cuts
@@ -59,7 +59,7 @@ model = M.ace_model(; elements = elements, order = order, Ytype = :solid,
 
 ps, st = LuxCore.setup(rng, model)
 
-calc = M.ACEPotential(model, ps, st)   
+calc = M.ACEPotential(model, ps, st)
 
 ##
 
@@ -68,12 +68,12 @@ ps_vec, _restruct = destructure(ps)
 ps_zero = _restruct(zero(ps_vec))
 
 for ntest = 1:20
-   local Rs, Zs, z0, at, efv 
-   at = AB.randz!( AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1), 
+   local Rs, Zs, z0, at, efv
+   at = AB.randz!( AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1),
                    (:Si => 0.6, :O => 0.5), )
-   n_Si = count(x -> x == 14, AtomsBase.atomic_number(at, :))                   
+   n_Si = count(x -> x == 14, AtomsBase.atomic_number(at, :))
    n_O = count(x -> x == 8, AtomsBase.atomic_number(at, :))
-   nlist = PairList(at, M.cutoff_radius(calc))
+   nlist = PairList(at, M.cutoff_radius(calc), int_type = Int)
    efv = M.energy_forces_virial(at, calc, ps_zero, st)
    _E0 = E0s[:Si] * n_Si + E0s[:O] * n_O
    print_tf(@test ustrip(abs(efv.energy - _E0)) < 1e-10)
@@ -85,12 +85,12 @@ println()
 ##
 
 @info("Testing correctness of potential energy")
-for ntest = 1:20 
-   local Rs, Zs, z0, at, efv 
+for ntest = 1:20
+   local Rs, Zs, z0, at, efv
 
    at = AB.rattle!(AB.bulk(:Si, cubic=true) * 2, 0.1)
-   nlist = PairList(at, M.cutoff_radius(calc))
-   E = 0.0 
+   nlist = PairList(at, M.cutoff_radius(calc), int_type = Int)
+   E = 0.0
    for i = 1:length(at)
       Js, Rs, Zs, z0 = get_neighbours(at, calc, nlist, i)
       E += M.evaluate(calc.model, Rs, Zs, z0, ps, st)
@@ -100,7 +100,7 @@ for ntest = 1:20
    print_tf(@test abs(E - ustrip(efv.energy))/abs(E) < 1e-12)
    print_tf(@test abs(E - ustrip(E2)) / abs(E) < 1e-12)
 end
-println() 
+println()
 
 
 ##
@@ -136,8 +136,8 @@ for ntest = 1:10
    dF0 = - dot(Us, M.energy_forces_virial_serial(at, calc, ps, st).forces)
    X0 = AtomsBase.position(at, :)
    F(t) = M.energy_forces_virial_serial(
-               AtomsBuilder.set_positions(at, X0 + t * Us), 
-               calc, ps, st).energy |> ustrip 
+               AtomsBuilder.set_positions(at, X0 + t * Us),
+               calc, ps, st).energy |> ustrip
    print_tf( @test ACEbase.Testing.fdtest(F, t -> ustrip(dF0), 0.0; verbose=false ) )
 end
 println()
@@ -148,11 +148,11 @@ println()
 
 lin_calc = M.splinify(calc, ps)
 ps_lin, st_lin = LuxCore.setup(rng, lin_calc)
-ps_lin.WB[:] .= ps.WB[:] 
+ps_lin.WB[:] .= ps.WB[:]
 ps_lin.Wpair[:] .= ps.Wpair[:]
 
 for ntest = 1:10
-   len = 10 
+   len = 10
    mae = sum(1:len) do _
       at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
       Z = AtomsBase.atomic_number(at, :)
@@ -161,10 +161,10 @@ for ntest = 1:10
       E_lin = M.energy_forces_virial(at, lin_calc, ps_lin, st_lin).energy
       abs(E - E_lin) / (abs(E) + abs(E_lin))
    end
-   mae /= len 
+   mae /= len
    print_tf(@test mae < 1e-3)
 end
-println() 
+println()
 
 ##
 
@@ -188,21 +188,21 @@ end
 println()
 
 ##
-# testing the AD through a loss function 
+# testing the AD through a loss function
 @info("Testing Zygote-AD through a loss function")
 
-using Zygote 
-using Unitful 
+using Zygote
+using Unitful
 using Unitful: ustrip
 
-# need to make sure that the weights in the loss remove the units! 
-for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"), 
-                      (0.0 / u"eV", 1.0 / u"eV", 0.0 / u"eV/Å"), 
-                      (0.0 / u"eV", 0.0 / u"eV", 1.0 / u"eV/Å"), 
+# need to make sure that the weights in the loss remove the units!
+for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
+                      (0.0 / u"eV", 1.0 / u"eV", 0.0 / u"eV/Å"),
+                      (0.0 / u"eV", 0.0 / u"eV", 1.0 / u"eV/Å"),
                       (1.0 / u"eV", 0.1 / u"eV", 0.1 / u"eV/Å") ]
-   local at, Z, dF0, g, _restruct, g_vec 
+   local at, Z, dF0, g, _restruct, g_vec
 
-   # random structure 
+   # random structure
    at = AB.rattle!(AB.bulk(:Si, cubic=true), 0.1)
    Z = AtomsBase.atomic_number(at, :)
    Z[[3,6,8]] .= 8
@@ -210,12 +210,12 @@ for (wE, wV, wF) in [ (1.0 / u"eV", 0.0 / u"eV", 0.0 / u"eV/Å"),
    function loss(at, calc, ps, st)
       efv = M.energy_forces_virial(at, calc, ps, st)
       _norm_sq(f) = sum(abs2, f)
-      return (   wE^2 * efv.energy^2 / length(at)  
-               + wV^2 * sum(abs2, efv.virial) / length(at) 
+      return (   wE^2 * efv.energy^2 / length(at)
+               + wV^2 * sum(abs2, efv.virial) / length(at)
                + wF^2 * sum(_norm_sq, efv.forces) )
    end
 
-   g = Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1] 
+   g = Zygote.gradient(ps -> loss(at, calc, ps, st), ps)[1]
 
    p_vec, _restruct = destructure(ps)
    g_vec = destructure(g)[1]
