@@ -48,6 +48,10 @@ end
 # Constructor that infers N from the tuple length
 StackedCalculator(calcs::C) where {C<:Tuple} = StackedCalculator{length(C.parameters), C}(calcs)
 
+# ET calculators return energies in eV and use Å as their length unit.
+AtomsCalculators.energy_unit(::StackedCalculator) = u"eV"
+AtomsCalculators.length_unit(::StackedCalculator) = u"Å"
+
 # Get maximum cutoff from all calculators (for informational purposes)
 @generated function cutoff_radius(calc::StackedCalculator{N}) where {N}
    quote
